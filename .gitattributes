@@ -1,0 +1,15 @@
+* text=auto
+
+# Shell scripts run inside Linux containers - must keep LF even on a Windows checkout
+*.sh text eol=lf
+scripts/git-hooks/* text eol=lf
+
+# PowerShell and batch files stay CRLF (Windows PowerShell 5.1; cmd labels/goto break with LF)
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+src/PlatinVault.Bridge/package/* text eol=crlf
+
+*.png binary
+*.ico binary
+*.woff2 binary
+

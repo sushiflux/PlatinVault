@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The one place that knows how a PlatinVault version is written for people and for tags (see VersionFormat). Shared by the server
+    (Companion.Api) and the Windows program/installer (PlatinVault.Windows.Common). No dependencies, plain .NET.
+  -->
+  <PropertyGroup>
+    <RootNamespace>PlatinVault.Versioning</RootNamespace>
+    <AssemblyName>PlatinVault.Versioning</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Companion.Api.Tests" />
+    <InternalsVisibleTo Include="PlatinVault.Windows.Tests" />
+  </ItemGroup>
+</Project>

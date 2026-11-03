@@ -1,0 +1,41 @@
+# PlatinVault for Linux / Docker (and NAS systems whose container manager accepts Compose files).
+#
+#   docker compose up -d      -> then open http://<this-host>:5233
+#
+# Everything is in one container: the app and its database (one SQLite file). Nothing else to install or set up. Your data lives in
+# the "data" folder next to this file: the database (platinvault.db), the automatic backups (data/backups), your encrypted API keys
+# and caches. Keep that folder on a local disk of this host (not on a network share). To move or back up everything, copy "data".
+#
+# Optional settings (port, user id, timezone) go into a file named ".env" next to this file - see .env.example.
+
+name: platinvault
+
+services:
+  platinvault:
+    # Releases only (recommended). For betas and releases use  image: ghcr.io/sushiflux/platinvault:beta
+    # and also switch on "Receive beta versions" in PlatinVault (Settings > System > Updates).
+    image: ghcr.io/sushiflux/platinvault:latest
+    restart: unless-stopped
+    ports:
+      - "${PLATINVAULT_PORT:-5233}:8080"
+    environment:
+      # The container starts as root only to give /data to this user, then drops to it. Unraid uses 99/100; on a plain
+      # Linux host the first normal user is normally 1000/1000 (check with: id). PUID=0 is refused.
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Etc/UTC}
+    volumes:
+      - ./data:/data
+    # A clean stop lets PlatinVault make its last backup before it exits
+    stop_grace_period: 30s
+    healthcheck:
+      # The image has no curl/wget, so the check speaks plain HTTP through bash (/dev/tcp is a bash feature, not sh).
+      test:
+        - CMD
+        - bash
+        - -c
+        - "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /health HTTP/1.0\\r\\n\\r\\n' >&3 && head -n 1 <&3 | grep -q ' 200 '"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s

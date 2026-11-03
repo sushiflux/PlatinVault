@@ -1,0 +1,1747 @@
+/* ==================== TROPHÄENSCHRANK (components/cabinet/TrophyCabinet.tsx) ====================
+   A full-screen glass display cabinet with its own lighting. The cabinet itself is deliberately a fixed dark "piece of
+   furniture" (like a museum vitrine) in BOTH themes. Palette: smoked glass + brass; text on the brass plaques is
+   #2a1c04 on at least #c19232 (5.0:1 and better).
+   Everything is sized in em: the cabinet's font size follows the screen (min of height and width, so portrait
+   monitors do not blow up) and the five shelf sizes (data-size 0..4) are just sets of the --cab-* variables. */
+
+.pv-cab {
+  --brass-hi: #f6e3a4;
+  --brass: #c9a04a;
+  --brass-lo: #7c5a1e;
+  --cab-text: #e8edf6;
+  --cab-muted: #aab6c9;
+  --cab-wall-top: light-dark(#1d2b48, #0f1829);
+  --cab-wall-bottom: light-dark(#131e36, #0a111d);
+  /* Shelf size, step 1 = default */
+  --cab-poster: 5.4em;
+  --cab-slot: 7.2em;
+  --cab-name: 0.72em;
+  --cab-date: 0.64em;
+  --cab-front: 4.4em;
+  /* One shelf: lamp zone + poster (2:3) + stand + the front of the shelf */
+  --cab-shelf-min: calc(var(--cab-poster) * 1.5 + 2.4em + var(--cab-front));
+  /* The brass rails at the top and bottom of the case (the lamps of the top row hang right below the upper one) */
+  --cab-rail: 7px;
+  font-size: clamp(14px, min(1.78vh, 1.6vw), 34px);
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  color: var(--cab-text);
+  font-weight: 400;
+  border: max(3px, 0.28em) solid transparent;
+  background:
+    linear-gradient(180deg, #0d1424, #080d17) padding-box,
+    linear-gradient(150deg, #f8e8b0, #c9a04a 26%, #7c5a1e 50%, #dcb865 74%, #f3dc92) border-box;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.55);
+}
+
+.pv-cab[data-size='0'] {
+  --cab-poster: 3.7em;
+  --cab-slot: 5em;
+  --cab-name: 0.68em;
+  --cab-date: 0.6em;
+  --cab-front: 2.1em;
+}
+
+.pv-cab[data-size='2'] {
+  --cab-poster: 7em;
+  --cab-slot: 9em;
+  --cab-name: 0.74em;
+  --cab-date: 0.66em;
+  --cab-front: 3.9em;
+}
+
+.pv-cab[data-size='3'] {
+  --cab-poster: 8.6em;
+  --cab-slot: 11em;
+  --cab-name: 0.8em;
+  --cab-date: 0.7em;
+  --cab-front: 4.1em;
+}
+
+.pv-cab[data-size='4'] {
+  --cab-poster: 10.4em;
+  --cab-slot: 13.2em;
+  --cab-name: 0.86em;
+  --cab-date: 0.74em;
+  --cab-front: 4.3em;
+}
+
+/* Dark veil over the whole cabinet that fades away at the start: the page behind never shines through */
+.pv-cab-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background: #05080f;
+  pointer-events: none;
+}
+
+.pv-cab :focus-visible {
+  outline: 2px solid #f6e3a4;
+  outline-offset: 2px;
+}
+
+/* ---------- Header: one quiet row, never wraps ---------- */
+.pv-cab-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto auto auto;
+  grid-template-areas: 'title stats size light doors close';
+  align-items: center;
+  gap: 0.9em;
+  padding: 0.65em 1.1em;
+  border-block-end: 1px solid rgba(201, 160, 74, 0.5);
+  background:
+    linear-gradient(180deg, rgba(246, 227, 164, 0.08), rgba(246, 227, 164, 0) 70%),
+    linear-gradient(180deg, #131c2f, #0d1424);
+}
+
+.pv-cab-title {
+  grid-area: title;
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  min-inline-size: 0;
+}
+
+.pv-cab-title h2 {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1em;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  color: #f7e9bd;
+}
+
+.pv-cab-title p {
+  margin: 0.05em 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.72em;
+  font-weight: 400;
+  color: var(--cab-muted);
+}
+
+/* Overall figures: icon + number, the sentence lives in the tooltip */
+.pv-cab-stats {
+  grid-area: stats;
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+}
+
+.pv-cab-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.3em 0.65em;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(201, 160, 74, 0.45);
+  background: rgba(246, 227, 164, 0.06);
+  font-size: 0.8em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: #f3e6bd;
+}
+
+.pv-cab-stat svg {
+  color: #e8c566;
+  flex-shrink: 0;
+}
+
+/* Lighting choice: an icon button and a compact choice that opens under it */
+.pv-cab-light {
+  grid-area: light;
+  position: relative;
+  display: inline-flex;
+}
+
+.pv-cab-light .pv-cab-close[aria-pressed='true'] {
+  background: rgba(246, 227, 164, 0.16);
+}
+
+.pv-cab-light-menu {
+  position: absolute;
+  inset-block-start: calc(100% + 0.55em);
+  inset-inline-end: 0;
+  z-index: 40;
+  display: grid;
+  gap: 0.15em;
+  min-inline-size: 17.5em;
+  padding: 0.3em;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(201, 160, 74, 0.55);
+  background: linear-gradient(180deg, #18223a, #0e1526);
+  box-shadow: 0 14px 34px -10px rgba(0, 0, 0, 0.85);
+}
+
+.pv-cab-light-group {
+  display: grid;
+  gap: 0.15em;
+}
+
+.pv-cab-light-title {
+  padding: 0.35em 0.65em 0.2em;
+  font-size: 0.68em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #d9c58a;
+}
+
+.pv-cab-light-rule {
+  block-size: 1px;
+  margin: 0.25em 0.4em;
+  background: rgba(201, 160, 74, 0.28);
+}
+
+/* The "Leere Plätze zeigen" row is the shared Switch (ui/Switch.tsx, surface="dark"): its track takes the 2.3em first column and the cabinet's own em */
+.pv-cab-light-option {
+  --pv-switch-font: 1em;
+  display: grid;
+  grid-template-columns: 2.3em minmax(0, 1fr);
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.5em 0.65em;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--cab-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.pv-cab-light-option:hover,
+.pv-cab-light-option[aria-checked='true'] {
+  background: rgba(246, 227, 164, 0.12);
+}
+
+.pv-cab-light-option:focus-visible {
+  outline: 2px solid #f6e3a4;
+  outline-offset: -2px;
+}
+
+.pv-cab-light-check {
+  display: inline-flex;
+  justify-content: center;
+  color: #f3dc92;
+}
+
+.pv-cab-light-name {
+  display: block;
+  font-size: 0.86em;
+  font-weight: 600;
+  color: #f7e9bd;
+}
+
+.pv-cab-light-hint {
+  display: block;
+  font-size: 0.72em;
+  color: var(--cab-muted);
+}
+
+/* Shelf size: left = smaller items, more games per shelf */
+.pv-cab-doors-wrap {
+  grid-area: doors;
+  display: inline-flex;
+}
+
+.pv-cab-doors[aria-pressed='true'] {
+  background: rgba(246, 227, 164, 0.16);
+}
+
+.pv-cab-size-wrap {
+  grid-area: size;
+  display: inline-flex;
+}
+
+.pv-cab-size {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  color: #e8c566;
+}
+
+.pv-cab-size .pv-range {
+  inline-size: 8.5em;
+  accent-color: #e8c566;
+}
+
+.pv-cab-close {
+  grid-area: close;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.2em;
+  block-size: 2.2em;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(201, 160, 74, 0.55);
+  background: rgba(255, 255, 255, 0.04);
+  color: #f3dc92;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.pv-cab-close:hover {
+  background: rgba(246, 227, 164, 0.16);
+}
+
+@media (max-width: 760px) {
+  .pv-cab-stats,
+  .pv-cab-title p {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .pv-cab-head {
+    gap: 0.6em;
+    padding-inline: 0.8em;
+  }
+
+  .pv-cab-size .pv-range {
+    inline-size: 6em;
+  }
+}
+
+/* ---------- Body: the glass case; the information panel slides over it ---------- */
+.pv-cab-body {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  min-block-size: 0;
+}
+
+.pv-cab-case {
+  position: relative;
+  min-block-size: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 0%, rgba(130, 160, 220, 0.16), transparent 70%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.014) 0 1px, transparent 1px 42px),
+    linear-gradient(180deg, var(--cab-wall-top), var(--cab-wall-bottom));
+  box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.65);
+}
+
+.pv-cab-scroll {
+  position: relative;
+  z-index: 1;
+  block-size: 100%;
+  /* The wall scrolls sideways when there are more games than places (arrows and edge fades say so); no scrollbar in front of the glass.
+     Vertical scrolling is only a fallback for a window too low for even two shelves. Games snap to a column start, never half cut. */
+  overflow-x: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+}
+
+.pv-cab-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* A soft shade at the lower edge of the case: more shelves are waiting below */
+.pv-cab-case::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  block-size: 2.25em;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(5, 9, 16, 0.7));
+}
+
+/* Reflection on the front glass, always on top, never in the way of clicks */
+.pv-cab-gloss {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(
+    112deg,
+    rgba(255, 255, 255, 0.085) 0%,
+    rgba(255, 255, 255, 0.025) 20%,
+    transparent 33%,
+    transparent 58%,
+    rgba(255, 255, 255, 0.05) 71%,
+    transparent 83%
+  );
+}
+
+/* The glass doors. Open = out of sight; closed = two frameless smoked panes (a click on the glass opens them). They SLIDE in
+   rails: each pane keeps its full size and only moves sideways (translateX), the left one out to the left, the right one
+   out to the right, until it is completely behind the edge of the case (.pv-cab-case clips, so a pane never shows over the
+   header or outside the overlay). The rails at the top and bottom belong to the cabinet and stand still (.pv-cab-rail).
+   Opening and closing are one CSS animation per pane, so a pane only ever moves in one direction. */
+.pv-cab-door {
+  position: absolute;
+  inset-block: 0;
+  z-index: 5;
+  /* Each pane reaches 1 px over the middle: the right one runs in the front track and overlaps the left one by 2 px, so
+     there is a real seam (dark line between two bright glass edges), not a hairline gap that could disappear */
+  inline-size: calc(50% + 1px);
+  pointer-events: none;
+  visibility: hidden;
+  /* smoked glass: dark tint with a faint streak of reflection (the streak sits at a different place on each pane) */
+  background:
+    var(--door-streak),
+    linear-gradient(115deg, rgba(34, 52, 84, 0.72), rgba(8, 14, 28, 0.62) 42%, rgba(34, 52, 84, 0.7));
+  box-shadow: inset 0 0 44px rgba(120, 160, 220, 0.16);
+}
+
+/* Polished glass edge: one solid 1 px line. Whole CSS pixels stay crisp at 1x, 2x and 3x; at a fractional zoom the browser decides how a 1 px line meets the device pixels. */
+.pv-cab-door::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inline-size: 1px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.pv-cab-door--l {
+  --door-streak: linear-gradient(104deg, transparent 24%, rgba(255, 255, 255, 0.08) 34%, transparent 44%);
+  inset-inline-start: 0;
+  box-shadow:
+    inset 0 0 44px rgba(120, 160, 220, 0.16),
+    10px 0 16px -8px rgba(0, 0, 0, 0.45);
+}
+
+/* Rear track: its own edge line sits on its inner edge (hidden under the front pane while the doors are shut) */
+.pv-cab-door--l::after {
+  inset-inline-end: 0;
+}
+
+/* Front track: a dark 1 px seam on its edge with a bright glass line behind it, and one more bright line on the rear pane beside it */
+.pv-cab-door--r {
+  --door-streak: linear-gradient(104deg, transparent 52%, rgba(255, 255, 255, 0.07) 61%, transparent 70%);
+  inset-inline-end: 0;
+  z-index: 6;
+  /* the seam itself is painted in the pane's own background (dark line, then a bright one; hard stops) */
+  background:
+    linear-gradient(
+      90deg,
+      rgba(2, 6, 14, 0.82) 0,
+      rgba(2, 6, 14, 0.82) 1px,
+      rgba(255, 255, 255, 0.4) 1px,
+      rgba(255, 255, 255, 0.4) 2px,
+      transparent 2px
+    ),
+    var(--door-streak),
+    linear-gradient(115deg, rgba(34, 52, 84, 0.72), rgba(8, 14, 28, 0.62) 42%, rgba(34, 52, 84, 0.7));
+  box-shadow:
+    inset 0 0 44px rgba(120, 160, 220, 0.16),
+    -10px 0 16px -8px rgba(0, 0, 0, 0.45);
+}
+
+.pv-cab-door--r::after {
+  inset-inline-start: -1px;
+}
+
+.pv-cab[data-doors='closed'] .pv-cab-door {
+  visibility: visible;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.pv-cab[data-doors='opening'] .pv-cab-door,
+.pv-cab[data-doors='closing'] .pv-cab-door {
+  visibility: visible;
+  /* A layer of its own only while the panes move; at rest they are painted into the page, so the seam is snapped to whole device pixels instead of being resampled (blurred) at a fractional zoom */
+  will-change: transform;
+}
+
+/* Easing of a heavy glass door: it gets going at once and runs out softly, so it slows down clearly in the last fifth of
+   the way - on opening just before it slides behind the edge, on closing before the two panes meet. No bounce, no snap. */
+.pv-cab[data-doors='opening'] .pv-cab-door--l {
+  animation: pv-door-l 0.95s cubic-bezier(0.3, 0.1, 0.12, 1) 0.2s both;
+}
+
+.pv-cab[data-doors='opening'] .pv-cab-door--r {
+  animation: pv-door-r 0.95s cubic-bezier(0.3, 0.1, 0.12, 1) 0.2s both;
+}
+
+/* Closing: the lights go out first (0.35 s), then the doors slide back in and meet in the middle */
+.pv-cab[data-doors='closing'] .pv-cab-door--l {
+  animation: pv-door-l-close 0.95s cubic-bezier(0.3, 0.1, 0.12, 1) 0.35s both;
+}
+
+.pv-cab[data-doors='closing'] .pv-cab-door--r {
+  animation: pv-door-r-close 0.95s cubic-bezier(0.3, 0.1, 0.12, 1) 0.35s both;
+}
+
+/* A pane throws its shadow onto the shelves only while it is over them: the shadow fades out as the pane leaves (and in as
+   it comes back), so nothing pops when the animation ends */
+@keyframes pv-door-l {
+  from {
+    transform: translateX(0);
+    box-shadow:
+      inset 0 0 44px rgba(120, 160, 220, 0.16),
+      10px 0 16px -8px rgba(0, 0, 0, 0.45);
+  }
+  to {
+    transform: translateX(-100%);
+    box-shadow:
+      inset 0 0 44px rgba(120, 160, 220, 0.16),
+      10px 0 16px -8px rgba(0, 0, 0, 0);
+  }
+}
+
+@keyframes pv-door-r {
+  from {
+    transform: translateX(0);
+    box-shadow:
+      inset 0 0 44px rgba(120, 160, 220, 0.16),
+      -10px 0 16px -8px rgba(0, 0, 0, 0.45);
+  }
+  to {
+    transform: translateX(100%);
+    box-shadow:
+      inset 0 0 44px rgba(120, 160, 220, 0.16),
+      -10px 0 16px -8px rgba(0, 0, 0, 0);
+  }
+}
+
+@keyframes pv-door-l-close {
+  from {
+    transform: translateX(-100%);
+    box-shadow:
+      inset 0 0 44px rgba(120, 160, 220, 0.16),
+      10px 0 16px -8px rgba(0, 0, 0, 0);
+  }
+  to {
+    transform: translateX(0);
+    box-shadow:
+      inset 0 0 44px rgba(120, 160, 220, 0.16),
+      10px 0 16px -8px rgba(0, 0, 0, 0.45);
+  }
+}
+
+@keyframes pv-door-r-close {
+  from {
+    transform: translateX(100%);
+    box-shadow:
+      inset 0 0 44px rgba(120, 160, 220, 0.16),
+      -10px 0 16px -8px rgba(0, 0, 0, 0);
+  }
+  to {
+    transform: translateX(0);
+    box-shadow:
+      inset 0 0 44px rgba(120, 160, 220, 0.16),
+      -10px 0 16px -8px rgba(0, 0, 0, 0.45);
+  }
+}
+
+/* The rails: fixed brass tracks at the top and bottom of the case, over the panes. They belong to the cabinet, so they
+   stay when the doors are open. Overlay only: nothing in the layout moves for them. */
+.pv-cab-rail {
+  position: absolute;
+  inset-inline: 0;
+  z-index: 7;
+  pointer-events: none;
+  block-size: var(--cab-rail);
+}
+
+.pv-cab-rail--top {
+  inset-block-start: 0;
+  background: linear-gradient(180deg, #f1d896 0%, #c9a04a 46%, #94702b 100%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.pv-cab-rail--bottom {
+  inset-block-end: 0;
+  background: linear-gradient(0deg, #f1d896 0%, #c9a04a 46%, #94702b 100%);
+  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* The groove of the track: a thin dark line on the inner edge of each rail */
+.pv-cab-rail::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  block-size: 1px;
+  background: rgba(40, 26, 6, 0.55);
+}
+
+.pv-cab-rail--top::after {
+  inset-block-end: 0;
+}
+
+.pv-cab-rail--bottom::after {
+  inset-block-start: 0;
+}
+
+/* ---------- Shelves ---------- */
+/* The shelves fill the whole height of the case: the rows share the free space, so the last one ends at the bottom edge.
+   Wide cabinets: the shelves (boards) and the games are two grids with the same rows, laid on top of each other; the
+   games sit in ONE grid, so a game stays the same element while the size changes and only slides to its new place. */
+.pv-cab-shelves {
+  display: grid;
+  min-block-size: 100%;
+  /* The wall is as wide as its columns: --visible columns fill the case, every further column is reached by scrolling */
+  inline-size: calc(100% * var(--cols, 5) / var(--visible, 5));
+  /* The light cones are wider than their place: at the ends of the wall they must not add scrollable width */
+  overflow-x: clip;
+}
+
+.pv-cab-boards,
+.pv-cab-grid {
+  grid-area: 1 / 1;
+  display: grid;
+  grid-template-rows: repeat(var(--rows, 3), minmax(var(--cab-shelf-min), 1fr));
+}
+
+.pv-cab-boards {
+  pointer-events: none;
+}
+
+.pv-cab-grid {
+  position: relative;
+  z-index: 1;
+  grid-template-columns: repeat(var(--cols, 5), minmax(0, 1fr));
+}
+
+.pv-cab-shelf {
+  position: relative;
+  min-block-size: var(--cab-shelf-min);
+}
+
+.pv-cab-boards .pv-cab-shelf + .pv-cab-shelf {
+  border-block-start: 1px solid rgba(255, 255, 255, 0.025);
+}
+
+/* The shelf: a glass top surface, a smoked-glass front with brass trim at top and bottom. Laid under the row, so a
+   sideways scrolling row (phone) slides over a shelf that stays in place. */
+.pv-cab-board {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  block-size: var(--cab-front);
+  background:
+    linear-gradient(180deg, rgba(214, 238, 255, 0.3) 0, rgba(214, 238, 255, 0.08) 0.45em, rgba(214, 238, 255, 0) 0.45em),
+    linear-gradient(180deg, #1c2744, #0b1222);
+  border-block-start: 2px solid #b78a38;
+  box-shadow:
+    inset 0 -3px 0 #b78a38,
+    0 14px 22px -8px rgba(0, 0, 0, 0.7);
+}
+
+.pv-cab-slot {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-inline-size: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  scroll-snap-align: start;
+}
+
+.pv-cab-slot--empty {
+  cursor: default;
+  /* A placeholder is not an object of the cabinet: no hover, no click, nothing to focus */
+  pointer-events: none;
+}
+
+/* Spotlight: a small brass lamp in the ceiling of the shelf and its cone of light */
+.pv-cab-lamp {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 50%;
+  inline-size: 38%;
+  block-size: 4px;
+  translate: -50% 0;
+  border-radius: 0 0 4px 4px;
+  z-index: 4;
+  background: linear-gradient(180deg, #fff9df, #ffe49a);
+  opacity: var(--lit);
+  box-shadow: 0 2px 10px 3px rgba(255, 226, 150, calc(0.55 * var(--lit)));
+}
+
+/* The top row has the rail above it, so its lamps (and the cones from them) start below the rail, not under it */
+.pv-cab-slot--top .pv-cab-lamp {
+  inset-block-start: calc(var(--cab-rail) + 2px);
+}
+
+/* The light. Every slot has its own light level --lit (0 = off, 1 = steady) and EVERYTHING that light touches derives from it:
+   the lamp, its cone, the brightening of the cover from its top edge, the sheen on the plaque, the light pool on the
+   shelf and the glow on the wall behind - so they flicker together. Closed cabinet: --lit is 0, a dark layer over each
+   slot makes cover and plaque only faintly visible. Opening: the lamps flicker on (two flashes within about a third of a
+   second, each lamp a little later than the next, always under 3 flashes in any second, small areas only), then steady.
+   Closing: a quick fade out, no flicker. */
+@property --lit {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+
+.pv-cab-slot {
+  --lit: 1;
+}
+
+.pv-cab[data-lights='off'] .pv-cab-slot {
+  --lit: 0;
+  transition: --lit 0.35s ease-in;
+}
+
+.pv-cab[data-lights='flicker'] .pv-cab-slot {
+  animation: pv-slot-lit 0.85s linear var(--ld, 0s) both;
+}
+
+@keyframes pv-slot-lit {
+  0% {
+    --lit: 0;
+  }
+  7% {
+    --lit: 0.5;
+  }
+  17% {
+    --lit: 0.08;
+  }
+  33%,
+  100% {
+    --lit: 1;
+  }
+}
+
+/* The darkness of the unlit state belongs to the OBJECTS, never to a box around them: the cover, its stand and the plaque each
+   darken in their own silhouette (.pv-cab-shade), and the cover darkens with the falloff of the lamp's cone (the top centre
+   first, the lower and outer parts later). Nothing is darkened around them, the wall only gets lighter where the cone,
+   the pool and the glow fall - all of them soft ellipses, so no rectangle shows up anywhere, whatever the neighbours do.
+   The mix of the two terms makes the shade exactly 0 at full light (lit = 1), so nothing jumps when the flicker ends. */
+.pv-cab-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+  background: rgba(3, 6, 12, calc(0.68 * (1 - var(--lit))));
+}
+
+.pv-cab-poster > .pv-cab-shade {
+  background: radial-gradient(
+    ellipse 95% 120% at 50% 0%,
+    rgba(3, 6, 12, calc(0.68 * (1 - var(--lit)))) 0%,
+    rgba(3, 6, 12, calc(0.68 * (1 - var(--lit) * 0.6 - var(--lit) * var(--lit) * 0.4))) 55%,
+    rgba(3, 6, 12, calc(0.68 * (1 - var(--lit) * var(--lit)))) 100%
+  );
+}
+
+.pv-cab-stand {
+  position: relative;
+}
+
+.pv-cab-stand::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(3, 6, 12, calc(0.68 * (1 - var(--lit))));
+}
+
+.pv-cab-dim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(ellipse 80% 70% at 50% 30%, rgba(4, 8, 16, 0.52), rgba(3, 6, 12, 0.74));
+  opacity: 1;
+  transition: opacity 1.1s ease-out;
+}
+
+.pv-cab[data-lights='flicker'] .pv-cab-dim,
+.pv-cab[data-lights='on'] .pv-cab-dim {
+  opacity: 0;
+}
+
+/* The cone of a spot: a trapezoid of light that widens downwards, brightest under the lamp, fading towards its edges
+   (angular falloff of a conic gradient) and towards the shelf board (vertical mask). The box is three slots wide, so
+   nothing cuts the cone at the edge of its slot; neighbouring cones overlap and add up softly (screen). It sits behind
+   the covers (z-index 0, the stage is above). Gradients and masks only, the only thing that changes is the opacity. */
+.pv-cab-beam {
+  position: absolute;
+  z-index: 0;
+  inset-block: 0 var(--cab-front);
+  inset-inline: -100%;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: calc(var(--lit) * 0.9);
+  background:
+    radial-gradient(ellipse 11% 16% at 50% 0%, rgba(255, 244, 214, 0.5), rgba(255, 238, 196, 0.14) 55%, transparent),
+    conic-gradient(
+      from 142deg at 50% 0%,
+      transparent 0deg,
+      rgba(255, 234, 176, 0.05) 7deg,
+      rgba(255, 234, 176, 0.14) 15deg,
+      rgba(255, 234, 176, 0.25) 25deg,
+      rgba(255, 234, 176, 0.31) 38deg,
+      rgba(255, 234, 176, 0.25) 51deg,
+      rgba(255, 234, 176, 0.14) 61deg,
+      rgba(255, 234, 176, 0.05) 69deg,
+      transparent 76deg
+    );
+  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.72) 38%, rgba(0, 0, 0, 0.3) 70%, transparent 96%);
+}
+
+.pv-cab-slot--top .pv-cab-beam {
+  inset-block-start: calc(var(--cab-rail) + 2px);
+}
+
+.pv-cab-slot:hover .pv-cab-beam,
+.pv-cab-slot[aria-pressed='true'] .pv-cab-beam {
+  opacity: var(--lit);
+}
+
+/* ---------- Lighting modes ----------
+   A mode only decides WHICH light elements are shown; they all run on the same --lit levels and flicker rules as the
+   spots. Adding a mode = one block under .pv-cab[data-lighting='<id>'] and one entry in LIGHTING_MODES (TrophyCabinet.tsx).
+   Spots (default): lamp + cone + pool + wall glow per slot, see above. */
+
+/* LED strip: ONE continuous thin bright line along the whole top of every shelf compartment (edge to edge, no gaps) and one
+   even, soft wash down the back wall and over the covers - no single cones. The light level --lit belongs to the ROW:
+   the strip and every cover of the row run the same animation with the same delay, so the whole row flickers on as one
+   (only the rows start 0.1 s apart, top to bottom). Gentle, well under 3 flashes in any second. */
+.pv-cab-led {
+  --lit: 1;
+  display: none;
+  position: absolute;
+  inset-inline: 0;
+  inset-block: 0 var(--cab-front);
+  pointer-events: none;
+  opacity: var(--lit);
+}
+
+.pv-cab[data-lighting='led'] .pv-cab-led {
+  display: block;
+}
+
+.pv-cab-boards .pv-cab-shelf:first-child .pv-cab-led {
+  inset-block-start: var(--cab-rail);
+}
+
+.pv-cab-led::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 0;
+  block-size: 3px;
+  background: linear-gradient(180deg, #fffbe8, #ffe9a8);
+  box-shadow:
+    0 0 8px 1px rgba(255, 232, 160, 0.7),
+    0 3px 22px 5px rgba(255, 226, 150, 0.26);
+}
+
+.pv-cab-led::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(0deg, rgba(255, 232, 170, 0.1), transparent 7%),
+    linear-gradient(180deg, rgba(255, 242, 212, 0.3) 0, rgba(255, 242, 212, 0.17) 22%, rgba(255, 242, 212, 0.07) 55%, transparent 100%);
+}
+
+/* LED mode: no lamps, cones, pools or wall glows per slot */
+.pv-cab[data-lighting='led'] .pv-cab-lamp,
+.pv-cab[data-lighting='led'] .pv-cab-beam,
+.pv-cab[data-lighting='led'] .pv-cab-figure::before,
+.pv-cab[data-lighting='led'] .pv-cab-figure::after {
+  display: none;
+}
+
+.pv-cab[data-lights='off'] .pv-cab-led {
+  --lit: 0;
+  transition: --lit 0.35s ease-in;
+}
+
+/* Strip and covers of a row: the same keyframes with the same delay (--rd, set per row), so --lit is identical in every
+   frame for the strip and for every cover of that row */
+.pv-cab[data-lights='flicker'][data-lighting='led'] .pv-cab-slot,
+.pv-cab[data-lights='flicker'][data-lighting='led'] .pv-cab-led {
+  animation: pv-slot-lit-soft 0.9s linear var(--rd, 0s) both;
+}
+
+/* Gentler than the spots: one long rise, one shallow dip, then steady (two rises and one fall in 0.9 s) */
+@keyframes pv-slot-lit-soft {
+  0% {
+    --lit: 0;
+  }
+  14% {
+    --lit: 0.7;
+  }
+  30% {
+    --lit: 0.48;
+  }
+  55%,
+  100% {
+    --lit: 1;
+  }
+}
+
+/* The figure: a framed poster on a small stand, standing on the shelf */
+.pv-cab-stage {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-block-start: 1.3em;
+  min-block-size: 0;
+}
+
+.pv-cab-figure {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  inline-size: 100%;
+}
+
+/* Light pool on the shelf in front of the cover, glow on the wall behind it: ellipses that end in full transparency
+   inside their own box (closest-side), so they have no edge at all, and boxes wider than the slot */
+.pv-cab-figure::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset-inline: -34%;
+  inset-block-end: -0.8em;
+  block-size: 2.3em;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgba(255, 226, 150, calc(0.5 * var(--lit))), rgba(255, 226, 150, calc(0.16 * var(--lit))) 55%, transparent);
+}
+
+.pv-cab-figure::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -22% -36% -8%;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgba(255, 238, 200, calc(0.22 * var(--lit))), rgba(255, 238, 200, calc(0.08 * var(--lit))) 55%, transparent);
+}
+
+/* The lamp's light on the cover: follows the falloff of the cone - strongest at the top centre, weaker to the sides and
+   towards the bottom (an ellipse, not a box gradient) */
+.pv-cab-poster::before {
+  content: '';
+  position: absolute;
+  inset: max(2px, 0.1em);
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 1px;
+  mix-blend-mode: screen;
+  background: radial-gradient(
+    ellipse 100% 135% at 50% 0%,
+    rgba(255, 243, 212, calc(0.55 * var(--lit))) 0%,
+    rgba(255, 243, 212, calc(0.2 * var(--lit))) 45%,
+    transparent 85%
+  );
+}
+
+.pv-cab-poster {
+  position: relative;
+  inline-size: min(calc(100% - 0.8em), var(--cab-poster));
+  aspect-ratio: 2 / 3;
+  padding: max(2px, 0.1em);
+  border-radius: 2px;
+  background: linear-gradient(145deg, #f8e8b0, #b98d3a 42%, #7c5a1e 60%, #e6c874);
+  transform: perspective(700px) rotateX(2.5deg);
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0.5em 0.42em 0.38em rgba(0, 0, 0, 0.6));
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.3s ease,
+    inline-size 0.3s ease;
+}
+
+.pv-cab-poster img,
+.pv-cab-poster-blank {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 1px;
+}
+
+.pv-cab-poster-blank {
+  display: grid;
+  place-items: center;
+  color: #7dd3fc;
+  background-color: #1b2740;
+  background-image: radial-gradient(circle at 50% 0%, rgba(125, 211, 252, 0.3), transparent 75%);
+}
+
+/* A soft light along the top of the frame */
+.pv-cab-poster::after {
+  content: '';
+  position: absolute;
+  inset: max(2px, 0.1em);
+  border-radius: 1px;
+  pointer-events: none;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 38%);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.pv-cab-stand {
+  inline-size: 46%;
+  block-size: 0.5em;
+  margin-block-start: -1px;
+  clip-path: polygon(8% 0, 92% 0, 100% 100%, 0 100%);
+  background: linear-gradient(180deg, #f1d98f, #b98d3a 60%, #7c5a1e);
+}
+
+.pv-cab-slot:hover .pv-cab-poster,
+.pv-cab-slot:focus-visible .pv-cab-poster,
+.pv-cab-slot[aria-pressed='true'] .pv-cab-poster {
+  transform: perspective(700px) rotateX(0deg) translateY(-0.3em);
+  filter: drop-shadow(0.6em 0.7em 0.5em rgba(0, 0, 0, 0.55)) drop-shadow(0 0 0.8em rgba(255, 224, 140, 0.35));
+}
+
+.pv-cab-slot:focus-visible {
+  outline: none;
+}
+
+.pv-cab-slot:focus-visible .pv-cab-poster {
+  outline: 2px solid #f6e3a4;
+  outline-offset: 3px;
+}
+
+/* ---------- The plaque: a small brushed-gold plate screwed onto the front of the shelf ---------- */
+.pv-cab-front {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  flex: 0 0 var(--cab-front);
+  padding-inline: 0.4em;
+}
+
+.pv-cab-plaque {
+  position: relative;
+  display: grid;
+  gap: 0.12em;
+  align-content: center;
+  inline-size: calc(100% - 0.1em);
+  box-sizing: border-box;
+  padding: 0.32em 0.75em;
+  border-radius: 2px;
+  border: 1px solid #5f4210;
+  color: #2a1c04;
+  text-align: center;
+  /* brushed metal: fine horizontal grain over soft vertical bands of light */
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.07) 0 1px, rgba(60, 38, 6, 0.04) 1px 2px),
+    linear-gradient(104deg, #c19232 0%, #ecd488 16%, #cfa43f 34%, #f6e6ae 50%, #d3a947 66%, #ebd185 84%, #c19232 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 246, 208, 0.75),
+    inset 0 -1px 0 1px rgba(90, 60, 12, 0.3),
+    0 0.16em 0.32em rgba(0, 0, 0, 0.65);
+  text-shadow: 0 1px 0 rgba(255, 244, 200, 0.6);
+}
+
+/* A fine second line inside the edge (double frame with a bevel) */
+.pv-cab-plaque::before {
+  content: '';
+  position: absolute;
+  inset: 0.2em;
+  border: 1px solid rgba(94, 64, 14, 0.5);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+/* Four small screws in the corners */
+.pv-cab-plaque::after {
+  content: '';
+  position: absolute;
+  inset: 0.2em;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 0.22em 0.22em, #fff3c4 0, #a67c2c 0.07em, #5f4210 0.14em, transparent 0.17em),
+    radial-gradient(circle at calc(100% - 0.22em) 0.22em, #fff3c4 0, #a67c2c 0.07em, #5f4210 0.14em, transparent 0.17em),
+    radial-gradient(circle at 0.22em calc(100% - 0.22em), #fff3c4 0, #a67c2c 0.07em, #5f4210 0.14em, transparent 0.17em),
+    radial-gradient(circle at calc(100% - 0.22em) calc(100% - 0.22em), #fff3c4 0, #a67c2c 0.07em, #5f4210 0.14em, transparent 0.17em);
+}
+
+/* Smallest step: no ornaments, so the plate stays crisp */
+.pv-cab[data-size='0'] .pv-cab-plaque {
+  padding: 0.22em 0.35em;
+}
+
+.pv-cab[data-size='0'] .pv-cab-plaque::before,
+.pv-cab[data-size='0'] .pv-cab-plaque::after {
+  display: none;
+}
+
+.pv-cab-tip {
+  display: block;
+  min-inline-size: 0;
+}
+
+/* Warm specular band across the plate while the lamp is on (below the text, so the lettering stays dark on gold) */
+.pv-cab-plaque-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(
+      112deg,
+      transparent 16%,
+      rgba(255, 248, 214, calc(0.5 * var(--lit))) 38%,
+      rgba(255, 226, 150, calc(0.18 * var(--lit))) 52%,
+      transparent 70%
+    ),
+    radial-gradient(ellipse at 50% 0%, rgba(255, 226, 150, calc(0.26 * var(--lit))), transparent 70%);
+}
+
+.pv-cab-tip,
+.pv-cab-plaque-date {
+  position: relative;
+}
+
+.pv-cab-plaque-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  /* two lines are always reserved: plaques on one shelf stay the same size */
+  min-block-size: 2.36em;
+  align-content: center;
+  font-size: var(--cab-name);
+  font-weight: 600;
+  line-height: 1.18;
+  /* even lines, hyphenation per page language, a word breaks only when it does not fit at all (no orphaned letters) */
+  text-wrap: balance;
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
+/* Smallest step: ONE line (the script shrinks it a little to fit, then it ends in an ellipsis) */
+.pv-cab[data-size='0'] .pv-cab-plaque-name {
+  display: block;
+  min-block-size: 1.25em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  hyphens: none;
+}
+
+.pv-cab-plaque-date {
+  min-block-size: 1.2em;
+  overflow: hidden;
+  font-size: var(--cab-date);
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Default step: the stamp breaks into date and time (two short lines); the smallest step leaves it to the panel */
+.pv-cab[data-size='0'] .pv-cab-plaque-date {
+  display: none;
+}
+
+.pv-cab[data-size='1'] .pv-cab-plaque-date {
+  min-block-size: 2.4em;
+}
+
+.pv-cab[data-size='1'] .pv-cab-plaque-date span {
+  display: block;
+}
+
+.pv-cab[data-size='1'] .pv-cab-plaque-date .pv-cab-sep {
+  display: none;
+}
+
+/* ---------- Empty / loading / error ---------- */
+.pv-cab-empty {
+  position: absolute;
+  inset: 0;
+  /* above the closed doors: an error (and the retry button) must be reachable while they stay shut */
+  z-index: 7;
+  display: grid;
+  place-items: center;
+  padding: 1.5em;
+  pointer-events: none;
+}
+
+.pv-cab-loader {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 40%;
+  z-index: 7;
+  display: grid;
+  justify-items: center;
+  gap: 0.9em;
+  pointer-events: none;
+}
+
+.pv-cab-loader-line {
+  position: relative;
+  inline-size: min(16em, 50%);
+  block-size: 2px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(201, 160, 74, 0.28);
+}
+
+.pv-cab-loader-line::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: 40%;
+  background: linear-gradient(90deg, transparent, #f4dc92, transparent);
+  animation: pv-loader 1.4s ease-in-out infinite;
+}
+
+@keyframes pv-loader {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+.pv-cab-loader-text {
+  padding: 0.3em 0.9em;
+  border-radius: var(--radius-sm);
+  background: rgba(5, 8, 15, 0.82);
+  font-size: 0.8em;
+  letter-spacing: 0.04em;
+  color: #e8c566;
+}
+
+.pv-cab-empty-card {
+  display: grid;
+  justify-items: center;
+  gap: 0.6em;
+  max-inline-size: 26em;
+  padding: 1.3em 1.5em;
+  text-align: center;
+  pointer-events: auto;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(201, 160, 74, 0.5);
+  background: rgba(8, 13, 23, 0.82);
+  backdrop-filter: blur(6px);
+}
+
+.pv-cab-empty-card h3 {
+  margin: 0;
+  font-size: 0.98em;
+  font-weight: 600;
+  color: #f7e9bd;
+}
+
+.pv-cab-empty-card p {
+  margin: 0;
+  font-size: 0.82em;
+  line-height: 1.55;
+  color: var(--cab-muted);
+}
+
+.pv-cab-empty-trophy {
+  inline-size: 3.6em;
+  block-size: 4.2em;
+  opacity: 0.55;
+  filter: grayscale(0.35);
+}
+
+.pv-cab-retry {
+  margin-block-start: 0.2em;
+  padding: 0.45em 0.95em;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(201, 160, 74, 0.6);
+  background: rgba(246, 227, 164, 0.1);
+  color: #f6e3a4;
+  font-size: 0.82em;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ---------- Information panel ---------- */
+.pv-cab-info {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  inline-size: min(26em, 100%);
+  overflow-y: auto;
+  padding: 1.3em 1.25em 1.25em;
+  border-inline-start: 2px solid #c9a04a;
+  background:
+    radial-gradient(ellipse 90% 40% at 50% 0%, rgba(246, 227, 164, 0.1), transparent 70%),
+    linear-gradient(180deg, #111a2d, #0b121e);
+  box-shadow: -26px 0 54px -12px rgba(0, 0, 0, 0.8);
+  scrollbar-width: thin;
+  scrollbar-color: #b78a38 #0b111d;
+}
+
+/* Portrait / narrow: a sheet from the bottom edge */
+.pv-cab-info--sheet {
+  inset-block: auto 0;
+  inset-inline: 0;
+  inline-size: auto;
+  max-block-size: 66%;
+  border-inline-start: 0;
+  border-block-start: 2px solid #c9a04a;
+  box-shadow: 0 -26px 54px -12px rgba(0, 0, 0, 0.8);
+}
+
+.pv-cab-info-close {
+  position: absolute;
+  inset-block-start: 0.7em;
+  inset-inline-end: 0.7em;
+}
+
+.pv-cab-info-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9em;
+  padding-inline-end: 2.6em;
+}
+
+.pv-cab-info-poster {
+  flex: 0 0 4.6em;
+  inline-size: 4.6em;
+  aspect-ratio: 2 / 3;
+  padding: 2px;
+  border-radius: 2px;
+  background: linear-gradient(145deg, #f8e8b0, #b98d3a 42%, #7c5a1e 60%, #e6c874);
+  box-shadow: 0 8px 16px -6px rgba(0, 0, 0, 0.7);
+}
+
+.pv-cab-info-poster img,
+.pv-cab-info-poster .pv-cab-poster-blank {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  border-radius: 1px;
+}
+
+.pv-cab-info h3 {
+  margin: 0;
+  font-size: 0.98em;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #f7e9bd;
+  overflow-wrap: anywhere;
+}
+
+.pv-cab-info-date {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  margin: 0.35em 0 0;
+  font-size: 0.76em;
+  font-weight: 400;
+  color: var(--cab-muted);
+}
+
+.pv-cab-info-date svg {
+  color: #e8c566;
+  flex-shrink: 0;
+}
+
+.pv-cab-facts {
+  display: grid;
+  gap: 0.1em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pv-cab-fact {
+  display: grid;
+  grid-template-columns: 1.4em minmax(0, 1fr);
+  gap: 0.15em 0.5em;
+  align-items: start;
+  padding: 0.5em 0;
+  border-block-end: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 0.86em;
+}
+
+.pv-cab-fact > svg {
+  margin-block-start: 0.1em;
+  color: #e8c566;
+}
+
+.pv-cab-fact-label {
+  color: var(--cab-muted);
+  font-size: 0.74em;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pv-cab-fact-value {
+  font-weight: 500;
+  color: var(--cab-text);
+  overflow-wrap: anywhere;
+}
+
+.pv-cab-fact-sub {
+  font-size: 0.8em;
+  font-weight: 400;
+  color: var(--cab-muted);
+}
+
+.pv-cab-rarest {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  margin-block-start: 0.2em;
+}
+
+.pv-cab-rarest-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 2.6em;
+  inline-size: 2.6em;
+  block-size: 2.6em;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(201, 160, 74, 0.7);
+  background: linear-gradient(145deg, #1d2a46, #0d1424);
+  color: #e8c566;
+}
+
+.pv-cab-rarest-icon img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.pv-cab-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45em;
+  margin-block-start: auto;
+  padding: 0.55em 1em;
+  border-radius: var(--radius-md);
+  border: 1px solid #c9a04a;
+  background: linear-gradient(180deg, #f1d98f, #c9a04a);
+  color: #2a1c04;
+  font-size: 0.82em;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.pv-cab-link:hover {
+  filter: brightness(1.06);
+}
+
+/* ---------- Placeholders for the empty places (view "Leere Plätze zeigen", default off) ----------
+   A quiet glass card and an empty plaque: no fake game. They are not focusable and get the same light as filled places
+   (cone, pool, glow, shade and the brightening on the card all derive from the same --lit). */
+.pv-cab:not([data-empty='on']) .pv-cab-slot--empty:not(.pv-cab-slot--reserved) .pv-cab-ghost {
+  display: none;
+}
+
+.pv-cab-poster--ghost {
+  padding: 0;
+  background: linear-gradient(150deg, rgba(196, 210, 232, 0.13), rgba(120, 138, 168, 0.06) 55%, rgba(150, 166, 194, 0.09));
+  box-shadow:
+    inset 0 0 0 1px rgba(210, 224, 246, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  filter: drop-shadow(0.4em 0.34em 0.34em rgba(0, 0, 0, 0.45));
+}
+
+.pv-cab-poster--ghost::after {
+  display: none;
+}
+
+/* the lamp lights a placeholder more gently than a real cover */
+.pv-cab-poster--ghost::before {
+  opacity: 0.5;
+}
+
+.pv-cab-plaque--ghost .pv-cab-plaque-sheen {
+  opacity: 0.5;
+}
+
+/* The glass of the card: a soft diagonal reflection and a fine inner frame */
+.pv-cab-ghost-glass {
+  position: absolute;
+  inset: max(3px, 0.16em);
+  border-radius: 1px;
+  background:
+    linear-gradient(152deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 42%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.12), transparent 40%);
+  box-shadow: inset 0 0 0 1px rgba(210, 224, 246, 0.14);
+}
+
+.pv-cab-ghost .pv-cab-stand {
+  background: linear-gradient(180deg, rgba(204, 216, 236, 0.42), rgba(124, 140, 168, 0.3));
+}
+
+/* The empty plaque: the plate of a filled place, in a muted brass, with a faint engraved line instead of the text */
+.pv-cab-plaque--ghost {
+  border-color: #4a360e;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 1px, rgba(60, 38, 6, 0.05) 1px 2px),
+    linear-gradient(104deg, #665528 0%, #7d6a35 34%, #8d7a42 50%, #7a6732 66%, #665528 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 240, 196, 0.38),
+    inset 0 -1px 0 1px rgba(60, 40, 8, 0.32),
+    0 0.16em 0.32em rgba(0, 0, 0, 0.6);
+}
+
+.pv-cab-plaque--ghost .pv-cab-plaque-name {
+  color: transparent;
+  text-shadow: none;
+}
+
+.pv-cab-plaque-line {
+  position: absolute;
+  inset-inline: 24%;
+  inset-block-start: 50%;
+  block-size: 1px;
+  background: rgba(46, 30, 4, 0.55);
+  box-shadow: 0 1px 0 rgba(255, 240, 196, 0.32);
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-cab-poster {
+    transition: none;
+  }
+
+  /* No flicker, no sliding doors: the lights and the glass simply fade */
+  .pv-cab-slot,
+  .pv-cab-led {
+    transition: --lit 0.5s ease;
+  }
+
+  .pv-cab[data-lights='off'] .pv-cab-slot,
+  .pv-cab[data-lights='off'] .pv-cab-led {
+    transition-duration: 0.5s;
+  }
+
+  .pv-cab-loader-line::after {
+    animation: none;
+    inline-size: 100%;
+    opacity: 0.45;
+  }
+
+  .pv-cab-door {
+    visibility: visible;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .pv-cab[data-doors='closed'] .pv-cab-door {
+    opacity: 1;
+  }
+}
+
+/* ---------- A game moves in: its free place, the landing flash and the "New" marker ----------
+   The cell of a game that is about to be presented has two layers in the same grid cell (the glass card of the free place and
+   the game itself), so the place is reserved from the first frame; the grid never changes size. */
+.pv-cab-slot-wrap {
+  position: relative;
+  display: grid;
+  flex: 1 1 0;
+  min-inline-size: 0;
+}
+
+.pv-cab-slot-wrap > * {
+  grid-area: 1 / 1;
+  min-inline-size: 0;
+}
+
+.pv-cab-reserved {
+  display: grid;
+  pointer-events: none;
+}
+
+.pv-cab-reserved > .pv-cab-slot {
+  flex: 1 1 auto;
+}
+
+/* The free place shows its glass card (also without the "show empty places" view) but no second lamp: the lamp of the game lights it */
+.pv-cab-slot--reserved .pv-cab-lamp,
+.pv-cab-slot--reserved .pv-cab-beam {
+  display: none;
+}
+
+/* The warm flash on the glass at the moment the game touches the shelf, and the sparks around it */
+.pv-cab-land {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.pv-cab-land-glow {
+  position: absolute;
+  inset-inline: -34%;
+  inset-block: 4% -10%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 228, 156, 0.9), rgba(255, 214, 120, 0.3) 55%, transparent);
+  mix-blend-mode: screen;
+}
+
+.pv-cab-land-spark {
+  position: absolute;
+  inset-block-start: 45%;
+  inset-inline-start: 50%;
+  margin: -0.3em;
+  filter: drop-shadow(0 0 0.25em rgba(255, 224, 140, 0.9));
+}
+
+/* "New": a small gold tag on the corner of the frame until the cabinet is closed again */
+.pv-cab-new {
+  position: absolute;
+  z-index: 3;
+  inset-block-start: -0.55em;
+  inset-inline-end: -0.6em;
+  padding: 0.14em 0.55em;
+  border-radius: 999px;
+  font-size: max(0.62em, 9px);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: #2b1d03;
+  background: linear-gradient(135deg, #fff1b8, #e8b84a 60%, #c98d1e);
+  box-shadow:
+    0 0 0 1px rgba(60, 38, 4, 0.55),
+    0 0 0.7em rgba(255, 214, 120, 0.55);
+  pointer-events: none;
+}
+
+/* ---------- Sideways scrolling of the wall: edge fades and arrows ----------
+   More games than places: the shelves (one wall) scroll sideways. The fades and arrows are always in the DOM and only change
+   how they look, so nothing jumps; without overflow they are not shown at all. */
+.pv-cab-slot-wrap {
+  scroll-snap-align: start;
+}
+
+.pv-cab-edge {
+  position: absolute;
+  inset-block: 0;
+  z-index: 2;
+  inline-size: 4.2em;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.pv-cab-edge--start {
+  inset-inline-start: 0;
+  background: linear-gradient(90deg, rgba(5, 9, 16, 0.82), rgba(5, 9, 16, 0.4) 45%, transparent);
+}
+
+.pv-cab-edge--end {
+  inset-inline-end: 0;
+  background: linear-gradient(270deg, rgba(5, 9, 16, 0.82), rgba(5, 9, 16, 0.4) 45%, transparent);
+}
+
+.pv-cab-edge[data-on] {
+  opacity: 1;
+}
+
+.pv-cab-arrow-wrap {
+  position: absolute;
+  /* On the covers of the middle shelf (not on a plaque): 0.4 of that shelf's height is about the middle of its poster zone */
+  inset-block-start: calc(100% * (var(--mid-row, 0) + 0.4) / var(--rows, 3));
+  z-index: 4;
+  translate: 0 -50%;
+}
+
+.pv-cab-arrow-wrap--prev {
+  inset-inline-start: 0.55em;
+}
+
+.pv-cab-arrow-wrap--next {
+  inset-inline-end: 0.55em;
+}
+
+.pv-cab-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.8em;
+  block-size: 3.6em;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(201, 160, 74, 0.65);
+  background: linear-gradient(180deg, rgba(30, 44, 74, 0.92), rgba(9, 15, 29, 0.92));
+  color: #f6e3a4;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 196, 0.22),
+    0 0.4em 1em rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  transition:
+    opacity 0.2s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.pv-cab-arrow:not([data-overflow]) {
+  visibility: hidden;
+}
+
+.pv-cab-arrow:hover {
+  background: linear-gradient(180deg, rgba(58, 76, 118, 0.95), rgba(16, 26, 48, 0.95));
+  border-color: #f6e3a4;
+}
+
+.pv-cab-arrow:focus-visible {
+  outline: 2px solid #f6e3a4;
+  outline-offset: 2px;
+}
+
+/* Nothing more in this direction: the arrow stays where it is, dimmed and without effect */
+.pv-cab-arrow[aria-disabled='true'] {
+  opacity: 0.28;
+  cursor: default;
+  background: linear-gradient(180deg, rgba(30, 44, 74, 0.92), rgba(9, 15, 29, 0.92));
+  border-color: rgba(201, 160, 74, 0.4);
+}
+
+@media (max-width: 520px) {
+  .pv-cab-arrow {
+    inline-size: 2.3em;
+    block-size: 3em;
+  }
+
+  .pv-cab-arrow-wrap--prev {
+    inset-inline-start: 0.3em;
+  }
+
+  .pv-cab-arrow-wrap--next {
+    inset-inline-end: 0.3em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-cab-edge,
+  .pv-cab-arrow {
+    transition: none;
+  }
+}

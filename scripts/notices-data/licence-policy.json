@@ -1,0 +1,32 @@
+{
+  "_comment": "Licence policy for everything that ships (project rule 'Dependency licences: free and permissive only'). build-notices.ts fails when a component's licence is not in 'allowed' and the component is not listed in 'approved'. 'askFirst' licences are reported as 'only after asking the user'; everything else (GPL, AGPL, SSPL, RSAL, BUSL, non-commercial, unknown) as 'not allowed'. Add an entry to 'approved' only after the user decided it, with the reason and the date.",
+  "allowed": [
+    "MIT",
+    "MIT-0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "0BSD",
+    "Unlicense",
+    "Apache-2.0",
+    "PostgreSQL",
+    "Zlib",
+    "PSF-2.0",
+    "CC0-1.0",
+    "OFL-1.1",
+    "CC-BY-3.0",
+    "CC-BY-4.0"
+  ],
+  "askFirst": [
+    "LGPL-2.0-only",
+    "LGPL-2.0-or-later",
+    "LGPL-2.1-only",
+    "LGPL-2.1-or-later",
+    "LGPL-3.0-only",
+    "LGPL-3.0-or-later",
+    "MPL-2.0",
+    "EPL-1.0",
+    "EPL-2.0"
+  ],
+  "approved": {}
+}

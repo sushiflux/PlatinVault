@@ -1,0 +1,64 @@
+# Secrets & local environment (never commit)
+.secrets/
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Local, private notes - never part of the public repository: work in progress, private sources and notes
+# (e.g. QUELLEN.local.md, CLAUDE.local.md), local settings of AI assistants and editors.
+# intern/ holds the private development documents (its own private repository); /CLAUDE.md only points there.
+wip/
+intern/
+/CLAUDE.md
+*.local.md
+*.local.json
+.claude/
+.gemini/
+.vscode/
+
+# Runtime data of the app (Data Protection keys) when run outside Docker
+.data/
+
+# Local archive of the former hand-made guides, seeds and covers - kept on disk, never part of the repo
+# (games now come from the Steam library + AI research)
+/guides-archive/
+
+# Database backups (the server writes them to .backups/auto in development)
+.backups/
+
+# Runtime state of the start script and devbuild counter
+.logs/
+.run/
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+*.binlog
+
+# Published build outputs (scripts/build-bridge.ps1)
+artifacts/
+
+# Node / frontend
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+coverage/
+playwright-report/
+test-results/
+
+# Backend serves the built frontend from here in the container image only
+src/Companion.Api/wwwroot/
+
+# OS / editors
+Thumbs.db
+Desktop.ini
+.DS_Store
+.idea/
+*.swp
+

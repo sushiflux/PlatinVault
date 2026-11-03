@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The designed installer PlatinVault-Setup-<version>.exe (WinForms, own look, no grey wizard). Published as a self-contained,
+    compressed single file; scripts/build-windows.ps1 appends the program (ZIP of the published PlatinVault.Desktop folder plus the
+    UI, handbooks and licences) to the end of the exe. Installs per user without administrator rights; the
+    uninstaller is the program itself (PlatinVault.exe uninstall, see PlatinVault.Windows.Common/Install/Uninstaller.cs).
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>PlatinVault-Setup</AssemblyName>
+    <RootNamespace>PlatinVault.Setup</RootNamespace>
+    <Description>PlatinVault Setup</Description>
+    <AssemblyTitle>PlatinVault Setup</AssemblyTitle>
+    <ApplicationIcon>..\..\branding\platinvault.ico</ApplicationIcon>
+    <ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
+    <ApplicationVisualStyles>true</ApplicationVisualStyles>
+    <ApplicationUseCompatibleTextRendering>false</ApplicationUseCompatibleTextRendering>
+    <ApplicationDefaultFont>Segoe UI, 9.5pt</ApplicationDefaultFont>
+
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <!-- The setup runs once: compressing the runtime halves the download, the extra start-up time does not matter here -->
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>embedded</DebugType>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <PublishTrimmed>false</PublishTrimmed>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <NoWarn>$(NoWarn);WFO1000</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PlatinVault.Windows.Common\PlatinVault.Windows.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="PlatinVault.Windows.Tests" />
+  </ItemGroup>
+</Project>

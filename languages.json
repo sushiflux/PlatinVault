@@ -1,0 +1,7 @@
+{
+  "_comment": "The languages of the app - the ONE list. Frontend (language menu, first-run screen, formats, flags) and server (validation of ui.language, Steam achievement language) both read it. Adding a language = one entry here + its text files frontend/src/i18n/<code>/*.ts registered in frontend/src/i18n/resources.ts. code = ISO 639-1 (the i18next language and <html lang>), endonym = the language's name in itself, locale = Intl locale for dates/numbers (English is en-GB: day first, 24 hours), flag = ISO 3166-1 alpha-2 of the flag shown (bundled SVG from country-flag-icons, nothing is fetched at runtime; English uses the UK flag), steamLanguage = Steam Web API language name of the achievement texts.",
+  "languages": [
+    { "code": "de", "endonym": "Deutsch", "locale": "de-DE", "flag": "DE", "steamLanguage": "german" },
+    { "code": "en", "endonym": "English", "locale": "en-GB", "flag": "GB", "steamLanguage": "english" }
+  ]
+}

@@ -1,0 +1,31 @@
+#!/bin/sh
+# After a commit the prompt counter starts again at 0; version.txt and the changelog headings were already written into the commit
+# by the pre-commit hook.
+# When intern/ holds its own git repository (private notes, never part of this one), its changes are committed there with this
+# commit's version as the message and pushed in the background. This part may never fail or block the commit that ran the hook.
+
+repo_root=$(git rev-parse --show-toplevel) || exit 0
+mkdir -p "$repo_root/.run"
+printf '{\n  "prompts": 0\n}\n' > "$repo_root/.run/devbuild.json"
+
+intern="$repo_root/intern"
+if [ -d "$intern/.git" ]; then
+    (
+        # The hook runs with GIT_DIR/GIT_INDEX_FILE of this repository - without unsetting them git would work on this repository
+        unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_PREFIX GIT_OBJECT_DIRECTORY GIT_COMMON_DIR
+        export GIT_TERMINAL_PROMPT=0
+        export GIT_SSH_COMMAND='ssh -o BatchMode=yes -o ConnectTimeout=10'
+        if [ -n "$(git -C "$intern" status --porcelain 2>/dev/null)" ]; then
+            message=$(sed -n '1p' "$repo_root/version.txt" 2>/dev/null | tr -d '\r')
+            [ -n "$message" ] || message="update"
+            if git -C "$intern" add -A >/dev/null 2>&1 && git -C "$intern" commit -q -m "$message" >/dev/null 2>&1; then
+                # Pushing needs the network: in the background, output discarded, so the commit returns at once
+                if [ -z "${PV_HOOK_NO_PUSH:-}" ]; then
+                    (git -C "$intern" push -q >/dev/null 2>&1 &)
+                fi
+            fi
+        fi
+    ) || true
+fi
+
+exit 0

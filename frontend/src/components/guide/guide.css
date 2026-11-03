@@ -1,0 +1,388 @@
+/* Guide blocks beyond the basic ones: the puzzle (hidden hints and solution), the typed hints of the walkthrough, its sub-headings and numbered
+   steps. Colours come from the shared tokens (light and dark), corners from the shared radius scale. */
+
+/* ---------- Numbered steps (walkthrough route, puzzle solution) ---------- */
+.pv-steps {
+  list-style: none;
+  counter-reset: pv-step;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.pv-steps > li {
+  counter-increment: pv-step;
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  gap: 0.7rem;
+  align-items: start;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.pv-steps > li::before {
+  content: counter(pv-step);
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--accent-crystal-bg);
+  border: 1px solid var(--accent-crystal-border);
+  color: var(--accent-crystal);
+  font-size: 0.78rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-steps-card {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.pv-steps-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+/* ---------- Sub-heading of the walkthrough ---------- */
+.pv-wt-heading {
+  margin-block-start: 0.6rem;
+  padding: 0.3rem 0 0.3rem 1rem;
+  border-inline-start: 4px solid var(--accent-crystal);
+}
+
+.pv-wt-heading h3 {
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+.pv-wt-heading p {
+  margin-block-start: 0.2rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* ---------- Typed hint (alert with a kind) ---------- */
+.pv-hint {
+  align-items: flex-start;
+}
+
+.pv-hint-icon {
+  flex: none;
+  margin-block-start: 0.1rem;
+}
+
+.pv-alert-gold .pv-hint-icon {
+  color: var(--accent-gold);
+}
+.pv-alert-danger .pv-hint-icon {
+  color: var(--accent-crimson);
+}
+.pv-alert-emerald .pv-hint-icon {
+  color: var(--accent-emerald);
+}
+.pv-alert-crystal .pv-hint-icon {
+  color: var(--accent-crystal);
+}
+
+.pv-hint-body {
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.pv-hint-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.pv-alert-gold .pv-hint-label {
+  color: var(--accent-gold-text);
+}
+.pv-alert-danger .pv-hint-label {
+  color: var(--accent-crimson);
+}
+.pv-alert-emerald .pv-hint-label {
+  color: var(--accent-emerald);
+}
+.pv-alert-crystal .pv-hint-label {
+  color: var(--accent-crystal);
+}
+
+.pv-hint-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.pv-hint-text {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* ---------- Puzzle ---------- */
+.pv-puzzle {
+  display: grid;
+  gap: 0.9rem;
+  border-inline-start: 4px solid var(--accent-purple);
+}
+
+.pv-puzzle-done {
+  border-inline-start-color: var(--accent-emerald);
+}
+
+.pv-puzzle-head {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.pv-puzzle-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: var(--radius-md);
+  background: var(--accent-purple-bg);
+  border: 1px solid var(--accent-purple-border);
+  color: var(--accent-purple);
+}
+
+.pv-puzzle-titles {
+  flex: 1 1 14rem;
+  min-width: 0;
+  display: grid;
+}
+
+.pv-puzzle-kicker {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-purple);
+}
+
+.pv-puzzle-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.pv-puzzle-head-end {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.pv-puzzle-missable {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: var(--accent-crimson-bg);
+  border: 1px solid var(--accent-crimson-border);
+  color: var(--accent-crimson);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.pv-puzzle-done-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.pv-puzzle-task {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.pv-puzzle-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.7rem;
+  margin: 0;
+}
+
+.pv-puzzle-facts > div {
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+}
+
+.pv-puzzle-facts dt {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pv-puzzle-facts dd {
+  margin: 0.2rem 0 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-primary);
+}
+
+.pv-puzzle-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+/* Both buttons keep their size whatever their label says (the labels are stacked); focus ring like every control of the app */
+.pv-puzzle-btn:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+}
+
+.pv-puzzle-self {
+  flex: 1 1 14rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* The revealed areas: only these grow, the buttons above them stay where they are */
+.pv-puzzle-reveal {
+  overflow: hidden;
+}
+
+.pv-puzzle-panel {
+  display: grid;
+  gap: 0.6rem;
+  margin-block-start: 0.1rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.pv-puzzle-panel-hints {
+  background: var(--accent-gold-bg);
+  border-color: var(--accent-gold-border);
+}
+
+.pv-puzzle-panel-solution {
+  background: var(--accent-crystal-bg);
+  border-color: var(--accent-crystal-border);
+}
+
+.pv-puzzle-panel-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent-crystal);
+}
+
+.pv-puzzle-hint {
+  display: grid;
+  gap: 0.15rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.pv-puzzle-hint-no {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent-gold-text);
+}
+
+.pv-puzzle-panel-solution .pv-steps > li {
+  color: var(--text-primary);
+}
+
+.pv-puzzle-source {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.pv-puzzle-undocumented {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  border: 1px dashed var(--border-strong);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.pv-puzzle-undocumented > svg {
+  flex: none;
+  margin-block-start: 0.15rem;
+  color: var(--text-muted);
+}
+
+.pv-puzzle-undocumented > div {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.pv-puzzle-undocumented strong {
+  color: var(--text-primary);
+}
+
+/* ---------- Action row of a chapter ("Kapitel entfernen") ---------- */
+.pv-chapter-actions {
+  display: flex;
+  justify-content: flex-end;
+  /* A fixed height: the row exists for every chapter, nothing below it moves */
+  min-block-size: 2rem;
+}
+
+.pv-chapter-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.pv-chapter-remove:hover:not(:disabled),
+.pv-chapter-remove:focus-visible {
+  color: var(--accent-crimson);
+  background: var(--accent-crimson-bg);
+  border-color: var(--accent-crimson-border);
+}
+
+.pv-chapter-remove:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

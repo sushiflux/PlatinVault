@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>PlatinVault</Name>
+  <Repository>ghcr.io/sushiflux/platinvault:latest</Repository>
+  <Registry>https://ghcr.io/sushiflux/platinvault</Registry>
+  <DefaultTagDescription>Releases only (recommended) / Nur Releases (empfohlen)</DefaultTagDescription>
+  <Branch>
+    <Tag>beta</Tag>
+    <TagDescription>Betas and releases, always the newest of both. Also switch on "Receive beta versions" in PlatinVault (Settings - System - Updates). / Betas und Releases, immer die neueste von beiden. Schalte in PlatinVault auch "Beta-Versionen erhalten" ein (Einstellungen - System - Updates).</TagDescription>
+  </Branch>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/sushiflux/PlatinVault</Support>
+  <Project>https://github.com/sushiflux/PlatinVault</Project>
+  <ReadMe>https://github.com/sushiflux/PlatinVault#readme</ReadMe>
+  <Overview>PlatinVault brings your Steam achievements and AI-researched 100% guides together in one app.
+- Live trophies: every Steam achievement pops up the moment you unlock it, as a trophy with sound.
+- AI guide for every game: walkthrough in game order, missables, roadmap, collectibles, checklists that tick themselves off, puzzles with hidden solutions, story &amp; lore behind a spoiler lock.
+- Library: your whole Steam library with favourites, sorting and one-click game start.
+- Statistics for every game and a trophy cabinet for every game at 100%.
+- German and English, light and dark. One user, no sign-in - for your home network.
+What you need:
+- Achievements: your Steam account and a free Steam Web API key.
+- Live pop-ups: the PlatinVault Bridge on your gaming PC (ready-to-run download in the app). Without it you see your progress, just not live.
+- Guides: your own AI access - an API key from Google Gemini, Anthropic Claude or OpenAI, or your AI subscription via copy and paste. No AI access, no guides.
+- No database to set up - it is built in.
+
+PlatinVault bringt deine Steam-Erfolge und KI-recherchierte 100%-Guides in eine App.
+- Live-Trophäen: Jeder Steam-Erfolg erscheint beim Freischalten sofort als Trophäen-Popup mit Klang.
+- KI-Guide für jedes Spiel: Komplettlösung in Spielreihenfolge, Verpassbares, Roadmap, Sammelobjekte, Checklisten, die sich selbst abhaken, Rätsel mit verdeckter Lösung, Story &amp; Lore hinter einer Spoiler-Sperre.
+- Bibliothek: deine ganze Steam-Bibliothek mit Favoriten, Sortierung und Spielstart per Klick.
+- Statistiken zu jedem Spiel und ein Trophäenschrank für alle Spiele mit 100 %.
+- Deutsch und Englisch, hell und dunkel. Ein Benutzer, ohne Anmeldung - fürs Heimnetz.
+Was du brauchst:
+- Erfolge: dein Steam-Konto und einen kostenlosen Steam-Web-API-Key.
+- Live-Popups: die PlatinVault Bridge auf deinem Gaming-PC (fertig eingerichtet als Download in der App). Ohne sie siehst du deinen Fortschritt, aber nicht live.
+- Guides: ein eigener KI-Zugang - ein API-Key von Google Gemini, Anthropic Claude oder OpenAI, oder dein KI-Abo per Kopieren und Einfügen. Ohne KI-Zugang keine Guides.
+- Keine Datenbank einzurichten - sie ist eingebaut.</Overview>
+  <Requires>Steam account + Steam Web API key (achievements). PlatinVault Bridge on the gaming PC for live trophy pop-ups (download in the app). Your own AI access for guides: an API key from Google Gemini, Anthropic Claude or OpenAI, or your own AI subscription via copy and paste - without it there are no guides. No separate database needed (built in). Keep the appdata folder on the cache pool (default /mnt/cache/appdata/platinvault), not on /mnt/user.
+Steam-Konto + Steam-Web-API-Key (Erfolge). PlatinVault Bridge auf dem Gaming-PC für Live-Trophäen-Popups (Download in der App). Eigener KI-Zugang für die Guides: ein API-Key von Google Gemini, Anthropic Claude oder OpenAI, oder dein eigenes KI-Abo per Kopieren und Einfügen - ohne ihn gibt es keine Guides. Keine eigene Datenbank nötig (eingebaut). Den Appdata-Ordner auf dem Cache-Pool lassen (Standard /mnt/cache/appdata/platinvault), nicht unter /mnt/user.</Requires>
+  <Category>Tools:Utilities</Category>
+  <WebUI>http://[IP]:[PORT:8080]/</WebUI>
+  <Icon>https://raw.githubusercontent.com/sushiflux/PlatinVault/master/branding/icon.png</Icon>
+  <Screenshot>https://raw.githubusercontent.com/sushiflux/PlatinVault/master/docs/screenshots/en/01-dashboard.png</Screenshot>
+  <Screenshot>https://raw.githubusercontent.com/sushiflux/PlatinVault/master/docs/screenshots/en/02-walkthrough.png</Screenshot>
+  <Screenshot>https://raw.githubusercontent.com/sushiflux/PlatinVault/master/docs/screenshots/en/03-puzzle.png</Screenshot>
+  <Screenshot>https://raw.githubusercontent.com/sushiflux/PlatinVault/master/docs/screenshots/en/04-live-trophies.png</Screenshot>
+  <Screenshot>https://raw.githubusercontent.com/sushiflux/PlatinVault/master/docs/screenshots/en/05-trophy-popup.png</Screenshot>
+  <Screenshot>https://raw.githubusercontent.com/sushiflux/PlatinVault/master/docs/screenshots/en/06-fullscreen-popup.png</Screenshot>
+  <Screenshot>https://raw.githubusercontent.com/sushiflux/PlatinVault/master/docs/screenshots/en/07-statistics.png</Screenshot>
+  <Screenshot>https://raw.githubusercontent.com/sushiflux/PlatinVault/master/docs/screenshots/en/08-trophy-cabinet.png</Screenshot>
+  <Screenshot>https://raw.githubusercontent.com/sushiflux/PlatinVault/master/docs/screenshots/en/09-dashboard-light.png</Screenshot>
+  <Config Name="WebUI Port" Target="8080" Default="5233" Mode="tcp" Description="HTTP-Port der Web-Oberflaeche" Type="Port" Display="always" Required="true" Mask="false">5233</Config>
+  <Config Name="Appdata (Datenbank, Sicherungen, Schluessel)" Target="/data" Default="/mnt/cache/appdata/platinvault" Mode="rw" Description="Everything of PlatinVault: database (platinvault.db), backups, encrypted API keys. Keep it on the cache pool (/mnt/cache or /mnt/POOLNAME), not on /mnt/user: users report corrupted SQLite databases on the /mnt/user share layer. / Alles von PlatinVault: Datenbank (platinvault.db), Sicherungen, verschluesselte API-Keys. Auf dem Cache-Pool lassen (/mnt/cache bzw. /mnt/POOLNAME), nicht unter /mnt/user: Nutzer berichten von beschaedigten SQLite-Datenbanken ueber die /mnt/user-Freigabeschicht." Type="Path" Display="always" Required="true" Mask="false">/mnt/cache/appdata/platinvault</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="Benutzer-ID, der der Appdata-Ordner gehoert und unter der PlatinVault laeuft (Unraid: 99 = nobody)" Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Gruppen-ID dazu (Unraid: 100 = users)" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+</Container>
+

@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The Windows program "PlatinVault.exe": runs the PlatinVault server (Companion.Api, in this process, only on 127.0.0.1) with its own
+    SQLite database file (data in %LOCALAPPDATA%\PlatinVault) and shows the same React UI in its own window (WebView2).
+    Extras of the Windows program: trophy overlay over the game, Windows notifications, tray icon, autostart, hotkey, game start without
+    the browser's question. Published as a self-contained folder by scripts/build-windows.ps1 and installed by PlatinVault.Setup.
+    Packaging (installer, later maybe MSIX) is kept out of this project on purpose.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>PlatinVault</AssemblyName>
+    <RootNamespace>PlatinVault.Desktop</RootNamespace>
+    <Description>PlatinVault - live Steam trophies and 100% guides</Description>
+    <AssemblyTitle>PlatinVault</AssemblyTitle>
+    <ApplicationIcon>..\..\branding\platinvault.ico</ApplicationIcon>
+    <!-- Per monitor: crisp on every monitor of a mixed setup (e.g. 4K at 250 % next to a 100 % screen). The window, its title bar,
+         the overlay, the dialogs and the tray menu take the scale of the monitor they are on; WebView2 follows the monitor itself. -->
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationVisualStyles>true</ApplicationVisualStyles>
+    <ApplicationUseCompatibleTextRendering>false</ApplicationUseCompatibleTextRendering>
+    <ApplicationDefaultFont>Segoe UI, 9.5pt</ApplicationDefaultFont>
+
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <!-- The server (Companion.Api, an executable of its own for Docker) runs as a library inside this self-contained exe -->
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <!-- The version shown by the program comes from version.txt (written by the pre-commit hook), nothing is maintained here -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <!-- No forms designer is used: positions and values are set in code -->
+    <NoWarn>$(NoWarn);WFO1000</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.Web.WebView2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Companion.Api\Companion.Api.csproj" />
+    <ProjectReference Include="..\PlatinVault.Windows.Common\PlatinVault.Windows.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The server parts this exe hosts (the Web SDK imports these implicitly, a WinForms exe does not) -->
+    <Using Include="Microsoft.AspNetCore.Builder" />
+    <Using Include="Microsoft.AspNetCore.Hosting" />
+    <Using Include="Microsoft.Extensions.Configuration" />
+    <Using Include="Microsoft.Extensions.DependencyInjection" />
+    <Using Include="Microsoft.Extensions.Logging" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="PlatinVault.Windows.Tests" />
+  </ItemGroup>
+</Project>

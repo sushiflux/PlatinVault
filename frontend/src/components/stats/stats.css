@@ -1,0 +1,511 @@
+/* ==================== STATISTICS TAB (components/stats/*) ====================
+   Chart palette, validated with the data-viz skill's scripts/validate_palette.js against the real card surfaces
+   (light #ffffff, dark #1f293d = --bg-surface):
+   - categorical slots 1+2 (blue, orange): lightness band, chroma, CVD (all pairs, worst delta E 24.7 light / 26.8 dark),
+     normal-vision floor (33.6 / 31.8) and contrast >= 3:1 on both surfaces - PASS in both modes
+   - ordinal 5-step green -> orange -> red ramp (minutes per day in the playtime calendar, user decision 2026-11-02: little =
+     green, a lot = red): monotone lightness, step gaps >= 0.06, near-surface end >= 2:1 (light 2.09:1, dark 2.16:1) - PASS in
+     both modes. Its "single hue" check FAILs on purpose (hue spread ~120 deg, a multi-hue heat scale the user asked for);
+     because lightness still rises/falls with every step, the order stays readable without colour vision, and the scale
+     legend ("weniger" -> "mehr") plus the tooltip carry the values.
+   - ordinal 5-step green -> gold ramp (unlocks per weekday/hour): monotone lightness, step gaps >= 0.06, near-surface
+     end >= 2:1 (light 2.03:1, dark 2.75:1), contrast grows step by step up to the gold end (light 5.5:1, dark 9.4:1).
+     Its "single hue" check FAILs on purpose: green -> gold is an analogous two-hue ramp (hue spread 58 deg light, 55 deg dark),
+     the documented exception for sequential ramps, always shown with a scale legend ("weniger" -> "mehr Trophäen").
+   Text is never set in a series colour: axis labels, values and legends use the text tokens of the app. */
+
+/* The tooltip lives in <body>, outside .pv-stats, so it needs the series colours as well */
+.pv-stats,
+.pv-viz-tip {
+  --viz-1: light-dark(#2a78d6, #3987e5);
+  --viz-2: light-dark(#eb6834, #d95926);
+  /* Playtime heat cells, little -> a lot: green -> orange -> red (generated in OKLCH, sRGB-clipped). Light mode gets darker
+     with more, dark mode brighter with more (the anchor flips), so the red end is always the most salient one. */
+  --viz-seq-1: light-dark(#78c57b, #2a682f);
+  --viz-seq-2: light-dark(#a39f1d, #5f7412);
+  --viz-seq-3: light-dark(#c16f03, #ab6c03);
+  --viz-seq-4: light-dark(#c53e04, #e95b10);
+  --viz-seq-5: light-dark(#ac191f, #ff6a68);
+  /* Trophy heat, few -> many: muted green -> gold. Lightness and contrast rise with every step in both themes, the gold
+     end is the most salient one (dark gold on the light card, bright gold on the dark card). */
+  --viz-heat-1: light-dark(#97c192, #4e7549);
+  --viz-heat-2: light-dark(#91ac66, #738c4b);
+  --viz-heat-3: light-dark(#939431, #a0a240);
+  --viz-heat-4: light-dark(#937a00, #d2b532);
+  --viz-heat-5: light-dark(#876300, #fdc839);
+  /* Marker of a day with an unlocked trophy (gold end of the ramp, laid on the cell with a surface ring) */
+  --viz-gold: var(--viz-heat-5);
+  /* Meter track: a quiet step of the same hue towards the surface; nothing is hand-picked outside the ramp */
+  --viz-track: color-mix(in srgb, var(--viz-1) 30%, var(--bg-surface));
+  --viz-empty: var(--bg-elevated);
+  --viz-wash: color-mix(in srgb, var(--viz-1) 11%, transparent);
+  --viz-band: color-mix(in srgb, var(--viz-1) 20%, transparent);
+  --viz-grid: color-mix(in srgb, var(--border-subtle) 58%, var(--bg-surface));
+  --viz-axis: var(--border-subtle);
+  --viz-ink: var(--text-primary);
+  --viz-ink-2: var(--text-secondary);
+  --viz-ink-3: var(--text-muted);
+}
+
+.pv-stats {
+  container-type: inline-size;
+  container-name: pv-stats;
+  /* Bars and heat cells carry the data: they must also appear when the page is printed to PDF */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ---- cards ---- */
+.pv-viz-card {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  padding: 1.15rem 1.3rem 1.2rem;
+}
+
+.pv-viz-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-block-end: 0.85rem;
+}
+
+.pv-viz-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--viz-ink);
+}
+
+.pv-viz-title svg {
+  flex-shrink: 0;
+  color: var(--accent-crystal);
+}
+
+.pv-viz-sub {
+  margin-block-start: 0.2rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--viz-ink-2);
+}
+
+.pv-viz-sub strong {
+  color: var(--viz-ink);
+  font-weight: 800;
+}
+
+.pv-viz-note {
+  margin-block-start: 0.85rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--viz-ink-3);
+}
+
+/* Every card is a container of its own: label-and-bar rows stack (label above bar) once the card gets narrow */
+.pv-viz-card {
+  container-type: inline-size;
+}
+
+.pv-viz-rows {
+  display: grid;
+  align-items: center;
+  column-gap: 0.75rem;
+  grid-template-columns: var(--rows-cols, minmax(0, 1fr));
+}
+
+@container (max-width: 27rem) {
+  .pv-viz-rows {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pv-viz-rows > [data-ghost] {
+    display: none;
+  }
+}
+
+/* ---- section heading ---- */
+.pv-viz-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--viz-ink-3);
+}
+
+.pv-viz-section::after {
+  content: '';
+  flex: 1;
+  block-size: 1px;
+  background: var(--border-subtle);
+}
+
+/* ---- chart text ---- */
+.pv-viz-axis-text {
+  font-size: 12px;
+  fill: var(--viz-ink-3);
+  font-family: inherit;
+}
+
+.pv-viz-value-text {
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--viz-ink);
+  font-family: inherit;
+}
+
+/* ---- legend ---- */
+.pv-viz-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 1rem;
+  font-size: 0.78rem;
+  color: var(--viz-ink-2);
+}
+
+.pv-viz-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pv-viz-key {
+  display: inline-block;
+  flex-shrink: 0;
+  inline-size: 0.8rem;
+  block-size: 0.55rem;
+  border-radius: 2px;
+}
+
+.pv-viz-key--line {
+  inline-size: 1rem;
+  block-size: 2px;
+  border-radius: 1px;
+}
+
+.pv-viz-key--dot {
+  inline-size: 0.6rem;
+  block-size: 0.6rem;
+  border-radius: 50%;
+}
+
+/* ---- marks ---- */
+.pv-viz-mark {
+  transition: filter 0.12s ease, opacity 0.12s ease;
+}
+
+.pv-viz-mark:hover,
+.pv-viz-mark[data-active='true'] {
+  filter: brightness(1.14);
+}
+
+.pv-viz-focusable:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Heat cell: rounded like the rest of the UI's small elements, 2px surface gap comes from the grid gap */
+.pv-viz-cell {
+  position: relative;
+  border-radius: 3px;
+  transition: filter 0.12s ease, outline-color 0.12s ease;
+}
+
+/* A day on which a trophy was unlocked: a gold dot with a surface ring, readable on every fill */
+.pv-viz-cell[data-trophy='true']::after {
+  content: '';
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  inline-size: max(6px, 38%);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--viz-gold);
+  box-shadow: 0 0 0 1.5px var(--bg-surface);
+  pointer-events: none;
+}
+
+.pv-viz-cell[data-active='true'] {
+  outline: 2px solid var(--viz-ink);
+  outline-offset: 1px;
+}
+
+/* Cells come in as a quiet diagonal sweep (opacity only, no layout) */
+.pv-viz-cell-in {
+  animation: pv-viz-cell-in 0.45s ease-out both;
+  animation-delay: calc(var(--i, 0) * 9ms);
+}
+
+@keyframes pv-viz-cell-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-viz-cell-in {
+    animation: none;
+  }
+}
+
+/* Vertical bars (trophies per day) grow from their baseline: scaleY on the bar's own box, opacity-free, staggered a little */
+.pv-viz-vbar {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: pv-viz-grow-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 12ms);
+}
+
+@keyframes pv-viz-grow-up {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-viz-vbar {
+    animation: none;
+  }
+}
+
+/* Paging arrows of a chart: at the first or last page the arrow stays in place, only dimmed (never hidden, nothing moves) */
+.pv-viz-pager .pv-icon-btn:disabled {
+  cursor: default;
+  opacity: 0.38;
+}
+
+/* ---- bar rows (HTML bars, grow from one baseline, thin) ---- */
+.pv-viz-bar {
+  block-size: 14px;
+  border-radius: 0 4px 4px 0;
+  background: var(--viz-1);
+}
+
+.pv-viz-bar--track {
+  background: var(--viz-track);
+}
+
+/* ---- tooltip (same inverted look as the app's icon tooltips, but it follows the pointer over a mark) ---- */
+.pv-viz-tip {
+  --tt-bg: light-dark(#1e293b, #f1f5f9);
+  --tt-fg: light-dark(#f8fafc, #1e293b);
+  --tt-muted: light-dark(#cbd5e1, #475569);
+  position: fixed;
+  z-index: 90;
+  inline-size: max-content;
+  max-inline-size: min(19rem, calc(100vw - 16px));
+  padding: 0.5rem 0.7rem 0.55rem;
+  background: var(--tt-bg);
+  color: var(--tt-fg);
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.12), rgba(15, 23, 42, 0.14));
+  border-radius: var(--radius-sm);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.3);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.pv-viz-tip-title {
+  font-weight: 800;
+}
+
+.pv-viz-tip-sub {
+  font-size: 0.72rem;
+  color: var(--tt-muted);
+}
+
+.pv-viz-tip-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pv-viz-tip-row b {
+  margin-inline-start: auto;
+  padding-inline-start: 0.75rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-viz-tip-key {
+  flex-shrink: 0;
+  inline-size: 0.75rem;
+  block-size: 3px;
+  border-radius: 2px;
+}
+
+/* ---- data table twin ---- */
+.pv-viz-table-wrap {
+  overflow-x: auto;
+  max-inline-size: 100%;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.pv-viz-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  color: var(--viz-ink-2);
+}
+
+.pv-viz-table caption {
+  padding: 0.5rem 0.75rem;
+  text-align: start;
+  font-size: 0.75rem;
+  color: var(--viz-ink-3);
+}
+
+.pv-viz-table th,
+.pv-viz-table td {
+  padding: 0.42rem 0.75rem;
+  text-align: start;
+  border-block-start: 1px solid var(--viz-grid);
+}
+
+.pv-viz-table thead th {
+  border-block-start: none;
+  background: var(--bg-elevated);
+  color: var(--viz-ink);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.pv-viz-table tbody th {
+  color: var(--viz-ink);
+  font-weight: 700;
+}
+
+.pv-viz-table td.is-num,
+.pv-viz-table th.is-num {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- hero tiles ---- */
+.pv-viz-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  min-block-size: 9.5rem;
+  padding: 1.1rem 1.25rem 1.15rem;
+}
+
+.pv-viz-tile-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--viz-ink-3);
+}
+
+.pv-viz-tile-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.7rem;
+  block-size: 1.7rem;
+  border-radius: var(--radius-sm);
+  background: var(--accent-crystal-bg);
+  color: var(--accent-crystal);
+}
+
+.pv-viz-tile-value {
+  margin-block-start: 0.55rem;
+  font-size: 1.85rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--viz-ink);
+}
+
+/* The single hero figure of the page */
+.pv-viz-hero-figure {
+  margin-block-start: 0.35rem;
+  font-size: clamp(3rem, 2.4rem + 1.6vw, 3.75rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--viz-ink);
+}
+
+.pv-viz-hero-figure small {
+  margin-inline-start: 0.15em;
+  font-size: 0.5em;
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--viz-ink-2);
+}
+
+.pv-viz-tile-hint {
+  margin-block-start: auto;
+  padding-block-start: 0.6rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--viz-ink-2);
+}
+
+.pv-viz-tile--hero {
+  background:
+    radial-gradient(circle at top right, var(--accent-crystal-bg), transparent 58%),
+    radial-gradient(circle at bottom left, var(--accent-gold-bg), transparent 62%),
+    var(--bg-surface);
+}
+
+/* ---- skeleton ---- */
+.pv-viz-skel {
+  border-radius: var(--radius-sm);
+  background: var(--viz-empty);
+}
+
+.pv-viz-skel-body {
+  block-size: var(--h);
+}
+
+@container (max-width: 27rem) {
+  .pv-viz-skel-body {
+    block-size: var(--h-narrow);
+  }
+}
+
+/* ---- series row (B4) ---- */
+.pv-viz-series {
+  display: flex;
+  gap: 0.85rem;
+  padding-block: 0.25rem 0.5rem;
+  padding-inline: 0.15rem;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+}
+
+.pv-viz-series > * {
+  scroll-snap-align: start;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-viz-mark,
+  .pv-viz-cell {
+    transition: none;
+  }
+}

@@ -1,0 +1,102 @@
+#!/bin/sh
+# Writes version.txt into the commit being made, so the version only ever changes with a commit:
+#   line 1: vYear.Month.Commit  (this year's commits including this one - the first commit is .1)
+#   line 2: vYear.Month.Commit.Prompts.ChangedLines  (prompts since the last commit from .run/devbuild.json, kept by
+#           scripts/devbuild.mjs; changed lines = staged insertions + deletions of this commit, binaries not counted)
+# Then it stamps the changelogs with this commit's version:
+#   - CHANGELOG.md (customer changelog, staged): the placeholder headings "## vNEXT" (release) and "## vNEXT β" (beta) become the
+#     readable version of this commit ("## v2026.11.12 (13.557)" / "## v2026.11.12 (13.557 β)"); a suffix such as " · Unraid, Windows"
+#     is kept. A running beta is ONE block at the top of each language section; the release turns the same block into its entry.
+#   - intern/CHANGELOG.dev.md (private developer changelog in its own git repository, optional): the newest "## v..." heading of each
+#     language section gets the version and the commit time. Missing file = nothing happens.
+
+set -e
+
+repo_root=$(git rev-parse --show-toplevel)
+year=$(date +%Y)
+date_part=$(date +%Y.%-m)
+if git rev-parse --verify HEAD >/dev/null 2>&1; then
+    commits_this_year=$(git rev-list --count HEAD --since="${year}-01-01T00:00:00")
+else
+    commits_this_year=0
+fi
+# Commits of this year made before this repository's history began (the history was restarted when the project went
+# open source). Format of the file: "<year> <count>"; it only counts for that year, so the numbering stays continuous.
+offset_file="$repo_root/scripts/git-hooks/commit-offset"
+if [ -f "$offset_file" ]; then
+    offset=$(awk -v y="$year" '{ sub(/\r$/, "") } $1 == y { print $2 }' "$offset_file" | head -n 1)
+    [ -n "$offset" ] && commits_this_year=$((commits_this_year + offset))
+fi
+version="v${date_part}.$((commits_this_year + 1))"
+
+# Counted before the hook stamps or adds anything: a stamped heading replaces one line by one line, so the count stays right
+changes=$(git diff --cached --numstat -- . ':(exclude)version.txt' | awk '$1 != "-" { sum += $1 + $2 } END { print sum + 0 }')
+
+prompts=0
+state="$repo_root/.run/devbuild.json"
+if [ -f "$state" ]; then
+    prompts=$(sed -n 's/.*"prompts"[^0-9]*\([0-9][0-9]*\).*/\1/p' "$state" | head -n 1)
+    [ -n "$prompts" ] || prompts=0
+fi
+build_id="${version}.${prompts}.${changes}"
+
+printf '%s\n%s\n' "$version" "$build_id" > "$repo_root/version.txt"
+git add -- "$repo_root/version.txt"
+
+# ---- customer changelog: "## vNEXT" / "## vNEXT β" -> the readable version of this commit ------------------------------------------
+changelog="$repo_root/CHANGELOG.md"
+if [ -f "$changelog" ] && git diff --cached --name-only | grep -qx 'CHANGELOG.md'; then
+    release_display=$(sh "$repo_root/scripts/version-display.sh" display "$version" "$build_id" release)
+    beta_display=$(sh "$repo_root/scripts/version-display.sh" display "$version" "$build_id" beta)
+    # " β" and " · " (U+03B2, U+00B7) as bytes, so awk and this file do not depend on the locale
+    beta_mark=$(printf ' \316\262')
+    platform_sep=$(printf ' \302\267 ')
+    tmp=$(mktemp)
+    awk -v release="$release_display" -v beta="$beta_display" -v mark="$beta_mark" -v sep="$platform_sep" '
+        # A CRLF line (Windows checkout) keeps its CR
+        function stamp(placeholder, display,    rest, cr) {
+            if (index($0, placeholder) != 1) return 0
+            rest = substr($0, length(placeholder) + 1)
+            cr = sub(/\r$/, "", rest) ? "\r" : ""
+            if (rest != "" && index(rest, sep) != 1) return 0
+            print "## " display rest cr
+            return 1
+        }
+        stamp("## vNEXT" mark, beta) { next }
+        stamp("## vNEXT", release) { next }
+        { print }
+    ' "$changelog" > "$tmp"
+    cat "$tmp" > "$changelog"
+    rm -f "$tmp"
+    git add -- "$changelog"
+fi
+
+# ---- private developer changelog (intern/, its own git repository, never part of this one) ----------------------------------------
+dev_changelog="$repo_root/intern/CHANGELOG.dev.md"
+if [ -f "$dev_changelog" ]; then
+    # Only a changed file gets the stamp (otherwise the previous entry would be renamed to this commit). Without a git repository in
+    # intern/ there is nothing to compare with, so the newest heading is stamped every time.
+    changed=1
+    if [ -d "$repo_root/intern/.git" ]; then
+        # The hook runs with GIT_DIR/GIT_INDEX_FILE of this repository - unset them, or git would look at this repository instead
+        if [ -z "$(unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_PREFIX GIT_OBJECT_DIRECTORY GIT_COMMON_DIR; \
+                   git -C "$repo_root/intern" status --porcelain -- CHANGELOG.dev.md 2>/dev/null)" ]; then
+            changed=0
+        fi
+    fi
+    if [ "$changed" = 1 ]; then
+        stamp=$(date "+%Y-%m-%d %H:%M")
+        tmp=$(mktemp)
+        awk -v ver="$version" -v stamp="$stamp" '
+            /^<a (id|name)="(english|deutsch)"/ { stamped = 0 }
+            !stamped && /^## v/ {
+                print "## " ver " - " stamp (/\r$/ ? "\r" : "")
+                stamped = 1
+                next
+            }
+            { print }
+        ' "$dev_changelog" > "$tmp"
+        cat "$tmp" > "$dev_changelog"
+        rm -f "$tmp"
+    fi
+fi

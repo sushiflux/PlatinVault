@@ -1,0 +1,137 @@
+// Namespace "shell": the frame around every page - header icons and tooltips, footer, back-to-top, handbook and licence
+// viewers, Steam account chip. German source of truth - en/shell.ts is typed against it.
+const shell = {
+  header: {
+    utilsToolbar: 'Sprache, Farbschema, Einstellungen und Hilfe',
+    theme: {
+      label: 'Farbschema: {{current}}',
+      description: 'Klicken wechselt zu „{{next}}“',
+      light: 'Hell',
+      dark: 'Dunkel',
+    },
+    settings: {
+      label: 'Einstellungen',
+      description: 'Popups, Steam, KI-Keys, Bridge und Funktionen',
+    },
+    help: {
+      label: 'Hilfe & Hinweise',
+      description: 'Die Hinweise zu dieser Seite noch einmal zeigen',
+    },
+    // The "update available" icon and its popover (components/updates/UpdateButton.tsx)
+    update: {
+      label: 'Update verfügbar',
+      labelVersion: 'Update verfügbar: {{version}}',
+      description: '{{version}} – Klick zeigt Einzelheiten',
+      panel: 'Update verfügbar',
+      titleRelease: 'Neues Release verfügbar',
+      titleBeta: 'Neue Beta verfügbar',
+      youHave: 'installiert: {{current}}',
+      noInstaller: 'Für diese Version gibt es noch keinen Installer. Mehr dazu unter Einstellungen → System → Updates.',
+      allSettings: 'Alle Update-Einstellungen',
+      container: {
+        intro: 'Dein Server aktualisiert den Container, nicht PlatinVault selbst. Deine Daten bleiben erhalten.',
+        unraid: 'Docker-Reiter → „Check for Updates“ → „Update“.',
+        otherTitle: 'Andere NAS',
+        other: 'Container in der Container-Verwaltung mit dem neuen Image neu erstellen.',
+      },
+    },
+    handbook: {
+      label: 'Handbuch',
+      description: 'Das Handbuch als PDF hier in der App öffnen',
+    },
+    // The language menu of the top bar (components/LanguageMenu.tsx): the languages themselves come from languages.json
+    language: {
+      label: 'Sprache',
+      labelCurrent: 'Sprache: {{current}}',
+      description: 'Gilt für die ganze App und wird gespeichert.',
+      menu: 'Sprache wählen',
+      saveFailed: 'Die Sprache konnte nicht gespeichert werden',
+    },
+    scale: {
+      label: 'Darstellungsgröße',
+      labelCurrent: 'Darstellungsgröße, aktuell {{percent}} Prozent',
+      descriptionDefault: 'Schrift, Abstände und Bedienelemente größer oder kleiner – die Seitenbreite bleibt',
+      descriptionCurrent: 'Aktuell {{percent}} – Klick zum Ändern',
+      announce: 'Darstellungsgröße {{percent}} Prozent',
+      smaller: 'Kleiner',
+      larger: 'Größer',
+      pickStep: 'Stufe wählen',
+      hint: 'Schrift, Abstände und Bedienelemente – die Seitenbreite bleibt gleich.',
+      isDefault: 'Standardgröße ({{percent}}) ist eingestellt',
+      resetTo: 'Auf {{percent}} zurücksetzen',
+    },
+  },
+  footer: {
+    copyright: '© {{year}} {{company}}',
+    licenses: 'Lizenzen',
+    licensesHint: 'Lizenz (GNU AGPL v3), Quellcode und Hinweise zu den enthaltenen Open-Source-Komponenten',
+    // The info symbol at the foot of the game page's side navigation and the card it opens (gamenav/NavInfo.tsx)
+    infoLabel: 'Info zu Version und Lizenzen',
+    about: 'Über {{name}}',
+    // The version as a button with its popover (components/updates/VersionCheck.tsx)
+    version: {
+      title: 'Version & Updates',
+      hint: 'Nach Updates suchen und den letzten Stand sehen',
+      check: 'Nach Updates suchen',
+      auto: 'Automatische Suche: {{interval}}',
+      seeIcon: 'Das Update-Symbol oben rechts zeigt Einzelheiten.',
+      settingsHint: 'Wie oft PlatinVault von selbst sucht, stellst du unter Einstellungen → System → Updates ein.',
+    },
+  },
+  // The heart is a component: <heart/> marks its place
+  madeWith: {
+    text: 'Mit <heart/> gemacht',
+    heart: 'Herz',
+  },
+  scrollTop: 'Nach oben',
+  handbook: {
+    title: 'Handbuch',
+    languageGroup: 'Sprache des Handbuchs',
+    download: 'Herunterladen',
+    downloadLabel: 'Handbuch herunterladen',
+    openTab: 'In neuem Tab öffnen',
+    openTabLabel: 'Handbuch in neuem Tab öffnen',
+    close: 'Handbuch schließen',
+    frameTitle: 'Handbuch ({{language}})',
+    noPdfViewer: 'Dieser Browser kann PDF-Dateien nicht direkt anzeigen. Öffne das Handbuch in einem neuen Tab oder lade es herunter.',
+  },
+  licenses: {
+    title: 'Lizenzen',
+    docGroup: 'Lizenzdokument',
+    license: {
+      label: 'Lizenz (AGPL v3)',
+      hint: 'PlatinVault ist freie Software unter der GNU Affero General Public License, Version 3 (AGPL-3.0-only). Du darfst es kostenlos nutzen, untersuchen, ändern und weitergeben; wer es weitergibt oder eine geänderte Fassung anderen über ein Netzwerk anbietet, muss den Quellcode unter derselben Lizenz anbieten. Verbindlich ist der englische Originaltext unten.',
+    },
+    notices: {
+      label: 'Drittanbieter-Hinweise',
+      hint: 'Urheberrechtsvermerke und Lizenztexte der enthaltenen Open-Source-Komponenten.',
+    },
+    source: 'Quellcode',
+    sourceHint: 'Der vollständige Quellcode von PlatinVault: {{url}}',
+    sourceLabel: 'Quellcode von PlatinVault auf GitHub öffnen',
+    sourceLine: 'Quellcode:',
+    download: 'Herunterladen',
+    downloadHint: '{{fileName}} als Textdatei speichern',
+    downloadLabel: '{{document}} herunterladen',
+    openTab: 'In neuem Tab öffnen',
+    openTabHint: 'Als reinen Text im Browser-Tab anzeigen',
+    openTabLabel: '{{document}} in neuem Tab öffnen',
+    close: 'Schließen',
+    loading: '{{document}} wird geladen …',
+    loadFailed: '{{document}} konnte nicht geladen werden: {{reason}}',
+    retry: 'Erneut versuchen',
+  },
+  steamChip: {
+    fallbackLabel: 'Steam-Konto',
+    openInClient: 'Steam-Profil im Steam-Client öffnen',
+    openInBrowser: 'Steam-Profil im Browser öffnen',
+    libraryDescription: '{{games}} in deiner Steam-Bibliothek',
+    games_one: '{{count, number}} Spiel',
+    games_other: '{{count, number}} Spiele',
+    linkClient: 'Steam-Profil von {{name}} im Steam-Client öffnen',
+    linkBrowser: 'Steam-Profil von {{name}} im Browser öffnen',
+    linkLibrary: '{{games}} in der Bibliothek',
+  },
+} as const
+
+export default shell

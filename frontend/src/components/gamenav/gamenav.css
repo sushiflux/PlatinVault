@@ -1,0 +1,928 @@
+/* ==================== GAME PAGE NAVIGATION (components/gamenav) ====================
+   The guide chapters are ALWAYS a side navigation: a pinned panel on the left (collapsible to numbers), on a phone a drawer that
+   slides in from the left and is opened by the "Kapitel" button in the trophy bar. The chapters can stand in groups with small
+   headings. The trophy bar above keeps the SECTION tabs (Live-Trophäen / Statistiken / Story & Lore) as a segmented control.
+   Active = accent colour + a sliding marker; hover = a soft tint only; focus = a ring inside the tab (never clipped). Everything
+   is rem-based, so it follows the UI size. Contrast: text-secondary on the surfaces >= 7:1, accent on surface >= 5.9:1. */
+
+/* ---- The side nav ---- */
+.pv-gnav {
+  position: sticky;
+  /* Below the header and the trophy bar (GameTrophyBar.tsx publishes --pv-gbar-bottom), a little air above the panel */
+  inset-block-start: calc(var(--pv-gbar-bottom, 8rem) + 1rem);
+  z-index: 30;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  inline-size: clamp(14rem, 20vw, 18rem);
+  /* The panel always has the height that is free under the bars (never more): the foot (the info symbol) therefore sits at the
+     bottom of the window whatever the number of chapters, the list in between scrolls, and nothing changes its size when a guide
+     has a few chapters more or less. A page never gets taller because of the nav (top margin + this + bottom margin = 100dvh). */
+  block-size: calc(100dvh - var(--pv-gbar-bottom, 8rem) - 3rem);
+  max-block-size: calc(100dvh - var(--pv-gbar-bottom, 8rem) - 3rem);
+  /* Level with the first card of the content (main's padding: 1.5rem from 640 px, 2rem from 1024 px); stuck it sits 1rem below the bar */
+  margin-block-start: 1.5rem;
+  margin-block-end: 1rem;
+  overflow: hidden;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  transition: inline-size 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pv-gnav-head {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.9rem;
+  border-block-end: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* The list is the scroller (long guides); the marker lives inside it and scrolls with the tabs */
+.pv-gnav-list {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-block-size: 0;
+  padding: 0.45rem 0.5rem 0.6rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+/* ---- The foot of the nav (NavFoot.tsx): under a fine rule the info block, or in the collapsed nav one calm info symbol ----
+   Pinned under the list (the list scrolls above it, nothing is ever covered). The rule fades out to both sides. The full nav and the
+   drawer show the info block (name, version, credit, copyright, licences: NavInfoBlock.tsx); the collapsed nav has no room for text and
+   shows one symbol in the middle that opens the same content as a floating card (NavInfo.tsx). Symbol: text-muted on the surface
+   (7.6:1 light, 6.6:1 dark). */
+.pv-gnav-foot {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 0.5rem;
+}
+
+.pv-gnav-foot::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--border-strong) 70%, var(--border-subtle)) 14%,
+    color-mix(in srgb, var(--border-strong) 70%, var(--border-subtle)) 86%,
+    transparent
+  );
+  pointer-events: none;
+}
+
+/* The block variant: no padding of its own, the block fills the foot's width (at least 14 rem, so it never reflows while the nav
+   grows from the collapsed width: it is revealed from the left instead) */
+.pv-gnav-foot--block {
+  display: block;
+  padding: 0;
+}
+
+.pv-gnav-info-block {
+  position: relative;
+  box-sizing: border-box;
+  min-inline-size: 14rem;
+  padding: 1.2rem 1rem 1.05rem;
+  /* The same soft brand glow as the card, behind the name just under the rule */
+  background: radial-gradient(120% 60% at 50% 0, color-mix(in srgb, var(--accent-crystal) 9%, transparent), transparent 72%);
+  animation: pv-gnav-block-in 0.26s ease both;
+}
+
+@keyframes pv-gnav-block-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.pv-gnav-info-btn {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  inline-size: 2rem;
+  block-size: 2rem;
+  padding: 0;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.pv-gnav-info-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+
+/* Open: the accent says which control the card belongs to */
+.pv-gnav-info-btn[aria-expanded='true'] {
+  color: var(--accent-crystal);
+  background: var(--accent-crystal-bg);
+  border-color: var(--accent-crystal-border);
+}
+
+.pv-gnav-info-btn:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+}
+
+/* ---- The info card (NavInfo.tsx) ----
+   A small floating card next to the symbol (above it in the drawer), laid over the page in <body>: opening it moves nothing. Centred,
+   with a short brand block, the version as a pill, the credit and the copyright, a fine rule and the licences button. Colours are the
+   app's tokens: text-primary >= 11:1, text-secondary >= 7:1, text-muted >= 6.6:1 on the surface in both themes. */
+.pv-info-card {
+  /* The card's edge (also the arrow's): between the subtle and the strong border, so it stands out from the page in both themes */
+  --pv-info-edge: color-mix(in srgb, var(--border-strong) 42%, var(--border-subtle));
+  position: fixed;
+  z-index: 75;
+  inline-size: min(16.5rem, calc(100vw - 1rem));
+  padding: 1.3rem 1.2rem 1.1rem;
+  /* A soft brand glow behind the logo, then the plain surface */
+  background:
+    radial-gradient(120% 60% at 50% 0, color-mix(in srgb, var(--accent-crystal) 11%, transparent), transparent 72%),
+    var(--bg-surface);
+  border: 1px solid var(--pv-info-edge);
+  border-radius: var(--radius-md);
+  box-shadow:
+    light-dark(0 2px 6px rgba(30, 41, 59, 0.1), 0 2px 6px rgba(0, 0, 0, 0.4)),
+    light-dark(0 22px 48px -14px rgba(30, 41, 59, 0.5), 0 22px 48px -14px rgba(0, 0, 0, 0.8));
+  outline: none;
+}
+
+/* The content of the card AND of the block in the full nav (InfoBody.tsx): centred, the same type and the same spacing in both.
+   Colours are the app's tokens: text-primary >= 11:1, text-secondary >= 7:1, text-muted >= 6.6:1 on the surface in both themes. */
+.pv-info-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: center;
+}
+
+/* Invisible strip between the symbol and the card (NavInfo.tsx sets its size): the pointer can cross the empty half of the nav's
+   foot to reach the card without the card closing on the way */
+.pv-info-card[data-side='right']::before {
+  content: '';
+  position: absolute;
+  inset-inline-end: 100%;
+  inset-block-start: var(--pv-info-bridge-y, 0px);
+  inline-size: var(--pv-info-bridge-w, 0px);
+  block-size: var(--pv-info-bridge-h, 0px);
+}
+
+.pv-info-arrow {
+  position: absolute;
+  inline-size: 10px;
+  block-size: 10px;
+  background: var(--bg-surface);
+  border: 1px solid transparent;
+  transform: rotate(45deg);
+}
+
+/* Card right of the symbol: the arrow on its left edge points left (after the turn its left and bottom edges are the tip) */
+.pv-info-card[data-side='right'] .pv-info-arrow {
+  inset-inline-start: -6px;
+  border-inline-start-color: var(--pv-info-edge);
+  border-block-end-color: var(--pv-info-edge);
+}
+
+/* Card above the symbol (drawer): the arrow on its bottom edge points down (right and bottom edges are the tip) */
+.pv-info-card[data-side='top'] .pv-info-arrow {
+  inset-block-end: -6px;
+  border-inline-end-color: var(--pv-info-edge);
+  border-block-end-color: var(--pv-info-edge);
+}
+
+.pv-info-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.pv-info-logo {
+  inline-size: 2.6rem;
+  block-size: 2.6rem;
+  border-radius: var(--radius-md);
+  box-shadow: 0 6px 16px -6px light-dark(rgba(30, 41, 59, 0.5), rgba(0, 0, 0, 0.7));
+}
+
+.pv-info-name {
+  color: var(--text-primary);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.pv-info-version {
+  display: inline-block;
+  margin-block-start: 0.65rem;
+  padding: 0.18rem 0.6rem;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: 0.74rem;
+  line-height: 1.3;
+  /* A long version never makes the card wider: it may break at the space (or anywhere) instead of being cut off */
+  overflow-wrap: anywhere;
+}
+
+.pv-info-facts {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  margin-block-start: 0.85rem;
+}
+
+.pv-info-rule {
+  align-self: stretch;
+  block-size: 1px;
+  margin-block: 0.95rem 0.85rem;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--border-strong) 70%, var(--border-subtle)) 20%,
+    color-mix(in srgb, var(--border-strong) 70%, var(--border-subtle)) 80%,
+    transparent
+  );
+}
+
+.pv-info-licenses {
+  min-block-size: 2.1rem;
+  padding-block: 0.3rem;
+}
+
+.pv-info-licenses:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+}
+
+.pv-gnav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* A small heading per group; a guide with one group (or none) has no headings at all */
+.pv-gnav-group-title {
+  padding: 0.85rem 0.8rem 0.3rem;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.pv-gnav-group:first-child > .pv-gnav-group-title {
+  padding-block-start: 0.25rem;
+}
+
+.pv-tab-wrap {
+  display: flex;
+}
+
+.pv-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  inline-size: 100%;
+  min-block-size: 2.5rem;
+  padding: 0.45rem 0.7rem 0.45rem 0.8rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: start;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+/* Hover: only a soft tint, never a box with its own border */
+.pv-tab:hover {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+}
+
+.pv-tab[aria-selected='true'] {
+  color: var(--accent-crystal);
+  background: var(--accent-crystal-bg);
+}
+
+.pv-tab:focus-visible,
+.pv-gnav-icon-btn:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: -3px;
+  box-shadow: inset 0 0 0 5px var(--accent-crystal-bg);
+}
+
+.pv-tab-num {
+  flex: 0 0 auto;
+  min-inline-size: 1.4em;
+  font-size: 0.78em;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.pv-tab[aria-selected='true'] .pv-tab-num {
+  color: inherit;
+}
+
+/* Titles wrap to two lines, then end with an ellipsis (our tooltip then shows the whole title) */
+.pv-tab-title {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+/* Progress counter: small and calm, on the text's own line; all checked = success colours */
+.pv-tab-count {
+  flex: 0 0 auto;
+  align-self: center;
+  padding: 0.16em 0.5em;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-tab[aria-selected='true'] .pv-tab-count {
+  background: var(--bg-surface);
+  color: var(--accent-crystal);
+}
+
+.pv-tab-count[data-done] {
+  background: var(--accent-emerald-bg);
+  color: var(--accent-emerald);
+}
+
+/* The sliding marker: a bar on the left edge of the active chapter. Its y and height are set by SlidingMarker.tsx from the tab's
+   place inside the list - it only ever moves up and down inside the nav. */
+.pv-tab-indicator {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: 3px;
+  block-size: 0;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent-crystal);
+  pointer-events: none;
+}
+
+@media (min-width: 1024px) {
+  .pv-gnav {
+    margin-block-start: 2rem;
+  }
+}
+
+/* Icon buttons in the nav head (collapse / close) */
+.pv-gnav-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  inline-size: 2rem;
+  block-size: 2rem;
+  padding: 0;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.pv-gnav-icon-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
+}
+
+/* Collapsed: only the numbers, the groups are told apart by a thin line */
+.pv-gnav[data-collapsed='true'] {
+  inline-size: 4.25rem;
+}
+
+.pv-gnav[data-collapsed='true'] .pv-gnav-head {
+  justify-content: center;
+  padding-inline: 0.4rem;
+}
+
+.pv-gnav[data-collapsed='true'] .pv-gnav-title,
+.pv-gnav[data-collapsed='true'] .pv-gnav-group-title,
+.pv-gnav[data-collapsed='true'] .pv-tab-title,
+.pv-gnav[data-collapsed='true'] .pv-tab-count {
+  display: none;
+}
+
+.pv-gnav[data-collapsed='true'] .pv-gnav-list {
+  padding-inline: 0.4rem;
+}
+
+.pv-gnav[data-collapsed='true'] .pv-gnav-group + .pv-gnav-group {
+  margin-block-start: 0.35rem;
+  padding-block-start: 0.35rem;
+  border-block-start: 1px solid var(--border-subtle);
+}
+
+.pv-gnav[data-collapsed='true'] .pv-tab {
+  justify-content: center;
+  padding-inline: 0.3rem;
+}
+
+.pv-gnav[data-collapsed='true'] .pv-tab-num {
+  min-inline-size: 0;
+  font-size: 0.85rem;
+  color: inherit;
+}
+
+/* ---- Phone: the nav is a drawer ---- */
+.pv-gdrawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  background: rgba(8, 12, 22, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.pv-gnav-open-btn {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .pv-gnav {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-start: 0;
+    z-index: 70;
+    inline-size: min(20rem, 88vw);
+    /* The drawer's height comes from inset-block (the whole window), not from the desktop panel's calculation */
+    block-size: auto;
+    max-block-size: none;
+    margin: 0;
+    border-block: 0;
+    border-inline-start: 0;
+    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+    box-shadow: 0 0 48px rgba(0, 0, 0, 0.45);
+    transform: translateX(-104%);
+    visibility: hidden;
+    transition:
+      transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 0s linear 0.22s;
+  }
+
+  .pv-gnav[data-open='true'] {
+    transform: none;
+    visibility: visible;
+    transition:
+      transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 0s;
+  }
+
+  .pv-gnav-open-btn {
+    display: inline-flex;
+  }
+
+  /* The drawer reaches the bottom edge of the window: the foot keeps clear of a home indicator */
+  .pv-gnav-foot:not(.pv-gnav-foot--block) {
+    padding-block-end: calc(0.6rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .pv-gnav-info-block {
+    padding-block-end: calc(1.05rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* The "Kapitel" button in the trophy bar (phone only; the nav is pinned everywhere else) */
+.pv-gnav-open-btn {
+  align-items: center;
+  gap: 0.45rem;
+  block-size: calc(1.9rem + 6px);
+  padding-inline: 0.8rem;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pv-gnav-open-btn:hover {
+  background: var(--bg-elevated);
+}
+
+.pv-gnav-open-btn:active {
+  background: color-mix(in srgb, var(--accent-crystal) 16%, var(--bg-elevated));
+}
+
+.pv-gnav-open-btn:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+}
+
+/* ---- Section tabs: the three main areas of the game page, each in its own colour ----
+   A segmented control with a real border (var(--border-strong): 4.8:1 on white, 3.0:1 on the dark surface), thin dividers, and per
+   area one accent colour from the tokens: gold = live trophies, crystal = statistics, purple = story & lore. At rest the icon has the
+   colour and the segment a soft tint of it (the label stays text-primary); the active segment is FILLED in its colour by the sliding
+   pill, with text and icon in --pv-seg-on (white on the deep light-theme accents, near-black on the light dark-theme accents).
+   Contrast (computed): active fill vs --pv-seg-on >= 5.0:1 in both themes, resting icon vs tint >= 4.5:1, label >= 10:1.
+   The segments are as high as before (1.9rem + 6px, 36 px at the standard size), so the trophy bar keeps its height. */
+.pv-seg {
+  --pv-seg-on: light-dark(#ffffff, #0b1220);
+  position: relative;
+  display: inline-flex;
+  overflow: hidden;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+}
+
+.pv-seg-tone-gold {
+  --seg: var(--accent-gold);
+}
+
+.pv-seg-tone-crystal {
+  --seg: var(--accent-crystal);
+}
+
+.pv-seg-tone-purple {
+  --seg: var(--accent-purple);
+}
+
+/* The colour the sliding pill takes: the active area's, it changes along while the pill moves */
+.pv-seg[data-tone='gold'] {
+  --pv-seg-fill: var(--accent-gold);
+}
+
+.pv-seg[data-tone='crystal'] {
+  --pv-seg-fill: var(--accent-crystal);
+}
+
+.pv-seg[data-tone='purple'] {
+  --pv-seg-fill: var(--accent-purple);
+}
+
+/* The tint sits on the cell (not on the tab), so the sliding pill passes OVER it and covers it */
+.pv-seg-cell {
+  display: inline-flex;
+  background: color-mix(in srgb, var(--seg, var(--accent-crystal)) 9%, transparent);
+}
+
+.pv-seg-cell + .pv-seg-cell {
+  border-inline-start: 1px solid var(--border-subtle);
+}
+
+.pv-seg-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  block-size: calc(1.9rem + 6px);
+  padding-inline: 0.9rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    background-color 0.15s ease;
+}
+
+/* The icon carries the area's colour at rest */
+.pv-seg-tab .pv-seg-content > svg {
+  color: var(--seg);
+  transition: color 0.2s ease;
+}
+
+.pv-seg-tab:hover {
+  background: color-mix(in srgb, var(--seg) 15%, transparent);
+}
+
+/* Pressed: a stronger tint of the area's colour, the label stays primary text */
+.pv-seg-tab:active {
+  background: color-mix(in srgb, var(--seg) 24%, transparent);
+}
+
+.pv-seg-tab:focus-visible {
+  outline: 2px solid var(--seg);
+  outline-offset: -4px;
+}
+
+.pv-seg-tab[aria-selected='true'] {
+  color: var(--pv-seg-on);
+}
+
+.pv-seg-tab[aria-selected='true'] .pv-seg-content > svg {
+  color: var(--pv-seg-on);
+}
+
+/* The active segment shows the filled pill behind it, not the hover or pressed tint; its focus ring is in the text colour of the fill */
+.pv-seg-tab[aria-selected='true']:hover,
+.pv-seg-tab[aria-selected='true']:active {
+  background: transparent;
+}
+
+.pv-seg-tab[aria-selected='true']:focus-visible {
+  outline-color: var(--pv-seg-on);
+}
+
+/* The sliding fill behind the active segment: placed by SlidingMarker.tsx from the segment's place inside the control, in the
+   colour of the active area (it fades from one colour to the next while it moves) */
+.pv-seg-thumb {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: 0;
+  inline-size: 0;
+  block-size: 0;
+  background: var(--pv-seg-fill, var(--accent-crystal));
+  transition: background-color 0.2s ease;
+  pointer-events: none;
+}
+
+.pv-seg-content {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* ---- Trophy bar (the action bar under the header, above the side nav and the content; components/GameTrophyBar.tsx) ----
+   Always in the flow and sticky. Left: progress and the four tiers; right: the section tabs. The bar is a size container:
+   wide = one row, narrower = progress + sections on top and the tiers below, narrow = the sections as icons only. */
+.pv-gbar {
+  position: sticky;
+  /* The same 1px higher than the exact header height, in the flow (margin) and stuck (offset): it tucks 1px under the header
+     (z-index), no hairline gap, and it looks exactly alike in both places - nothing shifts or shrinks when it starts to stick. */
+  inset-block-start: calc(var(--pv-header-h, 4.0625rem) - 1px);
+  z-index: 35;
+  margin-block-start: -1px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(14px);
+  border-block-end: 1px solid var(--border-subtle);
+  box-shadow: 0 14px 26px -18px light-dark(rgba(30, 41, 59, 0.3), rgba(0, 0, 0, 0.65));
+  container: pv-gbar / inline-size;
+}
+
+.pv-gbar-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'progress sections'
+    'tiers tiers';
+  align-items: center;
+  gap: 0.4rem 1rem;
+  padding: 0.45rem 1rem;
+  /* The 1px of the bar that is tucked under the bar above is given back here, so the content keeps its place */
+  padding-block-start: calc(0.45rem + 1px);
+}
+
+.pv-gbar-progress {
+  grid-area: progress;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-inline-size: 0;
+  /* One text line high from the first frame, so the figures arriving (skeleton -> text) never change the bar's height */
+  min-block-size: 1.3rem;
+}
+
+.pv-gbar-progress .progress-info {
+  flex-shrink: 0;
+  min-inline-size: 10.5rem;
+  font-size: 0.8rem;
+  line-height: 1.3rem;
+  white-space: nowrap;
+}
+
+.pv-gbar-progress .pv-pbar {
+  min-inline-size: 3rem;
+}
+
+.pv-gbar-tiers {
+  grid-area: tiers;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.4rem;
+  /* A tier pill is never clipped or hidden: it keeps its natural width (nowrap, no shrink below the content) and, when the row
+     is too short for all four, the pills wrap onto a second line instead of running out of sight. The layouts below are chosen
+     so that this safety net is only needed for unusual numbers (four-digit counts, a very large UI size). */
+  min-inline-size: 0;
+}
+
+.pv-gbar-sections {
+  grid-area: sections;
+  justify-self: end;
+}
+
+.pv-gbar .stat-pill {
+  /* On a row of their own the pills share the width evenly (a deliberate strip, not a ragged left edge) */
+  flex: 1 1 auto;
+  justify-content: center;
+  white-space: nowrap;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.76rem;
+}
+
+.pv-tier-text {
+  position: relative;
+}
+
+/* Without a Steam link there is no progress: only the sections remain, on the right */
+.pv-gbar-inner[data-bare] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'sections';
+}
+
+.pv-gbar-chapters {
+  grid-area: chapters;
+  display: none;
+}
+
+/* The progress bar is a short, calm line next to its figures, never a stretched rule across half the screen */
+.pv-gbar-progress {
+  --pv-bar: clamp(10rem, 42cqi, 44rem);
+}
+
+/* Layouts, by the width of the bar itself (rem, so they follow the UI size). The numbers come from the real pills (English;
+   three-digit counts are the worst case): four full pills are about 29 rem wide (35 rem), four compact ones about 17.5 rem
+   (21 rem); the progress needs about 15 rem (its figures plus a bar of at least 4 rem), the section control about 23 rem with
+   labels and 8 rem as icons. The bar steps down one thing at a time and stays ONE row as long as possible:
+   - from 82 rem: progress | full pills | section control with labels
+   - 62 to 82 rem: the pills are compact (icon and count; the tier name stays the accessible name and is in the tooltip), the
+     section control keeps its labels
+   - 54 to 62 rem: the section control shows icons only (their tooltips name them)
+   - below 54 rem (tablet portrait, phone): two rows, the pills as an even strip on the second row; full pills again from
+     40 rem up (they fit a row of their own there), compact below
+   Phone (the "Kapitel" button is there, below 768 px): button, progress and sections on the first row, the pills below;
+   below 34 rem the progress gets a row of its own. */
+@container pv-gbar (max-width: 61.99rem) {
+  .pv-gbar .pv-seg-label {
+    display: none;
+  }
+
+  .pv-gbar .pv-seg-tab {
+    min-inline-size: 2.6rem;
+    padding-inline: 0.7rem;
+  }
+}
+
+@container pv-gbar (max-width: 39.99rem) or ((min-width: 54rem) and (max-width: 81.99rem)) {
+  .pv-gbar .stat-pill {
+    padding-inline: 0.5rem;
+    gap: 0.3rem;
+  }
+
+  /* Visually hidden, still read out */
+  .pv-gbar .pv-tier-name {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 767px) {
+  .pv-gbar-chapters {
+    display: block;
+  }
+
+  .pv-gbar-inner:not([data-bare]) {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'chapters progress sections'
+      'tiers tiers tiers';
+  }
+
+  .pv-gbar-inner[data-bare] {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'chapters sections';
+  }
+
+  /* Next to the button the section control is always icons only (also when a small UI size makes the bar wide) */
+  .pv-gbar .pv-seg-label {
+    display: none;
+  }
+
+  .pv-gbar .pv-seg-tab {
+    min-inline-size: 2.6rem;
+    padding-inline: 0.7rem;
+  }
+}
+
+@media (max-width: 767px) {
+  @container pv-gbar (max-width: 33.99rem) {
+    .pv-gbar-inner:not([data-bare]) {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas:
+        'chapters sections'
+        'progress progress'
+        'tiers tiers';
+    }
+  }
+}
+
+/* One row: progress takes the free space (its bar is capped, so it never becomes a stretched rule), the pills and the section
+   control keep the width of their content. Grid gives the content-sized columns their full width before the progress column
+   gets what is left, so a tight bar shortens the progress first. */
+@media (min-width: 768px) {
+  @container pv-gbar (min-width: 54rem) {
+    .pv-gbar-inner:not([data-bare]) {
+      grid-template-columns: minmax(min-content, 1fr) auto auto;
+      grid-template-areas: 'progress tiers sections';
+      column-gap: 1.5rem;
+    }
+
+    .pv-gbar-progress .pv-pbar {
+      min-inline-size: 4rem;
+      max-inline-size: var(--pv-bar);
+    }
+
+    .pv-gbar .stat-pill {
+      flex: none;
+    }
+  }
+}
+
+/* The bar spans the window like the header, and its content starts where the header's content starts */
+.pv-gbar-inner {
+  padding-inline: var(--pv-gutter);
+}
+
+@media (max-width: 480px) {
+  .pv-gbar-inner {
+    padding-inline: 0.9rem;
+  }
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-tab,
+  .pv-seg-tab,
+  .pv-seg-thumb,
+  .pv-gnav-info-btn,
+  .pv-gnav {
+    transition: none;
+  }
+
+  .pv-gnav-info-block {
+    animation: none;
+  }
+}

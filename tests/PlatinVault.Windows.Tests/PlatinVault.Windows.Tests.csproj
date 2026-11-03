@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Tests of the Windows program and its installer (xunit.v3 on Microsoft.Testing.Platform): the update check, the installer payload,
+    the install layout with the test registry, the uninstaller, and the program's database paths, backup and restore on real SQLite
+    files in temporary folders.
+    Run: dotnet test tests/PlatinVault.Windows.Tests
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+    <NoWarn>$(NoWarn);xUnit1051;WFO1000</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\PlatinVault.Desktop\PlatinVault.Desktop.csproj" />
+    <ProjectReference Include="..\..\src\PlatinVault.Setup\PlatinVault.Setup.csproj" />
+    <ProjectReference Include="..\..\src\PlatinVault.Windows.Common\PlatinVault.Windows.Common.csproj" />
+  </ItemGroup>
+</Project>

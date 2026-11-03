@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PlatinVault.Versioning\PlatinVault.Versioning.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Companion.Api.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\branding.json" CopyToOutputDirectory="PreserveNewest" Link="branding.json" Condition="Exists('..\..\branding.json')" />
+    <None Include="..\..\languages.json" CopyToOutputDirectory="PreserveNewest" Link="languages.json" Condition="Exists('..\..\languages.json')" />
+  </ItemGroup>
+</Project>
+

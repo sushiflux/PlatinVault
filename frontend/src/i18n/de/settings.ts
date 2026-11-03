@@ -1,0 +1,364 @@
+// Namespace "settings": the settings window (all tabs) and the system check. German source of truth - en/settings.ts is
+// typed against it. Rich text (links, <code>) uses <Trans> with the named tags written into the text.
+const settings = {
+  title: 'Einstellungen',
+  subtitle: 'Deine Keys bleiben auf deinem Server – verschlüsselt gespeichert',
+  tabsLabel: 'Einstellungsbereiche',
+  loading: 'Lade Einstellungen...',
+  loadFailed: 'Einstellungen konnten nicht geladen werden.',
+  tabs: {
+    live: { label: 'Live & Sound', hint: 'Popups, Sound, Notizen' },
+    steam: { label: 'Steam', hint: 'Konto & Steam-API-Key' },
+    ki: { label: 'KI-Recherche', hint: 'Gemini, Claude, ChatGPT' },
+    twitch: { label: 'Twitch & IGDB', hint: 'Streams & Spielfakten' },
+    bridge: { label: 'PlatinVault Bridge', hint: 'Echtzeit vom Gaming-PC' },
+    system: { label: 'System', hint: 'Updates, Backend, Datenbank, Quellen' },
+  },
+  footer: {
+    save: 'Einstellungen speichern',
+    saved: 'Einstellungen und API-Keys verschlüsselt gespeichert.',
+    saveFailed: 'Fehler beim Speichern.',
+  },
+
+  // Tab "Live & Sound"
+  live: {
+    popupsTitle: 'Trophäen-Popups, Sound & Position',
+    previewSound: 'Sound probehören',
+    platinumTest: 'Platin-Moment testen',
+    platinumTestHint: 'Zeigt den Platin-Moment, der bei 100 % erscheint',
+    exampleGame: 'Beispielspiel',
+    soundTheme: 'Sound-Theme beim Freischalten:',
+    soundThemes: {
+      kristall: { label: 'Kristall', description: 'Glockenspiel, Glasklang und Glocken - hell und glänzend' },
+      orchester: { label: 'Orchester', description: 'Harfe, Röhrenglocken, Streicher und Pauken - warm und festlich' },
+      spieluhr: { label: 'Spieluhr', description: 'Zarte Spieluhr-Töne - leise, kleine Räume, verspielt' },
+    },
+    volume: 'Lautstärke: {{percent}}',
+    volumeRecommended: 'Empfohlen: 12% – 25%',
+    playSounds: 'Freischalt-Sounds bei neuen Trophäen abspielen',
+    autoTranslate: 'Englische Steam-Erfolge automatisch ins Deutsche übersetzen',
+    position: 'Popup-Position (Klicken zum Auswählen & Testen):',
+    positions: {
+      'top-left': 'Links oben',
+      'top-center': 'Oben mittig',
+      'top-right': 'Rechts oben',
+      'center-left': 'Links mittig',
+      center: 'Zentriert',
+      'center-right': 'Rechts mittig',
+      'bottom-left': 'Links unten',
+      'bottom-center': 'Unten mittig',
+      'bottom-right': 'Rechts unten',
+      fullscreen: 'Vollbild',
+    },
+    // Under the nine position buttons: the tenth way, the whole window
+    positionFullscreenHint: 'Das ganze Fenster zeigt die Trophäe für einige Sekunden. Ein Klick oder Esc beendet sie früher.',
+    // "Trophäen-Popup anzeigen": where the popup appears (setting live.popup_target)
+    target: {
+      label: 'Trophäen-Popup anzeigen',
+      app: 'Nur in der App',
+      overlay: 'Nur im Spiel',
+      both: 'Beides',
+      // Under the three choices inside the Windows program
+      hintDesktop:
+        'Im Spiel = als Overlay über dem Spiel, auch wenn PlatinVault im Hintergrund läuft (Fenstermodus oder randloses Vollbild; exklusives Vollbild verdeckt jedes Overlay). Bei „Beides“ erscheint es im Spiel nur, solange das PlatinVault-Fenster nicht vorne ist. Der Sound erklingt immer genau einmal.',
+      // Everywhere else (browser, Unraid/Docker): the overlay choices are disabled
+      onlyDesktop: 'Im Spiel geht nur mit dem Windows-Programm – hier erscheint das Popup immer in der App.',
+    },
+    // The example popup shown when a position is clicked
+    preview: {
+      name: 'Trophäen-Popup Vorschau',
+      description: 'Slider-Position: {{position}}',
+      rarity: 'Extrem selten',
+    },
+    notesTitle: 'Notizen an Erfolgen',
+    notesSwitch: 'Eigene Notizen an Erfolgen anzeigen und erlauben',
+    notesText:
+      'An: In der Trophäenliste kannst du an jedem Erfolg eine eigene Notiz hinterlegen; sie erscheint auf der Karte und wird bei der Suche mitgefunden. Aus: Notiz-Knöpfe, Notiztexte und die Notiz-Suche verschwinden überall. Bereits geschriebene Notizen werden dabei nicht gelöscht – sie sind wieder da, sobald du die Option wieder einschaltest.',
+    gameStartTitle: 'Spielstart',
+    gameStartSwitch: 'Beim Spielstart automatisch zum Spiel wechseln',
+    gameStartText:
+      'An: Startest du ein Spiel aus deiner Sammlung, springt jedes geöffnete PlatinVault-Fenster zu den Live-Trophäen dieses Spiels. Ist gerade ein Fenster offen, tippst du oder läuft eine KI-Aufgabe, bleibt die Seite stehen und ein Hinweis bietet den Wechsel an. Aus: Nichts wechselt von selbst.',
+    gameStartSourceLocal: 'Erkennung: über das Steam auf diesem Server.',
+    gameStartSourceBridge: 'Erkennung: über die Bridge auf dem Gaming-PC.',
+    gameStartNoSource:
+      'Gerade ohne Wirkung: Weder die Bridge auf dem Gaming-PC ist verbunden noch findet der Server ein lokales Steam – so erfährt PlatinVault nicht, wann ein Spiel startet.',
+  },
+
+  // Tab "Steam"
+  steam: {
+    title: 'Deine Steam-Bibliothek & Steam Web API',
+    active: 'Aktiv ({{hint}})',
+    linked: 'Verknüpft mit SteamID {{id}}',
+    notLinked: 'Noch kein Steam-Konto verknüpft',
+    loginNote: 'Die Anmeldung bei Steam übernimmt nur deine SteamID – Bibliothek und Erfolge brauchen zusätzlich den API-Key.',
+    otherAccount: 'Anderes Steam-Konto',
+    login: 'Mit Steam anmelden',
+    keyLabel: 'Steam Web API-Key',
+    getKey: 'Key kostenlos abrufen →',
+    keySaved: 'Gespeichert ({{hint}}) – neu eingeben zum Ändern',
+    keyEmpty: '32-stelliger Steam API-Key...',
+    deleteKey: 'Gespeicherten Key löschen',
+    manualIdLabel: 'Oder SteamID64 / Profilname von Hand',
+    manualIdPlaceholder: '17-stellige SteamID64 (7656119…), Profilname oder Profil-URL',
+    guide: {
+      title: 'So bekommst du den Steam Web API-Key (kostenlos, jedes Steam-Konto)',
+      step1:
+        'Im Browser <link>steamcommunity.com/dev/apikey</link> öffnen und mit deinem Steam-Konto anmelden (Steam fragt evtl. einen Steam-Guard-Code ab).',
+      step1Client: 'Oder direkt <clientLink>im Steam-Client öffnen</clientLink> – dort bist du meist schon angemeldet.',
+      step2:
+        'Bei „Domänenname“ einen Namen eintragen – z. B. die Adresse deines PlatinVault-Servers. Der Name dient nur zur Zuordnung des Keys.',
+      step3: 'Den Nutzungsbedingungen der Steam Web API zustimmen und das Formular absenden.',
+      step4: 'Steam zeigt dir danach deinen Key an – kopieren, oben ins Feld „Steam Web API-Key“ einfügen, speichern.',
+      privacy:
+        'Gib den Key nicht weiter: Er gehört zu deinem Konto. PlatinVault speichert ihn verschlüsselt auf deinem eigenen PlatinVault-Server – als Datei im Datenordner, nicht in der Datenbank (Datenbank-Backups enthalten ihn also nicht) – und zeigt ihn danach nur noch gekürzt an.',
+    },
+  },
+
+  // Tab "Twitch & IGDB"
+  twitch: {
+    buttonTitle: 'Twitch-Knopf',
+    buttonSwitch: 'Twitch-Knopf auf den Spielkarten und der Spielseite anzeigen',
+    buttonText:
+      'Der Knopf öffnet Twitch mit der Kategorie des Spiels – dort siehst du, wer es gerade live spielt. Dafür brauchst du weder einen Key noch ein Twitch-Konto; PlatinVault schickt dabei nichts an Twitch. Hast du unten die Zugangsdaten einer eigenen Twitch-App eingetragen, zeigt der Knopf auf den Spielkarten zusätzlich eine kleine Zahl: wie viele Streams gerade live laufen – dafür fragt PlatinVault im Hintergrund bei Twitch nach.',
+    igdbTitle: 'Spielfakten von IGDB (optional)',
+    igdbIntro:
+      'IGDB liefert zusätzliche Fakten: die durchschnittliche Spielzeit bis 100 %, Wertungen, Genres und ähnliche Spiele. IGDB verlangt dafür eine eigene, kostenlose Twitch-Entwickler-App – PlatinVault kann keinen gemeinsamen Zugang mitliefern.',
+    clientId: 'Client-ID',
+    clientSecret: 'Client-Secret',
+    idSaved: 'Gespeichert ({{hint}}) – neu eingeben zum Ändern',
+    idEmpty: 'Client-ID deiner Twitch-App',
+    secretSaved: 'Gespeichert – neu eingeben zum Ändern',
+    secretEmpty: 'Client-Secret deiner Twitch-App',
+    test: 'Verbindung testen',
+    testFailed: 'Verbindungstest fehlgeschlagen.',
+    willDelete: 'Wird beim Speichern gelöscht',
+    deleteSaved: 'Gespeicherte Zugangsdaten löschen',
+    problemChars: 'Nur Buchstaben, Ziffern, „-“ und „_“ – bitte ohne Leerzeichen kopieren.',
+    problemTooShort: 'Zu kurz: {{length}} von mindestens {{min}} Zeichen.',
+    problemTooLong: 'Zu lang: {{length}} von höchstens {{max}} Zeichen.',
+    saveProblem: 'Twitch-Zugangsdaten prüfen: Ein Feld ist rot markiert.',
+    saveNeedBoth: 'Für IGDB bitte Client-ID und Client-Secret zusammen eintragen.',
+    guide: {
+      title: 'So bekommst du Client-ID und Client-Secret (kostenlos)',
+      step1: 'Ein Twitch-Konto anlegen oder mit deinem bestehenden anmelden.',
+      step2:
+        'In den <securityLink>Twitch-Sicherheitseinstellungen</securityLink> die Zwei-Faktor-Authentifizierung einschalten – ohne sie lässt Twitch keine App anlegen.',
+      step3:
+        'In der <consoleLink>Twitch-Entwicklerkonsole</consoleLink> eine neue Anwendung registrieren: einen beliebigen Namen wählen, als „OAuth Redirect URL“ <code>http://localhost</code> eintragen (IGDB nutzt sie nicht) und eine Kategorie auswählen.',
+      step4: 'Als „Client Type“ <strong>Confidential</strong> wählen – nur dann gibt es ein Client-Secret.',
+      step5: 'Die App öffnen („Manage“), die Client-ID kopieren und mit „New Secret“ ein Client-Secret erzeugen.',
+      step6: 'Beides oben eintragen, „Verbindung testen“ und speichern.',
+      privacy:
+        'Die Zugangsdaten gehören zu deinem Twitch-Konto und bleiben verschlüsselt auf deinem PlatinVault-Server. IGDB ist laut eigener Dokumentation für nicht-kommerzielle Nutzung kostenlos.',
+    },
+  },
+
+  // Tab "KI-Recherche"
+  ai: {
+    title: 'API-Keys und Modelle (das Modell-Dropdown erscheint, sobald ein Key verbindet)',
+    geminiLabel: '1. Google Gemini API-Key (AIza...)',
+    geminiHint:
+      'Kostenlos und ohne Abo: <keyLink>Key in Google AI Studio erstellen →</keyLink> – Achtung: Neue Google-Konten bekommen im Gratis-Tarif keine Google-Suche mehr, die die Guide-Recherche braucht (eigener Test, Stand 31.10.2026); mit einem Google-Projekt mit Abrechnung funktioniert sie. „Verbindung echt testen“ zeigt, was dein Key darf. Im Gratis-Tarif nutzt Google die Anfragen zur Produktverbesserung; ein Gemini-Abo gilt nicht für API-Keys.',
+    claudeLabel: '2. Anthropic Claude API-Key (sk-ant-...)',
+    claudeHint:
+      'API-Nutzung wird bei Anthropic getrennt vom Claude-Abo abgerechnet (<keyLink>Key in der Anthropic Console</keyLink>). Mit Abo: Guide selbst in Claude Code erstellen und auf der Spielseite importieren.',
+    openaiLabel: '3. OpenAI ChatGPT API-Key (sk-proj-...)',
+    row: {
+      checking: 'Prüfe API-Verbindung & lade Modelle...',
+      connected_one: 'Verbunden ({{count}} Modell verfügbar)',
+      connected_other: 'Verbunden ({{count}} Modelle verfügbar)',
+      failed: 'Verbindung fehlgeschlagen: {{reason}}',
+      none: 'Kein API-Key verbunden',
+      saved: 'Gespeichert ({{hint}}) – zum Ändern neuen Key eintippen',
+      recheck: 'Verbindung prüfen',
+      recheckHint: 'Prüft den Key und lädt die verfügbaren Modelle neu',
+      recheckLabel: 'Verbindung prüfen und verfügbare Modelle neu laden',
+      removeKey: 'Gespeicherten Key entfernen',
+      modelLabel: '{{provider}} Modell auswählen',
+      budgetTip: '{{model}} · Spar-Tipp',
+      probeFailed: 'Verbindungsprüfung fehlgeschlagen.',
+    },
+    diagnose: {
+      intro: 'Prüft mit zwei Mini-Anfragen, ob dein Key mit „{{model}}“ antwortet – ohne und mit Google-Suche.',
+      run: 'Verbindung echt testen',
+      failed: 'Test fehlgeschlagen.',
+      plain: 'Ohne Suche',
+      search: 'Mit Google-Suche (für die Guide-Recherche nötig)',
+    },
+  },
+
+  // Tab "PlatinVault Bridge"
+  bridge: {
+    title: 'PlatinVault Bridge – Echtzeit von deinem Gaming-PC',
+    tokenActive: 'Token aktiv',
+    tokenActiveHint: 'Token aktiv ({{hint}})',
+    intro:
+      'Die PlatinVault Bridge ist ein kleines Programm für deinen Gaming-PC: Sie liest dort die Steam-Erfolge aus und meldet neue Freischaltungen in Echtzeit an PlatinVault, wenn PlatinVault auf einem anderen Rechner läuft (Server, NAS, Unraid …). Läuft PlatinVault direkt auf dem Gaming-PC, brauchst du sie nicht. Am einfachsten: „PlatinVault Bridge herunterladen“, ZIP auf dem Gaming-PC entpacken und „PlatinVault.Bridge.exe“ doppelklicken – das Einrichtungsfenster erledigt den Rest, Server-Adresse und Token sind schon drin, Updates holt sie sich selbst. Danach sitzt sie als Symbol unten rechts in der Taskleiste.',
+    introVersion: '(Bridge-Version {{version}})',
+    status: {
+      loading: 'Lade Bridge-Status...',
+      failed: 'Status konnte nicht geladen werden: {{reason}}',
+      noToken: 'Kein Token',
+      neverConnected: 'Token vorhanden, Bridge noch nie verbunden',
+      online: 'Verbunden – zuletzt gesehen {{date}}',
+      offline: 'Nicht verbunden – zuletzt gesehen {{date}}',
+    },
+    download: 'PlatinVault Bridge herunterladen',
+    downloadHint: 'Fertig eingerichtete Bridge {{version}} für diesen PC (ZIP)',
+    downloadMissing: 'Diese Installation enthält keine Bridge-Datei',
+    createToken: 'Token erzeugen',
+    deleteToken: 'Token löschen',
+    errors: {
+      create: 'Der Token konnte nicht erzeugt werden: {{reason}}',
+      delete: 'Der Token konnte nicht gelöscht werden: {{reason}}',
+      download: 'Die Bridge konnte nicht heruntergeladen werden: {{reason}}',
+    },
+    confirm: {
+      replaceTitle: 'Neuen Token erzeugen?',
+      packageTitle: 'Bridge mit neuem Token herunterladen?',
+      deleteTitle: 'Token löschen?',
+      replaceText:
+        'Der bisherige Token wird ungültig. Eine laufende Bridge verliert den Zugriff, bis du auf dem Gaming-PC den neuen Token eingetragen hast.',
+      deleteText:
+        'Die Bridge verliert den Zugriff und kann keine Erfolge mehr melden, bis du einen neuen Token erzeugst und auf dem Gaming-PC einträgst.',
+      replaceConfirm: 'Neuen Token erzeugen',
+      packageConfirm: 'Herunterladen',
+      deleteConfirm: 'Token löschen',
+    },
+    created: {
+      title: 'Bridge-Token erzeugt',
+      text: 'Führe den Befehl unten einmal auf deinem Gaming-PC aus. Mit <code>--save</code> merkt sich die Bridge Adresse und Token, danach startest du sie ohne Parameter.',
+      warning: 'Dieser Token wird nur jetzt angezeigt und ist später nicht mehr abrufbar. Kopiere ihn, bevor du das Fenster schließt.',
+      tokenLabel: 'Token',
+      commandLabel: 'Fertiger Befehl für den Gaming-PC',
+      localhost:
+        'Du hast PlatinVault über „{{host}}“ geöffnet. Ersetze <code>{{url}}</code> im Befehl durch die Adresse, unter der dein Server vom Gaming-PC aus erreichbar ist.',
+      copyBlocked: 'Der Browser hat das Kopieren blockiert – markiere den Text und kopiere ihn mit Strg+C.',
+      done: 'Fertig',
+    },
+    copy: {
+      button: 'Kopieren',
+      copied: 'Kopiert',
+      labelToken: 'Token in die Zwischenablage kopieren',
+      labelCommand: 'Befehl in die Zwischenablage kopieren',
+    },
+  },
+
+  // Tab "System"
+  system: {
+    title: 'System-Check',
+    checking: 'Prüfe …',
+    checked: 'Version {{version}} · geprüft {{time}}',
+    lastFailed: 'Letzte Prüfung fehlgeschlagen',
+    recheck: 'Erneut prüfen',
+    status: {
+      ok: 'OK',
+      warn: 'Achtung',
+      error: 'Fehler',
+      off: 'Nicht genutzt',
+      checking: 'Wird geprüft …',
+      unknown: 'Nicht prüfbar',
+    },
+    checks: {
+      frontend: 'Oberfläche',
+      backend: 'Backend (API)',
+      database: 'Datenbank (SQLite)',
+      data: 'Datenordner',
+      steamLocal: 'Steam auf diesem Rechner',
+      bridge: 'PlatinVault Bridge',
+      steamKey: 'Steam Web API-Key',
+      ai: 'KI-Anbieter',
+      twitch: 'Twitch & IGDB',
+    },
+    loadedFrom: 'Geladen von {{host}}',
+    backendDown: 'Nicht erreichbar: {{reason}} – läuft der PlatinVault-Server?',
+    noAnswer: 'keine Antwort',
+    notCheckable: 'Nicht prüfbar, solange das Backend nicht erreichbar ist',
+    notReported: 'Vom Server nicht gemeldet',
+    handbookTitle: 'Handbuch',
+    handbookText: 'Alles zu PlatinVault zum Nachlesen – als PDF, auf Deutsch und Englisch.',
+    handbookOpen: 'Handbuch öffnen',
+    licensesTitle: 'Lizenzen',
+    licensesText: 'Die Lizenz von PlatinVault (GNU AGPL v3) mit Link zum Quellcode und die Lizenztexte der enthaltenen Open-Source-Komponenten.',
+    licensesOpen: 'Lizenzen öffnen',
+    helpTitle: 'Hilfe',
+    resetHints: 'Seiten-Hinweise wieder anzeigen',
+    restartTour: 'Einführung erneut starten',
+    hintsReset: 'Die Hinweise erscheinen beim nächsten Besuch jeder Seite wieder.',
+  },
+  // Settings > System > Updates: switch "Beta-Versionen erhalten" (every platform), check, install (Windows) or image tag (containers)
+  updates: {
+    title: 'Updates',
+    installed: 'Installierte Version',
+    channel: { release: 'Release', beta: 'Beta', dev: 'Dev-Build' },
+    betaSwitch: 'Beta-Versionen erhalten',
+    betaOn: 'An: Du bekommst Betas und Releases – immer die neueste von beiden. Betas sind fertig gebaut und getestet, können aber noch Fehler haben.',
+    betaOff: 'Aus: Du bekommst nur Releases. Läuft gerade eine Beta, bleibt sie, bis ein neueres Release erscheint – es gibt nie einen Schritt zurück.',
+    saveFailed: 'Die Einstellung „Beta-Versionen erhalten“ wurde nicht gespeichert: {{reason}}',
+    check: 'Jetzt nach Updates suchen',
+    checking: 'Suche …',
+    checkedAt: 'Zuletzt geprüft: {{time}}',
+    neverChecked: 'Noch nicht geprüft',
+    result: {
+      loading: 'Lade den Stand der Update-Prüfung …',
+      checking: 'Frage die veröffentlichten Versionen bei GitHub ab …',
+      unchecked: 'Noch kein Ergebnis – drücke „Jetzt nach Updates suchen“.',
+      upToDate: 'Du bist auf dem neuesten Stand – es gibt kein neueres Release.',
+      upToDateBetas: 'Du bist auf dem neuesten Stand – es gibt keine neuere Beta und kein neueres Release.',
+      availableBeta: 'Neue Beta {{version}} verfügbar.',
+      availableRelease: 'Neues Release {{version}} verfügbar.',
+      disabled: 'In dieser Umgebung (Entwicklungs- oder Testlauf) sucht PlatinVault nicht nach Updates.',
+      devBuild: 'Dev-Build: Dieser Stand sucht nicht nach Updates und bietet nie Betas oder Releases an. Neue Dev-Builds kommen über den Update-Knopf von Unraid (Tag :dev) bzw. über den Installer aus dem Entwurf im Quell-Repo.',
+      throttled: 'Gerade erst geprüft – eine neue Abfrage ist ab {{time}} möglich. Angezeigt wird das letzte Ergebnis.',
+      error: 'Update-Prüfung fehlgeschlagen: {{reason}}',
+      installing: 'Der Installer wird heruntergeladen und geprüft …',
+      installStarted: 'Der Installer läuft. PlatinVault wird gleich beendet (mit Sicherung der Datenbank) und danach neu gestartet.',
+      installFailed: 'Das Update wurde nicht installiert: {{reason}}',
+    },
+    interval: {
+      label: 'Nach Updates suchen',
+      options: {
+        startup: 'Bei jedem Start',
+        '4h': 'Alle 4 Stunden',
+        daily: 'Täglich',
+        weekly: 'Wöchentlich',
+        monthly: 'Monatlich',
+        never: 'Nie (nur von Hand)',
+      },
+      hints: {
+        startup: 'PlatinVault sucht einmal beim Start nach Updates, danach erst wieder beim nächsten Start.',
+        '4h': 'PlatinVault sucht alle vier Stunden von selbst nach Updates.',
+        daily: 'PlatinVault sucht einmal am Tag von selbst nach Updates.',
+        weekly: 'PlatinVault sucht einmal pro Woche von selbst nach Updates. Nach einem Neustart wird erneut gesucht.',
+        monthly: 'PlatinVault sucht einmal im Monat von selbst nach Updates. Nach einem Neustart wird erneut gesucht.',
+        never: 'PlatinVault sucht nie von selbst, nur wenn du „Jetzt nach Updates suchen“ drückst. Das gilt auch für das Windows-Programm und sein Symbol neben der Uhr.',
+      },
+      saveFailed: 'Das Update-Intervall wurde nicht gespeichert: {{reason}}',
+    },
+    notes: 'Release-Notizen ansehen',
+    install: 'Update installieren',
+    confirm: {
+      title: 'Update installieren?',
+      message: 'PlatinVault {{next}} herunterladen und installieren? Du hast {{current}}. PlatinVault wird dafür beendet (mit Sicherung der Datenbank) und danach neu gestartet.',
+      confirm: 'Installieren',
+    },
+    docker: {
+      title: 'Container aktualisieren',
+      intro: 'Ein Container kann sein eigenes Image nicht austauschen. PlatinVault merkt sich deine Wahl und meldet neue Versionen; das eigentliche Update macht dein Server – gesteuert über den Image-Tag:',
+      tagLatest: 'nur Releases',
+      tagBeta: 'Betas und Releases (immer die neueste von beiden)',
+      adviceUseBeta: 'Du möchtest Betas, hier läuft aber ein Release. Nutzt dein Container noch {{latest}}, stelle ihn auf {{beta}} um – sonst kommen keine Betas an.',
+      adviceUseBetaNew: 'Es gibt die neue Beta {{version}}, hier läuft aber ein Release. Dein Container nutzt vermutlich noch {{latest}} – stelle ihn auf {{beta}} um, dann bekommst du sie.',
+      adviceBetaStays: 'Hier läuft die Beta {{current}}. Sie bleibt, bis ein Release erscheint, das mindestens so neu ist; stelle erst dann auf {{latest}} um – vorher wäre es ein Schritt zurück auf eine ältere Version.',
+      adviceSwitchToLatest: 'Das Release {{version}} ist mindestens so neu wie deine Beta {{current}}. Du kannst jetzt gefahrlos auf {{latest}} umstellen.',
+      unraidTitle: 'Unraid',
+      unraidSteps: 'Docker-Reiter → PlatinVault-Container anklicken → Edit → bei „Repository“ den Tag ändern (z. B. {{image}}) → Apply. Appdata und Einstellungen bleiben erhalten. Neue Versionen holst du danach wie gewohnt mit „Check for Updates“ und „Update“.',
+      composeTitle: 'Docker Compose',
+      composeSteps: 'In der docker-compose.yml die Zeile „image:“ ändern und im selben Ordner ausführen:',
+      otherTitle: 'Andere NAS (Synology, QNAP, …)',
+      otherSteps: 'In der Container-Verwaltung deines NAS das Image des PlatinVault-Containers auf den gewünschten Tag umstellen und den Container mit dem neuen Image neu erstellen. Daten-Ordner und Datenbank bleiben dabei erhalten, solange du sie nicht selbst löschst.',
+    },
+  },
+} as const
+
+export default settings

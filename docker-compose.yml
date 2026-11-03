@@ -1,0 +1,24 @@
+# Live/production profile on this PC: the built image exactly as Unraid/Linux/NAS run it - one container, the SQLite database and its
+# backups inside the data folder (bind mount, never a Docker volume). Development itself needs no Docker (.\start.ps1).
+#
+#   docker compose up -d --build      -> http://localhost:5233
+#   docker compose down               (the data folder .data/live stays)
+#
+# Own Compose project name, so nothing here can ever touch the development data in .data/dev.
+
+name: platinvault-live
+
+services:
+  app:
+    build: .
+    image: platinvault:local
+    container_name: PlatinVault-Live
+    ports:
+      - "127.0.0.1:5233:8080"
+    environment:
+      # The container starts as root only to give /data to this user, then drops to it (deploy/docker-entrypoint.sh)
+      PUID: "1000"
+      PGID: "1000"
+    volumes:
+      - ./.data/live:/data
+    restart: "no"

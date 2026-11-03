@@ -1,0 +1,74 @@
+﻿PlatinVault Bridge
+==================
+
+Was ist das?
+Die Bridge läuft auf deinem Gaming-PC und meldet freigeschaltete Steam-Erfolge in
+Echtzeit an deinen PlatinVault-Server. Sie braucht kein .NET und keine Administrator-
+rechte, aktualisiert sich selbst und zeigt ein kleines Pokal-Symbol im Tray.
+
+So richtest du sie ein
+1. ZIP entpacken (Rechtsklick > "Alle extrahieren"). Der Ort ist egal, z. B. der Desktop.
+2. PlatinVault.Bridge.exe doppelklicken.
+   Meldet Windows "Der Computer wurde durch Windows geschützt", wähle
+   "Weitere Informationen" und dann "Trotzdem ausführen".
+3. Es öffnet sich das Einrichtungsfenster. Es zeigt Server und Token (aus bridge.json) und
+   prüft die Verbindung sofort: "Verbunden mit ... - Steam-Konto ..." heißt, alles passt.
+4. Mit "Installieren & starten" wird die Bridge für deinen Benutzer eingerichtet:
+   - kopiert nach %LOCALAPPDATA%\Programs\PlatinVault Bridge
+   - startet mit Windows (abwählbar)
+   - Eintrag im Startmenü (abwählbar)
+   - Eintrag unter Windows "Apps" zum Deinstallieren
+   Danach kannst du den entpackten Ordner löschen.
+
+Sprache
+Die Bridge spricht die Sprache deines PlatinVault (Deutsch oder Englisch): Das ZIP bringt sie
+schon mit, und sobald die Bridge verbunden ist, folgt sie PlatinVault, wenn du dort die Sprache
+umstellst. Vor der ersten Verbindung nutzt sie die Anzeigesprache von Windows.
+Mit "--language de" oder "--language en" lässt sich eine Sprache erzwingen.
+(An English version of this file: README.txt)
+
+Handbuch
+Im ZIP liegt das PlatinVault-Handbuch als PDF, auf Deutsch ("Handbuch (Deutsch).pdf") und
+auf Englisch ("Handbook (English).pdf"). Die Bridge öffnet das in ihrer Sprache: aus dem
+Einrichtungsfenster ("Handbuch öffnen") und später per Rechtsklick auf das Tray-Symbol >
+"Handbuch öffnen".
+
+Lizenzen
+PlatinVault ist freie Software unter der GNU Affero General Public License v3 (AGPL-3.0-only);
+der Quellcode steht unter https://github.com/sushiflux/PlatinVault.
+Im ZIP liegen außerdem LICENSE (der Lizenztext) und THIRD-PARTY-NOTICES.md
+(Urheberrechtsvermerke und Lizenztexte der enthaltenen Open-Source-Teile, z. B. der .NET-Laufzeit).
+Beide Dateien lassen sich mit jedem Texteditor öffnen (Rechtsklick > "Öffnen mit" > Editor) und
+werden bei der Installation in den Programmordner mitkopiert. In der PlatinVault-Oberfläche stehen
+sie unter Einstellungen > System > "Lizenzen" und im Fuß der Seite.
+
+Woran sehe ich, dass sie läuft?
+Unten rechts neben der Uhr erscheint das Pokal-Symbol der Bridge. Farbig = verbunden,
+grau = nicht verbunden. Fahre mit der Maus darüber, dann siehst du den Status und das
+aktuelle Spiel mit Fortschritt, z. B. "Spiel: Cyberpunk 2077 (12/44)".
+- Doppelklick auf das Symbol: Statusfenster
+- Rechtsklick: PlatinVault öffnen, Handbuch öffnen, Protokoll öffnen, Mit Windows starten,
+  Beenden, Deinstallieren
+Windows 11 versteckt neue Symbole gern hinter dem Pfeil "^" neben der Uhr. Dauerhaft
+einblenden: Einstellungen > Personalisierung > Taskleiste > "Weitere Symbole der
+Taskleiste" > PlatinVault Bridge einschalten.
+Startest du PlatinVault.Bridge.exe noch einmal, während sie läuft, öffnet sich ihr
+Statusfenster.
+
+Wo sind meine Zugangsdaten?
+In der Datei bridge.json (Server-Adresse und dein persönliches Token), nach der
+Installation im Programmordner. Gib sie nicht weiter. Hast du in PlatinVault ein neues
+Token erzeugt, lade das Paket neu herunter und führe die Einrichtung erneut aus.
+
+Protokoll
+%LOCALAPPDATA%\PlatinVault\bridge.log   (Windows-Taste + R, Pfad einfügen, Enter)
+oder Rechtsklick auf das Tray-Symbol > "Protokoll öffnen".
+
+Updates
+Die Bridge holt sich neue Versionen selbst von deinem PlatinVault-Server, du musst nichts
+tun. Das Symbol meldet kurz, wenn sie aktualisiert wurde.
+
+Deinstallieren
+Windows-Einstellungen > Apps > Installierte Apps > "PlatinVault Bridge" > Deinstallieren,
+oder Rechtsklick auf das Tray-Symbol > "Deinstallieren ...". Die Bridge wird beendet, der
+Autostart und der Programmordner werden entfernt.

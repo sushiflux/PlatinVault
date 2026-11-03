@@ -1,0 +1,14 @@
+<CommunityApplications>
+  <Profile>
+**PlatinVault** by SushiFlux – live Steam achievements as trophy pop-ups and AI-researched 100% guides in one app, for your Unraid server (and as a Windows program).
+
+Open source (GNU AGPL v3). This repository holds the source code, the Unraid template (unraid/platinvault.xml), the README with installation help and the releases. Questions and problems: see the support link.
+
+**PlatinVault** von SushiFlux – Steam-Erfolge live als Trophäen-Popups und KI-recherchierte 100%-Guides in einer App, für deinen Unraid-Server (und als Windows-Programm).
+
+Open Source (GNU AGPL v3). Dieses Repository enthält den Quellcode, das Unraid-Template (unraid/platinvault.xml), die README mit Installationshilfe und die Releases. Fragen und Probleme: siehe Support-Link.
+  </Profile>
+  <Icon>https://raw.githubusercontent.com/sushiflux/PlatinVault/master/branding/icon.png</Icon>
+  <WebPage>https://github.com/sushiflux/PlatinVault</WebPage>
+  <Forum>https://github.com/sushiflux/PlatinVault</Forum>
+</CommunityApplications>

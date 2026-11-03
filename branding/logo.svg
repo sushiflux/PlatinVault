@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="bgCrest" x1="6" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1e293b" />
+      <stop offset="50%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <radialGradient id="auraGlow" cx="32" cy="24" r="24" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7dd3fc" stop-opacity="0.42" />
+      <stop offset="55%" stop-color="#c4b5fd" stop-opacity="0.16" />
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="cupBody" x1="18" y1="12" x2="46" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="28%" stop-color="#e0f2fe" />
+      <stop offset="62%" stop-color="#7dd3fc" />
+      <stop offset="100%" stop-color="#38bdf8" />
+    </linearGradient>
+    <linearGradient id="cupShine" x1="22" y1="14" x2="31" y2="36" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#e0f2fe" stop-opacity="0.1" />
+    </linearGradient>
+    <linearGradient id="goldTrim" x1="12" y1="14" x2="52" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="45%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <linearGradient id="pedestal" x1="20" y1="46" x2="44" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#94a3b8" />
+      <stop offset="50%" stop-color="#475569" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#bgCrest)" stroke="url(#goldTrim)" stroke-width="2" />
+  <circle cx="32" cy="26" r="24" fill="url(#auraGlow)" />
+  <path d="M20 17H14.5C12.5 17 11 18.6 11 20.6C11 26.2 15.2 31.2 21.5 32.2" stroke="url(#goldTrim)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M44 17H49.5C51.5 17 53 18.6 53 20.6C53 26.2 48.8 31.2 42.5 32.2" stroke="url(#goldTrim)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M18 13.5L23 16L27.5 12.5L32 16L36.5 12.5L41 16L46 13.5V16.5H18V13.5Z" fill="url(#goldTrim)" />
+  <path d="M19 16H45V25.5C45 33.2 39.2 39.2 32 39.2C24.8 39.2 19 33.2 19 25.5V16Z" fill="url(#cupBody)" stroke="url(#goldTrim)" stroke-width="1.6" />
+  <path d="M22 18H29.5V36.8C25.2 35.6 22 31.1 22 25.5V18Z" fill="url(#cupShine)" />
+  <path d="M29 39H35V46.5H29V39Z" fill="url(#goldTrim)" />
+  <rect x="26.5" y="41.5" width="11" height="2.6" rx="1.3" fill="#ffffff" fill-opacity="0.85" />
+  <path d="M21 46.5H43L45.5 53.5H18.5L21 46.5Z" fill="url(#pedestal)" stroke="url(#goldTrim)" stroke-width="1.5" stroke-linejoin="round" />
+  <rect x="25" y="48.8" width="14" height="2.6" rx="1" fill="url(#goldTrim)" />
+  <rect x="16.5" y="53.5" width="31" height="3" rx="1.5" fill="url(#goldTrim)" />
+  <path d="M32 20L34.3 24.6L39.4 25.3L35.7 28.9L36.6 34L32 31.5L27.4 34L28.3 28.9L24.6 25.3L29.7 24.6L32 20Z" fill="url(#goldTrim)" stroke="#0f172a" stroke-width="0.8" stroke-linejoin="round" />
+  <path d="M14 9L15.1 11.4L17.5 12.5L15.1 13.6L14 16L12.9 13.6L10.5 12.5L12.9 11.4L14 9Z" fill="#ffffff" />
+  <path d="M50 8L50.9 10.1L53 11L50.9 11.9L50 14L49.1 11.9L47 11L49.1 10.1L50 8Z" fill="#fef08a" />
+  <circle cx="32" cy="8.5" r="1.5" fill="#7dd3fc" />
+</svg>

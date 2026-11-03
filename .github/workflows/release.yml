@@ -1,0 +1,325 @@
+name: Release
+
+# Three-tier push model: dev build, beta, release.
+# Since 2026-11-03 PlatinVault is open source (AGPL-3.0-only) in ONE public repository: source code, customer files and every
+# release live here (the former private source repo and the separate customer repo were merged).
+#   v2026.11.12.13.557-beta -> beta (replaces the former release candidate; no counter, the five segments are unique per commit):
+#                              builds the image (version tag + moving tag "beta"), public GitHub pre-release in this repository
+#   v2026.11.12             -> release: same build, version tag + "latest" + "beta", normal public GitHub Release
+# Release notes (beta and release): only this version's entry of CHANGELOG.md - its English and its German block, found by the readable
+# version in the heading ("## v2026.11.12 (13.557 β)" for a beta, "## v2026.11.12 (13.557)" for a release), extracted by
+# scripts/release-notes.sh. A missing entry stops the run.
+# Image tags for customers (switch "Beta-Versionen erhalten", user decision 2026-11-02): ":latest" = releases only, ":beta" = the newest of
+# betas AND releases - so a release moves "beta" too (a release is always a later commit than the betas before it).
+# Tags and image labels use the technical form (no spaces, parentheses or the beta sign); people see the readable form
+# "v2026.11.12 (13.557 β)" (release: "v2026.11.12 (13.557)") in the release title and the app - scripts/version-display.sh is the single
+# definition for this workflow, src/PlatinVault.Versioning/VersionFormat.cs for the programs.
+# The target is not part of the tag name: the annotated tag message carries a line "platform: unraid" (ids unraid,
+# windows-server, windows-desktop, comma-separated, or all); no such line means every target. unraid/all/empty build the
+# Docker image + Unraid template (job "build"); windows-desktop/all/empty build the Windows installer (job "windows").
+#
+# Third kind, "Dev-Build" (user decision 2026-11-02): the real package for the user's own testing on his Unraid / Windows PC, never published.
+#   v2026.11.12.13.557-dev  -> dev build (five-segment id, no counter; checked against version.txt line 2 like a beta):
+#                              image: version tag + moving tag "dev" (never "beta"/"latest"); the Unraid template for it (PlatinVault-Dev,
+#                              own appdata and port) is only a workflow artifact; Windows: the installer is attached to a DRAFT release in
+#                              this repository (drafts are only visible to collaborators with write access, and the update check
+#                              never sees them). The release notes are not taken from any changelog file (a dev build has no
+#                              customer-facing notes).
+# Note: the GHCR package itself is public (so Unraid can pull it without a login), hence ":dev" is technically pullable by anyone.
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  IMAGE_NAME: ghcr.io/sushiflux/platinvault
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      is_beta: ${{ steps.version.outputs.is_beta }}
+      is_dev: ${{ steps.version.outputs.is_dev }}
+      is_draft: ${{ steps.version.outputs.is_draft }}
+      builds_windows: ${{ steps.version.outputs.builds_windows }}
+      bridge_version: ${{ steps.version.outputs.bridge_version }}
+      release_name: ${{ steps.version.outputs.release_name }}
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Repo auschecken
+        uses: actions/checkout@v5
+        with:
+          # Full history: the bridge version 1.0.<n> counts the commits of the bridge files
+          fetch-depth: 0
+
+      - name: Version und Ziel aus dem Tag ableiten
+        id: version
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          is_beta=false
+          is_dev=false
+          if [[ "$tag" == *-beta ]]; then
+            is_beta=true
+          elif [[ "$tag" == *-dev ]]; then
+            is_dev=true
+          elif [[ "$tag" == *-rc* ]]; then
+            echo "::error::Release candidates were replaced by betas (tag v<year>.<month>.<commit>.<prompts>.<lines>-beta); $tag cannot be built any more"
+            exit 1
+          fi
+
+          # actions/checkout may have flattened the annotated tag - re-fetch the real tag object for its message
+          git fetch --force origin "refs/tags/${tag}:refs/tags/${tag}" || true
+          platform="$(git tag -l --format='%(contents)' "$tag" | sed -n 's/^platform:[[:space:]]*//p' | head -n1 | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
+          builds_unraid=false
+          case ",${platform}," in
+            ",,"|*,unraid,*|*,all,*) builds_unraid=true ;;
+          esac
+          builds_windows=false
+          case ",${platform}," in
+            ",,"|*,windows-desktop,*|*,all,*) builds_windows=true ;;
+          esac
+          echo "Build-Ziel: platform='${platform:-alle}' builds_unraid=$builds_unraid builds_windows=$builds_windows"
+
+          target_label=""
+          if [[ -z "$platform" || ",${platform}," == *,all,* ]]; then
+            target_label="All"
+          else
+            IFS=',' read -ra ids <<< "$platform"
+            for id in "${ids[@]}"; do
+              case "$id" in
+                unraid) name="Unraid" ;;
+                windows-server) name="Windows Server" ;;
+                windows-desktop) name="Windows Desktop" ;;
+                *) name="$id" ;;
+              esac
+              target_label="${target_label:+$target_label, }$name"
+            done
+          fi
+
+          # version.txt is written into every commit by the pre-commit hook: line 1 = vYear.Month.Commit, line 2 = the
+          # five-segment build id. The app derives its readable version ("v2026.11.12 (13.557 β)") from both lines plus the channel.
+          short_version="$(sed -n '1p' version.txt | tr -d '\r[:space:]')"
+          detail_version="$(sed -n '2p' version.txt | tr -d '\r[:space:]')"
+          if [[ -z "$detail_version" ]]; then detail_version="$short_version"; fi
+          kind=release
+          if [[ "$is_beta" == "true" ]]; then kind=beta; fi
+          if [[ "$is_dev" == "true" ]]; then kind=dev; fi
+          # The tag must be the technical form of this commit's version: a beta/dev tag carries the five-segment build id
+          # (v2026.11.12.13.557-beta / -dev), a release tag the plain version (v2026.11.12)
+          expected_tag="$(sh scripts/version-display.sh tag "$short_version" "$detail_version" "$kind")"
+          if [[ "$tag" != "$expected_tag" ]]; then
+            echo "::error::Tag $tag passt nicht zu $expected_tag (version.txt)"
+            exit 1
+          fi
+          display_version="$(sh scripts/version-display.sh display "$short_version" "$detail_version" "$kind")"
+
+          bridge_count="$(git rev-list --count HEAD -- src/PlatinVault.Bridge src/Companion.Api/Services/SteamLocalStatsService.cs)"
+
+          channel=release
+          # The release template points at the moving tag "latest" (a fixed version tag would never show an update in Unraid)
+          template_tag=latest
+          # Release notes: this version's entry of CHANGELOG.md (English, rule, German). A dev build has none, its draft gets a one-line text.
+          notes_file=dist/release-notes.md
+          release_body=""
+          if [[ "$is_beta" == "true" ]]; then
+            channel=beta
+            # The beta template points at the moving tag "beta": the test container is updated in place by Unraid's own update
+            template_tag=beta
+          elif [[ "$is_dev" == "true" ]]; then
+            channel=dev
+            # Same for the dev template and its moving tag "dev" (the image is never tagged beta/latest)
+            template_tag=dev
+            notes_file=""
+            release_body="Dev build for internal testing only - not a release, not offered as an update."
+          fi
+          if [[ -n "$notes_file" ]]; then
+            mkdir -p dist
+            if ! sh scripts/release-notes.sh CHANGELOG.md "$display_version" > "$notes_file"; then
+              echo "::error::CHANGELOG.md hat keinen Eintrag \"## $display_version\" (Englisch und Deutsch) - Changelog beim Commit schreiben (Überschrift ## vNEXT bzw. ## vNEXT β)"
+              exit 1
+            fi
+            echo "Release-Notizen ($(wc -l < "$notes_file") Zeilen):"
+            cat "$notes_file"
+          fi
+          # Only a dev build is a draft (visible to collaborators only); a beta is a public pre-release, a release a normal release
+          is_draft=false
+          if [[ "$is_dev" == "true" ]]; then is_draft=true; fi
+
+          {
+            echo "tag=$tag"
+            echo "is_beta=$is_beta"
+            echo "is_dev=$is_dev"
+            echo "is_draft=$is_draft"
+            echo "kind=$kind"
+            echo "notes_file=$notes_file"
+            echo "release_body=$release_body"
+            echo "builds_unraid=$builds_unraid"
+            echo "builds_windows=$builds_windows"
+            echo "docker_tag=${tag#v}"
+            echo "template_tag=$template_tag"
+            echo "app_version=$short_version"
+            echo "created=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "app_version_detail=$detail_version"
+            echo "app_channel=$channel"
+            echo "bridge_version=1.0.$bridge_count"
+            # The release title is the readable version, then the target (same shape as the changelog heading):
+            # "v2026.11.12 (13.557 β) · Unraid, Windows"; the middle dot is written as its UTF-8 bytes
+            echo "release_name=$display_version $(printf '\302\267') $target_label"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Docker Buildx einrichten
+        if: steps.version.outputs.builds_unraid == 'true'
+        uses: docker/setup-buildx-action@v4
+
+      - name: Bei GHCR anmelden
+        if: steps.version.outputs.builds_unraid == 'true'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image bauen und pushen
+        if: steps.version.outputs.builds_unraid == 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          build-args: |
+            APP_VERSION=${{ steps.version.outputs.app_version }}
+            APP_VERSION_DETAIL=${{ steps.version.outputs.app_version_detail }}
+            APP_CHANNEL=${{ steps.version.outputs.app_channel }}
+            BRIDGE_VERSION=${{ steps.version.outputs.bridge_version }}
+          # Update tools on the server (e.g. ShipLog, Docker Versions) read these labels: the source points at this (public) repository,
+          # where every beta/release is published with its notes; the version is the tag (technical form, five segments for a beta)
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=${{ steps.version.outputs.tag }}
+            org.opencontainers.image.created=${{ steps.version.outputs.created }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.title=PlatinVault
+          # "beta" moves with every beta AND every release (":beta" = newest of both), "latest" only with a release; a dev build moves
+          # only its own tag "dev" (the kind is release / beta / dev)
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.docker_tag }}
+            ${{ steps.version.outputs.kind == 'dev' && format('{0}:dev', env.IMAGE_NAME) || format('{0}:beta', env.IMAGE_NAME) }}
+            ${{ steps.version.outputs.kind == 'release' && format('{0}:latest', env.IMAGE_NAME) || '' }}
+
+      - name: Unraid-Template rendern
+        if: steps.version.outputs.builds_unraid == 'true'
+        run: |
+          mkdir -p dist
+          template=dist/platinvault.xml
+          # unraid/platinvault.xml in the repository is the RELEASE form (":latest" plus the "beta" tag choice) - the raw file customers
+          # fetch with wget; the beta and dev templates are derived from it here
+          grep -q '<Repository>ghcr.io/sushiflux/platinvault:latest</Repository>' unraid/platinvault.xml
+          sed "s#ghcr.io/sushiflux/platinvault:latest#ghcr.io/sushiflux/platinvault:${{ steps.version.outputs.template_tag }}#" \
+            unraid/platinvault.xml > "$template"
+          if [[ "${{ steps.version.outputs.is_beta }}" == "true" ]]; then
+            # The beta template (hand-copied to the own Unraid for testing) has no tag choice: its default already is ":beta"
+            sed -i -e '/<DefaultTagDescription>/d' -e '/<Branch>/,/<\/Branch>/d' "$template"
+          fi
+          if [[ "${{ steps.version.outputs.is_dev }}" == "true" ]]; then
+            # The dev template can run next to a real installation: own container name, own appdata folder (its own SQLite database -
+            # a dev build may be ahead of the live schema) and its own host port (5239; the live template uses 5233). No tag choice:
+            # its default already is ":dev". It is only a workflow artifact (the user copies it to his own Unraid) - never published anywhere.
+            template=dist/PlatinVault-Dev.xml
+            mv dist/platinvault.xml "$template"
+            sed -i \
+              -e '/<DefaultTagDescription>/d' -e '/<Branch>/,/<\/Branch>/d' \
+              -e 's#<Name>PlatinVault</Name>#<Name>PlatinVault-Dev</Name>#' \
+              -e 's#/mnt/cache/appdata/platinvault#/mnt/cache/appdata/platinvault-dev#g' \
+              -e '/Name="WebUI Port"/s/5233/5239/g' \
+              -e 's#<Overview>#<Overview>DEV BUILD for the developer'"'"'s own testing - not for everyday use. It keeps its own data (database, backups, keys) in its own appdata folder, apart from a real installation. / DEV-BUILD nur zum eigenen Testen des Entwicklers - nicht fuer den Alltag. Er hat seine eigenen Daten (Datenbank, Sicherungen, Schluessel) in einem eigenen Appdata-Ordner, getrennt von einer echten Installation.\n\n#' \
+              "$template"
+            grep -q '<Name>PlatinVault-Dev</Name>' "$template"
+            grep -q 'Default="5239"' "$template"
+            grep -q 'Default="/mnt/cache/appdata/platinvault-dev"' "$template"
+            grep -q '>/mnt/cache/appdata/platinvault-dev<' "$template"
+            # Neither the live appdata folder nor any database setting may be left in the dev template
+            if grep -qE '/mnt/(cache|user)/appdata/platinvault(<|")' "$template"; then
+              echo "::error::The dev template still points at the live appdata folder"
+              exit 1
+            fi
+            if grep -qiE 'Companion__Database|PostgreSQL' "$template"; then
+              echo "::error::The dev template still contains database settings"
+              exit 1
+            fi
+          fi
+          grep -q "<Repository>ghcr.io/sushiflux/platinvault:${{ steps.version.outputs.template_tag }}</Repository>" "$template"
+
+      # The dev template is not attached to any release: it is a workflow artifact of this run (private repository, 30 days)
+      - name: Dev-Template als Workflow-Artefakt ablegen
+        if: steps.version.outputs.builds_unraid == 'true' && steps.version.outputs.is_dev == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: PlatinVault-Dev-template
+          path: dist/PlatinVault-Dev.xml
+          retention-days: 30
+          if-no-files-found: error
+
+      # A dev build only gets a (draft) release when there is a Windows installer to attach to it (the "windows" job adds it)
+      - name: GitHub Release erstellen
+        if: steps.version.outputs.is_dev != 'true' || steps.version.outputs.builds_windows == 'true'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.release_name }}
+          draft: ${{ steps.version.outputs.is_draft }}
+          prerelease: ${{ steps.version.outputs.is_beta }}
+          body: ${{ steps.version.outputs.release_body }}
+          body_path: ${{ steps.version.outputs.notes_file }}
+          files: ${{ steps.version.outputs.builds_unraid == 'true' && steps.version.outputs.is_dev != 'true' && 'dist/platinvault.xml' || '' }}
+
+  # Windows program: the designed installer PlatinVault-Setup-<version>.exe (scripts/build-windows.ps1). Built on Windows because the
+  # program and the installer are WinForms exes (the database is SQLite inside the program, nothing else is bundled or compiled).
+  # Runs after "build" (which created the release) and attaches the installer, its .sha256 and the bridge exe to it.
+  windows:
+    needs: build
+    if: needs.build.outputs.builds_windows == 'true'
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Repo auschecken
+        uses: actions/checkout@v5
+        with:
+          # Full history: the bridge version 1.0.<n> counts the commits of the bridge files
+          fetch-depth: 0
+
+      - name: .NET einrichten
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Node einrichten
+        uses: actions/setup-node@v5
+        with:
+          node-version: 26
+
+      - name: Windows-Programm und Installer bauen
+        shell: powershell
+        run: |
+          $buildArgs = @{ BridgeVersion = '${{ needs.build.outputs.bridge_version }}' }
+          if ('${{ needs.build.outputs.is_beta }}' -eq 'true') { $buildArgs['Beta'] = $true }
+          if ('${{ needs.build.outputs.is_dev }}' -eq 'true') { $buildArgs['Dev'] = $true }
+          .\scripts\build-windows.ps1 @buildArgs
+          Get-ChildItem artifacts\windows | Format-Table Name, Length
+
+      # The same release the "build" job created: a draft for a dev build, a public pre-release for a beta, a normal release otherwise.
+      # Customers and the program's own update check download from here (drafts are invisible to the update check).
+      - name: Installer an das Release haengen
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ needs.build.outputs.tag }}
+          draft: ${{ needs.build.outputs.is_draft }}
+          prerelease: ${{ needs.build.outputs.is_beta }}
+          files: |
+            artifacts/windows/PlatinVault-Setup-*.exe
+            artifacts/windows/PlatinVault-Setup-*.exe.sha256
+            artifacts/windows/PlatinVault.Bridge.exe
+

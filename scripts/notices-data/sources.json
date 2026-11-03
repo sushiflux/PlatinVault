@@ -1,0 +1,99 @@
+{
+  "_comment": "Data for scripts/build-notices.ts. templates: standard licence text (without copyright line) for packages that declare a licence but ship no licence file; textOverrides: verbatim licence file for packages that ship none; assets: bundled media/fonts that are no packages (mustExist = artifacts that have to be present, otherwise the entry is stale or the artifact is missing). All text files live in notices-data/texts/.",
+  "templates": {
+    "MIT": "MIT.txt"
+  },
+  "textOverrides": {
+    "npm:@microsoft/signalr": {
+      "file": "MIT-dotnet-foundation.txt",
+      "source": "https://github.com/dotnet/aspnetcore/blob/main/LICENSE.txt",
+      "why": "The npm package ships no licence file; package.json declares MIT and points to dotnet/aspnetcore (src/SignalR). Text: LICENSE.txt of that repository."
+    },
+    "npm:tr46": {
+      "file": "MIT-tr46.txt",
+      "source": "https://github.com/Sebmaster/tr46.js/blob/master/LICENSE.md",
+      "why": "The npm package ships no licence file; package.json declares MIT. Text: LICENSE.md of the repository."
+    },
+    "nuget:SQLitePCLRaw.core": {
+      "file": "Apache-2.0-SQLitePCLRaw.txt",
+      "source": "https://github.com/ericsink/SQLitePCL.raw/blob/v2.1.12/LICENSE.TXT + NOTICE.TXT",
+      "why": "The NuGet packages declare Apache-2.0 by expression only and ship no licence file. Text: LICENSE.TXT plus NOTICE.TXT of the repository (tag v2.1.12 - there is no tag v2.1.13; LICENSE.TXT is identical on master, checked 2026-11-03). The NOTICE carries the licence of SQLite itself (public domain, the blessing), which lib.e_sqlite3 contains as native code."
+    },
+    "nuget:SQLitePCLRaw.bundle_e_sqlite3": {
+      "file": "Apache-2.0-SQLitePCLRaw.txt",
+      "source": "https://github.com/ericsink/SQLitePCL.raw/blob/v2.1.12/LICENSE.TXT + NOTICE.TXT",
+      "why": "The NuGet packages declare Apache-2.0 by expression only and ship no licence file. Text: LICENSE.TXT plus NOTICE.TXT of the repository (tag v2.1.12 - there is no tag v2.1.13; LICENSE.TXT is identical on master, checked 2026-11-03). The NOTICE carries the licence of SQLite itself (public domain, the blessing), which lib.e_sqlite3 contains as native code."
+    },
+    "nuget:SQLitePCLRaw.lib.e_sqlite3": {
+      "file": "Apache-2.0-SQLitePCLRaw.txt",
+      "source": "https://github.com/ericsink/SQLitePCL.raw/blob/v2.1.12/LICENSE.TXT + NOTICE.TXT",
+      "why": "The NuGet packages declare Apache-2.0 by expression only and ship no licence file. Text: LICENSE.TXT plus NOTICE.TXT of the repository (tag v2.1.12 - there is no tag v2.1.13; LICENSE.TXT is identical on master, checked 2026-11-03). The NOTICE carries the licence of SQLite itself (public domain, the blessing), which lib.e_sqlite3 contains as native code."
+    },
+    "nuget:SQLitePCLRaw.provider.e_sqlite3": {
+      "file": "Apache-2.0-SQLitePCLRaw.txt",
+      "source": "https://github.com/ericsink/SQLitePCL.raw/blob/v2.1.12/LICENSE.TXT + NOTICE.TXT",
+      "why": "The NuGet packages declare Apache-2.0 by expression only and ship no licence file. Text: LICENSE.TXT plus NOTICE.TXT of the repository (tag v2.1.12 - there is no tag v2.1.13; LICENSE.TXT is identical on master, checked 2026-11-03). The NOTICE carries the licence of SQLite itself (public domain, the blessing), which lib.e_sqlite3 contains as native code."
+    }
+  },
+  "licenseFileIds": {
+    "nuget:Microsoft.Web.WebView2": {
+      "spdx": "BSD-3-Clause",
+      "mustContain": [
+        "Redistribution and use in source and binary forms, with or without",
+        "Redistributions in binary form must reproduce the above",
+        "may not be used to endorse or promote products derived from this"
+      ],
+      "why": "The package declares <license type=\"file\">LICENSE.txt</license>; the file is the 3-clause BSD licence (Microsoft Corporation), read 2026-11-01 for 1.0.4314.35."
+    }
+  },
+  "assets": [
+    {
+      "name": "Inter (Schrift)",
+      "version": "5.3.0 (Fontsource-Paket @fontsource/inter)",
+      "usedIn": "Handbuch-PDFs (Schrift ist in die PDF-Dateien eingebettet)",
+      "license": "OFL-1.1",
+      "copyright": [
+        "Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)"
+      ],
+      "source": "https://github.com/rsms/inter",
+      "textFile": "OFL-1.1-Inter.txt",
+      "mustExist": [
+        "docs/handbuch/de/PlatinVault-Handbuch.pdf",
+        "docs/handbuch/en/PlatinVault-Handbook.pdf"
+      ]
+    },
+    {
+      "name": "JetBrains Mono (Schrift)",
+      "version": "5.3.0 (Fontsource-Paket @fontsource/jetbrains-mono)",
+      "usedIn": "Handbuch-PDFs (Schrift ist in die PDF-Dateien eingebettet)",
+      "license": "OFL-1.1",
+      "copyright": [
+        "Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)"
+      ],
+      "source": "https://github.com/JetBrains/JetBrainsMono",
+      "textFile": "OFL-1.1-JetBrainsMono.txt",
+      "mustExist": [
+        "docs/handbuch/de/PlatinVault-Handbuch.pdf",
+        "docs/handbuch/en/PlatinVault-Handbook.pdf"
+      ]
+    },
+    {
+      "name": "Trophäen-Klänge (Themes Kristall, Orchester, Spieluhr)",
+      "version": "bearbeitete Mischungen aus zwei CC0-Sample-Bibliotheken",
+      "usedIn": "Browser-App (Trophäen-Popup, Dateien unter /sounds/)",
+      "license": "CC0-1.0",
+      "copyright": [
+        "Versilian Community Sample Library (VCSL) - Versilian Studios LLC, Sam Gossner",
+        "VSCO 2 Community Edition (VSCO-2-CE) - Versilian Studios / Sam Gossner, Simon Dalzell (Ivy Audio)"
+      ],
+      "source": "https://github.com/sgossner/VCSL und https://github.com/sgossner/VSCO-2-CE",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "note": "Beide Bibliotheken stehen unter CC0 1.0 (gemeinfrei, keine Namensnennung nötig). Die Nennung der Urheber geschieht freiwillig und auf ausdrücklichen Wunsch der Autoren.",
+      "mustExist": [
+        "frontend/public/sounds/kristall",
+        "frontend/public/sounds/orchester",
+        "frontend/public/sounds/spieluhr"
+      ]
+    }
+  ]
+}

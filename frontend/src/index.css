@@ -1,0 +1,3743 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light dark;
+
+  &:has(> head > meta[name="color-scheme"][content="dark"]) {
+    color-scheme: dark;
+  }
+  &:has(> head > meta[name="color-scheme"][content="light"]) {
+    color-scheme: light;
+  }
+
+  /* Harmonious Pastel & 100-Prozent Guide Design Tokens (WCAG AA Verified) */
+  --bg-primary: light-dark(#f4f6fb, #171f30);
+  --bg-surface: light-dark(#ffffff, #1f293d);
+  --bg-elevated: light-dark(#edf1f9, #28354e);
+  --bg-glass: light-dark(rgba(255, 255, 255, 0.90), rgba(31, 41, 61, 0.90));
+
+  --text-primary: light-dark(#1e293b, #f8fafc);
+  --text-secondary: light-dark(#334155, #dbe4f0);
+  --text-muted: light-dark(#475569, #a3b3c9);
+
+  /* High-contrast UI Borders (>= 3:1 non-text contrast) */
+  --border-subtle: light-dark(#cbd5e1, #384966);
+  --border-strong: light-dark(#64748b, #64748b);
+
+  /* Harmonious Pastel Accents (Pastel Sky, Pastel Mint, Pastel Peach/Gold, Pastel Rose, Pastel Lavender) */
+  --accent-crystal: light-dark(#0369a1, #7dd3fc);
+  --accent-crystal-bg: light-dark(#e0f2fe, rgba(125, 211, 252, 0.16));
+  --accent-crystal-border: light-dark(#7dd3fc, rgba(125, 211, 252, 0.42));
+
+  --accent-emerald: light-dark(#047857, #6ee7b7);
+  --accent-emerald-bg: light-dark(#d1fae5, rgba(110, 231, 183, 0.16));
+  --accent-emerald-border: light-dark(#6ee7b7, rgba(110, 231, 183, 0.42));
+
+  --accent-gold: light-dark(#b45309, #fcd34d);
+  --accent-gold-bg: light-dark(#fef3c7, rgba(252, 211, 77, 0.16));
+  --accent-gold-border: light-dark(#fcd34d, rgba(252, 211, 77, 0.42));
+  /* Gold as TEXT on its own tint or on a mint card: #92400e on #fef3c7 = 6.4:1, on #d1fae5 = 5.6:1 (the plain gold token is 4.5 / 4.4:1 there). Dark keeps the plain gold. */
+  --accent-gold-text: light-dark(#92400e, #fcd34d);
+
+  --accent-crimson: light-dark(#be123c, #fda4af);
+  /* Twitch purple for the Twitch link button (light: 4.6:1 on white, dark: lighter tone, 5.7:1 on the dark surface) */
+  --brand-twitch: light-dark(#9146ff, #a970ff);
+  --accent-crimson-bg: light-dark(#ffe4e6, rgba(253, 164, 175, 0.16));
+  --accent-crimson-border: light-dark(#fda4af, rgba(253, 164, 175, 0.42));
+
+  --accent-purple: light-dark(#6d28d9, #c4b5fd);
+  --accent-purple-bg: light-dark(#ede9fe, rgba(196, 181, 253, 0.16));
+  --accent-purple-border: light-dark(#c4b5fd, rgba(196, 181, 253, 0.42));
+
+  /* Trophy tier colours for the small cup icon (components/ui/TierIcon.tsx): >= 3:1 on every surface and tinted pill, both themes */
+  --tier-platinum: light-dark(#0369a1, #7dd3fc);
+  --tier-gold: light-dark(#a36a05, #fcd34d);
+  --tier-silver: light-dark(#64748b, #cbd5e1);
+  --tier-bronze: light-dark(#9a3f17, #e8905a);
+  /* The same tiers as text (>= 4.5:1 on the cards, also the mint ones of unlocked trophies) */
+  --tier-platinum-text: light-dark(#0369a1, #7dd3fc);
+  --tier-gold-text: light-dark(#92400e, #fcd34d);
+  --tier-silver-text: light-dark(#475569, #cbd5e1);
+  --tier-bronze-text: light-dark(#8a3412, #f2a870);
+
+  /* On/off switches (components/ui/Switch.tsx): green = on, red = off, never two greys. Their own tokens, separate from the
+     success/danger colours (a switch is not "good/bad"). Light: deep tones with a white knob; dark: light tones with a dark knob
+     (same idea as the accent tokens above). Contrast, all computed:
+       track vs. surface   light on #15803d 5.02:1 (white) / 4.43:1 (#edf1f9), off #dc2626 4.83:1 / 4.26:1
+                           dark  on #4ade80 8.34:1 (#1f293d) / 7.04:1 (#28354e), off #f87171 5.26:1 / 4.44:1
+       knob vs. track      light white on #15803d 5.02:1, on #dc2626 4.83:1
+                           dark  #0b1220 on #4ade80 10.8:1, on #f87171 6.78:1
+     --c-toggle-focus is the keyboard focus ring (>= 3:1 on both surfaces). */
+  --c-toggle-on: light-dark(#15803d, #4ade80);
+  --c-toggle-off: light-dark(#dc2626, #f87171);
+  --c-toggle-knob: light-dark(#ffffff, #0b1220);
+  --c-toggle-focus: light-dark(#0369a1, #7dd3fc);
+
+  --shadow-card: light-dark(
+    0 6px 24px -4px rgba(30, 41, 59, 0.07),
+    0 6px 24px -4px rgba(8, 13, 23, 0.38)
+  );
+  --radius-lg: 16px;
+  --radius-md: 11px;
+  --radius-sm: 7px;
+
+  /* Widest the page content gets: header, tab bar, action bars, content and footer share it. Wider than the old 1520 px so a
+     4K window at 175 % (about 2200 px) uses its width; on very wide screens it grows slowly so a 32:9 window is not a narrow
+     strip. Text blocks keep their own max-width. --pv-gutter is the space left and right of that column (at least 1.5rem):
+     use it as padding-inline on a full-width bar and its content lines up with the header's. */
+  --pv-page-max: clamp(1840px, 56vw, 3000px);
+  --pv-gutter: max(1.5rem, calc((100% - var(--pv-page-max)) / 2));
+}
+
+@media (forced-colors: active) {
+  :root {
+    --border-subtle: CanvasText;
+    --border-strong: Highlight;
+  }
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* The scrollbar is always there and always looks the same (project rule "Rigid layout"): its space is reserved, the track
+   is always drawn (overflow-y: scroll), slim and in the theme colours. A page that becomes scrollable, an overlay that
+   locks the page - nothing shifts sideways, nothing blinks.
+   Thumb vs track contrast: light #64748b on #e8edf6 = 4.1:1, dark #7b8aa5 on #1b2438 = 4.5:1 (both >= 3:1). */
+:root {
+  --pv-scroll-track: light-dark(#e8edf6, #1b2438);
+  --pv-scroll-thumb: light-dark(#64748b, #7b8aa5);
+  --pv-scroll-thumb-hover: light-dark(#475569, #a3b3c9);
+}
+
+html {
+  scrollbar-gutter: stable;
+  overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: var(--pv-scroll-thumb) var(--pv-scroll-track);
+  /* UI size (header "Kleiner" / "Größer"): --pv-ui-scale is 0.8 ... 1.25, set by public/theme-init.js before the first paint
+     and by utils/uiScale.ts. Everything in rem follows (Tailwind spacing and type, most rules below); px values - the 1520 px
+     page width above all - stay, so the page keeps its width and only text and boxes change. Percent keeps the browser's own
+     font size as the base. Media queries are not affected (rem there always means the browser default), the header therefore
+     switches its layout with container queries, see ".top-header". */
+  font-size: calc(100% * var(--pv-ui-scale, 1));
+}
+
+/* Icons are sized by a px number (<IconX size={18} />); the zoom property lets them follow the UI size without touching
+   every call site. Icons with an em/rem size already follow the font size and are left out (they would be scaled twice). */
+svg.tabler-icon:not([width$='em']) {
+  zoom: var(--pv-ui-scale, 1);
+}
+
+/* The few arbitrary px utilities that carry text or content size, mapped to rem (value / 16) so they follow the UI size
+   too: unlayered rules beat Tailwind's layered utilities. New code uses rem (text-[0.6875rem]) instead of adding to this list. */
+.text-\[9px\] {
+  font-size: 0.5625rem;
+}
+
+.text-\[10px\] {
+  font-size: 0.625rem;
+}
+
+.text-\[10\.5px\] {
+  font-size: 0.65625rem;
+}
+
+.text-\[11px\] {
+  font-size: 0.6875rem;
+}
+
+.text-\[12px\] {
+  font-size: 0.75rem;
+}
+
+.text-\[19px\] {
+  font-size: 1.1875rem;
+}
+
+.leading-\[15px\] {
+  line-height: 0.9375rem;
+}
+
+.min-w-\[220px\] {
+  min-width: 13.75rem;
+}
+
+.min-w-\[240px\] {
+  min-width: 15rem;
+}
+
+.max-h-\[340px\] {
+  max-height: 21.25rem;
+}
+
+.min-h-\[380px\] {
+  min-height: 23.75rem;
+}
+
+/* While any overlay is open the page behind stands still. Only the thumb goes: the gutter (stable) and the track stay,
+   so the page does not twitch when a dialog opens or closes. No script, so every overlay is covered, also while it fades out. */
+html:has(.pv-modal-backdrop, .pv-cab, .pv-doc, .pv-hint-root, .pv-gdrawer-backdrop) {
+  overflow-y: hidden;
+}
+
+/* Browsers without the standard scrollbar properties (older Safari): the same look with the WebKit pseudo elements */
+@supports not (scrollbar-width: thin) {
+  ::-webkit-scrollbar {
+    inline-size: 10px;
+    block-size: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--pv-scroll-track);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--pv-scroll-thumb);
+    border: 2px solid var(--pv-scroll-track);
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--pv-scroll-thumb-hover);
+  }
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6;
+  min-block-size: 100dvh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The in-game overlay page of the Windows program (/overlay, marked by public/theme-init.js): nothing but the popups on a fully
+   transparent page - no background, no scrollbar, no reserved gutter, no selection. The window around it is click-through. */
+html[data-pv-overlay] {
+  overflow: hidden;
+  scrollbar-gutter: auto;
+  background: transparent;
+}
+
+html[data-pv-overlay] body {
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ==================== 100% GUIDE DESIGN SYSTEM ==================== */
+.top-header {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 40;
+  background: var(--bg-glass);
+  backdrop-filter: blur(14px);
+  border-block-end: 1px solid var(--border-subtle);
+  padding-block: 0.75rem;
+  /* The content box is exactly as wide as the header bar (--pv-page-max at most): the container queries below measure the bar itself */
+  padding-inline: var(--pv-gutter);
+  /* Size container of the header layout: see "ONE row" below */
+  container: pv-header / inline-size;
+}
+
+.header-inner {
+  max-inline-size: var(--pv-page-max);
+  margin-inline: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.progress-widget {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: var(--bg-elevated);
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  flex: 1;
+  min-inline-size: 14.375rem;
+  max-inline-size: 26.875rem;
+}
+
+.progress-info {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  white-space: nowrap;
+  color: var(--accent-emerald);
+}
+
+/* ==================== TROPHY PROGRESS BAR (components/ui/ProgressBar.tsx) ====================
+   The gradient belongs to the TRACK (cool silver-blue at the start, warm gold at the end); the fill is only a
+   window onto it: more percent = more of the gradient is revealed, so the bar gets warmer the closer it gets to
+   100 %. --p (0..100) is the single input; it is registered as a <number>, so width and gradient animate together. */
+@property --p {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+:root {
+  --pv-pbar-grad: linear-gradient(90deg, #7da3dc 0%, #5bbad9 26%, #86d0c6 50%, #ecd98e 74%, #f3b72c 100%);
+  /* How much of the gradient shines through in the empty part of the track */
+  --pv-pbar-veil: color-mix(in srgb, var(--bg-surface) 90%, transparent);
+}
+
+@supports (background: linear-gradient(in oklab 90deg, red, blue)) {
+  :root {
+    --pv-pbar-grad: linear-gradient(
+      in oklab 90deg,
+      #7da3dc 0%,
+      #5bbad9 26%,
+      #86d0c6 50%,
+      #ecd98e 74%,
+      #f3b72c 100%
+    );
+  }
+}
+
+.pv-pbar {
+  --pv-pin: 1.25rem;
+  position: relative;
+  flex: 1;
+  min-inline-size: 0;
+  transition: --p 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.progress-bar-track {
+  position: relative;
+  block-size: 0.625rem;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  background:
+    linear-gradient(var(--pv-pbar-veil), var(--pv-pbar-veil)),
+    var(--pv-pbar-grad);
+  transition:
+    box-shadow 0.4s ease,
+    border-color 0.4s ease;
+}
+
+.progress-bar-fill {
+  --pv-gloss: 0.24;
+  position: relative;
+  overflow: hidden;
+  block-size: 100%;
+  inline-size: calc(var(--p) * 1%);
+  /* a started bar never vanishes into a hairline */
+  min-inline-size: clamp(0px, calc(var(--p) * 100px), 3px);
+  border-radius: 999px;
+  background-image: var(--pv-pbar-grad);
+  background-repeat: no-repeat;
+  background-size: calc(10000% / max(var(--p), 1)) 100%;
+  box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.1);
+}
+
+/* Soft top light: gives the fill a little body without a second colour */
+.progress-bar-fill::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 45% 0;
+  background: linear-gradient(rgba(255, 255, 255, var(--pv-gloss)), rgba(255, 255, 255, 0));
+}
+
+/* Subtle tiers: a touch richer every 25 %, never a new element */
+.pv-pbar[data-tier='1'] .progress-bar-fill {
+  --pv-gloss: 0.3;
+  filter: saturate(1.05);
+}
+
+.pv-pbar[data-tier='2'] .progress-bar-fill {
+  --pv-gloss: 0.36;
+  filter: saturate(1.1);
+}
+
+.pv-pbar[data-tier='2'] .progress-bar-track {
+  box-shadow: 0 0 7px -2px rgba(56, 160, 210, 0.38);
+}
+
+.pv-pbar[data-tier='3'] .progress-bar-fill {
+  --pv-gloss: 0.42;
+  filter: saturate(1.16);
+}
+
+.pv-pbar[data-tier='3'] .progress-bar-track {
+  box-shadow: 0 0 8px -2px rgba(236, 170, 40, 0.5);
+}
+
+/* 100 %: polished gold, a slow sheen, a few glints and the pin */
+.pv-pbar[data-complete] .progress-bar-track {
+  border-color: var(--accent-gold-border);
+  box-shadow: 0 0 10px -2px light-dark(rgba(217, 140, 6, 0.5), rgba(252, 200, 60, 0.45));
+}
+
+.pv-pbar[data-complete] .progress-bar-fill {
+  --pv-gloss: 0.5;
+  background-image: linear-gradient(90deg, #f5be3b 0%, #ffd766 24%, #f2a91e 58%, #ffd24f 82%, #f7b52c 100%);
+  background-size: 100% 100%;
+  filter: none;
+}
+
+.pv-pbar[data-complete] .progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 38%, rgba(255, 255, 255, 0.85) 50%, transparent 62%);
+  transform: translateX(-100%);
+  animation: pv-pbar-sheen 5.2s ease-in-out infinite;
+  animation-delay: calc(var(--pv-seed, 0) * -1s);
+}
+
+@keyframes pv-pbar-sheen {
+  0%,
+  58% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Glints on and around the bar. Each one is a soft warm halo (the element itself), an amber four-point star (::before,
+   slightly larger = a rim that keeps the white star readable on the gold) and a white star (::after). Overlays only:
+   they never take layout space. They flash up one after another, so only a few shine at any moment. */
+.pv-pbar-spark {
+  --s: 12px;
+  position: absolute;
+  inset-block-start: calc(50% + var(--y, 0px));
+  inset-inline-start: var(--x, 30%);
+  inline-size: calc(var(--s) * 2.4);
+  block-size: calc(var(--s) * 2.4);
+  translate: -50% -50%;
+  scale: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle,
+    rgba(255, 244, 190, 0.95) 0%,
+    rgba(255, 214, 90, 0.5) 24%,
+    rgba(255, 200, 60, 0) 62%
+  );
+  animation: pv-pbar-spark var(--dur, 3.6s) ease-in-out infinite;
+  animation-delay: calc(var(--pv-seed, 0) * -1s + var(--d, 0s));
+}
+
+.pv-pbar-spark::before,
+.pv-pbar-spark::after {
+  content: '';
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  translate: -50% -50%;
+  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+}
+
+.pv-pbar-spark::before {
+  inline-size: calc(var(--s) * 1.32);
+  block-size: calc(var(--s) * 1.32);
+  background: light-dark(#b45309, #d97706);
+}
+
+.pv-pbar-spark::after {
+  inline-size: var(--s);
+  block-size: var(--s);
+  background: #ffffff;
+}
+
+@keyframes pv-pbar-spark {
+  0%,
+  52%,
+  100% {
+    scale: 0;
+    rotate: 0deg;
+  }
+  68% {
+    scale: 1;
+    rotate: 30deg;
+  }
+  76% {
+    scale: 0.82;
+    rotate: 45deg;
+  }
+  90% {
+    scale: 0;
+    rotate: 90deg;
+  }
+}
+
+/* The pin: a platinum-rimmed rosette with a gold disc carrying the trophy cup, laid over the end of the bar (no layout space) */
+.pv-pbar-pin {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: calc(var(--pv-pin) * -0.3);
+  inline-size: var(--pv-pin);
+  block-size: var(--pv-pin);
+  translate: 0 -50%;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 1.5px light-dark(rgba(120, 53, 15, 0.5), rgba(0, 0, 0, 0.55)))
+    drop-shadow(0 0 3px light-dark(rgba(245, 180, 40, 0.35), rgba(252, 211, 77, 0.35)));
+  animation: pv-pbar-pin-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes pv-pbar-pin-in {
+  from {
+    opacity: 0;
+    scale: 0.5;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+.pv-pbar-pin__rim {
+  position: relative;
+  display: grid;
+  place-items: center;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: hidden;
+  background: linear-gradient(145deg, #f8fafc 0%, #c3d0e0 40%, #8ea2ba 75%, #dbe5f1 100%);
+  clip-path: polygon(
+    50% 0%,
+    58% 4%,
+    67% 2%,
+    73% 9%,
+    82% 9%,
+    87% 17%,
+    95% 20%,
+    96% 29%,
+    100% 37%,
+    97% 46%,
+    100% 50%,
+    97% 54%,
+    100% 63%,
+    96% 71%,
+    95% 80%,
+    87% 83%,
+    82% 91%,
+    73% 91%,
+    67% 98%,
+    58% 96%,
+    50% 100%,
+    42% 96%,
+    33% 98%,
+    27% 91%,
+    18% 91%,
+    13% 83%,
+    5% 80%,
+    4% 71%,
+    0% 63%,
+    3% 54%,
+    0% 50%,
+    3% 46%,
+    0% 37%,
+    4% 29%,
+    5% 20%,
+    13% 17%,
+    18% 9%,
+    27% 9%,
+    33% 2%,
+    42% 4%
+  );
+}
+
+.pv-pbar-pin__disc {
+  display: grid;
+  place-items: center;
+  inline-size: 68%;
+  block-size: 68%;
+  border-radius: 50%;
+  color: #7c3a06;
+  background: radial-gradient(circle at 32% 26%, #fff3b8 0%, #fcd34d 42%, #d98a0b 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(124, 58, 6, 0.28),
+    inset 0 1px 1px rgba(255, 255, 255, 0.6);
+}
+
+.pv-pbar-pin__disc svg {
+  inline-size: 56%;
+  block-size: 56%;
+  fill: currentColor;
+}
+
+/* A glint that crosses the pin now and then */
+.pv-pbar-pin__rim::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.9) 50%, transparent 60%);
+  transform: translateX(-120%);
+  animation: pv-pbar-pin-glint 5.2s ease-in-out infinite;
+  animation-delay: calc(var(--pv-seed, 0) * -1s + 0.6s);
+}
+
+@keyframes pv-pbar-pin-glint {
+  0%,
+  64% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-pbar {
+    transition: none;
+  }
+
+  .progress-bar-track {
+    transition: none;
+  }
+
+  .pv-pbar[data-complete] .progress-bar-fill::after,
+  .pv-pbar-pin__rim::after {
+    display: none;
+  }
+
+  /* A few static glints stay, the rest are dropped */
+  .pv-pbar-spark {
+    animation: none;
+    scale: 0.9;
+    rotate: 15deg;
+  }
+
+  .pv-pbar-spark:not(.pv-pbar-spark--keep) {
+    display: none;
+  }
+
+  .pv-pbar-pin {
+    animation: none;
+  }
+}
+
+.pv-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.pv-btn:hover {
+  background: var(--bg-elevated);
+  border-color: var(--accent-crystal);
+}
+
+.pv-btn-primary {
+  background: var(--accent-crystal-bg);
+  color: var(--accent-crystal);
+  border-color: var(--accent-crystal-border);
+}
+
+.pv-btn-primary:hover {
+  filter: brightness(0.97);
+  border-color: var(--accent-crystal);
+}
+
+.pv-btn-emerald {
+  background: var(--accent-emerald-bg);
+  color: var(--accent-emerald);
+  border-color: var(--accent-emerald-border);
+}
+
+.pv-btn-emerald:hover {
+  filter: brightness(0.97);
+  border-color: var(--accent-emerald);
+}
+
+.pv-btn-gold {
+  background: var(--accent-gold-bg);
+  color: var(--accent-gold-text);
+  border-color: var(--accent-gold-border);
+}
+
+/* Destructive actions (delete, reset): one crimson look everywhere */
+.pv-btn-danger {
+  background: var(--accent-crimson-bg);
+  color: var(--accent-crimson);
+  border-color: var(--accent-crimson-border);
+}
+
+.pv-btn-danger:hover {
+  filter: brightness(0.97);
+  border-color: var(--accent-crimson);
+}
+
+.pv-btn-purple {
+  background: var(--accent-purple-bg);
+  color: var(--accent-purple);
+  border-color: var(--accent-purple-border);
+}
+
+/* Segmented choice (per-game modules): one shared look, active segment uses the crystal accent */
+.pv-segmented {
+  display: inline-flex;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-surface);
+}
+
+/* A segment may sit inside a Tooltip wrapper (.pv-seg-tip): the same look */
+.pv-segmented > button,
+.pv-segmented > .pv-seg-tip > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.pv-segmented > button + button,
+.pv-segmented > .pv-seg-tip + .pv-seg-tip > button {
+  border-inline-start: 1px solid var(--border-subtle);
+}
+
+.pv-segmented > button[aria-pressed="true"],
+.pv-segmented > .pv-seg-tip > button[aria-pressed="true"] {
+  background: var(--accent-crystal-bg);
+  color: var(--accent-crystal);
+}
+
+.pv-segmented > button:disabled,
+.pv-segmented > .pv-seg-tip > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* ==================== ICON TOOLBARS & TOOLTIP ==================== */
+
+/* Square icon-only button; 2.5rem keeps a comfortable touch target */
+.pv-icon-btn {
+  justify-content: center;
+  flex-shrink: 0;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  padding: 0;
+}
+
+/* Quiet variant inside a toolbar: no box until hovered or focused */
+.pv-icon-btn.pv-icon-btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-secondary);
+}
+
+.pv-icon-btn.pv-icon-btn--ghost:hover {
+  background: var(--bg-surface);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.pv-icon-btn:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+}
+
+.pv-icon-btn:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+/* ---- Page header bar (dashboard and game page share it) ----
+   Wide (game page from 57rem, dashboard from 64rem of header width, i.e. ~910 / ~1020 px at the standard UI size): ONE row
+   brand | tools | utilities, every item 2.5rem high, groups separated by 1px dividers.
+   Below: exactly two rows  brand + utilities / tools (progress fills the row, groups next to it). */
+.pv-hbar {
+  max-inline-size: var(--pv-page-max);
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'brand utils'
+    'tools tools';
+  align-items: center;
+  column-gap: 0.75rem;
+  row-gap: 0.5rem;
+}
+
+.pv-hbrand {
+  grid-area: brand;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  min-inline-size: 0;
+  min-block-size: 2.5rem;
+}
+
+.pv-hutils {
+  grid-area: utils;
+}
+
+.pv-htools {
+  grid-area: tools;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-inline-size: 0;
+  /* Phones: the groups scroll sideways inside the row instead of wrapping into a third row; the padding keeps the focus rings visible */
+  overflow-x: auto;
+  padding: 3px;
+  margin: -3px;
+  scrollbar-width: none;
+}
+
+.pv-htools::-webkit-scrollbar {
+  display: none;
+}
+
+.pv-hgroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.pv-hdivider {
+  flex-shrink: 0;
+  inline-size: 1px;
+  block-size: 1.75rem;
+  background: var(--border-subtle);
+}
+
+/* Trophy progress: fills the free width of the row; same height as every other item */
+.pv-hprogress {
+  display: flex;
+  flex: 1 1 15rem;
+  /* wide enough for "12 / 164 Trophäen (7 %)" plus a sliver of bar; narrower rows scroll instead of cutting the text */
+  min-inline-size: 15rem;
+}
+
+.pv-hprogress .progress-widget {
+  flex: 1;
+  min-inline-size: 0;
+  max-inline-size: none;
+  block-size: 2.5rem;
+  padding-block: 0;
+  padding-inline: 0.8rem;
+  gap: 0.7rem;
+  border-radius: var(--radius-md);
+}
+
+.pv-hprogress .progress-info {
+  font-size: 0.8rem;
+}
+
+.pv-hprogress .pv-pbar {
+  min-inline-size: 1.5rem;
+  --pv-pin: 1.375rem;
+}
+
+/* Account chip (Steam): a 40px box like the buttons */
+.pv-hchip {
+  display: inline-flex;
+  flex-shrink: 0;
+  block-size: 2.5rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+/* UI size control (components/ui/UiScaleControl.tsx): one header button, the current size only as a small badge while it is not 100 %.
+   An overlay on the button, so it never changes the button's size. Light: white on #0369a1 = 5.9:1, dark: #1f293d on #7dd3fc = 8.9:1. */
+.pv-hscale-badge {
+  position: absolute;
+  inset-block-end: -0.2rem;
+  inset-inline-end: -0.3rem;
+  box-shadow: 0 0 0 2px var(--bg-surface);
+  padding-inline: 0.25rem;
+  border-radius: 999px;
+  background: var(--accent-crystal);
+  color: var(--bg-surface);
+  font-size: 0.625rem;
+  font-weight: 800;
+  line-height: 1rem;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+/* ==================== UI SIZE POPOVER (components/ui/UiScaleControl.tsx) ====================
+   Written in px on purpose and its icons are NOT zoomed: while the size changes the whole page re-flows, the popover keeps
+   its size and its place, so a second click lands on the same button. */
+.pv-scalepop {
+  position: fixed;
+  z-index: 85;
+  box-sizing: border-box;
+  padding: 14px 16px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    var(--shadow-card),
+    0 22px 44px -12px rgba(15, 23, 42, 0.38);
+}
+
+.pv-scalepop svg.tabler-icon:not([width$='em']) {
+  zoom: 1;
+}
+
+.pv-scalepop button:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+}
+
+.pv-scalepop-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-block-end: 12px;
+}
+
+.pv-scalepop-title {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.pv-scalepop-value {
+  min-inline-size: 64px;
+  text-align: end;
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.pv-scalepop-value[data-changed='true'] {
+  color: var(--accent-crystal);
+}
+
+.pv-scalepop-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  gap: 8px;
+}
+
+.pv-scalepop-step {
+  display: grid;
+  place-items: center;
+  block-size: 40px;
+  padding: 0;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.pv-scalepop-step:hover,
+.pv-scalepop-reset:hover {
+  background: var(--bg-elevated);
+  border-color: var(--accent-crystal);
+}
+
+.pv-scalepop-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.pv-scalepop-steps > button {
+  block-size: 38px;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.pv-scalepop-steps > button + button {
+  border-inline-start: 1px solid var(--border-subtle);
+}
+
+.pv-scalepop-steps > button:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.pv-scalepop-steps > button[aria-pressed='true'] {
+  background: var(--accent-crystal-bg);
+  color: var(--accent-crystal);
+}
+
+/* A step at its limit stays focusable (the keyboard focus must not vanish) but looks and acts dead */
+.pv-scalepop [aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.pv-scalepop [aria-disabled='true']:hover {
+  background: var(--bg-surface);
+  border-color: var(--border-subtle);
+}
+
+.pv-scalepop-hint {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.pv-scalepop-reset {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  inline-size: 100%;
+  block-size: 36px;
+  margin-block-start: 12px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+/* The soft re-flow when the size changes (utils/softReflow.ts): old and new layout cross-fade shortly; the page stays clickable */
+html.pv-vt-reflow::view-transition {
+  pointer-events: none;
+}
+
+html.pv-vt-reflow::view-transition-group(root),
+html.pv-vt-reflow::view-transition-old(root),
+html.pv-vt-reflow::view-transition-new(root) {
+  animation-duration: 0.18s;
+}
+
+/* ONE row  brand | tools | utilities  once the header is wide enough. The header is a size container (.top-header) and the
+   thresholds are in rem: inside a container query rem is the real root font size, so the thresholds grow and shrink with
+   the UI size (a media query would always use 16 px and break at 125 %). The dashboard needs more room (progress, account
+   chip) than the game page, whose brand simply truncates. Narrower: two rows, see .pv-hbar. */
+@container pv-header (min-width: 57rem) {
+  .pv-hbar--game {
+    grid-template-areas: 'brand tools utils';
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    column-gap: 1.25rem;
+  }
+
+  .pv-hbar--game .pv-htools {
+    overflow: visible;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* Divider between the tools and the utilities, centred in the gap */
+  .pv-hbar--game .pv-hutils {
+    position: relative;
+    padding-inline-start: 1.25rem;
+  }
+
+  .pv-hbar--game .pv-hutils::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: 0;
+    inset-block-start: 50%;
+    inline-size: 1px;
+    block-size: 1.75rem;
+    background: var(--border-subtle);
+    transform: translateY(-50%);
+  }
+}
+
+@container pv-header (min-width: 64rem) {
+  .pv-hbar--dash {
+    grid-template-areas: 'brand tools utils';
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    column-gap: 1.25rem;
+  }
+
+  .pv-hbar--dash .pv-htools {
+    overflow: visible;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* The dashboard's progress takes the free middle */
+  .pv-hbar--dash .pv-hprogress {
+    max-inline-size: 44rem;
+  }
+
+  .pv-hbar--dash .pv-hutils {
+    position: relative;
+    padding-inline-start: 1.25rem;
+  }
+
+  .pv-hbar--dash .pv-hutils::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: 0;
+    inset-block-start: 50%;
+    inline-size: 1px;
+    block-size: 1.75rem;
+    background: var(--border-subtle);
+    transform: translateY(-50%);
+  }
+}
+
+/* Dashboard tagline under the product name: beside the brand it only fits in the two-row layout (the brand has the row
+   to itself) and again once the single row is wide enough; in between and on phones it is left out */
+.pv-htagline {
+  display: none;
+}
+
+@container pv-header (min-width: 36rem) {
+  .pv-htagline {
+    display: block;
+  }
+}
+
+@container pv-header (min-width: 64rem) {
+  .pv-htagline {
+    display: none;
+  }
+}
+
+@container pv-header (min-width: 87rem) {
+  .pv-htagline {
+    display: block;
+  }
+}
+
+/* Account chip: the library size and its dot are left out on phones and while the single row is crowded */
+@container pv-header (max-width: 35.99rem) {
+  .pv-hchip-extra {
+    display: none;
+  }
+}
+
+@container pv-header (min-width: 64rem) and (max-width: 69.99rem) {
+  .pv-hchip-extra {
+    display: none;
+  }
+}
+
+/* Link/label area inside a toolbar (Steam account in the dashboard header) */
+.pv-chip-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  block-size: 2.5rem;
+  padding-inline: 0.7rem;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: inherit;
+}
+
+a.pv-chip-link {
+  transition: background-color 0.15s ease;
+}
+
+a.pv-chip-link:hover {
+  background: var(--bg-surface);
+}
+
+a.pv-chip-link:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+}
+
+/* Phones: a tighter header so the sticky bar does not eat the screen */
+@media (max-width: 480px) {
+  .top-header {
+    padding-block: 0.5rem;
+    padding-inline: 0.9rem;
+  }
+
+  .header-inner {
+    gap: 0.6rem;
+  }
+}
+
+/* Our tooltip: inverted colours of the current theme, so it reads clearly on any surface in light and dark */
+.pv-tooltip {
+  --tt-bg: light-dark(#1e293b, #f1f5f9);
+  --tt-fg: light-dark(#f8fafc, #1e293b);
+  --tt-muted: light-dark(#cbd5e1, #475569);
+  position: fixed;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-inline-size: min(18rem, calc(100vw - 16px));
+  padding: 0.45rem 0.65rem;
+  background: var(--tt-bg);
+  color: var(--tt-fg);
+  border: 1px solid light-dark(rgba(255, 255, 255, 0.12), rgba(15, 23, 42, 0.14));
+  border-radius: var(--radius-sm);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.3);
+  pointer-events: none;
+}
+
+.pv-tooltip-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.pv-tooltip-description {
+  white-space: pre-line;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--tt-muted);
+}
+
+.pv-tooltip-arrow {
+  position: absolute;
+  inline-size: 8px;
+  block-size: 8px;
+  background: var(--tt-bg);
+  transform: rotate(45deg);
+}
+
+/* ==================== GAME PAGE SHELL ====================
+   The trophy bar spans the window like the header (full-width bar, content on the header's edges); below it the chapter
+   navigation (a pinned side nav, components/gamenav) and the content column share the page width (--pv-page-max). The nav and the
+   bar are styled in components/gamenav/gamenav.css. The game page has no page footer: version, credit, copyright and licences are
+   the foot of the side nav (a game without chapters, and so without nav, gets the page-end AppFooter instead). */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  inline-size: 100%;
+}
+
+.pv-gbody {
+  display: flex;
+  align-items: flex-start;
+  flex: 1;
+  inline-size: 100%;
+  /* The same side margin as the header and the trophy bar (--pv-gutter, which also centres the page at --pv-page-max): the side
+     nav starts where the header's content starts, the content ends where it ends */
+  padding-inline: var(--pv-gutter);
+}
+
+@media (min-width: 768px) {
+  /* The cards end on the header's right edge (the side nav takes the left side; main keeps its padding there) */
+  .pv-gbody > .content-column > main {
+    padding-inline-end: 0;
+  }
+}
+
+/* Phone: no side nav, the page padding of main is the only side margin */
+@media (max-width: 767px) {
+  .pv-gbody {
+    padding-inline: 0;
+  }
+}
+
+/* Tab buttons of the dialogs (new game, setup checklist): the game page navigation has its own tabs (gamenav.css) */
+.tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.78rem 1rem;
+  border: none;
+  border-block-end: 3px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+}
+
+.tab-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+
+.tab-btn[aria-selected="true"] {
+  color: var(--accent-crystal);
+  border-block-end-color: var(--accent-crystal);
+  background: var(--accent-crystal-bg);
+}
+
+.tab-badge {
+  font-size: 0.72rem;
+  padding: 0.1rem 0.48rem;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  font-weight: 800;
+  margin-inline-start: auto;
+}
+
+.tab-badge.done {
+  background: var(--accent-emerald-bg);
+  color: var(--accent-emerald);
+  border-color: var(--accent-emerald-border);
+}
+
+/* ==================== HERO CARD, STRATEGY CARDS & ALERTS ==================== */
+.hero-card {
+  background:
+    radial-gradient(circle at top right, var(--accent-crystal-bg), transparent 55%),
+    radial-gradient(circle at bottom left, var(--accent-emerald-bg), transparent 60%),
+    var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.6rem 1.85rem;
+  box-shadow: var(--shadow-card);
+}
+
+/* ==================== DASHBOARD OVERVIEW PANEL (pages/DashboardPage.tsx) ====================
+   The top of the start page in the language of the game page's chapter navigation: the same flat surface, border and radius
+   (--radius-md), a slim head with a small-caps title (like "GUIDE CHAPTERS") and the library figures as compact chips, then one calm
+   row of controls (search | view | tile size) and a count line. About half as high as the hero card it replaced. Contrast: the title is
+   text-muted (7.6:1 light, 6.6:1 dark on the surface), the chips and controls are the app's own. */
+.pv-dhub {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.pv-dhub-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem 1rem;
+  padding: 0.5rem 0.6rem 0.5rem 0.9rem;
+  border-block-end: 1px solid var(--border-subtle);
+}
+
+.pv-dhub-title {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.pv-dhub-figures {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pv-dhub-figures .stat-pill {
+  flex: none;
+  white-space: nowrap;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.76rem;
+}
+
+.pv-dhub-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem 1rem;
+  padding: 0.75rem 0.9rem 0.65rem;
+}
+
+/* The place of the view switch while the library answer is on its way: as high as the switch, so its arrival shifts nothing */
+.pv-dhub-switch-slot {
+  min-block-size: 2.4rem;
+}
+
+/* The count line and the sort control: on the left the count (with the drag hint and the reset link, always in the row and invisible
+   without a filter) and the sentence that says how the cards are sorted (its room is reserved, see ReservedText); on the right the
+   sort control, below 640 px under them. Nothing here changes size with a message. */
+.pv-dhub-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem 1rem;
+  min-block-size: 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.pv-dhub-count {
+  display: grid;
+  gap: 0.2rem;
+  min-inline-size: 0;
+}
+
+.pv-dhub-countline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem 0.9rem;
+  min-block-size: 1.25rem;
+}
+
+.pv-dhub-sortnote {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+@media (min-width: 640px) {
+  .pv-dhub-meta {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+/* ---- the sort control (components/DashboardSortControl.tsx) ---- */
+.pv-sort {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pv-sort-select,
+.pv-sort-dir {
+  box-sizing: border-box;
+  min-block-size: 2.4rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.pv-sort-select {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr) 0.9rem;
+  align-items: center;
+  gap: 0.5rem;
+  inline-size: 15rem;
+  padding: 0 0.75rem;
+  text-align: start;
+}
+
+.pv-sort-dir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.4rem;
+  padding: 0;
+  color: var(--accent-crystal);
+}
+
+.pv-sort-select:hover,
+.pv-sort-dir:hover:not(:disabled) {
+  border-color: var(--accent-crystal);
+}
+
+.pv-sort-select[aria-expanded='true'] {
+  border-color: var(--accent-crystal);
+  box-shadow: 0 0 0 3px var(--accent-crystal-bg);
+}
+
+.pv-sort-select:focus-visible,
+.pv-sort-dir:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+}
+
+.pv-sort-dir:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.pv-sort-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-crystal);
+}
+
+.pv-sort-label {
+  min-inline-size: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.pv-sort-chevron {
+  color: var(--text-muted);
+}
+
+@media (max-width: 639.98px) {
+  .pv-sort {
+    inline-size: 100%;
+  }
+
+  .pv-sort-select {
+    flex: 1 1 0;
+    inline-size: auto;
+  }
+}
+
+/* The menu of the orders. rem, not px: it follows the display size like the page it belongs to. */
+.pv-sortmenu {
+  position: fixed;
+  z-index: 85;
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: 0.4rem;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    var(--shadow-card),
+    0 22px 44px -12px rgba(15, 23, 42, 0.38);
+}
+
+.pv-sortmenu-item {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr) 1rem;
+  align-items: center;
+  gap: 0.75rem;
+  inline-size: 100%;
+  min-block-size: 2.9rem;
+  padding: 0.4rem 0.75rem;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.pv-sortmenu-item:hover {
+  background: var(--bg-elevated);
+}
+
+.pv-sortmenu-item:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: -2px;
+}
+
+.pv-sortmenu-icon {
+  color: var(--text-muted);
+}
+
+.pv-sortmenu-text {
+  display: grid;
+  min-inline-size: 0;
+}
+
+.pv-sortmenu-name {
+  font-weight: 700;
+}
+
+.pv-sortmenu-hint {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.pv-sortmenu-check {
+  visibility: hidden;
+}
+
+/* The order in use: accent colour and a check, never colour alone */
+.pv-sortmenu-item[aria-checked='true'] {
+  background: var(--accent-crystal-bg);
+}
+
+.pv-sortmenu-item[aria-checked='true'] .pv-sortmenu-name,
+.pv-sortmenu-item[aria-checked='true'] .pv-sortmenu-icon,
+.pv-sortmenu-item[aria-checked='true'] .pv-sortmenu-check {
+  color: var(--accent-crystal);
+}
+
+.pv-sortmenu-item[aria-checked='true'] .pv-sortmenu-hint {
+  color: var(--text-secondary);
+}
+
+.pv-sortmenu-item[aria-checked='true'] .pv-sortmenu-check {
+  visibility: visible;
+}
+
+/* From a tablet on: search and view side by side (the view switch has a fixed width, so German and English never move the search),
+   the tile size slider below, as long as a short bar, and the count line across */
+@media (min-width: 768px) {
+  .pv-dhub-body {
+    grid-template-columns: minmax(9rem, 1fr) 19rem;
+  }
+
+  .pv-dhub-slider {
+    grid-column: 1 / -1;
+    max-inline-size: 32rem;
+  }
+
+  .pv-dhub-meta {
+    grid-column: 1 / -1;
+  }
+
+  /* Without a readable Steam library there is no view switch: search and slider share the row */
+  .pv-dhub-body[data-library='false'] {
+    grid-template-columns: minmax(9rem, 1fr) minmax(17rem, 24rem);
+  }
+
+  .pv-dhub-body[data-library='false'] .pv-dhub-slider {
+    grid-column: auto;
+    max-inline-size: none;
+  }
+}
+
+/* Laptop and wider: everything in ONE row - search | view | tile size */
+@media (min-width: 1100px) {
+  .pv-dhub-body {
+    grid-template-columns: minmax(9rem, 1fr) 19rem minmax(17rem, 22rem);
+  }
+
+  .pv-dhub-slider {
+    grid-column: auto;
+    max-inline-size: none;
+  }
+
+  .pv-dhub-body[data-library='false'] {
+    grid-template-columns: minmax(9rem, 1fr) minmax(17rem, 24rem);
+  }
+}
+
+/* Summary card and filter box of the live trophies tab: flat surface, tight corners (medium token), no inner boxes */
+.pv-live-hero,
+.pv-live-bar {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1.1rem 1.15rem;
+  box-shadow: var(--shadow-card);
+}
+
+@media (min-width: 640px) {
+  .pv-live-hero {
+    padding: 1.35rem 1.6rem;
+  }
+}
+
+/* The filter box: two rows. Row 1 = what is shown (status, tier), row 2 = how it is shown (search, sort, view size,
+   secret achievements). All controls share one height; none changes size with its state (the longest label is reserved);
+   the box itself is the container, so the rows wrap by their own width, not by the screen. */
+.pv-live-bar {
+  container: pv-fbar / inline-size;
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.85rem 1rem;
+}
+
+.pv-live-bar .pv-segmented > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  block-size: 2.375rem;
+  padding-block: 0;
+  padding-inline: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+.pv-live-bar .pv-segmented > button[aria-pressed='true'] {
+  color: var(--accent-crystal);
+}
+
+/* The shared counter badge (as in the chapter tabs); in the active segment it becomes a white pill on the tint */
+.pv-live-bar .pv-tab-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-live-bar .pv-segmented > button[aria-pressed='true'] .pv-tab-count {
+  background: var(--bg-surface);
+  color: var(--accent-crystal);
+}
+
+.pv-live-bar .pv-input {
+  block-size: 2.375rem;
+  padding-block: 0;
+}
+
+.pv-fbar-filters,
+.pv-fbar-view {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+}
+
+.pv-fbar-filters {
+  justify-content: space-between;
+}
+
+.pv-fbar-search {
+  position: relative;
+  flex: 1 1 14rem;
+  min-inline-size: 0;
+}
+
+.pv-fbar-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+  flex: 0 0 auto;
+}
+
+.pv-fbar-sort {
+  inline-size: 15.5rem;
+}
+
+.pv-fbar-size {
+  inline-size: 18rem;
+  flex: none;
+}
+
+.pv-fbar-reveal {
+  inline-size: 2.375rem;
+  block-size: 2.375rem;
+  padding: 0;
+  justify-content: center;
+  flex: none;
+}
+
+/* Medium box: row 2 takes two lines (search over the full width, then sort, view size and the secret toggle) */
+@container pv-fbar (max-width: 56rem) {
+  .pv-fbar-search {
+    flex-basis: 100%;
+  }
+
+  .pv-fbar-tools {
+    flex: 1 1 100%;
+  }
+
+  .pv-fbar-sort {
+    flex: 1 1 12rem;
+    inline-size: auto;
+    min-inline-size: 0;
+  }
+}
+
+/* Narrower than the two filter groups side by side: status and tier each take a full line of four equal segments */
+@container pv-fbar (max-width: 48rem) {
+  .pv-fbar-status,
+  .pv-fbar-tier {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    inline-size: 100%;
+  }
+}
+
+/* Narrow box (phone): status as 2 x 2, sort and the toggle share a line, the view size gets its own full line */
+@container pv-fbar (max-width: 34rem) {
+  .pv-fbar-status {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pv-fbar-status > button:nth-child(odd) {
+    border-inline-start: 0;
+  }
+
+  .pv-fbar-status > button:nth-child(n + 3) {
+    border-block-start: 1px solid var(--border-subtle);
+  }
+
+  .pv-fbar-tools {
+    flex-wrap: wrap;
+  }
+
+  .pv-fbar-sort {
+    flex: 1 1 0;
+  }
+
+  .pv-fbar-size {
+    order: 3;
+    inline-size: 100%;
+  }
+}
+
+.stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.38rem 0.8rem;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+
+.stat-pill.safe {
+  background: var(--accent-emerald-bg);
+  color: var(--accent-emerald);
+  border-color: var(--accent-emerald-border);
+}
+
+.stat-pill.gold {
+  background: var(--accent-gold-bg);
+  color: var(--accent-gold-text);
+  border-color: var(--accent-gold-border);
+}
+
+.stat-pill.crystal {
+  background: var(--accent-crystal-bg);
+  color: var(--accent-crystal);
+  border-color: var(--accent-crystal-border);
+}
+
+/* ==================== DASHBOARD STICKY SUB-BAR (components/DashboardControls.tsx) ====================
+   Search, view switch, figures and tile size stay reachable after the hero has scrolled away. The anchor is a
+   zero-height sticky element right under the header; the bar is absolutely positioned inside it, so it lies OVER the
+   page and never pushes the grid (rigid layout). Header z-index is 40, the sticky footer 30. */
+.pv-subbar-anchor {
+  position: sticky;
+  /* --pv-header-h is the exact header height; the bar starts 1px higher still (and pads that pixel back, see .pv-subbar), so it
+     tucks 1px under the header (z-index) at every size step and device pixel ratio - never a hairline gap */
+  inset-block-start: calc(var(--pv-header-h, 4.5rem) - 1px);
+  z-index: 39;
+  block-size: 0;
+}
+
+.pv-subbar {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 0;
+  padding-block-start: 1px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(14px);
+  border-block-end: 1px solid var(--border-subtle);
+  box-shadow: 0 14px 26px -18px light-dark(rgba(30, 41, 59, 0.3), rgba(0, 0, 0, 0.65));
+}
+
+/* Phone: search, switch and the "Ansicht" toggle on the first row, the figures as one scrolling line below, the tile
+   size slider as a third row that the toggle opens */
+.pv-subbar-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    'search switch toggle'
+    'figures figures figures'
+    'slider slider slider';
+  align-items: center;
+  gap: 0.45rem 0.6rem;
+  max-inline-size: var(--pv-page-max);
+  margin-inline: auto;
+  padding: 0.5rem 1rem;
+}
+
+.pv-subbar-search {
+  grid-area: search;
+}
+
+.pv-subbar-switch {
+  grid-area: switch;
+}
+
+.pv-subbar-figures {
+  grid-area: figures;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-inline-size: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pv-subbar-figures::-webkit-scrollbar {
+  display: none;
+}
+
+.pv-subbar-slider {
+  grid-area: slider;
+  display: none;
+}
+
+.pv-subbar-slider[data-open='true'] {
+  display: block;
+}
+
+.pv-subbar-toggle {
+  grid-area: toggle;
+}
+
+.pv-subbar .pv-subbar-toggle {
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  padding: 0;
+}
+
+.pv-subbar-toggle[aria-expanded='true'] {
+  background: var(--accent-crystal-bg);
+  color: var(--accent-crystal);
+  border-color: var(--accent-crystal-border);
+}
+
+.pv-subbar .pv-input {
+  block-size: 2.25rem;
+  padding-block: 0;
+  font-size: 0.84rem;
+}
+
+.pv-subbar .pv-input.pv-input-icon {
+  padding-inline-start: 2.1rem;
+}
+
+.pv-subbar .pv-segmented > button {
+  block-size: 2.25rem;
+  padding-block: 0;
+  padding-inline: 0.7rem;
+  white-space: nowrap;
+}
+
+.pv-subbar .stat-pill,
+.pv-live-hero .stat-pill {
+  flex: none;
+  white-space: nowrap;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.76rem;
+}
+
+@media (min-width: 640px) {
+  .pv-subbar-inner {
+    padding-inline: 1.5rem;
+  }
+}
+
+/* Tablet: the slider takes its place next to the switch, the figures move to a second row */
+@media (min-width: 768px) {
+  .pv-subbar-inner {
+    grid-template-columns: minmax(9rem, 1fr) auto minmax(13rem, 16rem);
+    grid-template-areas:
+      'search switch slider'
+      'figures figures figures';
+  }
+
+  .pv-subbar-slider {
+    display: block;
+  }
+
+  .pv-subbar-toggle {
+    display: none;
+  }
+}
+
+/* A skeleton of the final width where a figure is still loading (instead of a placeholder dash) */
+.pv-skel {
+  display: inline-block;
+  inline-size: 2.4em;
+  block-size: 0.8em;
+  vertical-align: -0.05em;
+  border-radius: 3px;
+  background: currentColor;
+  opacity: 0.18;
+}
+
+/* Dashboard drag & drop of the favourites (dnd-kit): the wrapper only carries the sorting, the tile keeps its own look */
+.pv-sortable {
+  display: grid;
+  /* The card never makes its column wider than the grid gave it: a long line in a card (genre tags) used to push the card
+     over its neighbour as soon as the text got bigger (UI size 125 %) */
+  grid-template-columns: minmax(0, 1fr);
+  min-inline-size: 0;
+}
+
+.pv-sortable--active {
+  cursor: grab;
+  -webkit-touch-callout: none;
+  user-select: none;
+  border-radius: var(--radius-lg);
+}
+
+.pv-sortable--active:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 3px;
+}
+
+/* The empty place the card was lifted from: faded, with a soft dashed outline */
+.pv-sortable--ghost {
+  opacity: 0.28;
+  outline: 2px dashed var(--accent-crystal-border);
+  outline-offset: -2px;
+  border-radius: var(--radius-lg);
+}
+
+/* Confirms the new place after a drop. It starts only once the dragged copy has settled and handed over to the real card
+   (HANDOVER_AT_MS + HANDOVER_MS in DashboardPage: 560 ms), grows slowly from nothing and fades out, so it never reads as a
+   second event at the hand-over. The whole run (0.56 s delay + 1.5 s) ends before DashboardPage takes the class away. */
+.pv-sortable--landed {
+  animation: pv-landed 1.5s ease-in-out 0.56s 1 both;
+  border-radius: var(--radius-lg);
+}
+
+@keyframes pv-landed {
+  0% {
+    box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent;
+  }
+  30% {
+    box-shadow: 0 0 0 3px var(--accent-crystal-border), 0 0 22px 1px var(--accent-crystal-bg);
+  }
+  100% {
+    box-shadow: 0 0 0 8px transparent, 0 0 0 0 transparent;
+  }
+}
+
+/* Right after a mouse drop the pointer still rests on the card: the hover lift of the card and the zoom of its cover wait
+   until the pointer really moves (stillSlug in DashboardPage), so nothing hops after the landing */
+.pv-sortable--still a,
+.pv-sortable--still a img {
+  translate: none;
+  scale: none;
+}
+
+/* The card that follows the pointer (rendered in a layer above the page, so nothing around it moves). This plain box must
+   stay untransformed: dnd-kit measures it for the drop animation, and a tilt/scale on it inflates the measured rectangle, so
+   the card would land a few pixels off its slot and jump when the real card takes over. The lifted look lives one level
+   deeper, on .pv-drag-lift. */
+.pv-drag-overlay {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  cursor: grabbing;
+}
+
+/* The lifted look: tilt, scale and shadow. It eases back to rest while the card glides into its slot (see dropAnimation in
+   DashboardPage), so at the hand-over the copy looks exactly like the real card. */
+.pv-drag-lift {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  transform: scale(1.04) rotate(-1.2deg);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 32px 60px -16px rgba(15, 23, 42, 0.55),
+    0 0 0 2px var(--accent-crystal-border),
+    0 0 30px -6px var(--accent-crystal);
+  animation: pv-lift 0.26s cubic-bezier(0.22, 1.3, 0.36, 1) both;
+}
+
+@keyframes pv-lift {
+  from {
+    transform: scale(1) rotate(0deg);
+    box-shadow:
+      0 0 0 0 transparent,
+      0 0 0 0 transparent,
+      0 0 0 0 transparent;
+  }
+}
+
+/* The copy under the pointer must not react to hover (lift of the card, zoom of the cover): it would be hovered at the end of
+   the drop while the real card is not yet, which is a visible hop at the hand-over */
+.pv-drag-overlay a,
+.pv-drag-overlay a img,
+.pv-drag-overlay button {
+  translate: none;
+  scale: none;
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-drag-lift {
+    transform: none;
+    animation: none;
+  }
+
+  .pv-sortable--landed {
+    animation: none;
+  }
+}
+
+/* ==================== HANDBOOK VIEWER (components/HandbookViewer.tsx) ==================== */
+.pv-doc {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.pv-doc-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+  padding: 0.6rem 1rem;
+  background: var(--bg-glass);
+  border-block-end: 1px solid var(--border-subtle);
+}
+
+.pv-doc-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-inline-end: auto;
+  color: var(--accent-crystal);
+}
+
+.pv-doc-title h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pv-doc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pv-doc-body {
+  min-block-size: 0;
+  background: var(--bg-elevated);
+}
+
+.pv-doc-frame {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  border: 0;
+  background: #fff;
+}
+
+.pv-doc-fallback {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 1rem;
+  block-size: 100%;
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.pv-doc-fallback p {
+  max-inline-size: 28rem;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+/* ==================== LICENCE VIEWER (components/LicenseViewer.tsx, SimpleMarkdown.tsx) ==================== */
+/* The scroll area always draws its track (rigid layout): loading, error text and the finished document never shift sideways. */
+.pv-doc-scroll {
+  block-size: 100%;
+  overflow-y: scroll;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--pv-scroll-thumb) var(--pv-scroll-track);
+}
+
+.pv-doc-scroll:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: -2px;
+}
+
+.pv-doc-text {
+  max-inline-size: 56rem;
+  margin-inline: auto;
+  padding: 1.5rem 1.25rem 3rem;
+  color: var(--text-primary);
+}
+
+.pv-doc-hint {
+  margin: 0 0 1.25rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.pv-doc-state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.pv-doc-state--error {
+  color: var(--accent-crimson);
+}
+
+.pv-doc-state--error p {
+  margin: 0;
+  flex: 1 1 18rem;
+}
+
+/* The source code line of the licence tab (AGPL-3.0-only, section 13) */
+.pv-doc-source a {
+  color: var(--accent-crystal);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+
+/* The licence: the official GNU AGPL v3 plain text, re-flowed into paragraphs (components/plainLicence.ts) */
+.pv-licence-plain {
+  font-size: 0.9rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  color: var(--text-secondary);
+}
+
+.pv-licence-plain p {
+  margin: 0 0 0.8rem;
+}
+
+.pv-licence-plain .pv-licence-title {
+  margin-block: 1.4rem 0.6rem;
+  font-weight: 800;
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.pv-licence-plain .pv-licence-title + .pv-licence-title,
+.pv-licence-plain .pv-licence-title:first-child {
+  margin-block-start: 0;
+}
+
+/* Rendered Markdown (the third-party notices) */
+.pv-md {
+  font-size: 0.9rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.pv-md-h {
+  margin: 1.6rem 0 0.6rem;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+.pv-md-h1 {
+  margin-block-start: 0;
+  font-size: 1.5rem;
+}
+
+.pv-md-h2 {
+  padding-block-end: 0.35rem;
+  font-size: 1.2rem;
+  border-block-end: 1px solid var(--border-subtle);
+}
+
+.pv-md-h3 {
+  font-size: 1rem;
+  color: var(--accent-crystal);
+}
+
+.pv-md-h4,
+.pv-md-h5,
+.pv-md-h6 {
+  font-size: 0.9rem;
+}
+
+.pv-md-p {
+  margin: 0 0 0.8rem;
+  color: var(--text-secondary);
+}
+
+.pv-md-list {
+  margin: 0 0 0.9rem;
+  padding-inline-start: 1.3rem;
+  color: var(--text-secondary);
+}
+
+ul.pv-md-list {
+  list-style: disc;
+}
+
+ol.pv-md-list {
+  list-style: decimal;
+}
+
+.pv-md-list li + li {
+  margin-block-start: 0.2rem;
+}
+
+.pv-md code {
+  padding: 0.05rem 0.3rem;
+  font-family: ui-monospace, "Cascadia Mono", "JetBrains Mono", Consolas, monospace;
+  font-size: 0.82em;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.pv-md a {
+  color: var(--accent-crystal);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pv-md-code {
+  margin: 0 0 1rem;
+  padding: 0.8rem 1rem;
+  font-family: ui-monospace, "Cascadia Mono", "JetBrains Mono", Consolas, monospace;
+  font-size: 0.74rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-inline-start: 3px solid var(--accent-crystal);
+  border-radius: var(--radius-sm);
+}
+
+.pv-md-table-wrap {
+  margin: 0 0 1rem;
+  overflow-x: auto;
+}
+
+.pv-md-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.pv-md-table th,
+.pv-md-table td {
+  padding: 0.4rem 0.7rem;
+  text-align: start;
+  vertical-align: top;
+  border: 1px solid var(--border-subtle);
+}
+
+.pv-md-table th {
+  font-weight: 800;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+}
+
+.pv-md-table td {
+  color: var(--text-secondary);
+}
+
+.pv-md-rule {
+  margin: 1.5rem 0;
+  border: 0;
+  border-block-start: 1px solid var(--border-subtle);
+}
+
+/* ==================== COACH MARKS (components/onboarding/HintTour.tsx) ==================== */
+.pv-hint-root {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+}
+
+/* Dims everything except the pointed-at control: one huge shadow around the soft cut-out */
+.pv-hint-spot {
+  position: fixed;
+  border-radius: var(--radius-md);
+  pointer-events: none;
+  box-shadow:
+    0 0 0 100vmax rgba(8, 12, 22, 0.62),
+    0 0 0 2px var(--accent-crystal),
+    0 0 24px 2px var(--accent-crystal-bg);
+}
+
+.pv-hint-dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 12, 22, 0.62);
+}
+
+.pv-hint-card {
+  position: fixed;
+  inline-size: min(22rem, calc(100vw - 1.5rem));
+  padding: 1rem 1.1rem 0.9rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--accent-crystal-border);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow:
+    var(--shadow-card),
+    0 26px 50px -18px rgba(0, 0, 0, 0.5);
+}
+
+.pv-hint-meta {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pv-hint-card h2 {
+  margin: 0.25rem 0 0;
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+.pv-hint-card p {
+  margin: 0.35rem 0 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.pv-hint-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-block-start: 0.9rem;
+}
+
+.pv-hint-skip {
+  padding: 0.2rem 0;
+  border: 0;
+  background: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.pv-hint-skip:hover {
+  color: var(--text-primary);
+}
+
+.pv-hint-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  margin-block-start: 0.7rem;
+  padding-block-start: 0.65rem;
+  border-block-start: 1px solid var(--border-subtle);
+}
+
+.pv-hint-links button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent-crystal);
+  cursor: pointer;
+}
+
+.pv-hint-links button:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Laptop and wider: everything in one row */
+@media (min-width: 1024px) {
+  .pv-subbar-inner {
+    grid-template-columns: minmax(9rem, 18rem) auto minmax(0, 1fr) 15.5rem;
+    grid-template-areas: 'search switch figures slider';
+  }
+}
+
+.pv-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.4rem 1.5rem;
+  box-shadow: var(--shadow-card);
+}
+
+.pv-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-block-end: 0.9rem;
+  padding-block-end: 0.7rem;
+  border-block-end: 1px solid var(--border-subtle);
+}
+
+.pv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.74rem;
+  font-weight: 700;
+  border: 1px solid currentColor;
+}
+
+.pv-badge-s {
+  background: var(--accent-gold-bg);
+  color: var(--accent-gold-text);
+  border-color: var(--accent-gold-border);
+}
+
+.pv-badge-a {
+  background: var(--accent-crystal-bg);
+  color: var(--accent-crystal);
+  border-color: var(--accent-crystal-border);
+}
+
+.pv-badge-b {
+  background: var(--accent-purple-bg);
+  color: var(--accent-purple);
+  border-color: var(--accent-purple-border);
+}
+
+.pv-badge-ok {
+  background: var(--accent-emerald-bg);
+  color: var(--accent-emerald);
+  border-color: var(--accent-emerald-border);
+}
+
+.pv-alert {
+  display: flex;
+  gap: 0.9rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.pv-alert-gold {
+  background: var(--accent-gold-bg);
+  border-color: var(--accent-gold-border);
+}
+
+.pv-alert-crystal {
+  background: var(--accent-crystal-bg);
+  border-color: var(--accent-crystal-border);
+}
+
+.pv-alert-danger {
+  background: var(--accent-crimson-bg);
+  border-color: var(--accent-crimson-border);
+}
+
+.pv-alert-emerald {
+  background: var(--accent-emerald-bg);
+  border-color: var(--accent-emerald-border);
+}
+
+/* ==================== ON/OFF SWITCH ==================== */
+/* components/ui/Switch.tsx: the whole row is the button (role="switch"); track and knob are its first child. The size is fixed in
+   em of the track's own font size (--pv-switch-font, default 17px at 100 % UI size, follows the UI scale), so "on" and "off" are
+   exactly the same box (rigid layout). Colours come from the --c-toggle-* tokens; data-surface="dark" pins the dark values for a
+   surface that stays dark in the light theme (the trophy cabinet). The glyph in the knob (check / cross) keeps the state readable
+   without colour, for red-green colour blindness. */
+.pv-switch {
+  cursor: pointer;
+  text-align: start;
+}
+
+.pv-switch[data-surface='dark'] {
+  --c-toggle-on: #4ade80;
+  --c-toggle-off: #f87171;
+  --c-toggle-knob: #0b1220;
+  --c-toggle-focus: #f6e3a4;
+}
+
+.pv-switch:focus-visible {
+  outline: 2px solid var(--c-toggle-focus);
+  outline-offset: 2px;
+}
+
+.pv-switch:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.pv-switch-track {
+  position: relative;
+  box-sizing: border-box;
+  flex: none;
+  inline-size: 2.3em;
+  block-size: 1.3em;
+  font-size: var(--pv-switch-font, 1.0625rem);
+  border-radius: 999px;
+  background: var(--c-toggle-off);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.22);
+  transition: background-color 0.18s ease;
+}
+
+.pv-switch-knob {
+  position: absolute;
+  inset-block-start: 0.15em;
+  inset-inline-start: 0.15em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1em;
+  block-size: 1em;
+  border-radius: 50%;
+  background: var(--c-toggle-knob);
+  color: var(--c-toggle-off);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+  transition: transform 0.18s ease;
+}
+
+.pv-switch[aria-checked='true'] .pv-switch-track {
+  background: var(--c-toggle-on);
+}
+
+.pv-switch[aria-checked='true'] .pv-switch-knob {
+  transform: translateX(1em);
+  color: var(--c-toggle-on);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-switch-track,
+  .pv-switch-knob {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .pv-switch-track {
+    border: 1px solid CanvasText;
+  }
+}
+
+/* ==================== RESPONSIVE CONTAINER-QUERY TABLE ==================== */
+.vault-table-wrapper {
+  overflow: auto;
+  max-inline-size: 100%;
+  max-block-size: calc(100dvh - 13.75rem);
+  container-type: inline-size;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.vault-table {
+  inline-size: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9rem;
+}
+
+.vault-table thead {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 2;
+  background: var(--bg-elevated);
+}
+
+.vault-table th,
+.vault-table td {
+  padding: 0.85rem 1rem;
+  text-align: start;
+  border-block-end: 1px solid var(--border-subtle);
+  vertical-align: middle;
+  color: var(--text-secondary);
+}
+
+.vault-table thead th {
+  font-weight: 800;
+  color: var(--text-primary);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-block-end: 2px solid var(--border-subtle);
+}
+
+.vault-table tbody th {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 1;
+  background: var(--bg-surface);
+  font-weight: 700;
+  color: var(--text-primary);
+  border-inline-end: 1px solid var(--border-subtle);
+}
+
+.vault-table tbody tr:hover td,
+.vault-table tbody tr:hover th {
+  background: var(--bg-elevated);
+}
+
+.vault-table tbody tr.row-checked td,
+.vault-table tbody tr.row-checked th {
+  opacity: 0.72;
+  background: var(--accent-emerald-bg);
+}
+
+.vault-table tbody tr.row-checked th {
+  text-decoration: line-through;
+}
+
+@container (width < 40.625rem) {
+  .vault-table,
+  .vault-table thead,
+  .vault-table tbody,
+  .vault-table tr,
+  .vault-table th,
+  .vault-table td {
+    display: block;
+  }
+
+  .vault-table thead {
+    display: none;
+  }
+
+  .vault-table tr {
+    margin: 0.75rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+
+  .vault-table tbody th {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 2;
+    background: var(--bg-elevated);
+    border-inline-end: none;
+  }
+
+  .vault-table td::before {
+    content: attr(data-label) ": ";
+    font-weight: 700;
+    color: var(--text-primary);
+    display: inline-block;
+    min-inline-size: 7.1875rem;
+  }
+}
+
+/* Form inputs & modals using Pastel tokens */
+.pv-input {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.85rem;
+  font-size: 0.86rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Sliders (tile size, sound volume): one look everywhere, crystal accent, comfortable hit area */
+.pv-range {
+  accent-color: var(--accent-crystal);
+  block-size: 1.5rem;
+  cursor: pointer;
+}
+
+/* Input with a leading icon (search fields): room for the icon, so the placeholder never runs under it.
+   Needed as a class because .pv-input sets padding outside the Tailwind layers and would beat pl-* utilities. */
+.pv-input.pv-input-icon {
+  padding-left: 2.25rem;
+}
+
+.pv-input:focus {
+  outline: none;
+  border-color: var(--accent-crystal);
+  box-shadow: 0 0 0 3px var(--accent-crystal-bg);
+}
+
+.pv-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(6px);
+  padding: 1rem;
+}
+
+.pv-modal {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.28);
+}
+
+/* Floating notices (components/ui/FloatingNotice.tsx) normally lie along the bottom edge. A dialog keeps its action buttons in its
+   footer, so while one is open the notices move to the TOP edge instead - on a phone (and on a short window) a bottom notice would
+   cover "Save"/"Close". Written outside the Tailwind layers on purpose, so it wins over the bottom-5 / bottom-24 utilities. Both stacks
+   (the page's own and the Play notices of the whole app) share the top edge: with a dialog open and two notices at once, the later one
+   lies over the other until it is closed (rare, and no dialog button is ever covered). */
+html:has(.pv-modal-backdrop) .pv-notice-stack {
+  top: max(0.75rem, env(safe-area-inset-top));
+  bottom: auto;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .vault-table-wrapper {
+    max-block-size: none !important;
+    overflow: visible !important;
+  }
+}
+
+/* ==================== FIRST-RUN LANGUAGE SCREEN ==================== */
+
+/* A brand screen like the cover of the PDF documents: always the dark night-blue look (not theme dependent), so the very first
+   thing a visitor sees is the same in light and dark. Fixed colours, all checked on the screen's own background:
+     body text #f1f5f9 on #0a1228 16.9:1, muted #b4c2d8 10.3:1 (on the selected card 7.8:1), gold kicker #fcd34d 12.9:1,
+     sky accent #38bdf8 8.7:1, button text #04111f on #38bdf8 8.9:1, error #fda4af 9.8:1,
+     card border #64748b on the card 3.8:1, selected border #38bdf8 8.5:1, focus ring #fbbf24 11.1:1. */
+.pv-lang {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  overflow-y: auto;
+  /* Never sideways: with only overflow-y set, overflow-x computes to "auto", and the watermark (right: -6rem, cut off by the window
+     edge on purpose) then made a horizontal scrollbar - visible in the WebView2 window of the Windows program */
+  overflow-x: hidden;
+  color: #f1f5f9;
+  background:
+    radial-gradient(60rem 40rem at 12% -8%, rgba(56, 189, 248, 0.22), transparent 62%),
+    radial-gradient(48rem 34rem at 96% 108%, rgba(251, 191, 36, 0.14), transparent 60%),
+    linear-gradient(165deg, #0c1734 0%, #060a16 68%);
+}
+
+.pv-lang-watermark {
+  position: absolute;
+  right: -6rem;
+  bottom: -5rem;
+  inline-size: min(46rem, 90vw);
+  opacity: 0.07;
+  transform: rotate(-8deg);
+  pointer-events: none;
+}
+
+.pv-lang-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-block-size: 100%;
+  /* Anchored near the top: a message or a longer text can at worst move the bottom edge, never make the card jump */
+  padding: max(2rem, 8vh) 1rem 2rem;
+}
+
+.pv-lang-head {
+  inline-size: 100%;
+  max-inline-size: 44rem;
+}
+
+.pv-lang-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  /* Fixed height: the wordmark appears when the branding has loaded, nothing moves */
+  min-block-size: 2.75rem;
+}
+
+.pv-lang-brand img {
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  filter: drop-shadow(0 8px 22px rgba(56, 189, 248, 0.5));
+}
+
+.pv-lang-card {
+  inline-size: 100%;
+  max-inline-size: 44rem;
+  margin-block-start: max(1.5rem, 5vh);
+}
+
+.pv-lang-kicker {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  border: 1px solid rgba(251, 191, 36, 0.55);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #fcd34d;
+}
+
+.pv-lang-title {
+  margin: 1rem 0 0;
+  font-size: clamp(1.9rem, 5.2vw, 3rem);
+  line-height: 1.08;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  text-shadow: 0 0 36px rgba(56, 189, 248, 0.28);
+}
+
+.pv-lang-title span {
+  display: block;
+}
+
+.pv-lang-title span + span {
+  color: #b4c2d8;
+  font-weight: 700;
+  text-shadow: none;
+}
+
+.pv-lang-rule {
+  inline-size: 3.5rem;
+  block-size: 3px;
+  margin: 1.1rem 0 1.6rem;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #38bdf8, #fbbf24);
+}
+
+.pv-lang-options {
+  display: grid;
+  /* Two columns for two languages; with more languages the cards wrap by themselves */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15.5rem), 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.pv-lang-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-block-size: 9.5rem;
+  padding: 1.1rem 1.2rem;
+  border: 2px solid #64748b;
+  border-radius: var(--radius-lg);
+  background: rgba(15, 23, 42, 0.65);
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.pv-lang-option:hover {
+  border-color: #94a3b8;
+  transform: translateY(-2px);
+}
+
+.pv-lang-option:has(input:checked) {
+  border-color: #38bdf8;
+  background: linear-gradient(160deg, rgba(56, 189, 248, 0.2), rgba(56, 189, 248, 0.08));
+  box-shadow: 0 18px 40px -18px rgba(56, 189, 248, 0.55), 0 0 0 1px rgba(56, 189, 248, 0.25);
+}
+
+.pv-lang-option:has(input:focus-visible) {
+  outline: 3px solid #fbbf24;
+  outline-offset: 3px;
+}
+
+.pv-lang-option input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+}
+
+.pv-lang-option-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.pv-lang-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: #bae6fd;
+}
+
+.pv-lang-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.6rem;
+  block-size: 1.6rem;
+  border: 2px solid #64748b;
+  border-radius: 999px;
+  color: #04111f;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.pv-lang-check svg {
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.pv-lang-option:has(input:checked) .pv-lang-check {
+  border-color: #38bdf8;
+  background: #38bdf8;
+}
+
+.pv-lang-option:has(input:checked) .pv-lang-check svg {
+  opacity: 1;
+}
+
+.pv-lang-name {
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+}
+
+.pv-lang-hint {
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: #b4c2d8;
+}
+
+.pv-lang-note {
+  margin-block-start: 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #b4c2d8;
+}
+
+.pv-lang-actions {
+  display: flex;
+  align-items: center;
+  margin-block-start: 1.25rem;
+}
+
+.pv-lang-continue {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-inline-size: 11rem;
+  padding: 0.75rem 1.6rem;
+  border: 0;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 800;
+  color: #04111f;
+  background: #38bdf8;
+  cursor: pointer;
+  box-shadow: 0 14px 30px -14px rgba(56, 189, 248, 0.75);
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.pv-lang-continue:hover:not(:disabled) {
+  background: #7dd3fc;
+  transform: translateY(-1px);
+}
+
+.pv-lang-continue:focus-visible {
+  outline: 3px solid #fbbf24;
+  outline-offset: 3px;
+}
+
+.pv-lang-continue:disabled {
+  cursor: progress;
+}
+
+/* Room for the longest failure message (three lines on a phone), so showing one moves nothing */
+.pv-lang-error {
+  min-block-size: 4.5rem;
+  margin-block-start: 0.9rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #fda4af;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-lang-option,
+  .pv-lang-continue,
+  .pv-lang-check,
+  .pv-lang-check svg {
+    transition: none;
+  }
+
+  .pv-lang-option:hover,
+  .pv-lang-continue:hover:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* While the brand screen is up the (empty) page scrollbar gets the screen's colours instead of the theme's */
+html:has(.pv-lang) {
+  scrollbar-color: #64748b #0a1228;
+}
+
+/* ReservedText (components/ui/ReservedText.tsx): the shown text and invisible copies of every possible text share one grid
+   cell, so the cell is as tall as the tallest of them at the current width. The copies come from a data attribute, so they
+   are no DOM text (tests, search and screen readers do not see them). */
+.pv-reserve {
+  display: grid;
+}
+
+.pv-reserve > * {
+  grid-area: 1 / 1;
+  min-inline-size: 0;
+}
+
+.pv-reserve-copy {
+  visibility: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.pv-reserve-copy::before {
+  content: attr(data-text);
+}
+
+/* ==================== LANGUAGE MENU (components/LanguageMenu.tsx) ==================== */
+
+/* Flag of a language (components/ui/LanguageFlag.tsx): an inline SVG of the 3:2 flag, a hairline around it so white parts of a flag
+   keep their edge on a light surface */
+.pv-flag {
+  display: inline-flex;
+  flex-shrink: 0;
+  inline-size: 1.5rem;
+  block-size: 1rem;
+  overflow: hidden;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+
+.pv-flag > svg {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.pv-flag-code {
+  inline-size: 100%;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 0.625rem;
+  font-weight: 800;
+  line-height: 1rem;
+  text-align: center;
+}
+
+/* The code of the language in use (DE / EN) on the top-bar button: an overlay of a fixed width, so it never changes the button's size
+   and DE and EN look the same. Same colours as the size badge: light white on #0369a1 = 5.9:1, dark #1f293d on #7dd3fc = 8.9:1. */
+.pv-hlang-badge {
+  position: absolute;
+  inset-block-end: -0.2rem;
+  inset-inline-end: -0.2rem;
+  box-shadow: 0 0 0 2px var(--bg-surface);
+  inline-size: 1.5rem;
+  border-radius: 999px;
+  background: var(--accent-crystal);
+  color: var(--bg-surface);
+  font-size: 0.625rem;
+  font-weight: 800;
+  line-height: 1rem;
+  letter-spacing: 0.02em;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Written in px on purpose, like the size popover: choosing a language re-flows the page, the menu keeps its size and place. */
+.pv-langmenu {
+  position: fixed;
+  z-index: 85;
+  box-sizing: border-box;
+  padding: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    var(--shadow-card),
+    0 22px 44px -12px rgba(15, 23, 42, 0.38);
+}
+
+.pv-langmenu svg.tabler-icon:not([width$='em']) {
+  zoom: 1;
+}
+
+.pv-langmenu .pv-flag {
+  inline-size: 24px;
+  block-size: 16px;
+}
+
+.pv-langmenu-item {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 12px;
+  inline-size: 100%;
+  min-block-size: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.pv-langmenu-item:hover {
+  background: var(--bg-elevated);
+}
+
+.pv-langmenu-item:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: -2px;
+}
+
+/* The language in use: accent colour and a check, never colour alone */
+.pv-langmenu-item[aria-checked='true'] {
+  background: var(--accent-crystal-bg);
+  color: var(--accent-crystal);
+}
+
+.pv-langmenu-check {
+  visibility: hidden;
+}
+
+.pv-langmenu-item[aria-checked='true'] .pv-langmenu-check {
+  visibility: visible;
+}
+
+/* Bigger flag on the first-run language cards */
+.pv-lang-option .pv-flag {
+  inline-size: 2rem;
+  block-size: 1.333rem;
+}
+
+/* Phones: logo + name + the five utility buttons (language, colour scheme, settings, help, handbook) no longer fit in one row, and a
+   cut-off "PlatinV..." looks worse than no name. Below this header width the dashboard keeps only the logo; the name stays in the page
+   for screen readers (visually hidden). rem inside a container query is the real root font size, so this follows the UI size. */
+@container pv-header (max-width: 24rem) {
+  .pv-hbar--dash .pv-hbrand > div {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* ---------- Dashboard cards: the action bar ----------
+   One full-width strip under the cover with equal segments: Spielen (Play) - Favorit - Twitch, in that order (no divider lines between
+   them since 2026-11-02: the filled Play segment, the hover wash and the labels set the three apart). Without Play (no bridge, no
+   local Steam) the same strip has two equal segments: same height, nothing else moves. A segment shows icon + short label where it is
+   wide enough (it measures ITSELF: container query on the cell), icon only otherwise - our tooltip names every segment either way.
+   One quiet base for all segments (same surface, same neutral text, same hover / pressed / focus). Colour only where it means something:
+   Play is the primary action and carries the one accent (emerald icon and label), the star turns gold only while the game IS a favourite,
+   Twitch is neutral until it is hovered or focused (then its violet), the live badge is a calm neutral pill with a small violet dot. */
+:root {
+  --control-bg: light-dark(#ffffff, #2e3d59);
+  --control-bg-hover: light-dark(#e2e8f0, #3a4b6b);
+  --control-border: light-dark(#64748b, #8293ad);
+  --play-text: light-dark(#ffffff, #052e22);
+  /* The Twitch violet of the logo while its segment is hovered / focused: >= 3:1 on the hover surface in both themes (4.6:1 / 4.1:1) */
+  --bar-twitch-icon: light-dark(#7c3aed, #c0a0ff);
+}
+
+.pv-card-actions {
+  display: flex;
+  align-items: stretch;
+  block-size: 2rem;
+  background: color-mix(in srgb, var(--bg-elevated) 55%, var(--bg-surface));
+  border-block: 1px solid var(--border-subtle);
+}
+
+/* The slimmer strip of the very compact card (cards about 110-170 px wide) */
+.pv-card-actions--sm {
+  block-size: 1.875rem;
+}
+
+/* The same segments as a small group at the end of a list row */
+.pv-bar-group {
+  display: inline-flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  block-size: 2rem;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bg-elevated) 55%, var(--bg-surface));
+}
+
+/* A segment cell: equal width in the strip, a fixed square in the group; it is the container its own label asks about */
+.pv-card-actions > .pv-bar-cell {
+  display: flex;
+  flex: 1 1 0;
+  min-inline-size: 0;
+  container-type: inline-size;
+  container-name: pv-bar-seg;
+}
+
+.pv-bar-group > .pv-bar-cell {
+  display: flex;
+  flex: 0 0 2rem;
+  container-type: inline-size;
+  container-name: pv-bar-seg;
+}
+
+.pv-bar-seg {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-inline-size: 0;
+  inline-size: 100%;
+  padding-inline: 0.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  text-decoration: none;
+  position: relative;
+  transition: background-color 0.15s ease, color 0.15s ease, filter 0.15s ease;
+}
+
+.pv-bar-seg:hover {
+  background: var(--control-bg-hover);
+  color: var(--text-primary);
+}
+
+.pv-bar-seg:active {
+  filter: brightness(0.94);
+}
+
+/* Inside the strip the focus ring sits inside the segment (the strip clips anything outside) */
+.pv-bar-seg:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: -3px;
+}
+
+.pv-bar-label {
+  display: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@container pv-bar-seg (min-width: 4.75rem) {
+  .pv-bar-label {
+    display: inline;
+  }
+}
+
+/* The count of live streams on the Twitch segment: a small pill over the top-right corner of the segment. It is absolutely placed, so it
+   appearing, changing ("12" to "300+") or going away moves and resizes nothing. Text 0.66rem bold in the control text colour on the
+   strip's own surface (>= 7:1 in both themes); the dot is the usual "live" red and only decoration. */
+.pv-bar-live {
+  position: absolute;
+  inset-block-start: 0.06rem;
+  inset-inline-end: 0.12rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0 0.28rem;
+  min-block-size: 0.85rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg-surface) 88%, var(--bg-elevated));
+  color: var(--text-secondary);
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+/* Room for the badge: from a cell wide enough for icon + label + badge the segment keeps a little space on its right, for every card alike */
+@container pv-bar-seg (min-width: 6.5rem) {
+  .pv-bar-seg--live {
+    padding-inline-end: 2.1rem;
+  }
+}
+
+/* The same compact badge wherever the segment is icon-only (a narrow cell: very compact cards, phone) - there is no room for the dot and the full pill */
+@container pv-bar-seg (max-width: 4.74rem) {
+  .pv-bar-live {
+    inset-block-start: 0.02rem;
+    inset-inline-end: 0.02rem;
+    min-block-size: 0.78rem;
+    padding: 0 0.2rem;
+    font-size: 0.58rem;
+  }
+
+  .pv-bar-live-dot {
+    display: none;
+  }
+}
+
+/* In the small icon-only group at the end of a list row (2 rem squares) the badge is a compact notification dot on the icon: no live dot, smaller */
+.pv-bar-group .pv-bar-live {
+  inset-block-start: 0.02rem;
+  inset-inline-end: 0.02rem;
+  min-block-size: 0.78rem;
+  padding: 0 0.2rem;
+  font-size: 0.58rem;
+}
+
+.pv-bar-group .pv-bar-live-dot {
+  display: none;
+}
+
+.pv-bar-live-dot {
+  inline-size: 0.35rem;
+  block-size: 0.35rem;
+  border-radius: 50%;
+  background: var(--brand-twitch);
+}
+
+/* Favourite: only the filled star turns gold while the game IS a favourite; the segment itself stays as quiet as its neighbours
+   (in the Favourites view every card has one, a gold block each would be loud) */
+.pv-bar-seg--star[aria-pressed='true'] svg {
+  color: var(--accent-gold);
+}
+
+/* Play: the primary action, marked by the one accent of the bar - emerald icon and label on the same quiet surface as its neighbours
+   (no filled block); hover washes the segment in the soft emerald of the app's confirm buttons */
+.pv-bar-seg--play {
+  color: var(--accent-emerald);
+}
+
+.pv-bar-seg--play:hover {
+  background: var(--accent-emerald-bg);
+  color: var(--accent-emerald);
+}
+
+/* Twitch: neutral at rest, its brand violet only while hovered or focused */
+.pv-bar-seg--twitch:hover .pv-bar-seg-icon,
+.pv-bar-seg--twitch:focus-visible .pv-bar-seg-icon {
+  color: var(--bar-twitch-icon);
+}
+
+/* "Running": exactly the calm look of the Play segment (same surface, same emerald), only the content changes - the pulsing live dot and
+   "Läuft" instead of the play icon and "Spielen". Not clickable, so no hover wash; the size is untouched (the cell is fixed, the labels are stacked).
+   The dot is the Play emerald (>= 4.5:1 on the strip, like its label); the pulse stops with prefers-reduced-motion (.pv-live-dot). */
+.pv-bar-seg--play.pv-bar-seg--running:hover {
+  background: transparent;
+  cursor: default;
+}
+
+.pv-bar-seg--running .pv-live-dot {
+  background: var(--accent-emerald);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-emerald) 60%, transparent);
+}
+
+.pv-bar-seg--play[aria-busy='true'] {
+  cursor: progress;
+}
+
+@media (pointer: coarse) {
+  .pv-card-actions,
+  .pv-bar-group {
+    block-size: 2.25rem;
+  }
+  .pv-card-actions--sm {
+    block-size: 2rem;
+  }
+  .pv-bar-group > .pv-bar-cell {
+    flex-basis: 2.25rem;
+  }
+}
+
+/* Play on its own (the game page): the same emerald fill as a normal-sized button, icon + label */
+.pv-play-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  block-size: 2.25rem;
+  padding-inline: 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in srgb, var(--accent-emerald) 70%, #000);
+  background: var(--accent-emerald);
+  color: var(--play-text);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(2, 6, 23, 0.25);
+  transition: filter 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.pv-play-button:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--accent-emerald) 45%, transparent);
+}
+
+.pv-play-button:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.pv-play-button:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+}
+
+.pv-play-button[aria-busy='true'] {
+  cursor: progress;
+}
+
+/* "Game running": the same box as Play, but a calm status look (tinted, not filled) with a pulsing dot. Not clickable. Both labels
+   are stacked in one grid cell (the hidden one only holds the width), so the button never changes its size. */
+.pv-play-button--running {
+  background: color-mix(in srgb, var(--accent-emerald) 14%, var(--bg-surface, transparent));
+  color: var(--text-primary);
+  border-color: var(--accent-emerald);
+  box-shadow: none;
+  cursor: default;
+}
+
+.pv-play-button--running:hover {
+  filter: none;
+  box-shadow: none;
+}
+
+.pv-play-button--running:active {
+  transform: none;
+}
+
+.pv-play-stack {
+  display: inline-grid;
+}
+
+.pv-play-stack > * {
+  grid-area: 1 / 1;
+}
+
+.pv-live-dot {
+  inline-size: 0.6rem;
+  block-size: 0.6rem;
+  border-radius: 9999px;
+  background: var(--c-toggle-on);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--c-toggle-on) 60%, transparent);
+  animation: pv-live-pulse 1.8s ease-out infinite;
+}
+
+@keyframes pv-live-pulse {
+  70% {
+    box-shadow: 0 0 0 0.45rem transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-live-dot {
+    animation: none;
+  }
+}
+
+/* Play in the header of the game page: pinned to the end of the brand area (right before the tools), as tall as the other header
+   controls. Narrow headers (a phone) show the icon only; the tooltip and the aria-label name it. */
+.pv-hplay {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-inline-start: auto;
+}
+
+/* Nothing inside (no bridge, no Steam link): the slot is gone, not a gap (an unlayered rule beats Tailwind's empty:hidden, so it is said here) */
+.pv-hplay:empty {
+  display: none;
+}
+
+.pv-hplay .pv-play-button {
+  block-size: 2.5rem;
+}
+
+@container pv-header (max-width: 39.99rem) {
+  .pv-hplay .pv-play-label {
+    display: none;
+  }
+
+  .pv-hplay .pv-play-button {
+    inline-size: 2.5rem;
+    padding-inline: 0;
+  }
+}
+
+/* ---- "Update available" icon in the page header (components/updates/UpdateButton.tsx) ----
+   Same size and focus ring as the other header icons; crystal icon on a faint crystal tint, a small emerald dot with a surface-coloured
+   ring (like the language badge) marks the news. The ring plays twice per page load and is off with reduced motion. */
+.pv-icon-btn.pv-hupdate {
+  color: var(--accent-crystal);
+  background: var(--accent-crystal-bg);
+  border-color: var(--accent-crystal-border);
+}
+
+.pv-icon-btn.pv-hupdate:hover {
+  background: var(--accent-crystal-bg);
+  border-color: var(--accent-crystal);
+  color: var(--accent-crystal);
+}
+
+.pv-hupdate-dot {
+  position: absolute;
+  inset-block-start: -0.15rem;
+  inset-inline-end: -0.15rem;
+  inline-size: 0.6rem;
+  block-size: 0.6rem;
+  border-radius: 999px;
+  background: var(--accent-emerald);
+  box-shadow: 0 0 0 2px var(--bg-surface);
+  pointer-events: none;
+}
+
+.pv-hupdate--attention::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 2px solid var(--accent-crystal);
+  opacity: 0;
+  pointer-events: none;
+  animation: pv-hupdate-ring 1.6s ease-out 0.4s 2 both;
+}
+
+@keyframes pv-hupdate-ring {
+  0% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.45);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-hupdate--attention::after {
+    animation: none;
+  }
+}
+
+/* Popover of that icon; px on purpose like .pv-langmenu (a display-size change re-flows the page, the popover keeps its size). */
+.pv-hpop {
+  position: fixed;
+  z-index: 85;
+  box-sizing: border-box;
+  padding: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    var(--shadow-card),
+    0 22px 44px -12px rgba(15, 23, 42, 0.38);
+  max-block-size: calc(100vh - 80px);
+  overflow-y: auto;
+}
+
+.pv-hpop code {
+  /* Same monospace stack as the other code blocks of the app */
+  font-family: ui-monospace, "Cascadia Mono", "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  font-variant-ligatures: none;
+  /* Break only between words: "docker com|pose" split inside a word is hard to read */
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.pv-hpop-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-crystal);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.pv-hpop-link:hover {
+  color: var(--text-primary);
+}
+
+.pv-hpop-link:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+}
+
+/* The version at the foot of a page as a button (components/updates/VersionCheck.tsx): looks like the plain version until hovered or focused */
+.pv-vercheck {
+  display: inline-flex;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.pv-vercheck:hover .font-mono {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.pv-vercheck:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+}

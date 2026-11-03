@@ -1,0 +1,26 @@
+.git
+.github
+.backups
+.data
+.logs
+.secrets
+**/bin
+**/obj
+**/node_modules
+**/dist
+artifacts
+**/TestResults
+
+guides-archive
+.run
+# Screenshots for the README / Unraid template only - not part of the image
+docs/screenshots
+wip
+intern
+.git*
+*.md
+!README.md
+
+# Licence documents ship inside the image (/app/docs/), served by GET /api/docs/licenses and zipped into the bridge download
+# (LICENSE has no extension and is not excluded at all)
+!THIRD-PARTY-NOTICES.md
