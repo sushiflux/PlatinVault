@@ -106,7 +106,7 @@ internal sealed partial class InstallEngine(InstallLayout layout, Payload payloa
         catch (Exception ex) when (ex is InstallException or IOException or UnauthorizedAccessException or InvalidOperationException)
         {
             var reason = ex is InstallException install ? install.Text : new Msg(ex.Message, ex.Message);
-            throw new InstallException(RollBack(target, backup, hadOld, reason), ex);
+            throw new InstallException(RollBack(target, backup, hadOld, reason, layout.DataDir), ex);
         }
         TryDelete(backup);
     }
@@ -115,7 +115,7 @@ internal sealed partial class InstallEngine(InstallLayout layout, Payload payloa
     /// Puts the previous program back after a failed update (the "Apps" entry was not touched yet, so it still names that version), or
     /// removes the unfinished program of a first installation. Returns the complete message for the window.
     /// </summary>
-    private static Msg RollBack(string target, string backup, bool hadOld, Msg reason)
+    private static Msg RollBack(string target, string backup, bool hadOld, Msg reason, string dataDir)
     {
         try
         {
@@ -125,7 +125,7 @@ internal sealed partial class InstallEngine(InstallLayout layout, Payload payloa
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            return SetupTexts.RollBackFailed(reason, backup, ex.Message);
+            return SetupTexts.RollBackFailed(reason, backup, ex.Message, dataDir);
         }
     }
 

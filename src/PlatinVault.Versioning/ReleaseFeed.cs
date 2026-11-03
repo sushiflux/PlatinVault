@@ -6,14 +6,17 @@ namespace PlatinVault.Versioning;
 /// <summary>The Windows installer of a release and its published SHA-256 file (both direct downloads from github.com).</summary>
 public sealed record InstallerAsset(string Name, string Url, string ChecksumUrl);
 
+/// <summary>The Linux package "PlatinVault-linux-x64-{tag}.tar.gz" of a release and its published SHA-256 file (both direct downloads from github.com).</summary>
+public sealed record LinuxPackageAsset(string Name, string Url, string ChecksumUrl);
+
 /// <summary>
 /// One published beta or release of the public repository. <see cref="IsPreRelease"/> is true for a beta tag, a former release
 /// candidate tag, or a release GitHub marks as pre-release (a mismatch is treated as the safer "beta", so a release-only installation
 /// is never offered it). <see cref="NotesUrl"/> is the release page with its notes; <see cref="Installer"/> is null when the release
-/// has no Windows installer (e.g. an image-only build). <see cref="Notes"/> is the release text (GitHub "body") as plain text, capped at
+/// has no Windows installer (e.g. an image-only build); <see cref="LinuxPackage"/> likewise for the Linux package. <see cref="Notes"/> is the release text (GitHub "body") as plain text, capped at
 /// <see cref="ReleaseFeed.MaxNotesLength"/> characters; null when the release has none.
 /// </summary>
-public sealed record PublishedRelease(ReleaseVersion Version, bool IsPreRelease, string? NotesUrl, DateTimeOffset? PublishedAt, InstallerAsset? Installer, string? Notes = null);
+public sealed record PublishedRelease(ReleaseVersion Version, bool IsPreRelease, string? NotesUrl, DateTimeOffset? PublishedAt, InstallerAsset? Installer, string? Notes = null, LinuxPackageAsset? LinuxPackage = null);
 
 /// <summary>
 /// Reads the GitHub releases list of the public repository (<c>GET /repos/{owner}/{repo}/releases</c>) and decides which version to
@@ -42,7 +45,7 @@ public static class ReleaseFeed
             var notes = Text(release, "html_url") is { } html && IsGitHubUrl(html) ? html : null;
             DateTimeOffset? published = DateTimeOffset.TryParse(Text(release, "published_at"), CultureInfo.InvariantCulture,
                 DateTimeStyles.AssumeUniversal, out var at) ? at : null;
-            result.Add(new PublishedRelease(version, version.IsPreRelease || markedPreRelease, notes, published, FindInstaller(release), CleanNotes(Text(release, "body"))));
+            result.Add(new PublishedRelease(version, version.IsPreRelease || markedPreRelease, notes, published, FindInstaller(release), CleanNotes(Text(release, "body")), FindLinuxPackage(release)));
         }
         return result;
     }
@@ -72,14 +75,41 @@ public static class ReleaseFeed
         return new InstallerAsset(installerName, installer, checksum);
     }
 
+    /// <summary>The Linux package "PlatinVault-linux-x64-*.tar.gz" together with its ".tar.gz.sha256"; null unless both are github.com downloads.</summary>
+    private static LinuxPackageAsset? FindLinuxPackage(JsonElement release)
+    {
+        if (!release.TryGetProperty("assets", out var assets) || assets.ValueKind != JsonValueKind.Array) return null;
+        string? package = null, packageName = null, checksum = null;
+        foreach (var asset in assets.EnumerateArray())
+        {
+            var name = Text(asset, "name") ?? string.Empty;
+            var url = Text(asset, "browser_download_url");
+            if (url is null || !name.StartsWith("PlatinVault-linux-x64-", StringComparison.OrdinalIgnoreCase)) continue;
+            if (name.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase))
+            {
+                package = url;
+                packageName = name;
+            }
+            else if (name.EndsWith(".tar.gz.sha256", StringComparison.OrdinalIgnoreCase))
+            {
+                checksum = url;
+            }
+        }
+        if (package is null || checksum is null || packageName is null) return null;
+        if (!IsGitHubUrl(package) || !IsGitHubUrl(checksum)) return null;
+        return new LinuxPackageAsset(packageName, package, checksum);
+    }
+
     /// <summary>
     /// What to offer: the newest release (and, with <paramref name="includeBetas"/>, beta) that is newer than <paramref name="current"/>;
-    /// null = up to date. <paramref name="requireInstaller"/>: only releases with a Windows installer count (the Windows program).
+    /// null = up to date. <paramref name="requireInstaller"/>: only releases with a Windows installer count (the Windows program);
+    /// <paramref name="requireLinuxPackage"/>: only releases with a Linux package count (the Linux package).
     /// </summary>
-    public static PublishedRelease? PickUpdate(IEnumerable<PublishedRelease> releases, ReleaseVersion current, bool includeBetas, bool requireInstaller = false) =>
+    public static PublishedRelease? PickUpdate(IEnumerable<PublishedRelease> releases, ReleaseVersion current, bool includeBetas, bool requireInstaller = false, bool requireLinuxPackage = false) =>
         releases
             .Where(r => includeBetas || !r.IsPreRelease)
             .Where(r => !requireInstaller || r.Installer is not null)
+            .Where(r => !requireLinuxPackage || r.LinuxPackage is not null)
             .Where(r => r.Version > current)
             .MaxBy(r => r.Version);
 

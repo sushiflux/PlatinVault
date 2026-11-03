@@ -1,0 +1,50 @@
+PlatinVault Bridge fuer Linux
+=============================
+
+Was ist das?
+Die Bridge laeuft auf deinem Linux-PC (Desktop, Steam Deck, Bazzite) und meldet freigeschaltete Steam-Erfolge in Echtzeit an
+deinen PlatinVault-Server. Der Server kann auf einem anderen Geraet laufen (Unraid, NAS) oder in Docker auf diesem PC.
+Sie hat kein Fenster: Sie laeuft als Hintergrunddienst deines Benutzers, braucht kein .NET und keine Root-Rechte und
+aktualisiert sich selbst von deinem PlatinVault-Server. Sie startet auch Spiele, wenn du in PlatinVault auf "Spielen" tippst.
+
+Einrichten
+1. Archiv entpacken:        tar -xzf PlatinVault-Bridge-linux-x64.tar.gz
+2. In den Ordner wechseln:  cd PlatinVault-Bridge
+3. Installieren, starten:   ./install.sh
+
+install.sh kopiert das Programm nach ~/.local/share/platinvault-bridge/, speichert Server und Token aus der bridge.json dieses
+Pakets (nur fuer dich lesbar), loescht diese Kopie danach aus dem Download-Ordner (sie enthaelt deinen Token), richtet den systemd-Benutzerdienst "platinvault-bridge" ein und startet ihn. Alles bleibt in
+deinem Home-Ordner, deshalb geht es auch auf SteamOS und Bazzite mit ihrer schreibgeschuetzten Systempartition.
+
+Ohne fertige bridge.json (ein Paket, das nicht von deinem eigenen Server stammt) richtest du es von Hand ein:
+    echo '<token>' | ~/.local/share/platinvault-bridge/platinvault-bridge setup --server http://<server>:<port> --token-stdin
+(Der Token kommt ueber die Standardeingabe, damit er nicht in der Prozessliste steht. --token <token> geht auch.)
+
+Funktioniert es?
+    ~/.local/share/platinvault-bridge/platinvault-bridge status
+    journalctl --user -u platinvault-bridge -f
+    Protokolldatei: ~/.local/state/platinvault-bridge/bridge.log
+
+Wo ist Steam?
+Die Bridge sucht an den ueblichen Orten (~/.steam/steam, ~/.local/share/Steam, Flatpak, Snap). Liegt deins woanders:
+    platinvault-bridge setup --steam-dir /pfad/zu/Steam      (der Ordner, der "steamapps" enthaelt)
+oder PLATINVAULT_STEAM_DIR / STEAM_DIR setzen.
+
+Wichtig - was noch nicht geprueft ist
+Das Lesen der Erfolge unter Linux folgt dem Windows-Dateiformat und ist an echten Linux-Steam-Geraeten noch nicht geprueft:
+ob die lokale Statistikdatei im Moment der Freischaltung geschrieben wird und wie das angemeldete Steam-Konto gefunden wird.
+Das laufende Spiel wird ueber die Prozessliste von Steam erkannt. Ob der systemd-Benutzerdienst im Spielmodus (Game Mode) des
+Steam Deck weiterlaeuft, ist ebenfalls nicht geprueft (Desktop-Modus: ja). Klappt etwas nicht, zeigen "status" und das
+Protokoll, was die Bridge sieht.
+
+Sprache
+Die Bridge spricht die Sprache deines PlatinVault (Deutsch oder Englisch). Vor der ersten Verbindung nimmt sie die
+Systemsprache. "--language de" oder "--language en" erzwingt eine Sprache.
+
+Deinstallieren
+    ~/.local/share/platinvault-bridge/uninstall.sh            (behaelt Server und Token)
+    ~/.local/share/platinvault-bridge/uninstall.sh --purge    (entfernt alles)
+
+Handbuch und Lizenzen
+Im Archiv liegen das PlatinVault-Handbuch als PDF (Deutsch und Englisch), LICENSE (GNU AGPL v3) und THIRD-PARTY-NOTICES.md
+(Lizenzen der enthaltenen Open-Source-Teile, z. B. der .NET-Laufzeit). Der Quelltext liegt unter https://github.com/sushiflux/PlatinVault.

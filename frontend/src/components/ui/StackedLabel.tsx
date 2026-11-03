@@ -5,6 +5,8 @@ interface StackedLabelProps {
   active: number
   // All labels the control can ever show (in the active language)
   labels: ReactNode[]
+  // Where a label sits when it is narrower than the widest one: centred in a button, at the start for a text link
+  align?: 'center' | 'start'
 }
 
 /**
@@ -12,9 +14,9 @@ interface StackedLabelProps {
  * one grid cell and only the active one is visible, so the control is always as wide as its widest label and never changes size
  * when the label switches (project rule "Rigid layout"). The hidden ones are removed from the accessibility tree.
  */
-export function StackedLabel({ active, labels }: StackedLabelProps) {
+export function StackedLabel({ active, labels, align = 'center' }: StackedLabelProps) {
   return (
-    <span className="grid justify-items-center">
+    <span className={`grid ${align === 'start' ? 'justify-items-start' : 'justify-items-center'}`}>
       {labels.map((label, index) => (
         <span
           key={index}

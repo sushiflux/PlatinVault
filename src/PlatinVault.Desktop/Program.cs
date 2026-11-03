@@ -37,6 +37,7 @@ internal static class Program
         DesktopLog.Init(env.Data.Logs);
         Dialogs.Headless = env.Quiet;
         Dialogs.Log = DesktopLog.Info;
+        ErrorReport.AppVersion = env.Version;
         if (env.Layout.Registry.GetString(InstallLayout.AppKeyPath, "Language") is { } installedLanguage) UiLang.Current = installedLanguage;
 
         try
@@ -123,6 +124,14 @@ internal static class Program
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or Microsoft.Data.Sqlite.SqliteException)
         {
             DesktopLog.Error($"Einrichtung der Datenbank fehlgeschlagen: {ex}");
+            if (SqliteDatabase.IsCannotOpen(ex))
+            {
+                // SQLite error 14 (for example a virus scanner blocked the database or its helper files): plain explanation, SQLite's own text kept at the end
+                var text = Companion.Api.Localization.ServerTexts.DatabaseGuard.CannotOpen(database.DatabaseFile, ex.Message);
+                Out("PV-ERROR-DE " + OneLine(text.De));
+                Out("PV-ERROR-EN " + OneLine(text.En));
+                return 1;
+            }
             Out("PV-ERROR-DE " + OneLine(ex.Message));
             Out("PV-ERROR-EN " + OneLine(ex.Message));
             return 1;

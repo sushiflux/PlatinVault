@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { HandbookViewer } from './HandbookViewer'
@@ -9,6 +9,7 @@ import { IconAlertTriangle, IconBook2, IconLicense, IconRoute, IconCircleCheck, 
 import { fetchSystemStatus } from '../api/client'
 import type { SystemCheckDto } from '../api/types'
 import { useFormat } from '../i18n/format'
+import { SteamCandidateList } from './settings/SteamFolderSection'
 
 type RowStatus = SystemCheckDto['status'] | 'checking' | 'unknown'
 
@@ -18,6 +19,8 @@ interface Row {
   status: RowStatus
   detail: string
   latencyMs: number | null
+  // Extra content below the detail line (the places searched for Steam)
+  extra?: ReactNode
 }
 
 // The words for each status are texts: settings:system.status.<status>
@@ -66,6 +69,7 @@ function CheckRow({ row }: { row: Row }) {
         <p className="min-h-[1.25rem] text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
           {row.detail}
         </p>
+        {row.extra}
       </div>
     </li>
   )
@@ -113,7 +117,15 @@ export function SystemStatusSection() {
     }
     const check = reported.get(key)
     return check
-      ? { key, label: KNOWN_CHECKS.some((k) => k.key === key) ? label : check.label, status: check.status, detail: check.detail, latencyMs: check.latencyMs }
+      ? {
+          key,
+          label: KNOWN_CHECKS.some((k) => k.key === key) ? label : check.label,
+          status: check.status,
+          detail: check.detail,
+          latencyMs: check.latencyMs,
+          // Where Steam was looked for on the server's computer (folded, opened on demand)
+          extra: key === 'steam-local' && data?.steamLocal ? <SteamCandidateList candidates={data.steamLocal.candidates} /> : undefined,
+        }
       : { key, label, status: 'unknown', detail: t('system.notReported'), latencyMs: null }
   })
 

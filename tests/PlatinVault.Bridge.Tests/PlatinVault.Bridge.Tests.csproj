@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Tests of the bridge protocol and of the Linux bridge (xunit.v3 on Microsoft.Testing.Platform, see global.json): configuration and
+    command line, the state payload, the HTTP client against a fake handler, the command channel, the launcher order, the self-update, the
+    text catalogue and whole `run`/`setup`/`status` runs against a fake server on a loopback port. Nothing touches the real home folder
+    (every run uses a test root), nothing starts a game.
+    Run: dotnet test tests/PlatinVault.Bridge.Tests
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <NoWarn>$(NoWarn);xUnit1051</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The install script runs in a test (Linux only) -->
+    <Content Include="..\..\src\PlatinVault.Bridge.Linux\package\install.sh" Link="install.sh" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\PlatinVault.Bridge.Linux\PlatinVault.Bridge.Linux.csproj" />
+  </ItemGroup>
+</Project>

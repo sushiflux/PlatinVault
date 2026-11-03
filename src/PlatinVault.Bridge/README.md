@@ -97,7 +97,7 @@ Umleitung läuft (`… --test-texts | cat`).
 ## Von Hand starten (ohne Einrichtungsfenster)
 
 ```powershell
-PlatinVault.Bridge.exe --no-setup --server http://192.168.178.10:5233 --token <DEIN-TOKEN> --save
+PlatinVault.Bridge.exe --no-setup --server http://192.168.1.20:5233 --token <DEIN-TOKEN> --save
 ```
 
 | Option | Bedeutung |
@@ -119,7 +119,7 @@ Konfiguration, in dieser Reihenfolge (Wichtigeres gewinnt):
 `%APPDATA%\PlatinVault\bridge.json`.** Beide Dateien haben dieselbe Form:
 
 ```json
-{ "server": "http://192.168.178.10:5233", "token": "...", "language": "de" }
+{ "server": "http://192.168.1.20:5233", "token": "...", "language": "de" }
 ```
 
 Beim Start aus einem Terminal gibt cmd den Prompt sofort zurück, weil die Exe eine Windows-Anwendung ohne Konsole ist; die

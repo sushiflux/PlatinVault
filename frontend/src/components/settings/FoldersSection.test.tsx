@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { textWithoutCopyButton } from '../../test/withoutCopyButton'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DesktopFolderKind, DesktopFoldersDto } from '../../api/types'
@@ -84,7 +85,7 @@ describe('FoldersSection', () => {
     await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false))
     fireEvent.click(button)
     const alert = await screen.findByRole('alert')
-    expect(alert.textContent).toBe(
+    expect(textWithoutCopyButton(alert)).toBe(
       'Der Ordner „Protokolle“ konnte nicht geöffnet werden: Der Ordner existiert nicht mehr: C:\\Users\\Someone\\AppData\\Local\\PlatinVault\\logs'
     )
   })
@@ -92,7 +93,7 @@ describe('FoldersSection', () => {
   it('shows a failed load completely and keeps the rows', async () => {
     fetchDesktopFolders.mockRejectedValue(new Error('Server nicht erreichbar: Verbindung abgelehnt.'))
     renderSection()
-    expect((await screen.findByRole('alert')).textContent).toBe('Die Ordner konnten nicht ermittelt werden: Server nicht erreichbar: Verbindung abgelehnt.')
+    expect(textWithoutCopyButton(await screen.findByRole('alert'))).toBe('Die Ordner konnten nicht ermittelt werden: Server nicht erreichbar: Verbindung abgelehnt.')
     expect(screen.getAllByRole('button', { name: /öffnen$/ })).toHaveLength(4)
   })
 

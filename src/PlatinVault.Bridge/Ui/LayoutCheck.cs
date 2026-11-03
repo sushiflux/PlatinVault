@@ -50,7 +50,7 @@ internal static class LayoutCheck
         var seen = new HashSet<string>();
 
         using var guard = new InstanceGuard(env);
-        var sampler = new StateSampler(new Companion.Api.Services.SteamLocalStatsService(new BridgeLogger<Companion.Api.Services.SteamLocalStatsService>()), "1.0.0", null);
+        var sampler = new StateSampler(new SteamLocalSource(), "1.0.0", null);
 
         var scenarios = new List<Scenario>
         {
@@ -62,7 +62,7 @@ internal static class LayoutCheck
         };
         scenarios.AddRange(MessageScenarios());
 
-        SetupForm NewSetup(SetupMode mode) => new(env, cli, guard, sampler, mode, "http://192.168.178.10:5233",
+        SetupForm NewSetup(SetupMode mode) => new(env, cli, guard, sampler, mode, "http://192.168.1.20:5233",
             "Rk3fVx9aQzLmP2sTuYh7WbN4cDeJgA8o", "1.0.123", mode == SetupMode.Update ? "1.0.100" : null);
 
         foreach (var language in BridgeLang.Supported)
@@ -112,6 +112,13 @@ internal static class LayoutCheck
             }
         }
 
+        foreach (var finding in CheckCopy())
+        {
+            failures++;
+            checks++;
+            report.AppendLine($"FAIL copy: {finding}");
+        }
+
         // The status window is open while the bridge learns a new language from the server: it must switch with it
         foreach (var finding in CheckLiveSwitch())
         {
@@ -139,7 +146,7 @@ internal static class LayoutCheck
     {
         var status = (StatusForm)form;
         var now = DateTime.Now;
-        var baseline = new StatusSnapshot { ServerText = "http://192.168.178.10:5233", Version = "1.0.123" };
+        var baseline = new StatusSnapshot { ServerText = "http://192.168.1.20:5233", Version = "1.0.123" };
 
         const string steamId = "76561198012345678";
         yield return ("starting", () => status.Apply(baseline));
@@ -165,16 +172,23 @@ internal static class LayoutCheck
         yield return ("unauthorized", () => status.Apply(baseline with { Connection = ConnectionKind.Unauthorized }));
         yield return ("offline", () => status.Apply(baseline with
         {
-            Connection = ConnectionKind.Offline, Detail = BridgeTexts.Network.ConnectionError,
+            Connection = ConnectionKind.Offline, Detail = CoreTexts.Network.ConnectionError,
         }));
         yield return ("rejected", () => status.Apply(baseline with { Connection = ConnectionKind.Rejected, Detail = "HTTP 500" }));
+        // "Copy" next to the error: Copied / Copy not possible fill their reserved slot, nothing moves (the check compares every state with the first)
+        yield return ("offline-copied", () =>
+        {
+            status.Apply(baseline with { Connection = ConnectionKind.Offline, Detail = CoreTexts.Network.ConnectionError });
+            status.Copy.CopyNow();
+        });
+        yield return ("offline-copy-failed", () => status.Copy.ShowOutcome(false));
 
         // The reason has no length limit: the slot shows all of it and scrolls (see ScrollableText)
-        var reason = Repeat("connect ECONNREFUSED 192.168.178.10:5233 - the server did not answer within the time limit, no route to host. ", 2000);
+        var reason = Repeat("connect ECONNREFUSED 192.168.1.20:5233 - the server did not answer within the time limit, no route to host. ", 2000);
         var unbroken = new string('x', 2000);
         yield return ("long-offline-detail", () => { ExpectedFullText = reason; status.Apply(baseline with { Connection = ConnectionKind.Offline, Detail = reason }); });
         yield return ("long-rejected-detail-unbroken", () => { ExpectedFullText = unbroken; status.Apply(baseline with { Connection = ConnectionKind.Rejected, Detail = unbroken }); });
-        yield return ("offline-after-long", () => status.Apply(baseline with { Connection = ConnectionKind.Offline, Detail = BridgeTexts.Network.ConnectionError }));
+        yield return ("offline-after-long", () => status.Apply(baseline with { Connection = ConnectionKind.Offline, Detail = CoreTexts.Network.ConnectionError }));
     }
 
     /// <summary>The message boxes the bridge can open, with their real texts (they size themselves to the text, so the check is about buttons and the text area).</summary>
@@ -199,6 +213,39 @@ internal static class LayoutCheck
         yield return Box("error", () => BridgeTexts.Tray.NoLogYet(@"C:\Users\Beispiel\AppData\Local\PlatinVault\bridge.log"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         yield return Box("ok-cancel", () => BridgeTexts.Setup.AskTokenRejected, MessageBoxButtons.OKCancel, MessageBoxIcon.Question);
         yield return Box("yes-no-cancel", () => BridgeTexts.Setup.AskTokenRejected, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+
+        // The copy button of an error: after "Copied" / "Copy not possible" appear in their reserved slot nothing may have moved
+        yield return new Scenario("message-error-copy",
+            () => new MessageForm(BridgeTexts.Tray.NoLogYet(@"C:\Users\Beispiel\AppData\Local\PlatinVault\bridge.log"), MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1),
+            form =>
+            {
+                var message = (MessageForm)form;
+                return [("box", () => { }), ("copied", message.CopyNow), ("copy-failed", () => message.ShowCopyOutcome(false))];
+            });
+
+        // A very long error: the slot scrolls, the window keeps its size, everything is still in the text (and in the copy)
+        var longError = Repeat("connect ECONNREFUSED 192.168.1.20:5233 - the server did not answer within the time limit, no route to host. ", 3000);
+        yield return new Scenario("message-error-long",
+            () => new MessageForm(longError, MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1),
+            _ => [("long-box", () => ExpectedFullText = longError)]);
+    }
+
+    /// <summary>"Copy" puts the COMPLETE text on the clipboard (nothing shortened), followed by the version and the time.</summary>
+    private static List<string> CheckCopy()
+    {
+        var findings = new List<string>();
+        var text = Repeat("connect ECONNREFUSED 192.168.1.20:5233 - the server did not answer. ", 3000);
+        using var form = new MessageForm(text, MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1);
+        form.CopyNow();
+        var copied = ErrorCopy.LastCopied;
+        if (copied is null) findings.Add("the Copy button did not copy anything");
+        else
+        {
+            if (!copied.StartsWith(text.TrimEnd(), StringComparison.Ordinal)) findings.Add("the copied text does not start with the complete message");
+            if (!copied.Contains("PlatinVault Bridge", StringComparison.Ordinal) || !copied.Contains(" · ", StringComparison.Ordinal))
+                findings.Add("the copied text lacks the version / time line");
+        }
+        return findings;
     }
 
     /// <summary>
@@ -211,7 +258,7 @@ internal static class LayoutCheck
         var findings = new List<string>();
         var snapshot = new StatusSnapshot
         {
-            Connection = ConnectionKind.Online, ServerText = "http://192.168.178.10:5233", Version = "1.0.123", SteamId64 = "76561198012345678",
+            Connection = ConnectionKind.Online, ServerText = "http://192.168.1.20:5233", Version = "1.0.123", SteamId64 = "76561198012345678",
             AppId = 1091500, GameName = "Cyberpunk 2077", Achieved = 12, Total = 44, LastDeliveredAt = DateTime.Now,
         };
 

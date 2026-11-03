@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The PlatinVault Bridge for Linux (desktop, Steam Deck, Bazzite): a headless background service that reports the Steam achievements
+    unlocked on this machine to a PlatinVault server running elsewhere (Unraid, NAS) or in Docker on the same PC, and starts games on
+    request. Same protocol as the Windows bridge (PlatinVault.Bridge.Core), no window, no tray: it runs as a systemd user service
+    (package/install.sh) or in the foreground (`platinvault-bridge run`).
+    Published as a self-contained single file for linux-x64 (Steam on Linux is x86_64 only), see scripts/build-bridge-linux.sh.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>platinvault-bridge</AssemblyName>
+    <RootNamespace>PlatinVault.Bridge</RootNamespace>
+    <Description>PlatinVault Bridge for Linux - sends locally unlocked Steam achievements to a PlatinVault server in real time.</Description>
+    <AssemblyTitle>PlatinVault Bridge for Linux</AssemblyTitle>
+
+    <!--
+      The bridge has its own version, independent of the app version: 1.0.<commits touching the bridge>. The build script passes it with
+      -p:Version=...; a plain "dotnet build" gets this placeholder. It is the assembly version the self-update compares.
+    -->
+    <Version>1.0.0</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <AssemblyVersion>$(Version)</AssemblyVersion>
+    <FileVersion>$(Version)</FileVersion>
+
+    <!-- Restore knows the publish runtime, so packages.lock.json is the same for a plain build and for the linux-x64 publish. -->
+    <RuntimeIdentifiers>linux-x64</RuntimeIdentifiers>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <DebugType>embedded</DebugType>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+
+  <!-- Only for `dotnet publish -r linux-x64`: self-contained single file, so the machine needs no .NET installation. -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <!-- A resident background service: not compressed, so it does not unpack itself into memory at every start -->
+    <EnableCompressionInSingleFile>false</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Reading the Steam client's files and finding the running game (Linux: process list), shared with the server -->
+    <ProjectReference Include="..\PlatinVault.SteamLocal\PlatinVault.SteamLocal.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Protocol, configuration file, language, log and polling loops shared with the Windows bridge (compiled in, see PlatinVault.Bridge.csproj) -->
+    <Compile Include="..\PlatinVault.Bridge.Core\**\*.cs" Exclude="..\PlatinVault.Bridge.Core\obj\**;..\PlatinVault.Bridge.Core\bin\**" LinkBase="Core" />
+    <Using Include="Microsoft.Extensions.Logging" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="PlatinVault.Bridge.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Files the server packs next to the binary (install.sh, uninstall.sh, readme); not part of the compilation. -->
+    <None Include="package\**" />
+  </ItemGroup>
+</Project>

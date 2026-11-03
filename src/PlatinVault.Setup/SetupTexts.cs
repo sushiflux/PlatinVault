@@ -113,8 +113,8 @@ internal static class SetupTexts
     public static readonly Msg UpdateTitle = new("PlatinVault wird aktualisiert", "Updating PlatinVault");
     public static readonly Msg FailedTitle = new("Installation unterbrochen", "Setup interrupted");
     public static readonly Msg FailedSubtitle = new(
-        "Der Grund steht unten vollständig. Deine Daten wurden nicht verändert.",
-        "The full reason is shown below. Your data was not changed.");
+        "Der Grund steht unten vollständig. Deine Daten bleiben erhalten.",
+        "The full reason is shown below. Your data is kept.");
 
     public static readonly Msg TaskPrepare = new("Voraussetzungen prüfen", "Checking requirements");
     public static readonly Msg TaskStop = new("Laufendes PlatinVault beenden und sichern", "Closing and backing up the running PlatinVault");
@@ -153,9 +153,15 @@ internal static class SetupTexts
     public static Msg UpdateRolledBack(Msg reason) => new(
         $"Das Update ist fehlgeschlagen, die bisherige Version wurde wiederhergestellt und lässt sich wie gewohnt starten. Deine Daten wurden vor dem Update gesichert (Ordner backups\\recent). Grund: {reason.De}",
         $"The update failed; the previous version was restored and starts as usual. Your data was backed up before the update (backups\\recent folder). Reason: {reason.En}");
-    public static Msg RollBackFailed(Msg reason, string backup, string error) => new(
-        $"Das Update ist fehlgeschlagen und die bisherige Version ließ sich nicht zurückholen ({error}). Sie liegt unverändert in „{backup}“; bitte die Installation erneut ausführen. Grund: {reason.De}",
-        $"The update failed and the previous version could not be put back ({error}). It is unchanged in “{backup}”; please run the setup again. Reason: {reason.En}");
+    // Putting the previous version back only touches the PROGRAM folder (InstallEngine.RollBack); database, backups and settings live in the
+    // separate data folder, so the message can say plainly that the user's data is not affected by this failure
+    public static Msg RollBackFailed(Msg reason, string backup, string error, string dataDir) => new(
+        $"Das Update ist fehlgeschlagen und die bisherige Version ließ sich nicht zurückholen ({error}). Häufige Ursache: Ein anderes Programm, zum Beispiel ein Virenschutz, hält die Datei noch fest. "
+        + $"Die bisherige Version liegt unverändert in „{backup}“; bitte beende PlatinVault im Infobereich, warte einen Moment und führe die Installation erneut aus. "
+        + $"Deine Daten sind davon nicht betroffen: Datenbank, Sicherungen und Einstellungen liegen im Datenordner „{dataDir}“, getrennt vom Programmordner, und das Zurückholen berührt nur den Programmordner. Grund: {reason.De}",
+        $"The update failed and the previous version could not be put back ({error}). Common cause: another program, for example a virus scanner, still holds the file. "
+        + $"The previous version is unchanged in “{backup}”; please quit PlatinVault from the notification area, wait a moment and run the setup again. "
+        + $"Your data is not affected: database, backups and settings are in the data folder “{dataDir}”, separate from the program folder, and putting the version back only touches the program folder. Reason: {reason.En}");
 
     public static readonly Msg CancelQuestion = new(
         "Installation abbrechen? Es wurde noch nichts installiert.",

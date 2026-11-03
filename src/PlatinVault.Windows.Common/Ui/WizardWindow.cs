@@ -58,6 +58,25 @@ public sealed class PageCanvas(Control host, float scale, Palette palette)
         return control;
     }
 
+    /// <summary>
+    /// An error message with its "Copy" bar: the selectable, scrolling text box and, below it, the button with its status slot (rule
+    /// "error messages are always copyable"). The bar copies the complete message plus app version and time. Returns the text box.
+    /// </summary>
+    public PvScrollText AddErrorBox(Func<string> message, Func<Palette, Color> color, int x, int y, int width, int boxHeight, string name)
+    {
+        var text = message();
+        var box = Add(new PvScrollText { Framed = true, Points = 9.5f }, x, y, width, boxHeight, name);
+        box.SetText(text, color);
+        var bar = new CopyBar(message, S, P, P.Page, name.Replace("txt", string.Empty, StringComparison.Ordinal));
+        bar.Place(R(x, y + boxHeight + 10, width, 36), (int)Math.Round(12 * S));
+        foreach (var control in bar.Controls)
+        {
+            Host.Controls.Add(control);
+            control.BringToFront();
+        }
+        return box;
+    }
+
     public PvText Text(string text, int x, int y, int width, int height, float points = 10f, FontStyle style = FontStyle.Regular,
         Func<Palette, Color>? color = null, string? name = null)
     {

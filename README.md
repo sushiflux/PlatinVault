@@ -17,7 +17,7 @@ PlatinVault bringt deine Steam-Erfolge und KI-recherchierte 100%-Guides in eine 
 - **Statistiken** zu jedem Spiel und ein **Trophäenschrank** für alle Spiele mit 100 %.
 - Deutsch und Englisch, hell und dunkel. Ein Benutzer, ohne Anmeldung – fürs eigene Heimnetz.
 
-> **Download:** Windows-Installer und Docker-Image stehen unter **Releases**. In den Unraid Community Applications ist
+> **Download:** Windows-Installer, Linux-Paket und Docker-Image stehen unter **Releases**. In den Unraid Community Applications ist
 > PlatinVault noch nicht – die Installation mit der Vorlage aus diesem Repository steht unten unter „Unraid“.
 
 ### So sieht es aus
@@ -41,8 +41,15 @@ PlatinVault bringt deine Steam-Erfolge und KI-recherchierte 100%-Guides in eine 
 - Dein Steam-Konto (in der App verbinden) und einen kostenlosen **Steam-Web-API-Key** (steamcommunity.com/dev/apikey).
 - Live-Popups beim Freischalten:
   - **Windows-Programm** auf dem Gaming-PC: liest Steam direkt, sonst ist nichts nötig.
-  - **Server** (Unraid, Linux, NAS): die **PlatinVault Bridge** auf dem Gaming-PC – fertig eingerichtet als Download in der
-    App (Einstellungen → PlatinVault Bridge). Ohne Bridge siehst du deinen Fortschritt, aber nicht live.
+  - **Linux-Paket** auf dem Linux-Gaming-PC (Desktop, Steam Deck im Desktop-Modus, Bazzite): liest Steam ebenfalls direkt, ohne
+    Bridge. **Experimentell:** Die Erkennung unter Linux ist noch nicht auf einem echten Linux-Steam geprüft – melde uns gern,
+    ob es bei dir klappt.
+  - **Server auf Unraid oder NAS** (oder Docker auf dem Gaming-PC): die **PlatinVault Bridge** auf dem Gaming-PC – für
+    **Windows** und für **Linux** (auch Steam Deck), fertig eingerichtet als Download in der App (Einstellungen → PlatinVault
+    Bridge, dort das Betriebssystem wählen). Ohne Bridge siehst du deinen Fortschritt, aber nicht live. Die Linux-Bridge ist
+    ebenfalls noch experimentell.
+  - Docker auf demselben Linux-PC sieht das laufende Spiel nicht; dort nimmst du das Linux-Paket oder Docker mit der Linux-Bridge.
+  - Liegt Steam an einem ungewöhnlichen Ort, trägst du den Ordner unter Einstellungen → Steam → „Steam-Ordner (optional)“ ein.
 - Overlay über dem Spiel: nur mit dem Windows-Programm und nur, wenn das Spiel im randlosen Fenstermodus läuft (nicht im
   exklusiven Vollbild).
 
@@ -71,9 +78,46 @@ Eine Datenbank musst du nirgends einrichten: PlatinVault bringt sie mit (eine Da
 Updates sucht PlatinVault selbst (wie oft, stellst du unter Einstellungen → System → Updates ein) und installiert sie auf
 Knopfdruck.
 
-Wer die Windows-Dateien signiert und wie du das prüfst, steht unter [Code-Signing-Richtlinie](#code-signing-richtlinie)
-(englisch: [Code signing policy](#code-signing-policy)). Meldet dein Virenschutz PlatinVault, hilft das Handbuch
+Die Windows-Dateien sind derzeit nicht digital signiert. Meldet dein Virenschutz PlatinVault, hilft das Handbuch
 (Abschnitt „Probleme unter Windows“).
+
+### Linux (eigenes Paket)
+
+Für den Linux-PC, auf dem Steam läuft (Desktop-Linux, Steam Deck im Desktop-Modus, Bazzite). PlatinVault liest Steam hier
+selbst, eine Bridge ist nicht nötig. Bedient wird es im Browser. **Experimentell:** Das Lesen der Steam-Dateien unter Linux ist
+noch nicht auf einem echten Linux-Steam geprüft; ebenso ist offen, ob der Hintergrunddienst im Spielmodus des Steam Deck
+weiterläuft (im Desktop-Modus läuft er).
+
+1. Unter **Releases** die Datei `PlatinVault-linux-x64-<Version>.tar.gz` herunterladen (nur 64-Bit-Linux, x86_64).
+2. Im Terminal entpacken und installieren – ohne Root, alles im Home-Ordner:
+
+   ```sh
+   tar xzf PlatinVault-linux-x64-<Version>.tar.gz
+   cd PlatinVault-linux-x64-<Version>
+   ./install.sh
+   ```
+
+3. Der Installer startet PlatinVault und nennt die Adresse `http://127.0.0.1:5233/`; im Anwendungsmenü gibt es außerdem den
+   Eintrag „PlatinVault“. Ist der Port belegt, hält der Installer an – mit `./install.sh --port 5300` wählst du einen anderen.
+
+**Wichtig zu wissen:**
+
+- **Kein Login:** PlatinVault lauscht nur auf diesem Rechner (`127.0.0.1`). Setzt du in
+  `~/.config/platinvault/platinvault.env` `PLATINVAULT_BIND` auf eine Netzwerkadresse, kommt jeder im Netz hinein – es gibt
+  keine Anmeldung.
+- **Wo liegt was:** Programm in `~/.local/share/platinvault/app/`, Daten (Datenbank, Sicherungen, verschlüsselte Schlüssel) in
+  `~/.local/share/platinvault/data/`, Einstellungen (Port, Adresse, Datenordner) in `~/.config/platinvault/platinvault.env`.
+- **Dienst:** PlatinVault läuft als systemd-Benutzerdienst `platinvault` (mit `./install.sh --no-systemd` weglassen; dann startet
+  das Menü-Symbol es selbst). Steuern: `~/.local/share/platinvault/app/ctl.sh start|stop|restart|status|url|open`.
+  Protokoll: `journalctl --user -u platinvault` oder `~/.local/share/platinvault/platinvault.log`.
+- **Aktualisieren:** das neue Paket entpacken und dessen `install.sh` erneut ausführen – deine Daten bleiben erhalten. Die App
+  zeigt dir bei einem Update die drei Befehle.
+- **Deinstallieren:** `~/.local/share/platinvault/app/uninstall.sh` – es fragt, ob deine Daten behalten werden (Standard: ja).
+- **Steam nicht gefunden?** PlatinVault sucht an den üblichen Orten (nativ, Flatpak, Snap). Sonst trägst du den Ordner mit
+  `steamapps` unter Einstellungen → Steam → „Steam-Ordner (optional)“ ein; der System-Check (Einstellungen → System) listet
+  alle durchsuchten Orte.
+
+Das Linux-Paket baut dieselben Verbindungen auf wie jeder PlatinVault-Server (siehe „Datenschutz“).
 
 ### Unraid
 
@@ -175,23 +219,6 @@ Installation wählen. Mit **Docker Compose**: Zeile `image:` ändern, dann `dock
 Zurück von `:beta` auf `:latest` erst, wenn ein Release erschienen ist, das mindestens so neu ist wie deine Beta – sonst
 wäre es ein Schritt zurück auf eine ältere Version (die App sagt dir, wann es so weit ist).
 
-### Code-Signing-Richtlinie
-
-*(Englische Fassung: [Code signing policy](#code-signing-policy).)*
-
-- **Was signiert wird:** der Windows-Installer (`PlatinVault-Setup-<Version>.exe`), `PlatinVault.exe` samt unseren eigenen DLLs und die
-  Bridge (`PlatinVault.Bridge.exe`). Fremde Bibliotheken (.NET-Laufzeit, WebView2, SQLite) bleiben, wie ihre Hersteller sie liefern.
-- **Wie:** Die Dateien werden von GitHub Actions aus diesem Repository gebaut und über SignPath signiert; jede Signatur eines
-  Releases braucht eine manuelle Freigabe.
-- **Rollen:** Autoren und Reviewer (Committers and reviewers): [SushiFlux](https://github.com/sushiflux). Freigebende (Approvers):
-  [SushiFlux](https://github.com/sushiflux). Das Projekt hat einen einzigen Betreuer, der alle Rollen hält.
-- Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
-- **Signatur prüfen:** Rechtsklick auf die Datei → Eigenschaften → **Digitale Signaturen**, oder in PowerShell
-  `Get-AuthenticodeSignature .\PlatinVault-Setup-<Version>.exe | Format-List` (Status `Valid`, Signaturgeber „SignPath Foundation“).
-- **Stand:** Der Antrag bei der SignPath Foundation läuft noch. **Bis zur Zusage sind die Windows-Dateien nicht signiert.** Sobald sie
-  signiert sind, prüft das Update-Werkzeug des Windows-Programms vor dem Start eines heruntergeladenen Installers dessen Signatur.
-- Datenschutz: siehe unten [Datenschutz](#datenschutz) bzw. [Privacy policy](#privacy-policy).
-
 ### Datenschutz
 
 PlatinVault hat keine Konten und sendet keine Nutzungsdaten oder Telemetrie an uns. Alle Daten bleiben auf deinem Rechner bzw.
@@ -215,13 +242,13 @@ Server. Diese Verbindungen baut PlatinVault selbst auf:
 - **KI-Anbieter** mit deinem eigenen Schlüssel (`generativelanguage.googleapis.com`, `api.anthropic.com`, `api.openai.com`): nur bei
   KI-Aktionen; gesendet werden Spielname und öffentliche Spielinformationen.
 - **Twitch und IGDB** mit deinen eigenen Zugangsdaten (`id.twitch.tv`, `api.twitch.tv`, `api.igdb.com`).
-- **Bridge:** spricht nur mit dem PlatinVault-Server, den du eingetragen hast.
+- **Bridge** (Windows und Linux): spricht nur mit dem PlatinVault-Server, den du eingetragen hast.
 
 Mehr dazu im Handbuch, Kapitel „Daten und Datenschutz“.
 
 ### Handbuch
 
-Das Handbuch (Deutsch und Englisch) ist in der App eingebaut (Buch-Symbol in der Kopfzeile) und liegt dem Windows-Programm und der Bridge bei.
+Das Handbuch (Deutsch und Englisch) ist in der App eingebaut (Buch-Symbol in der Kopfzeile) und liegt dem Windows-Programm, dem Linux-Paket und den Bridges bei.
 
 ### Lizenz
 
@@ -246,7 +273,7 @@ PlatinVault brings your Steam achievements and AI-researched 100 % guides togeth
 - **Statistics** for every game and a **trophy cabinet** for every game at 100 %.
 - German and English, light and dark. One user, no sign-in – for your own home network.
 
-> **Download:** the Windows installer and the Docker image are under **Releases**. PlatinVault is not in the Unraid
+> **Download:** the Windows installer, the Linux package and the Docker image are under **Releases**. PlatinVault is not in the Unraid
 > Community Applications yet – installing with the template from this repository is described below under "Unraid".
 
 ### What it looks like
@@ -270,8 +297,14 @@ PlatinVault brings your Steam achievements and AI-researched 100 % guides togeth
 - Your Steam account (connect it in the app) and a free **Steam Web API key** (steamcommunity.com/dev/apikey).
 - Live pop-ups when you unlock something:
   - **Windows program** on the gaming PC: reads Steam directly, nothing else needed.
-  - **Server** (Unraid, Linux, NAS): the **PlatinVault Bridge** on the gaming PC – a ready-to-run download in the app
-    (Settings → PlatinVault Bridge). Without the bridge you see your progress, just not live.
+  - **Linux package** on the Linux gaming PC (desktop, Steam Deck in Desktop Mode, Bazzite): also reads Steam directly, no
+    bridge. **Experimental:** detection on Linux has not been verified on a real Linux Steam yet – please tell us whether it
+    works for you.
+  - **Server on Unraid or a NAS** (or Docker on the gaming PC): the **PlatinVault Bridge** on the gaming PC – for **Windows**
+    and for **Linux** (Steam Deck included), a ready-to-run download in the app (Settings → PlatinVault Bridge, choose the
+    operating system there). Without the bridge you see your progress, just not live. The Linux bridge is experimental as well.
+  - Docker on the same Linux PC cannot see the running game; there, use the Linux package or Docker with the Linux bridge.
+  - If Steam lives in an unusual place, enter the folder under Settings → Steam → "Steam folder (optional)".
 - Overlay on top of the game: only with the Windows program and only while the game runs in borderless window mode (not in
   exclusive full screen).
 
@@ -299,8 +332,45 @@ There is no database to set up anywhere: PlatinVault brings its own (one file in
 PlatinVault looks for updates itself (how often is up to you under Settings → System → Updates) and installs them at the
 click of a button.
 
-Who signs the Windows files and how to check it is described in the [Code signing policy](#code-signing-policy). If your
-antivirus flags PlatinVault, see the handbook (section "Problems on Windows").
+The Windows files are currently not digitally signed. If your antivirus flags PlatinVault, see the handbook (section
+"Problems on Windows").
+
+### Linux (native package)
+
+For the Linux PC where Steam runs (desktop Linux, Steam Deck in Desktop Mode, Bazzite). PlatinVault reads Steam itself here,
+no bridge needed. You use it in the web browser. **Experimental:** reading the Steam files on Linux has not been verified on a
+real Linux Steam yet; it is also open whether the background service keeps running in the Steam Deck's Game Mode (it does in
+Desktop Mode).
+
+1. Download `PlatinVault-linux-x64-<version>.tar.gz` from **Releases** (64-bit Linux, x86_64 only).
+2. Unpack and install in a terminal – no root, everything stays in your home folder:
+
+   ```sh
+   tar xzf PlatinVault-linux-x64-<version>.tar.gz
+   cd PlatinVault-linux-x64-<version>
+   ./install.sh
+   ```
+
+3. The installer starts PlatinVault and prints the address `http://127.0.0.1:5233/`; there is also a "PlatinVault" entry in your
+   application menu. If the port is taken, the installer stops – choose another one with `./install.sh --port 5300`.
+
+**Good to know:**
+
+- **No login:** PlatinVault listens on this computer only (`127.0.0.1`). If you set `PLATINVAULT_BIND` in
+  `~/.config/platinvault/platinvault.env` to a network address, everyone on the network can get in – there is no sign-in.
+- **Where things are:** program in `~/.local/share/platinvault/app/`, data (database, backups, encrypted keys) in
+  `~/.local/share/platinvault/data/`, settings (port, address, data folder) in `~/.config/platinvault/platinvault.env`.
+- **Service:** PlatinVault runs as the systemd user service `platinvault` (skip it with `./install.sh --no-systemd`; the menu
+  entry then starts it itself). Control: `~/.local/share/platinvault/app/ctl.sh start|stop|restart|status|url|open`.
+  Log: `journalctl --user -u platinvault` or `~/.local/share/platinvault/platinvault.log`.
+- **Update:** unpack the new package and run its `install.sh` again – your data is kept. The app shows you the three commands
+  when an update is available.
+- **Uninstall:** `~/.local/share/platinvault/app/uninstall.sh` – it asks whether to keep your data (default: yes).
+- **Steam not found?** PlatinVault searches the usual places (native, Flatpak, Snap). Otherwise enter the folder that contains
+  `steamapps` under Settings → Steam → "Steam folder (optional)"; the system check (Settings → System) lists every place
+  searched.
+
+The Linux package makes the same connections as any PlatinVault server (see "Privacy").
 
 ### Unraid
 
@@ -404,7 +474,7 @@ version (the app tells you when that is the case).
 
 ### Handbook
 
-The handbook (German and English) is built into the app (book icon in the header) and comes with the Windows program and the bridge.
+The handbook (German and English) is built into the app (book icon in the header) and comes with the Windows program, the Linux package and the bridges.
 
 ### Licence
 
@@ -415,24 +485,6 @@ version available to others over a network – must offer the source code under 
 repository; the app shows the licence and a link here under "Licences", together with the notices for all bundled
 open-source components ([`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md)). Contributions: see
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
-
-<a name="code-signing-policy"></a>
-## Code signing policy
-
-*(Deutsche Fassung: [Code-Signing-Richtlinie](#code-signing-richtlinie).)*
-
-- **What is signed:** the Windows installer (`PlatinVault-Setup-<version>.exe`), `PlatinVault.exe` with our own DLLs, and the
-  bridge (`PlatinVault.Bridge.exe`). Third-party libraries (.NET runtime, WebView2, SQLite) stay as their vendors ship them.
-- **How:** the files are built by GitHub Actions from this repository and signed through SignPath; every release signature
-  needs a manual approval.
-- **Roles:** Committers and reviewers: [SushiFlux](https://github.com/sushiflux). Approvers: [SushiFlux](https://github.com/sushiflux).
-  The project has a single maintainer who holds all roles.
-- Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
-- **Check a signature:** right-click the file → Properties → **Digital Signatures**, or in PowerShell
-  `Get-AuthenticodeSignature .\PlatinVault-Setup-<version>.exe | Format-List` (status `Valid`, signer "SignPath Foundation").
-- **Status:** the application at the SignPath Foundation is still pending. **Until it is approved, the Windows files are
-  unsigned.** Once they are signed, the Windows program's updater checks an installer's signature before starting it.
-- Privacy: see the [Privacy policy](#privacy-policy).
 
 <a name="privacy-policy"></a>
 ## Privacy policy
@@ -458,7 +510,7 @@ connections PlatinVault makes on its own:
 - **AI providers** with your own key (`generativelanguage.googleapis.com`, `api.anthropic.com`, `api.openai.com`): only on AI
   actions; the game name and public game information are sent.
 - **Twitch and IGDB** with your own credentials (`id.twitch.tv`, `api.twitch.tv`, `api.igdb.com`).
-- **Bridge:** talks only to the PlatinVault server you entered.
+- **Bridge** (Windows and Linux): talks only to the PlatinVault server you entered.
 
 More in the handbook, chapter "Data and privacy".
 

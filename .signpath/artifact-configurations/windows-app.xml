@@ -33,6 +33,9 @@
     <pe-file path="PlatinVault.Windows.Common.dll" product-name="PlatinVault" product-version="${productVersion}">
       <authenticode-sign />
     </pe-file>
+    <pe-file path="PlatinVault.SteamLocal.dll" product-name="PlatinVault" product-version="${productVersion}">
+      <authenticode-sign />
+    </pe-file>
     <directory path="bridge">
       <pe-file path="PlatinVault.Bridge.exe" product-name="PlatinVault" product-version="${productVersion}">
         <authenticode-sign />

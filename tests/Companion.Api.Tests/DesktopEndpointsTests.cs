@@ -31,7 +31,7 @@ internal sealed class TestServer : IAsyncDisposable
 
     public HttpClient Client { get; }
 
-    public static async Task<TestServer> StartAsync(IDesktopHost? desktop)
+    public static async Task<TestServer> StartAsync(IDesktopHost? desktop, Action<WebApplicationBuilder>? configure = null)
     {
         var folder = Path.Combine(Path.GetTempPath(), "pv-apitest-" + Guid.NewGuid().ToString("N")[..10]);
         Directory.CreateDirectory(folder);
@@ -50,6 +50,7 @@ internal sealed class TestServer : IAsyncDisposable
                 b.WebHost.ConfigureKestrel(kestrel => kestrel.Listen(IPAddress.Loopback, 0));
                 b.Logging.ClearProviders();
                 if (desktop is not null) b.Services.AddSingleton(desktop);
+                configure?.Invoke(b);
             },
         });
         // No Steam monitor, history recorder or backup worker: the tests only need the endpoints

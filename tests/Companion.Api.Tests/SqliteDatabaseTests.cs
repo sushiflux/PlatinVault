@@ -66,6 +66,36 @@ public sealed class SqliteStartTests
     }
 
     [Fact]
+    public async Task Error_14_cannot_open_is_recognised_and_explained_plainly_with_the_original_text_kept()
+    {
+        using var scratch = new SqliteScratch();
+        // A folder where the database file should be: SQLite cannot open it (SQLITE_CANTOPEN, "unable to open database file")
+        var file = Path.Combine(scratch.Root, "data", "platinvault.db");
+        Directory.CreateDirectory(file);
+
+        var failure = await Assert.ThrowsAnyAsync<Exception>(() => SqliteDatabase.PrepareAsync(file, NullLogger.Instance));
+        Assert.True(SqliteDatabase.IsCannotOpen(failure), failure.ToString());
+        // Also when another exception wraps it (EF Core / the host)
+        Assert.True(SqliteDatabase.IsCannotOpen(new InvalidOperationException("wrapped", failure)));
+        Assert.False(SqliteDatabase.IsCannotOpen(new IOException("something else")));
+
+        var explained = SqliteDatabase.CannotOpen(file, failure, NullLogger.Instance);
+        Assert.IsAssignableFrom<DatabaseRefusedException>(explained);
+        // Plain hint (both languages), no antivirus brand, and SQLite's own words at the end
+        foreach (var text in new[] { explained.Text.De, explained.Text.En })
+        {
+            Assert.Contains("platinvault.db-wal", text);
+            Assert.Contains("platinvault.db-shm", text);
+            Assert.Contains("unable to open database file", text);
+            Assert.DoesNotContain("Defender", text, StringComparison.OrdinalIgnoreCase);
+        }
+        Assert.Contains("Virenschutz", explained.Text.De);
+        Assert.Contains("virus scanner", explained.Text.En);
+        Assert.Contains("Quarantäne", explained.Text.De);
+        Assert.Contains("quarantine", explained.Text.En);
+    }
+
+    [Fact]
     public async Task A_file_that_is_no_database_stops_the_start_and_is_left_as_it_is()
     {
         using var scratch = new SqliteScratch();
@@ -453,11 +483,19 @@ public sealed class DatabaseBackupTests
 
 public sealed class BackupRetentionTests
 {
+    // Built with Path.Combine on purpose: a hard-coded Windows path with backslashes is one single file name on Linux (the backslash is
+    // no separator there), so the retention rules saw no parseable name at all and the tests failed for a reason unrelated to production.
+    private static readonly string Dir = Path.Combine(Path.GetTempPath(), "pv-retention-test");
+
+    private static string Recent(string name) => Path.Combine(Dir, "recent", name);
+
+    private static string Daily(string name) => Path.Combine(Dir, "daily", name);
+
     [Fact]
     public void Recent_keeps_the_newest_twenty()
     {
         var now = new DateTime(2026, 11, 1, 12, 0, 0);
-        var recent = Enumerable.Range(0, 25).Select(i => $@"C:\b\recent\platinvault-{now.AddHours(-i):yyyyMMdd-HHmmss}.db").ToList();
+        var recent = Enumerable.Range(0, 25).Select(i => Recent($"platinvault-{now.AddHours(-i):yyyyMMdd-HHmmss}.db")).ToList();
         var deleted = DatabaseBackupService.Retention.ToDelete(recent, [], now).ToList();
         Assert.Equal(5, deleted.Count);
         Assert.All(deleted, path => Assert.Contains(path, recent.Skip(20)));
@@ -467,10 +505,10 @@ public sealed class BackupRetentionTests
     public void Daily_keeps_sixty_days()
     {
         var now = new DateTime(2026, 11, 1, 12, 0, 0);
-        var daily = Enumerable.Range(0, 70).Select(i => $@"C:\b\daily\platinvault-{now.AddDays(-i):yyyyMMdd}.db").ToList();
+        var daily = Enumerable.Range(0, 70).Select(i => Daily($"platinvault-{now.AddDays(-i):yyyyMMdd}.db")).ToList();
         var deleted = DatabaseBackupService.Retention.ToDelete([], daily, now).ToList();
         Assert.Equal(9, deleted.Count);
-        Assert.DoesNotContain($@"C:\b\daily\platinvault-{now.AddDays(-60):yyyyMMdd}.db", deleted);
+        Assert.DoesNotContain(Daily($"platinvault-{now.AddDays(-60):yyyyMMdd}.db"), deleted);
     }
 
     [Fact]
@@ -478,8 +516,8 @@ public sealed class BackupRetentionTests
     {
         var now = new DateTime(2026, 11, 1);
         var deleted = DatabaseBackupService.Retention.ToDelete(
-            [@"C:\b\recent\manual-copy.db", @"C:\b\recent\platinvault-garbage.db", @"C:\b\recent\platinvault-20200101-000000.dump"],
-            [@"C:\b\daily\notes.db"], now);
+            [Recent("manual-copy.db"), Recent("platinvault-garbage.db"), Recent("platinvault-20200101-000000.dump")],
+            [Daily("notes.db")], now);
         Assert.Empty(deleted);
     }
 }

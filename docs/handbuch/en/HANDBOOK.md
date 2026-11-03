@@ -2,7 +2,7 @@
 title: PlatinVault
 subtitle: Handbook
 tagline: Live trophies for your Steam games and 100 % guides in one place – how to set up PlatinVault and use it every day.
-version: v2026.11.14
+version: v2026.11.16
 date: 2026-11-03
 status: Release
 copyright: © 2026 SushiFlux
@@ -22,7 +22,7 @@ PlatinVault is your companion on the way to 100 % in Steam games:
 Steam calls them "achievements"; PlatinVault calls them **trophies** and shows them as bronze, silver or gold – depending
 on how rare they are among all players.
 
-> [!NOTE] This handbook describes the **preview version** – it only shows what is already built in.
+> [!NOTE] This handbook describes the current state of PlatinVault – it only shows what is already built in.
 
 # 2 How PlatinVault runs
 
@@ -32,14 +32,15 @@ stores your games, guides and ticks in a database.
 | Where does the server run? | Where do the live trophies come from? |
 |---|---|
 | On your gaming PC | PlatinVault reads Steam directly on that PC – nothing else needed. |
-| On another machine (server, NAS, Unraid) | The small **PlatinVault Bridge** runs on the gaming PC and reports new trophies to the server instantly (chapter 8). |
+| On another machine (server, NAS, Unraid) | The small **PlatinVault Bridge** (Windows or Linux) runs on the gaming PC and reports new trophies to the server instantly (chapter 8). |
 
 On the gaming PC, PlatinVault is also available as a **Windows program** with its own window, an overlay over your game and its own
-database – see chapter 11.
+database – see chapter 11. On a Linux gaming PC (desktop, Steam Deck in Desktop Mode, Bazzite) there is a **Linux package** that also
+reads Steam directly – see chapter 13. **On Linux, trophy detection is still experimental** (chapter 13).
 
 # 3 Installation on Unraid, Linux and NAS
 
-PlatinVault comes as a container image. On Unraid you create it from the template; on a normal Linux machine (and on NAS systems that support Compose files) you start it with a ready-made Compose file. Sections 3.1 to 3.3 describe the three ways; Windows has its own program (chapter 11).
+PlatinVault comes as a container image. On Unraid you create it from the template; on a normal Linux machine (and on NAS systems that support Compose files) you start it with a ready-made Compose file. Sections 3.1 to 3.3 describe the three ways; Windows has its own program (chapter 11), and for the Linux PC where Steam runs there is a package of its own (chapter 13).
 
 ## 3.1 Unraid
 
@@ -126,6 +127,12 @@ next to it) or flip it with the keyboard (space bar). Save with **Save settings*
   3. Agree to the terms and submit. Steam shows your key.
   4. Paste the key into PlatinVault and save.
 - Your **Steam profile** must show game details publicly, otherwise Steam returns no library.
+- **Steam folder (optional):** where PlatinVault runs directly on the gaming PC (Windows program or Linux package) it reads the
+  Steam files of that computer. If it does not find Steam by itself, enter the folder that contains the subfolder `steamapps` in the
+  **Steam** tab under **Steam folder (optional)** (for example `/home/<name>/.local/share/Steam`) and click **Apply**. PlatinVault checks
+  the folder at once and says what is wrong. **Search automatically again** undoes the setting. Under Settings → **System** the row
+  **Steam on this computer** shows which folder is used and how it was found; **Show the places searched** lists every place PlatinVault
+  looked.
 
 ## 4.2 AI for the guides
 
@@ -554,7 +561,9 @@ Popups appear for every game that exists in PlatinVault. A popup names the share
 
 # 8 PlatinVault Bridge (server on another machine)
 
-If PlatinVault runs on a server, NAS or Unraid, the bridge reports your trophies from the gaming PC in real time.
+If PlatinVault runs on a server, NAS or Unraid, the bridge reports your trophies from the gaming PC in real time. The bridge exists for
+**Windows** and for **Linux** (desktop, Steam Deck, Bazzite); in the **PlatinVault Bridge** tab you pick your operating system under
+**Gaming PC runs**. Steps 1 to 6 are for Windows; the Linux bridge is in section 8.1.
 
 1. In the settings, tab **PlatinVault Bridge**, click **download**. The ZIP contains the program and is already connected
    to your server. Every new download creates a new key; the old one stops working. The ZIP also contains this handbook as
@@ -573,6 +582,48 @@ Steam (see 6.1). To do that it asks the server for jobs every few seconds; a job
 
 If PlatinVault runs directly on the gaming PC, you do not need the bridge.
 
+## 8.1 The bridge on Linux (desktop, Steam Deck, Bazzite)
+
+The Linux bridge is a small background service without a window that runs under your user. It needs neither root nor .NET and keeps
+everything in your home folder (so it also works on SteamOS and Bazzite with their read-only system partition). It is
+**experimental** – see the notes at the end of this section.
+
+1. In the settings, **PlatinVault Bridge** tab, choose **Linux / Steam Deck** under **Gaming PC runs** and click **Download PlatinVault
+   Bridge**. You get a `.tar.gz` that is already connected to your server; every new download creates a new key and the old one stops
+   working. (The same file, `PlatinVault-Bridge-linux-x64.tar.gz`, is also among the releases on GitHub – there without your credentials.)
+2. On the Linux machine open a terminal in the download folder and unpack the archive:
+
+   ```
+   tar -xzf PlatinVault-Bridge-linux-x64.tar.gz
+   cd PlatinVault-Bridge
+   ```
+
+3. Install and start the bridge: `./install.sh`. It copies the program to `~/.local/share/platinvault-bridge/`, saves server and key
+   (readable by you only) and sets up the systemd user service `platinvault-bridge`.
+4. Check that it works:
+
+   ```
+   ~/.local/share/platinvault-bridge/platinvault-bridge status
+   journalctl --user -u platinvault-bridge -f
+   ```
+
+   The **PlatinVault Bridge** tab then says **Connected**. The log is also in `~/.local/state/platinvault-bridge/bridge.log`.
+5. **Without a ready package** (for example when you created the key by hand) set it up with
+   `platinvault-bridge setup --server http://<server>:<port> --token <key>`; `platinvault-bridge run` starts it in the foreground to
+   try it out. `platinvault-bridge --version` shows the version.
+6. **Steam in an unusual place:** `platinvault-bridge setup --steam-dir /path/to/Steam` (the folder with `steamapps`) or the environment
+   variable `PLATINVAULT_STEAM_DIR` or `STEAM_DIR`. The configuration is in `~/.config/platinvault-bridge/bridge.json`.
+7. The bridge fetches new versions from the PlatinVault server by itself and speaks the language of PlatinVault (German or English).
+8. **Uninstall:** `uninstall.sh` in the program folder `~/.local/share/platinvault-bridge/`.
+
+As on Windows, the bridge also starts games on request (the **Play** button).
+
+**Not verified on real devices yet:** reading achievements on Linux follows the Windows file format – whether Steam writes the stats file
+at the moment of an unlock and how the signed-in Steam account is found is open. The bridge detects the running game through Steam's
+process list. It is also open whether the service keeps running in the Steam Deck's Game Mode (it does in Desktop Mode).
+**Docker on the same Linux PC** cannot see the running game – use the Linux package (chapter 13) there, or Docker together with the Linux
+bridge. If `status` does not help, please tell us what it and the log show.
+
 # 9 Data and privacy
 
 - **Everything stays with you:** games, guides, ticks and settings live in your own database.
@@ -589,7 +640,8 @@ If PlatinVault runs directly on the gaming PC, you do not need the bridge.
   enter yourself (`api.steampowered.com`, `store.steampowered.com`, `steamcommunity.com`, Steam's image servers).
 - **AI providers** receive the game name and public game information for the research – no personal data. Only the provider whose
   key you entered is contacted, and only on an AI action (Google, Anthropic, OpenAI).
-- **Twitch and IGDB** are only asked with your own credentials. The **bridge** only talks to the PlatinVault server you entered.
+- **Twitch and IGDB** are only asked with your own credentials. The **bridge** (Windows and Linux) only talks to the PlatinVault server you entered.
+- The **Linux package** makes no other connections than any PlatinVault server.
 - PlatinVault deliberately has **no login** and is meant for one person. Run it in your home network, not openly on the
   internet.
 - **Licence and source code:** PlatinVault is free software under the **GNU Affero General Public License, version 3**
@@ -607,7 +659,10 @@ If PlatinVault runs directly on the gaming PC, you do not need the bridge.
 | Something does not load or shows errors | Settings → **System**: shows whether backend, database, data folder, Steam, bridge and keys are fine. |
 | "PlatinVault server not reachable – the browser got no answer" | The server does not answer at all. Is the program or container running (on Unraid: in the Docker list), and is the network connection to the server working? Then run the action again. |
 | The library stays empty | Check the Steam Web API key; set game details to public in your Steam profile. |
-| No live popups | Is the game in PlatinVault? If PlatinVault runs on a server: is the bridge connected (taskbar icon, system check)? |
+| No live popups | Is the game in PlatinVault? If PlatinVault runs on a server: is the bridge connected (taskbar icon, or `platinvault-bridge status` on Linux, system check)? |
+| On Linux: "PlatinVault found no Steam on this computer" | In the **Steam** tab enter the folder with `steamapps` under **Steam folder (optional)** (section 4.1). With Flatpak Steam it is usually under `~/.var/app/com.valvesoftware.Steam/.local/share/Steam`. Under Settings → **System**, **Show the places searched** shows where PlatinVault looked. If PlatinVault runs in Docker, it cannot see the computer's Steam folder – use the Linux package or the Linux bridge. |
+| On Linux no live popups arrive | Detection on Linux is still **experimental** and not verified on every Steam installation (native, Flatpak, Snap, Steam Deck). Check in the system check whether Steam is found, and with the Linux bridge run `platinvault-bridge status`. If the service does not keep running in the Steam Deck's Game Mode, it stays active in Desktop Mode. Please tell us what you see – it helps us improve detection. |
+| On Linux: "port 5233 is taken" during installation | Another program uses the port. Install with `./install.sh --port 5300` (or another free number). |
 | The popup shows, but without sound | If the notice **"Sound blocked by the browser"** is shown, the browser held the sound back: browsers only play sounds after a click or key press on the page, for example after a reload. One click allows sound again, **Play the missed sound** plays it afterwards. Without that notice: raise the volume under Settings → **Live & sound** (quiet sounds get lost next to loud game audio) and check that the browser tab is not muted. |
 | The AI reports a limit | In Settings → AI research the **Your AIs** list shows which AI had a problem and since when. With the automatic switch on, PlatinVault carries on with the next AI and tells you; otherwise you pick another AI yourself ("Try again with …"). For Gemini, "Test connection for real" also shows the reason: daily limit (try again later), model overloaded (wait a moment) or no web search on the free tier (a Google project with billing is needed). |
 | A chapter says "could not be researched" | Click **Research this chapter again** (details in 6.2). The reason is in the note; for a quota or key problem first look in Settings → **AI research** or pick another AI with the arrow on the button. |
@@ -636,8 +691,7 @@ What the program adds:
 1. Download `PlatinVault-Setup-<version>.exe` from PlatinVault's releases on GitHub and start it with a double-click – **not** with
    "Run as administrator". PlatinVault is installed just for your Windows account and needs no administrator rights.
 2. **Windows SmartScreen:** the setup file is not digitally signed yet. Windows therefore shows "Windows protected your PC" the first
-   time. Click **More info** and then **Run anyway**. If your antivirus flags the file or the program, see section 11.9. Who signs
-   the files and how to check a signature is described in the "Code signing policy" in the project's README on GitHub.
+   time. Click **More info** and then **Run anyway**. If your antivirus flags the file or the program, see section 11.9.
 3. The setup guides you through six steps:
 
    | Step | What happens |
@@ -838,8 +892,81 @@ Set the switch in the app to match the tag. This is how you change the tag – y
 Go back from `:beta` to `:latest` only once a release is out that is at least as new as your beta – before that it would be a step back to
 an older version. The settings tell you when that is the case.
 
-## 12.4 Protecting your data
+## 12.4 Linux package
+
+The Linux package does not update itself. PlatinVault reports new versions as everywhere (update icon in the header, Settings →
+**System** → **Updates**) and shows you the three commands for updating there; step by step it is in section 13.5.
+
+## 12.5 Protecting your data
 
 If you start an older PlatinVault version with a database that a newer version (for example a beta) has already used, PlatinVault does
 not start and changes **nothing** in the database. The message names the version you need (in the container log in German and English,
 in the Windows program in its own window). Install that version (or a newer one) again or wait for the next release.
+
+# 13 PlatinVault for Linux
+
+On the Linux PC where Steam runs (desktop Linux, Steam Deck in Desktop Mode, Bazzite) you install PlatinVault as the **Linux package**.
+It is the same app as in the browser, with its own database, and reads Steam on this computer itself – you do not need a bridge. You use
+it in the web browser. Requirements: 64-bit Linux (x86_64), a web browser, preferably systemd (without it the menu entry starts
+PlatinVault itself) and `libicu` (usually present; without it dates and numbers use a neutral format).
+
+> [!NOTE]
+> **Experimental:** reading the Steam files on Linux (stats file, detecting the Steam account, seeing Flatpak processes) has not been
+> verified on a real Linux Steam yet, and whether the service keeps running in the Steam Deck's Game Mode is open (in Desktop Mode it
+> does). If something does not work, see 13.6, and please tell us what happens for you.
+
+## 13.1 Installing
+
+1. Download `PlatinVault-linux-x64-<version>.tar.gz` from **Releases** on GitHub (`github.com/sushiflux/PlatinVault`).
+2. Open a terminal in the download folder and run – no root, nothing outside your home folder:
+
+   ```
+   tar xzf PlatinVault-linux-x64-<version>.tar.gz
+   cd PlatinVault-linux-x64-<version>
+   ./install.sh
+   ```
+
+3. The installer starts PlatinVault and prints the address `http://127.0.0.1:5233/`. There is also a **PlatinVault** entry in your
+   application menu that opens the page in the browser. Carry on with chapter 4.
+4. If port 5233 is taken, the installer stops and tells you. Choose another one with `./install.sh --port 5300`.
+   `./install.sh --no-systemd` sets up no service; the menu entry then starts PlatinVault itself.
+
+## 13.2 Where things are
+
+| What | Where |
+|---|---|
+| Program | `~/.local/share/platinvault/app/` |
+| Data (database, automatic backups, encrypted keys) | `~/.local/share/platinvault/data/` |
+| Settings (port, address, data folder) | `~/.config/platinvault/platinvault.env` (`PLATINVAULT_PORT`, `PLATINVAULT_BIND`, `PLATINVAULT_DATA_DIR`) |
+| Service | systemd user service `platinvault` |
+| Log | `journalctl --user -u platinvault` or `~/.local/share/platinvault/platinvault.log` |
+
+Do not share the `data` folder and back it up as a whole: whoever has it also has your API keys. PlatinVault backs up the database
+itself (start, every 6 hours, stop), as described in chapter 3.2.
+
+## 13.3 Start, stop, open
+
+`~/.local/share/platinvault/app/ctl.sh start|stop|restart|status|url|open` controls PlatinVault: `status` shows whether it runs, `url`
+prints the address, `open` opens it in the browser.
+
+## 13.4 Reachable on this computer only
+
+By default PlatinVault listens on `127.0.0.1` only, that is on this computer. If you put a network address into `PLATINVAULT_BIND` in
+`platinvault.env`, PlatinVault is reachable for the whole network – **there is no sign-in**, everyone there can see and change
+everything. Do that only in a trusted home network and never expose the port to the internet.
+
+## 13.5 Updating and uninstalling
+
+- **Update:** download the new package, unpack it and run its `install.sh` again. The old version is stopped (with a last backup) and
+  replaced, your data is kept. When an update is available, the app shows you these steps and the file name.
+- **Uninstall:** `~/.local/share/platinvault/app/uninstall.sh`. It asks whether to keep your data – the default is to keep it.
+
+## 13.6 Problems on Linux
+
+| Problem | What helps |
+|---|---|
+| Steam is not found | In the **Steam** tab enter the folder with `steamapps` under **Steam folder (optional)** (4.1). The system check lists the places searched. |
+| No live popups | Detection is experimental. Check that Steam is found (system check), that the game is in PlatinVault, and with Flatpak Steam that the Steam folder is right. Tell us what you see. |
+| Port 5233 is taken | `./install.sh --port 5300` or another free port. |
+| The page does not open | `ctl.sh status` shows whether PlatinVault runs; the log with `journalctl --user -u platinvault`. |
+| After switching to the Steam Deck's Game Mode PlatinVault is gone | Whether the user service keeps running there is not verified. Start it again in Desktop Mode with `ctl.sh start`. |

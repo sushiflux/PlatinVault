@@ -10,8 +10,16 @@ using Microsoft.Win32;
 namespace Companion.Api.Settings;
 
 /// <summary>Manages database-backed operator settings, achievement notes, and encrypted API keys.</summary>
-public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets)
+/// <param name="steamLocal">The local Steam reader: the setting "Steam-Ordner" is checked against it and handed to it. Null only in tests that
+/// construct the store by hand (the folder is then checked with the rules of this computer).</param>
+public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, SteamLocalStatsService? steamLocal = null)
 {
+    /// <summary>
+    /// "Steam-Ordner (optional)": the Steam folder set by hand (the one that contains <c>steamapps</c>), only needed when the automatic
+    /// search does not find Steam. Absent = search. Validated on save; at run time an unusable folder is skipped (see SteamLocator).
+    /// </summary>
+    public const string KeySteamRoot = "steam.root";
+
     /// <summary>The former single AI choice ("auto" / "gemini" / "claude" / "openai"). Read once to migrate it into the AI selection, then removed.</summary>
     public const string KeyLegacyProvider = "ai.provider";
 
@@ -168,6 +176,9 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets)
     public async Task<SettingsResponseDto> GetAsync(CancellationToken ct = default)
     {
         var all = await db.AppSettings.AsNoTracking().ToDictionaryAsync(x => x.Key, x => x.Value, ct);
+        // Another server on the same database file (development: browser stack + Windows program) may have changed it
+        var steamRoot = NullIfBlank(all.GetValueOrDefault(KeySteamRoot));
+        SyncSteamRoot(steamRoot);
         var geminiModel = all.GetValueOrDefault(KeyGeminiModel, AiGuideGeneratorService.DefaultGeminiModel);
         var claudeModel = all.GetValueOrDefault(KeyClaudeModel, "claude-sonnet-4-5");
         var openAiModel = all.GetValueOrDefault(KeyOpenAiModel, "gpt-4o");
@@ -242,7 +253,9 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets)
             BetaUpdatesEnabled: betaUpdates,
             PopupTarget: popupTarget,
             DashboardSortFavorites: DashboardSort.Resolve(all.GetValueOrDefault(DashboardSort.KeyFavorites), favorites: true),
-            DashboardSortAll: DashboardSort.Resolve(all.GetValueOrDefault(DashboardSort.KeyAll), favorites: false)
+            DashboardSortAll: DashboardSort.Resolve(all.GetValueOrDefault(DashboardSort.KeyAll), favorites: false),
+            SteamRoot: steamRoot,
+            SteamLocal: steamLocal is null ? null : SteamLocalInfo.Settings(steamLocal)
         );
     }
 
@@ -392,6 +405,16 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets)
                       ?? throw new SettingsValidationException(ServerTexts.Settings.DashboardSortInvalid(request.DashboardSortAll, favorites: false));
         }
 
+        // The Steam folder: null = keep, blank = remove, else it must be a usable Steam folder on this computer (checked before anything is written)
+        string? steamRoot = null;
+        if (request.SteamRoot is not null && !string.IsNullOrWhiteSpace(request.SteamRoot))
+        {
+            var check = CheckSteamRoot(request.SteamRoot);
+            steamRoot = check.IsValid
+                ? check.Path
+                : throw new SettingsValidationException(ServerTexts.SteamLocal.Problem(check.Problem, check.Path, SteamRootPlatform));
+        }
+
         // The AI selection and the research blocks are validated like the Twitch values: before anything is written
         string? aiMode = null;
         if (request.AiSelectionMode is not null)
@@ -482,8 +505,21 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets)
             await RemoveSettingAsync(KeyLegacyResearchTemplate, ct);
         }
 
+        if (request.SteamRoot is not null)
+        {
+            if (steamRoot is null)
+                await RemoveSettingAsync(KeySteamRoot, ct);
+            else
+                await UpsertSettingAsync(KeySteamRoot, steamRoot, ct);
+        }
+
         await db.SaveChangesAsync(ct);
 
+        if (request.SteamRoot is not null)
+        {
+            // Effective at once: the live detection reads Steam from the new folder at its next lookup
+            SyncSteamRoot(steamRoot);
+        }
         if (uiLanguage is not null)
         {
             RequestLanguage.InvalidateStored();
@@ -605,6 +641,37 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets)
         }
         return null;
     }
+
+    /// <summary>Checks a folder for the setting "Steam-Ordner" with the rules of this computer (see <see cref="SteamLocator.CheckRoot"/>).</summary>
+    public SteamRootCheck CheckSteamRoot(string path) =>
+        steamLocal?.LocationProvider.Check(path) ?? SteamLocator.CheckRoot(path, new SteamLocatorInput());
+
+    /// <summary>The platform whose rules <see cref="CheckSteamRoot"/> applies (for the example path in the messages).</summary>
+    public SteamPlatform SteamRootPlatform => steamLocal?.LocationProvider.Platform ?? SteamLocator.CurrentPlatform;
+
+    /// <summary>Hands the stored "Steam-Ordner" to the live detection after the database migration (before the first lookup).</summary>
+    public static async Task ApplyStoredSteamRootAsync(IServiceProvider services, CancellationToken ct = default)
+    {
+        var local = services.GetService<SteamLocalStatsService>();
+        if (local is null) return;
+        await using var scope = services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<CompanionDbContext>();
+        var stored = await db.AppSettings.AsNoTracking().Where(x => x.Key == KeySteamRoot).Select(x => x.Value).FirstOrDefaultAsync(ct);
+        local.LocationProvider.ManualRoot = NullIfBlank(stored);
+    }
+
+    // Only a real change resets the provider's cache (GetAsync runs every few seconds)
+    private void SyncSteamRoot(string? stored)
+    {
+        if (steamLocal is null) return;
+        var provider = steamLocal.LocationProvider;
+        if (!string.Equals(provider.ManualRoot, stored, StringComparison.Ordinal))
+        {
+            provider.ManualRoot = stored;
+        }
+    }
+
+    private static string? NullIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private async Task RemoveSettingAsync(string key, CancellationToken ct)
     {

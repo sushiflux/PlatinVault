@@ -114,6 +114,8 @@ public sealed class UninstallWindow : WizardWindow
             GoTo(2);
             UpdateButtons();
         });
+        // The same page after a click on "Copy" (the layout check compares it with "failed")
+        yield return ("failed-copied", () => Controls.Find("btnCopyError", true).OfType<PvButton>().Single().PerformClick());
     }
 
     private sealed class ConfirmPage(string dataDir) : WizardPage
@@ -201,8 +203,7 @@ public sealed class UninstallWindow : WizardWindow
         {
             if (_error is { } error)
             {
-                var box = c.Add(new PvScrollText { Framed = true, Points = 9.5f }, 0, 8, PageCanvas.Width, 220, "txtError");
-                box.SetText(error, p => p.Danger);
+                c.AddErrorBox(() => error, p => p.Danger, 0, 8, PageCanvas.Width, 180, "txtError");
                 return;
             }
             var y = 8;

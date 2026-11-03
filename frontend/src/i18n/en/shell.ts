@@ -36,6 +36,10 @@ const shell = {
         otherTitle: 'Other NAS',
         other: 'Recreate the container in your NAS container manager with the new image.',
       },
+      linux: {
+        intro: 'PlatinVault for Linux does not update itself: download the package, extract it and run the install.sh inside. Your data is kept.',
+        download: 'Download the Linux package',
+      },
     },
     handbook: {
       label: 'Handbook',

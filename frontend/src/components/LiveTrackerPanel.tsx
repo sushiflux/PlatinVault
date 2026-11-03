@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { CopyErrorButton } from './ui/CopyErrorButton'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
@@ -454,6 +455,7 @@ export function LiveTrackerPanel({
               {noteError && (
                 <p role="alert" className="pv-alert pv-alert-danger !px-3 !py-2 text-xs font-semibold">
                   {noteError}
+                  <CopyErrorButton className="ms-2 align-middle" report={{ message: noteError }} />
                 </p>
               )}
               <div className="flex justify-end gap-2">

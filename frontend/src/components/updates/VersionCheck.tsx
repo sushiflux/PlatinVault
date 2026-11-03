@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { CopyErrorButton } from '../ui/CopyErrorButton'
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -128,6 +129,7 @@ function VersionPanel({ anchor, panelId, onClose }: PanelProps) {
         candidates={[...updateResultCandidates(ts), result.text]}
       >
         {result.text}
+        {result.tone === 'error' && <CopyErrorButton className="ms-2 align-middle" report={{ message: result.text }} />}
       </ReservedText>
       <ReservedText className="text-xs" style={{ color: 'var(--text-muted)' }} candidates={[ts('updates.result.throttled', { time: '00:00:00' }), t('footer.version.seeIcon')]}>
         {data?.state === 'available' ? t('footer.version.seeIcon') : throttled}

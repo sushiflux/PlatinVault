@@ -148,6 +148,23 @@ describe('UpdateButton', () => {
     expect((await screen.findByTestId('update-container-steps')).textContent).toContain('ghcr.io/sushiflux/platinvault:beta')
   })
 
+  it('Linux package: popover offers the package download and the install.sh step, no container steps', async () => {
+    const offer = {
+      ...release,
+      hasInstaller: false,
+      linuxPackageName: 'PlatinVault-linux-x64-v2026.11.12.tar.gz',
+      linuxPackageUrl: 'https://github.com/sushiflux/PlatinVault/releases/download/v2026.11.12/PlatinVault-linux-x64-v2026.11.12.tar.gz',
+    }
+    fetchUpdateStatus.mockResolvedValue(status({ host: 'linuxPackage', available: offer }))
+    renderButton()
+    fireEvent.click(await screen.findByTestId('update-button'))
+    const steps = await screen.findByTestId('update-linux-steps')
+    expect(steps.textContent).toContain('install.sh')
+    expect(screen.getByTestId('update-linux-download').getAttribute('href')).toBe(offer.linuxPackageUrl)
+    expect(screen.queryByTestId('update-container-steps')).toBeNull()
+    expect(screen.queryByRole('button', { name: /Update installieren/ })).toBeNull()
+  })
+
   it('Windows program: install button asks first, then installs the offered tag; errors are shown completely', async () => {
     fetchUpdateStatus.mockResolvedValue(status({ host: 'desktop', canInstall: true }))
     installUpdate.mockRejectedValue(new Error('Der Download ist fehlgeschlagen: Prüfsumme stimmt nicht überein, bitte später erneut versuchen.'))

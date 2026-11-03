@@ -8,6 +8,8 @@ scripts/git-hooks/* text eol=lf
 *.ps1 text eol=crlf
 *.cmd text eol=crlf
 src/PlatinVault.Bridge/package/* text eol=crlf
+# The Linux bridge package (install.sh, readme) is unpacked on Linux: LF
+src/PlatinVault.Bridge.Linux/package/* text eol=lf
 
 *.png binary
 *.ico binary

@@ -43,7 +43,7 @@ export function FailedChapterBlock({ section, busy, onRetry, onRemove, onManual 
         <p className="whitespace-pre-line break-words text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
           {failure.message}
         </p>
-        <ErrorDetails details={failure.providerMessage} />
+        <ErrorDetails title={t('failedChapter.title')} message={failure.message} details={failure.providerMessage} />
         <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
           {t('failedChapter.hint')}
         </p>

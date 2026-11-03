@@ -252,6 +252,9 @@
           "System.Composition.Runtime": "9.0.0"
         }
       },
+      "platinvault.steamlocal": {
+        "type": "Project"
+      },
       "platinvault.versioning": {
         "type": "Project"
       }

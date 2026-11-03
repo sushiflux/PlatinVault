@@ -10,6 +10,21 @@ const errors = {
     tooManyRequests: 'Zu viele Anfragen – bitte kurz warten (HTTP 429).',
     unexpected: 'Unerwartete Antwort vom Server (HTTP {{status}}).',
   },
+  // The "Copy" button of every error message (components/ui/CopyErrorButton.tsx) and the text it copies (utils/errorReport.ts)
+  copy: {
+    button: 'Kopieren',
+    done: 'Kopiert',
+    failed: 'Kopieren nicht möglich',
+    // Accessible name and tooltip of the button
+    label: 'Fehlermeldung kopieren',
+    // Announced to screen readers
+    doneAnnouncement: 'Die Fehlermeldung wurde in die Zwischenablage kopiert.',
+    failedAnnouncement: 'Die Fehlermeldung konnte nicht in die Zwischenablage kopiert werden. Du kannst den Text markieren und mit Strg+C kopieren.',
+  },
+  report: {
+    details: 'Technische Details',
+    code: 'Fehlercode',
+  },
   boundary: {
     title: 'Ein unerwarteter Fehler ist aufgetreten',
     text: 'Bitte lade die Seite neu, um fortzufahren.',

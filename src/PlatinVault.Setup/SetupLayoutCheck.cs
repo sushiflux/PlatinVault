@@ -38,11 +38,23 @@ internal static class SetupLayoutCheck
             using var window = new SetupWindow(state, (_, _) => Task.CompletedTask, scale);
             var tag = $"{(update ? "update" : "install")}-{language}-{(dark ? "dark" : "light")}-{scale * 100:0}";
             List<Rectangle>? frame = null;
+            List<(string Name, Rectangle Bounds)>? failedPage = null;
             foreach (var (name, show) in window.TestStates())
             {
                 show();
                 window.SavePicture(Path.Combine(folder, $"{tag}-{name}.png"));
                 pictures++;
+                // "Copied" / "Copy not possible" appearing under the error text must not move or resize anything on the page
+                if (name == "failed")
+                {
+                    failedPage = Descendants(window).Select(c => (c.Name, c.Bounds)).ToList();
+                }
+                else if (name.StartsWith("failed-copy", StringComparison.Ordinal) && failedPage is not null
+                         && !Descendants(window).Select(c => (c.Name, c.Bounds)).SequenceEqual(failedPage))
+                {
+                    failures++;
+                    report.AppendLine($"FAIL {tag}-{name}: the copy status moved or resized a control");
+                }
                 foreach (var finding in Measure(window))
                 {
                     failures++;

@@ -214,6 +214,14 @@ internal sealed partial class SetupWindow : WizardWindow
             GoTo(installing);
             UpdateButtons();
         });
+        // The same page after a click on "Copy": the status slot fills, nothing else may move (compared by the layout check)
+        yield return ("failed-copied", () => Controls.Find("btnCopyInstallError", true).OfType<PvButton>().Single().PerformClick());
+        yield return ("failed-copy-not-possible", () =>
+        {
+            var status = FindCopyStatus();
+            status.Color = p => p.Danger;
+            status.Text = CommonTexts.CopyFailed;
+        });
         yield return ("done", () =>
         {
             _state.Failed = false;
@@ -222,6 +230,8 @@ internal sealed partial class SetupWindow : WizardWindow
             UpdateButtons();
         });
     }
+
+    private PvText FindCopyStatus() => Controls.Find("lblCopyStatusInstallError", true).OfType<PvText>().Single();
 
     // ---- pages -------------------------------------------------------------------------------------------------------------------
 
@@ -405,8 +415,8 @@ internal sealed partial class SetupWindow : WizardWindow
             if (state.Failed && state.Error is { } error)
             {
                 // The complete reason, scrolling inside its slot; it replaces the step list (a different page state, not a message)
-                var box = c.Add(new PvScrollText { Framed = true, Points = 9.5f }, 0, 62, PageCanvas.Width, 220, "txtInstallError");
-                box.SetText(error, p => p.Danger);
+                // (selectable; the Copy button copies all of it plus version and time)
+                c.AddErrorBox(() => error, p => p.Danger, 0, 62, PageCanvas.Width, 176, "txtInstallError");
                 return;
             }
 

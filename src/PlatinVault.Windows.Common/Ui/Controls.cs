@@ -26,8 +26,29 @@ public abstract class PvControl : Control
 
     protected float U(float designUnits) => designUnits * S;
 
+    /// <summary>
+    /// Lets the parent's own painting (a gradient, a glow) show through behind the control instead of a flat <see cref="Surface"/> rectangle.
+    /// Only for text on a parent that paints itself, like the start screen.
+    /// </summary>
+    public bool TransparentBackground
+    {
+        get;
+        set
+        {
+            if (field == value) return;
+            field = value;
+            BackColor = value ? Color.Transparent : SystemColors.Control;
+            Invalidate();
+        }
+    }
+
     protected override void OnPaintBackground(PaintEventArgs e)
     {
+        if (TransparentBackground)
+        {
+            base.OnPaintBackground(e);
+            return;
+        }
         using var brush = new SolidBrush(Surface);
         e.Graphics.FillRectangle(brush, ClientRectangle);
     }

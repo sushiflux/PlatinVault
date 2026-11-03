@@ -6,6 +6,7 @@ import type {
   AiExpandTabRequest,
   AiProviderModelsResponseDto,
   BrandingInfo,
+  BridgeOs,
   BridgeTokenCreatedDto,
   BridgeTokenStatusDto,
   GameDetailDto,
@@ -36,6 +37,7 @@ import type {
   CabinetPresentedDto,
   SteamSearchItemDto,
   SystemStatusDto,
+  SteamRootCheckResponse,
   UpdateSettingsRequest,
   UpdateStatusDto,
   DesktopFolderKind,
@@ -53,6 +55,7 @@ import type {
 import i18n, { currentLanguage } from '../i18n'
 import { runAiJob, type AiJobProgressHandler } from './aiJobs'
 import { isNetworkFailure, networkFailureMessage } from '../utils/apiErrorText'
+import { rememberAppVersion } from '../utils/errorReport'
 
 const MUTATION_HEADERS: HeadersInit = {
   'Content-Type': 'application/json',
@@ -139,7 +142,10 @@ async function handleResponse<T>(res: Response): Promise<T> {
 
 export async function fetchBranding(): Promise<BrandingInfo> {
   const res = await fetch('/api/branding')
-  return handleResponse<BrandingInfo>(res)
+  const branding = await handleResponse<BrandingInfo>(res)
+  // The copy button of every error message adds the app version (utils/errorReport.ts)
+  rememberAppVersion(branding?.version)
+  return branding
 }
 
 export async function fetchLiveStatus(): Promise<LiveStatusDto> {
@@ -355,13 +361,14 @@ export async function deleteBridgeToken(): Promise<void> {
   return handleResponse<void>(res)
 }
 
-// Downloads a ready-to-run bridge ZIP (exe + bridge.json with this server address and a NEW token). The old token
-// stops working; the response is a file, so it is saved through a temporary object URL.
-export async function downloadBridgePackage(): Promise<void> {
+// Downloads a ready-to-run bridge package: a ZIP for Windows (exe + bridge.json) or a tar.gz for Linux (binary, install.sh,
+// bridge.json), each with this server address and a NEW token. The old token stops working; the response is a file, so it is
+// saved through a temporary object URL.
+export async function downloadBridgePackage(os: BridgeOs = 'windows'): Promise<void> {
   const res = await fetch('/api/bridge/package', {
     method: 'POST',
     headers: MUTATION_HEADERS,
-    body: JSON.stringify({ origin: window.location.origin }),
+    body: JSON.stringify({ origin: window.location.origin, os }),
   })
   if (!res.ok) {
     await handleResponse<never>(res)
@@ -370,7 +377,7 @@ export async function downloadBridgePackage(): Promise<void> {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = 'PlatinVault-Bridge.zip'
+  link.download = os === 'linux' ? 'PlatinVault-Bridge-linux-x64.tar.gz' : 'PlatinVault-Bridge.zip'
   document.body.appendChild(link)
   link.click()
   link.remove()
@@ -537,6 +544,17 @@ export async function openDesktopFolder(kind: DesktopFolderKind): Promise<void> 
 export async function fetchSystemStatus(): Promise<SystemStatusDto> {
   const res = await fetch('/api/system/status')
   return handleResponse<SystemStatusDto>(res)
+}
+
+// Live check of the field "Steam-Ordner": would the server accept this folder? (nothing is stored)
+export async function checkSteamRoot(path: string, signal?: AbortSignal): Promise<SteamRootCheckResponse> {
+  const res = await fetch('/api/steam/local/check', {
+    method: 'POST',
+    headers: MUTATION_HEADERS,
+    body: JSON.stringify({ path }),
+    signal,
+  })
+  return handleResponse<SteamRootCheckResponse>(res)
 }
 
 // Trophy cabinet: all games at 100 % with their key figures (server caches it for ten minutes)

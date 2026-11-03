@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
+import { CopyErrorButton } from '../ui/CopyErrorButton'
 import type { FormEvent, KeyboardEvent, ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion, useReducedMotion } from 'motion/react'
@@ -191,6 +192,7 @@ export function LanguageScreen() {
 
             <div className="pv-lang-error" role="alert" lang={selected}>
               {error}
+              {error && <CopyErrorButton className="ms-2 align-middle" report={{ message: error }} />}
             </div>
           </motion.div>
         </form>

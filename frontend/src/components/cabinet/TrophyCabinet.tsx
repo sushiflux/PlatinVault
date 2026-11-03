@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { CopyErrorButton } from '../ui/CopyErrorButton'
+import { errorCodeOf } from '../../utils/errorReport'
 import type { AnimationEvent, CSSProperties, KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router'
@@ -1276,6 +1278,10 @@ function CabinetDialog({ onClose }: { onClose: () => void }) {
                 <IconAlertTriangle size="1.9em" style={{ color: '#fda4af' }} aria-hidden="true" />
                 <h3>{t('error.title')}</h3>
                 <p>{error instanceof Error ? error.message : t('error.unknown')}</p>
+                <CopyErrorButton
+                  color="#e2e8f0"
+                  report={{ title: t('error.title'), message: error instanceof Error ? error.message : t('error.unknown'), code: errorCodeOf(error) }}
+                />
                 <button type="button" className="pv-cab-retry" onClick={() => void refetch()} disabled={isFetching}>
                   {tc('retry')}
                 </button>

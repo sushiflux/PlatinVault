@@ -152,7 +152,7 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, onClose,
               {topicsFailure && (
                 <div className="pv-alert pv-alert-danger whitespace-pre-line break-words text-xs font-semibold" role="alert">
                   {topicsFailure.message}
-                  <ErrorDetails details={topicsFailure.details} />
+                  <ErrorDetails message={topicsFailure.message} details={topicsFailure.details} />
                 </div>
               )}
             </>
@@ -296,7 +296,7 @@ function ChapterRow({ slug, row, done, startOpen, onSaved }: { slug: string; row
           {failure && (
             <div className="pv-alert pv-alert-danger whitespace-pre-line break-words text-xs font-semibold" role="alert">
               {t('manual.row.saveFailed', { reason: failure.message })}
-              <ErrorDetails details={failure.details} />
+              <ErrorDetails message={t('manual.row.saveFailed', { reason: failure.message })} details={failure.details} />
             </div>
           )}
           {open && (

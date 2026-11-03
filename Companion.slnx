@@ -2,13 +2,17 @@
   <Folder Name="/src/">
     <Project Path="src/Companion.Api/Companion.Api.csproj" />
     <Project Path="src/PlatinVault.Bridge/PlatinVault.Bridge.csproj" />
+    <Project Path="src/PlatinVault.Bridge.Core/PlatinVault.Bridge.Core.csproj" />
+    <Project Path="src/PlatinVault.Bridge.Linux/PlatinVault.Bridge.Linux.csproj" />
     <Project Path="src/PlatinVault.Desktop/PlatinVault.Desktop.csproj" />
     <Project Path="src/PlatinVault.Setup/PlatinVault.Setup.csproj" />
+    <Project Path="src/PlatinVault.SteamLocal/PlatinVault.SteamLocal.csproj" />
     <Project Path="src/PlatinVault.Versioning/PlatinVault.Versioning.csproj" />
     <Project Path="src/PlatinVault.Windows.Common/PlatinVault.Windows.Common.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Companion.Api.Tests/Companion.Api.Tests.csproj" />
+    <Project Path="tests/PlatinVault.Bridge.Tests/PlatinVault.Bridge.Tests.csproj" />
     <Project Path="tests/PlatinVault.Windows.Tests/PlatinVault.Windows.Tests.csproj" />
   </Folder>
 </Solution>

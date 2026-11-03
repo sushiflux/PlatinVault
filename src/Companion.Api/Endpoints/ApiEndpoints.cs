@@ -109,7 +109,9 @@ public static class ApiEndpoints
             // ui.language ("de"/"en"; null until the first-run choice was made): the bridge speaks the language of this server, so
             // it is read from the setting, not from the request (the bridge's own Accept-Language only chooses the error texts).
             var uiLanguage = await RequestLanguage.GetStoredAsync(http.RequestServices, ct);
-            return Results.Ok(new { ok = true, latestBridgeVersion = bundle.Version, bridgeSha256 = bundle.Sha256, uiLanguage });
+            // The Linux bridge says so in its state; the Windows bridge (and every older one) says nothing and gets the Windows bundle
+            var platform = BridgeBundle.ParsePlatform(req.Platform);
+            return Results.Ok(new { ok = true, latestBridgeVersion = bundle.VersionOf(platform), bridgeSha256 = bundle.Sha256Of(platform), uiLanguage });
         }).RequireRateLimiting("bridge");
 
         // Self-update download for the bridge: same bearer token and rate limit as the state push, streams the bundled exe.
@@ -121,12 +123,14 @@ public static class ApiEndpoints
                 return Problems.Create(StatusCodes.Status401Unauthorized, ServerTexts.Bridge.UnauthorizedTitle, ServerTexts.Bridge.UnauthorizedDetail);
             }
 
-            if (!bundle.IsAvailable)
+            // ?platform=linux is the Linux bridge's self-update; without it the Windows exe (all existing bridges)
+            var platform = BridgeBundle.ParsePlatform(http.Request.Query["platform"].ToString());
+            if (!bundle.IsAvailableFor(platform))
             {
-                return Problems.Create(StatusCodes.Status404NotFound, ServerTexts.Bridge.NoBridgeTitle, bundle.MissingHint);
+                return Problems.Create(StatusCodes.Status404NotFound, ServerTexts.Bridge.NoBridgeTitle, bundle.MissingHintFor(platform));
             }
 
-            return Results.Stream(bundle.OpenExe(), "application/octet-stream", BridgeBundle.ExeName, enableRangeProcessing: true);
+            return Results.Stream(bundle.OpenExe(platform), "application/octet-stream", bundle.FileNameOf(platform), enableRangeProcessing: true);
         }).RequireRateLimiting("bridge");
 
         // Library facts of the gaming PC for the dashboard's sort orders (release date, Metacritic, reviews, size on disk), read by the bridge
@@ -263,7 +267,8 @@ public static class ApiEndpoints
             var lastSeen = liveTracker.GetLastBridgeEventAt() is { } live && (status.LastSeenAt is null || live > status.LastSeenAt)
                 ? live
                 : status.LastSeenAt;
-            return Results.Ok(status with { LastSeenAt = status.HasToken ? lastSeen : null, BundledVersion = bundle.IsAvailable ? bundle.Version : null });
+            return Results.Ok(status with { LastSeenAt = status.HasToken ? lastSeen : null, BundledVersion = bundle.IsAvailable ? bundle.Version : null,
+                LinuxBundledVersion = bundle.IsAvailableFor(BridgePlatform.Linux) ? bundle.VersionOf(BridgePlatform.Linux) : null });
         });
 
         // Ready-to-use bridge download: a ZIP with the exe, the package templates and a bridge.json that already carries the
@@ -280,23 +285,32 @@ public static class ApiEndpoints
             ILogger<BridgeTokenStore> logger,
             CancellationToken ct) =>
         {
-            // Everything that can be wrong is checked BEFORE the token is replaced, so a failed request never costs the user a working token
-            if (!bundle.IsAvailable)
-            {
-                return Problems.Create(StatusCodes.Status404NotFound, ServerTexts.Bridge.NoBridgeTitle, bundle.MissingHint);
-            }
-
+            // The bridge for Windows (ZIP, default) or Linux (tar.gz): query parameter "os" or "os" in the JSON body
             var origin = http.Request.Query["origin"].ToString();
-            if (string.IsNullOrWhiteSpace(origin) && http.Request.HasJsonContentType() && http.Request.ContentLength is > 0 and <= 4096)
+            var os = http.Request.Query["os"].ToString();
+            if ((string.IsNullOrWhiteSpace(origin) || string.IsNullOrWhiteSpace(os)) && http.Request.HasJsonContentType() && http.Request.ContentLength is > 0 and <= 4096)
             {
                 try
                 {
-                    origin = (await http.Request.ReadFromJsonAsync<BridgePackageRequest>(JsonOptions, ct))?.Origin ?? string.Empty;
+                    var body = await http.Request.ReadFromJsonAsync<BridgePackageRequest>(JsonOptions, ct);
+                    if (string.IsNullOrWhiteSpace(origin)) origin = body?.Origin ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(os)) os = body?.Os ?? string.Empty;
                 }
                 catch (Exception ex) when (ex is JsonException or BadHttpRequestException)
                 {
                     return Problems.Create(StatusCodes.Status400BadRequest, ServerTexts.InvalidRequestTitle, ServerTexts.Bridge.PackageBodyInvalid);
                 }
+            }
+            if (!string.IsNullOrWhiteSpace(os) && !os.Trim().Equals("windows", StringComparison.OrdinalIgnoreCase) && !os.Trim().Equals("linux", StringComparison.OrdinalIgnoreCase))
+            {
+                return Problems.Create(StatusCodes.Status400BadRequest, ServerTexts.InvalidRequestTitle, ServerTexts.Bridge.PackageOsInvalid(os.Length > 40 ? os[..40] : os));
+            }
+            var platform = BridgeBundle.ParsePlatform(os);
+
+            // Everything that can be wrong is checked BEFORE the token is replaced, so a failed request never costs the user a working token
+            if (!bundle.IsAvailableFor(platform))
+            {
+                return Problems.Create(StatusCodes.Status404NotFound, ServerTexts.Bridge.NoBridgeTitle, bundle.MissingHintFor(platform));
             }
             if (string.IsNullOrWhiteSpace(origin))
             {
@@ -311,12 +325,19 @@ public static class ApiEndpoints
 
             var created = await tokens.CreateAsync(ct);
             liveTracker.ClearBridgeState();
-            logger.LogInformation("Bridge-Token erzeugt (Hinweis ...{Hint}), Bridge-Paket wird ausgeliefert.", created.Hint);
+            logger.LogInformation("Bridge-Token erzeugt (Hinweis ...{Hint}), Bridge-Paket ({Platform}) wird ausgeliefert.", created.Hint, platform);
 
-            // The ZIP carries the language of the request (the UI language), so the very first start of the bridge already matches
+            // The package carries the language of the request (the UI language), so the very first start of the bridge already matches
             var language = Lang.Current;
 
             http.Response.Headers.CacheControl = "no-store";
+            if (platform == BridgePlatform.Linux)
+            {
+                return Results.Stream(
+                    stream => BridgePackageWriter.WriteLinuxAsync(stream, bundle, handbooks, licenses, safeOrigin, created.Token, language, ct),
+                    "application/gzip",
+                    BridgePackageWriter.LinuxPackageFileName);
+            }
             return Results.Stream(
                 stream => BridgePackageWriter.WriteAsync(stream, bundle, handbooks, licenses, safeOrigin, created.Token, language, ct),
                 "application/zip",
@@ -979,6 +1000,18 @@ public static class ApiEndpoints
             {
                 return Problems.Create(StatusCodes.Status400BadRequest, ServerTexts.Games.SettingsInvalidTitle, ex.Message);
             }
+        });
+
+        // Live check of the field "Steam-Ordner" while it is typed: the same rules as PUT /api/settings, nothing is stored. Always 200;
+        // "valid" says whether the folder could be saved, "message" what is wrong with it (in the request's language).
+        api.MapPost("/steam/local/check", (SteamRootCheckRequest req, SettingsStore store) =>
+        {
+            var path = req.Path ?? string.Empty;
+            if (path.Length > 4096)
+            {
+                path = path[..4096];
+            }
+            return Results.Ok(SteamLocalInfo.CheckResponse(store.CheckSteamRoot(path), store.SteamRootPlatform));
         });
 
         api.MapPost("/ai/models", async (AiProviderModelsRequestDto req, AiGuideGeneratorService aiService,

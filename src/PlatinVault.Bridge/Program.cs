@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Companion.Api.Services;
 using PlatinVault.Bridge.Ui;
 
 namespace PlatinVault.Bridge;
@@ -16,7 +15,8 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
-        BridgeLog.InitConsole();
+        BridgeLang.UseSystem(WindowsHost.DisplayLanguage());
+        BridgeLog.InitConsole(NativeConsole.TryAttach());
 
         var outcome = Run(args);
 
@@ -41,7 +41,7 @@ internal static class Program
         UiEnvironment.Headless = env.Headless;
 
         // Read before --help/--version so that even they speak the language this bridge was configured with
-        var portable = BridgeConfigFile.Load(BridgeConfigFile.PortablePath, out var portableWarning);
+        var portable = BridgeConfigFile.Load(WindowsHost.PortablePath, out var portableWarning);
         if (portableWarning is not null) BridgeLog.Warn(portableWarning);
         var user = BridgeConfigFile.Load(env.UserConfigPath, out var userWarning);
         if (userWarning is not null) BridgeLog.Warn(userWarning);
@@ -82,14 +82,14 @@ internal static class Program
             return new RunOutcome(0);
         }
 
-        var steam = new SteamLocalStatsService(new BridgeLogger<SteamLocalStatsService>());
+        var steam = new SteamLocalSource();
         var sampler = new StateSampler(steam, version, cli.TestAppId);
 
         // Started from somewhere else (the unpacked ZIP): offer the installation instead of just running invisibly.
         var offerSetup = !env.IsRunningFromInstallRoot && !cli.NoSetup && !cli.FirstRun && cli.UpdatedTo is null;
         if (offerSetup)
         {
-            var (prefillServer, prefillToken) = BridgeSettings.ResolveRaw(cli, Environment.GetEnvironmentVariable, portable, user);
+            var (prefillServer, prefillToken) = BridgeSettings.ResolveRaw(cli.Server, cli.Token, Environment.GetEnvironmentVariable, portable, user);
             var installedVersion = Installer.ReadInstalledVersion(env);
             var mode = installedVersion is not null || Installer.IsInstalled(env) ? SetupMode.Update : SetupMode.Install;
 
@@ -102,11 +102,11 @@ internal static class Program
         if (instance != InstanceResult.Acquired)
             return new RunOutcome(instance == InstanceResult.HandedOver ? 0 : 1);
 
-        if (!BridgeSettings.TryResolve(cli, Environment.GetEnvironmentVariable, portable, user, out var settings, out var configError))
+        if (!BridgeSettings.TryResolve(cli.Server, cli.Token, Environment.GetEnvironmentVariable, portable, user, out var settings, out var configError))
         {
             // Config missing or broken: let the user fix it in a window instead of an error nobody would see.
             BridgeLog.Warn(configError!);
-            var (prefillServer, prefillToken) = BridgeSettings.ResolveRaw(cli, Environment.GetEnvironmentVariable, portable, user);
+            var (prefillServer, prefillToken) = BridgeSettings.ResolveRaw(cli.Server, cli.Token, Environment.GetEnvironmentVariable, portable, user);
 
             using var setup = new SetupForm(env, cli, guard, sampler, SetupMode.SaveOnly, prefillServer, prefillToken, version, null);
             ShowSetup(env, cli, setup);
@@ -127,13 +127,13 @@ internal static class Program
 
     /// <summary>The normal run: polling loop in the background, tray icon on this thread, until quit/update/uninstall.</summary>
     private static RunOutcome RunBridge(BridgeEnvironment env, CliOptions cli, InstanceGuard guard, BridgeSettings settings,
-        StoredBridgeConfig? portable, StoredBridgeConfig? user, SteamLocalStatsService steam, StateSampler sampler, string version)
+        StoredBridgeConfig? portable, StoredBridgeConfig? user, ILocalSteam steam, StateSampler sampler, string version)
     {
         BridgeLog.Info(BridgeTexts.Program.Started(ProductCaption, version, settings.ServerText, settings.TokenHint, cli.IntervalMs, BridgeLog.LogPath));
 
         if (cli.Save)
         {
-            var target = BridgeConfigFile.SaveTargetPath(env);
+            var target = WindowsHost.SaveTargetPath(env);
             try
             {
                 BridgeConfigFile.Save(target, settings, BridgeLang.Remembered);
@@ -149,7 +149,7 @@ internal static class Program
         if (cli.TestAppId is { } testApp)
             BridgeLog.Warn(BridgeTexts.Program.TestMode(testApp));
 
-        if (!steam.IsLocalSteamAvailable())
+        if (!steam.IsAvailable)
             BridgeLog.Warn(BridgeTexts.Program.SteamNotFound);
 
         using var cts = new CancellationTokenSource();
@@ -172,7 +172,7 @@ internal static class Program
         var updater = new SelfUpdater(client, version, enabled: !cli.NoUpdate, cli.UpdatedTo);
         var status = new BridgeStatus(new StatusSnapshot { ServerText = settings.ServerText, Version = version });
         // Follows the language of the PlatinVault server and remembers it in bridge.json for the next start
-        var language = new LanguageFollower(portable?.Language ?? user?.Language, code => BridgeConfigFile.RememberLanguage(env, code));
+        var language = new LanguageFollower(portable?.Language ?? user?.Language, code => WindowsHost.RememberLanguage(env, code));
         var runner = new BridgeRunner(settings, client, sampler, cli.IntervalMs, updater, status, language);
 
         var tray = new TrayApp(env, cli, status, guard, settings.ServerText, cts.Cancel);

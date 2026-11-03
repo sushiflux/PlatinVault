@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react'
+import { CopyErrorButton } from './ui/CopyErrorButton'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { IconRefresh } from '@tabler/icons-react'
@@ -74,10 +75,13 @@ export function GameStatsPanel({ slug, steamAppId }: { slug: string; steamAppId?
     return (
       <div className="pv-alert pv-alert-danger flex-wrap items-center justify-between gap-3">
         <span className="text-sm font-semibold">{t('panel.loadError', { reason: errorText(stats.error) })}</span>
-        <button type="button" className="pv-btn" onClick={() => void stats.refetch()}>
-          <IconRefresh size={15} />
-          <span>{t('common:retry')}</span>
-        </button>
+        <span className="inline-flex items-center gap-3">
+          <CopyErrorButton report={{ message: t('panel.loadError', { reason: errorText(stats.error) }) }} />
+          <button type="button" className="pv-btn" onClick={() => void stats.refetch()}>
+            <IconRefresh size={15} />
+            <span>{t('common:retry')}</span>
+          </button>
+        </span>
       </div>
     )
   }
@@ -129,6 +133,7 @@ export function GameStatsPanel({ slug, steamAppId }: { slug: string; steamAppId?
       {!hasPersonal && (
         <p className="pv-card text-sm" style={{ color: 'var(--text-secondary)' }}>
           {live.error ? t('panel.noPersonalDataWithError', { reason: errorText(live.error) }) : t('panel.noPersonalData')}
+          {live.error && <CopyErrorButton className="ms-2 align-middle" report={{ message: t('panel.noPersonalDataWithError', { reason: errorText(live.error) }) }} />}
         </p>
       )}
 
@@ -194,6 +199,7 @@ export function GameStatsPanel({ slug, steamAppId }: { slug: string; steamAppId?
         {history.error && !history.data && (
           <p className="pv-alert pv-alert-danger text-sm font-semibold" role="alert">
             {t('panel.historyError', { reason: errorText(history.error) })}
+            <CopyErrorButton className="ms-2 align-middle" report={{ message: t('panel.historyError', { reason: errorText(history.error) }) }} />
           </p>
         )}
       </Section>

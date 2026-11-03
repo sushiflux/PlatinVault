@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { CopyErrorButton } from './ui/CopyErrorButton'
 import type { KeyboardEvent, ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -41,6 +42,7 @@ import {
 } from '../api/client'
 import type {
   AiModelOptionDto,
+  BridgeOs,
   BridgeTokenCreatedDto,
   BridgeTokenStatusDto,
   AiProviderId,
@@ -57,6 +59,7 @@ import { useFormat } from '../i18n/format'
 import { useUiLanguage } from '../i18n/useUiLanguage'
 import { animationQueue } from '../utils/animationQueue'
 import { DEFAULT_SOUND_THEME, normalizeSoundTheme, SOUND_THEMES, soundEngine } from '../utils/audio'
+import { defaultBridgeOs } from '../utils/bridgeOs'
 import { copyText } from '../utils/clipboard'
 import { DEFAULT_POPUP_TARGET, normalizePopupTarget, POPUP_TARGETS } from '../utils/popupTarget'
 import { steamClientUrl, useOpenInSteamClient } from '../utils/steamClient'
@@ -67,6 +70,8 @@ import { emptyResearchBlocks, ResearchBlocksSection, sameResearchBlocks } from '
 import { SystemStatusSection } from './SystemStatusSection'
 import { FoldersSection } from './settings/FoldersSection'
 import { UpdatesSection } from './settings/UpdatesSection'
+import { SteamFolderSection } from './settings/SteamFolderSection'
+import { useReadsSteamLocally } from '../utils/useReadsSteamLocally'
 import { useIsDesktopHost } from './FooterParts'
 import { ReservedText } from './ui/ReservedText'
 import { Switch } from './ui/Switch'
@@ -139,6 +144,8 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
   const reach = useSteamReach()
   // The Windows program reads Steam on this PC itself: its settings have no bridge tab
   const desktopHost = useIsDesktopHost()
+  // A server that reads Steam on its own computer needs no bridge (the tab stays for playing on another PC)
+  const readsSteamLocally = useReadsSteamLocally()
   const visibleTabs = desktopHost ? SETTINGS_TABS.filter((tab) => tab.id !== 'bridge') : SETTINGS_TABS
   useEffect(() => {
     if (!open) return
@@ -992,6 +999,9 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
                     {t('steam.guide.privacy')}
                   </p>
                 </div>
+
+                {/* The Steam folder on the computer PlatinVault runs on (only shown where PlatinVault reads Steam itself) */}
+                <SteamFolderSection />
               </div>
               )}
 
@@ -1104,6 +1114,7 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
                       }}
                     >
                       {twitchTest.error ?? twitchTest.result?.message ?? ''}
+                      {(twitchTest.error || (twitchTest.result && !twitchTest.result.connected)) && <CopyErrorButton className="ms-2 align-middle" report={{ message: twitchTest.error ?? twitchTest.result?.message }} />}
                     </p>
 
                     {/* Steps as described in IGDB's own docs (api-docs.igdb.com, "Account Creation") */}
@@ -1145,7 +1156,17 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
               )}
 
               {/* Tab "PlatinVault Bridge": token + download for the bridge program on the gaming PC */}
-              {activeTab === 'bridge' && !desktopHost && <BridgeSection />}
+              {activeTab === 'bridge' && !desktopHost && (
+                <div className="space-y-4">
+                  {/* PlatinVault reads Steam on this computer itself (native Linux package): say that the bridge is only for another PC */}
+                  {readsSteamLocally && (
+                    <p className="pv-card text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }} data-testid="bridge-not-needed">
+                      {t('steamLocal.bridgeNotNeeded')}
+                    </p>
+                  )}
+                  <BridgeSection />
+                </div>
+              )}
 
               {/* Tab "System": health check of backend, database, data folder and sources */}
               {/* Updates first (switch "Beta-Versionen erhalten", check, install or image tag), then the health check */}
@@ -1291,19 +1312,22 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
             className="flex flex-wrap items-center justify-between gap-3 px-6 py-4"
             style={{ background: 'var(--bg-elevated)', borderTop: '1px solid var(--border-subtle)' }}
           >
-          <ReservedText
-            className="w-full min-w-0 text-xs font-bold sm:w-auto sm:flex-1"
-            candidates={[
-              t('footer.saved'),
-              t('footer.saveFailed'),
-              t('twitch.saveProblem'),
-              t('twitch.saveNeedBoth'),
-            ]}
-            role="status"
-            style={{ color: statusMsg?.type === 'err' ? 'var(--accent-crimson)' : 'var(--accent-emerald)' }}
-          >
-            {statusMsg?.text}
-          </ReservedText>
+          <div className="flex w-full min-w-0 items-center gap-3 sm:w-auto sm:flex-1">
+            <ReservedText
+              className="min-w-0 flex-1 text-xs font-bold"
+              candidates={[
+                t('footer.saved'),
+                t('footer.saveFailed'),
+                t('twitch.saveProblem'),
+                t('twitch.saveNeedBoth'),
+              ]}
+              role="status"
+              style={{ color: statusMsg?.type === 'err' ? 'var(--accent-crimson)' : 'var(--accent-emerald)' }}
+            >
+              {statusMsg?.text}
+            </ReservedText>
+            <CopyErrorButton inactive={statusMsg?.type !== 'err'} report={{ message: statusMsg?.text }} className="shrink-0" />
+          </div>
 
           <div className="flex items-center justify-end gap-3">
             <button type="button" onClick={onClose} className="pv-btn">
@@ -1378,9 +1402,27 @@ function GeminiDiagnoseBlock({ model }: { model: string }) {
       </div>
       {(state.result || state.error) && (
         <div className="mt-2 space-y-1" role="status">
-          {state.error && <div style={{ color: 'var(--accent-crimson)' }}>{state.error}</div>}
+          {state.error && (
+            <div style={{ color: 'var(--accent-crimson)' }}>
+              {state.error}
+              <CopyErrorButton className="ms-2 align-middle" report={{ message: state.error }} />
+            </div>
+          )}
           {state.result && line(t('ai.diagnose.plain'), state.result.plain)}
           {state.result && line(t('ai.diagnose.search'), state.result.search)}
+          {state.result && (!state.result.plain.ok || !state.result.search.ok) && (
+            <CopyErrorButton
+              report={{
+                message: [
+                  { label: t('ai.diagnose.plain'), result: state.result.plain },
+                  { label: t('ai.diagnose.search'), result: state.result.search },
+                ]
+                  .filter((entry) => !entry.result.ok)
+                  .map((entry) => `${entry.label}: ${entry.result.message}`)
+                  .join('\n'),
+              }}
+            />
+          )}
         </div>
       )}
     </div>
@@ -1514,6 +1556,7 @@ function ProviderKeyAndModelRow({
             style={{ color: 'var(--accent-crimson)' }}
           >
             {t('ai.row.failed', { reason: conn.error })}
+            <CopyErrorButton className="ms-2 align-middle" report={{ message: t('ai.row.failed', { reason: conn.error }) }} />
           </span>
         ) : (
           <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
@@ -1754,6 +1797,8 @@ function BridgeSection() {
   const [cardError, setCardError] = useState<string | null>(null)
   const [created, setCreated] = useState<BridgeTokenCreatedDto | null>(null)
   const [copyHint, setCopyHint] = useState<string | null>(null)
+  // Which bridge the download is for: the one that fits this browser's computer, switchable (Windows exe or Linux service)
+  const [os, setOs] = useState<BridgeOs>(() => defaultBridgeOs())
 
   const titleId = useId()
   const confirmTitleId = useId()
@@ -1829,7 +1874,7 @@ function BridgeSection() {
     setCardError(null)
     setDialogError(null)
     try {
-      await downloadBridgePackage()
+      await downloadBridgePackage(os)
       setConfirm(null)
       void queryClient.invalidateQueries({ queryKey: BRIDGE_KEY })
     } catch (err: unknown) {
@@ -1860,7 +1905,12 @@ function BridgeSection() {
   }
 
   const serverUrl = window.location.origin
-  const command = created ? `PlatinVault.Bridge.exe --server ${serverUrl} --token ${created.token} --save` : ''
+  const command = created
+    ? os === 'linux'
+      ? `echo '${created.token}' | platinvault-bridge setup --server ${serverUrl} --token-stdin`
+      : `PlatinVault.Bridge.exe --server ${serverUrl} --token ${created.token} --save`
+    : ''
+  const bundledVersion = os === 'linux' ? status?.linuxBundledVersion : status?.bundledVersion
   const onLocalhost = ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
 
   return (
@@ -1879,8 +1929,22 @@ function BridgeSection() {
 
       <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
         {t('bridge.intro')}
-        {status?.bundledVersion ? ` ${t('bridge.introVersion', { version: status.bundledVersion })}` : ''}
+        {bundledVersion ? ` ${t('bridge.introVersion', { version: bundledVersion })}` : ''}
       </p>
+
+      {/* Which gaming PC the download is for. The install steps below always take the room of the longer variant, so switching moves nothing */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <span className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>
+          {t('bridge.os.label')}
+        </span>
+        <div className="pv-segmented" role="group" aria-label={t('bridge.os.group')}>
+          {(['windows', 'linux'] as const).map((id) => (
+            <button key={id} type="button" aria-pressed={os === id} onClick={() => setOs(id)} disabled={busyAction !== null}>
+              {t(`bridge.os.${id}`)}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div
         className="flex flex-wrap items-center justify-between gap-3 rounded-xl p-3"
@@ -1897,20 +1961,21 @@ function BridgeSection() {
           <span className="font-bold break-words" style={{ color: 'var(--text-primary)' }}>
             {statusText}
           </span>
+          {(error || !status) && !isLoading && <CopyErrorButton className="shrink-0" report={{ message: statusText }} />}
         </div>
         <div className="flex min-w-0 flex-wrap gap-2">
           <Tooltip
             label={t('bridge.download')}
             description={
-              status?.bundledVersion
-                ? t('bridge.downloadHint', { version: status.bundledVersion })
-                : t('bridge.downloadMissing')
+              bundledVersion
+                ? t(os === 'linux' ? 'bridge.linux.downloadHint' : 'bridge.downloadHint', { version: bundledVersion })
+                : t(os === 'linux' ? 'bridge.linux.downloadMissing' : 'bridge.downloadMissing')
             }
           >
             <button
               type="button"
               onClick={handlePackageClick}
-              disabled={busyAction !== null || isLoading || !status?.bundledVersion}
+              disabled={busyAction !== null || isLoading || !bundledVersion}
               className="pv-btn pv-btn-primary relative disabled:cursor-not-allowed disabled:opacity-60"
             >
               <BridgeBusyLabel busy={busyAction === 'package' && confirm === null}>
@@ -1954,9 +2019,32 @@ function BridgeSection() {
         </div>
       </div>
 
+      {/* How to install the downloaded package. Both variants are laid over each other in one grid cell, so the block is as tall as the longer one */}
+      <div className="grid text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }} data-testid="bridge-steps">
+        <div className={`col-start-1 row-start-1 ${os === 'windows' ? '' : 'invisible'}`} aria-hidden={os !== 'windows'}>
+          <Trans t={t} i18nKey="bridge.windows.steps" components={{ code: <code /> }} />
+        </div>
+        <div className={`col-start-1 row-start-1 space-y-1 ${os === 'linux' ? '' : 'invisible'}`} aria-hidden={os !== 'linux'}>
+          <div className="font-bold" style={{ color: 'var(--text-primary)' }}>
+            {t('bridge.linux.stepsTitle')}
+          </div>
+          <ol className="list-decimal space-y-0.5 ps-5">
+            <li>{t('bridge.linux.step1')}</li>
+            <li>
+              <Trans t={t} i18nKey="bridge.linux.step2" components={{ code: <code /> }} />
+            </li>
+            <li>
+              <Trans t={t} i18nKey="bridge.linux.step3" components={{ code: <code /> }} />
+            </li>
+          </ol>
+          <p>{t('bridge.linux.note')}</p>
+        </div>
+      </div>
+
       {/* Reserved room for an error of the direct "Token erzeugen" click, so it moves nothing */}
       <div className="min-h-9 text-xs font-bold" role="alert" style={{ color: 'var(--accent-crimson)' }}>
         {cardError}
+        {cardError && <CopyErrorButton className="ms-2 align-middle" report={{ message: cardError }} />}
       </div>
 
       {confirm && (
@@ -1993,6 +2081,7 @@ function BridgeSection() {
 
             <div className="min-h-[2.75rem] text-xs font-bold" role="alert" style={{ color: 'var(--accent-crimson)' }}>
               {dialogError}
+              {dialogError && <CopyErrorButton className="ms-2 align-middle" report={{ message: dialogError }} />}
             </div>
 
             <div className="flex justify-end gap-2.5 pt-3" style={{ borderTop: '1px solid var(--border-subtle)' }}>
@@ -2061,7 +2150,7 @@ function BridgeSection() {
                   {t('bridge.created.title')}
                 </h2>
                 <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  <Trans t={t} i18nKey="bridge.created.text" components={{ code: <code /> }} />
+                  <Trans t={t} i18nKey={os === 'linux' ? 'bridge.linux.createdText' : 'bridge.created.text'} components={{ code: <code /> }} />
                 </p>
               </div>
             </div>

@@ -150,7 +150,7 @@ export function AnswerBox<T extends Checked>({ check, onResult, renderOk, disabl
         {!empty && !checking && failure && (
           <div className="whitespace-pre-line break-words font-semibold" style={{ color: 'var(--accent-crimson)' }}>
             {t('manual.answer.checkFailed', { reason: failure.message })}
-            <ErrorDetails details={failure.details} />
+            <ErrorDetails message={t('manual.answer.checkFailed', { reason: failure.message })} details={failure.details} />
           </div>
         )}
         {!empty && !checking && result && result.errors.length > 0 && (
@@ -187,7 +187,7 @@ function IssueList({ tone, heading, issues }: { tone: 'error' | 'warning'; headi
         {issues.map((issue, index) => (
           <li key={`${issue.code}-${index}`} className="whitespace-pre-line break-words font-semibold" style={{ color: 'var(--text-primary)' }} data-issue={issue.code}>
             {issue.message}
-            <ErrorDetails details={issue.details} />
+            <ErrorDetails message={tone === 'error' ? issue.message : undefined} details={issue.details} />
           </li>
         ))}
       </ul>

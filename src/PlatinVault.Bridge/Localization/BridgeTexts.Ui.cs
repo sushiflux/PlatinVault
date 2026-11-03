@@ -12,6 +12,11 @@ internal static partial class BridgeTexts
         public static readonly Msg Yes = M("Ja", "Yes");
         public static readonly Msg No = M("Nein", "No");
 
+        // Copying a message (rule: every error message is copyable); the status texts fill one reserved slot next to the button
+        public static readonly Msg Copy = M("Kopieren", "Copy");
+        public static readonly Msg Copied = M("Kopiert", "Copied");
+        public static readonly Msg CopyFailed = M("Kopieren nicht möglich", "Copy not possible");
+
         // Second line of the window header, by kind of message
         public static readonly Msg SubtitleError = M("Fehler", "Error");
         public static readonly Msg SubtitleWarning = M("Achtung", "Warning");
@@ -44,7 +49,7 @@ internal static partial class BridgeTexts
         public static readonly Msg TokenLabel = M("Bridge-Token", "Bridge token");
         public static readonly Msg ShowToken = M("Token anzeigen", "Show token");
 
-        public static readonly Msg ServerHint = M("z. B. http://192.168.178.10:5233", "e.g. http://192.168.178.10:5233");
+        public static readonly Msg ServerHint = M("z. B. http://192.168.1.20:5233", "e.g. http://192.168.1.20:5233");
 
         public static readonly Msg TokenHint = M(
             "In PlatinVault unter Einstellungen > PlatinVault Bridge > Token erzeugen.",

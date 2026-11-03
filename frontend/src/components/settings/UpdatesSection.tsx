@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CopyErrorButton } from '../ui/CopyErrorButton'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { IconCloudDownload, IconDownload, IconExternalLink, IconLoader2, IconNotes, IconRefresh } from '@tabler/icons-react'
@@ -95,6 +96,7 @@ export function UpdatesSection() {
   // nothing moves); the container how-to is left out because it explains the :latest/:beta tags a dev build does not follow
   const devBuild = data?.state === 'devBuild'
   const desktop = data?.host === 'desktop'
+  const linuxPackage = data?.host === 'linuxPackage'
   const image = data?.imageRepository ?? 'ghcr.io/sushiflux/platinvault'
   const latestTag = `${image}:latest`
   const betaTag = `${image}:beta`
@@ -145,6 +147,7 @@ export function UpdatesSection() {
       {switchError && (
         <p role="alert" className="text-xs font-semibold leading-relaxed" style={{ color: 'var(--accent-crimson)' }}>
           {switchError}
+          <CopyErrorButton className="ms-2 align-middle" report={{ message: switchError }} />
         </p>
       )}
 
@@ -177,6 +180,7 @@ export function UpdatesSection() {
       {intervalError && (
         <p role="alert" className="text-xs font-semibold leading-relaxed" style={{ color: 'var(--accent-crimson)' }}>
           {intervalError}
+          <CopyErrorButton className="ms-2 align-middle" report={{ message: intervalError }} />
         </p>
       )}
 
@@ -197,6 +201,7 @@ export function UpdatesSection() {
 
       <ReservedText role="status" className="text-sm font-semibold leading-relaxed" style={{ color: RESULT_TONE_COLOR[result.tone] }} candidates={resultCandidates}>
         {result.text}
+        {result.tone === 'error' && <CopyErrorButton className="ms-2 align-middle" report={{ message: result.text }} />}
       </ReservedText>
       {/* A second manual check within a minute is answered from memory; its note has its room from the start */}
       <ReservedText
@@ -260,11 +265,50 @@ export function UpdatesSection() {
           candidates={[t('updates.result.installing'), t('updates.result.installStarted'), installMessage?.text ?? '']}
         >
           {installMessage?.text ?? ''}
+          {installMessage?.tone === 'error' && <CopyErrorButton className="ms-2 align-middle" report={{ message: installMessage.text }} />}
         </ReservedText>
       )}
 
-      {data && !desktop && !devBuild && <DockerHowTo data={data} latestTag={latestTag} betaTag={betaTag} />}
+      {data && linuxPackage && !devBuild && <LinuxHowTo data={data} />}
+      {data && !desktop && !linuxPackage && !devBuild && <DockerHowTo data={data} latestTag={latestTag} betaTag={betaTag} />}
       <ReleaseNotesViewer release={notesOpen ? available : null} onClose={() => setNotesOpen(false)} />
+    </div>
+  )
+}
+
+/** How the Linux package is updated: download the new package, run its install.sh (the data stays). The container steps do not apply. */
+function LinuxHowTo({ data }: { data: UpdateStatusDto }) {
+  const { t } = useTranslation('settings')
+  const offer = data.available
+  const file = offer?.linuxPackageName ?? t('updates.linux.filePlaceholder')
+  const folder = file.replace(/\.tar\.gz$/, '')
+  const downloadUrl = offer?.linuxPackageUrl ?? null
+  return (
+    <div className="space-y-3 border-t pt-3 text-xs leading-relaxed" style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }} data-testid="updates-linux">
+      <div className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+        {t('updates.linux.title')}
+      </div>
+      <p>{t('updates.linux.intro')}</p>
+      {/* The download link takes its room even when there is nothing to download, so the steps below never move */}
+      <div className={downloadUrl ? '' : 'invisible'} aria-hidden={downloadUrl ? undefined : true}>
+        <a
+          className="pv-btn !py-1 !px-3 !text-xs"
+          href={downloadUrl ?? undefined}
+          target="_blank"
+          rel="noopener noreferrer"
+          tabIndex={downloadUrl ? undefined : -1}
+          data-testid="updates-linux-download"
+        >
+          <IconDownload size={14} aria-hidden="true" />
+          <span>{t('updates.linux.download', { file })}</span>
+        </a>
+      </div>
+      <pre className="overflow-x-auto rounded-sm px-3 py-2 font-mono" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}>
+        {`tar xzf ${file}
+cd ${folder}
+./install.sh`}
+      </pre>
+      <p>{t('updates.linux.afterwards')}</p>
     </div>
   )
 }

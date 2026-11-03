@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { CopyErrorButton } from '../ui/CopyErrorButton'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { IconRestore, IconSparkles } from '@tabler/icons-react'
@@ -177,6 +178,7 @@ export function AiSelectionSection({ mode, onModeChange, defaultProvider, onDefa
         {(resetError || statusError) && (
           <p className="text-[11px] font-semibold" role="alert" style={{ color: 'var(--accent-crimson)' }}>
             {resetError ?? t('selection.statusLoadFailed', { reason: statusError instanceof Error ? statusError.message : '?' })}
+            <CopyErrorButton className="ms-2 align-middle" report={{ message: resetError ?? t('selection.statusLoadFailed', { reason: statusError instanceof Error ? statusError.message : '?' }) }} />
           </p>
         )}
       </div>

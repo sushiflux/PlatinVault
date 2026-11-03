@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { IconAlertTriangle, IconChevronDown, IconCircleCheck, IconLoader2, IconX } from '@tabler/icons-react'
 import { GhostIconButton } from './GhostIconButton'
+import { CopyErrorButton } from './CopyErrorButton'
 
 // The one floating notice of the app: a failed action, a result, a long-running job. It lies over the page (fixed, never part of
 // the layout - nothing moves when it comes or goes) and is OPAQUE: the tint is a solid surface colour with the tone's tint
@@ -61,6 +62,7 @@ export function FloatingNotice({ tone, title, message, details, actions, onClose
   const { t } = useTranslation(['game', 'common'])
   const reduce = useReducedMotion() ?? false
   const rootRef = useRef<HTMLDivElement>(null)
+  const messageRef = useRef<HTMLDivElement>(null)
   const detailsId = useId()
   const [showDetails, setShowDetails] = useState(false)
   const { accent, Icon, role } = TONES[tone]
@@ -116,25 +118,39 @@ export function FloatingNotice({ tone, title, message, details, actions, onClose
             {title}
           </p>
           {message && (
-            <div className="mt-1 whitespace-pre-line break-words text-[0.8125rem] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            <div ref={messageRef} className="mt-1 whitespace-pre-line break-words text-[0.8125rem] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               {message}
             </div>
           )}
 
-          {details && (
+          {/* "Technical details" and, for a failure, "Copy" (the whole message, the details, app version and time in one click) */}
+          {(details || tone === 'error') && (
             <div className="mt-2">
-              <button
-                type="button"
-                aria-expanded={showDetails}
-                aria-controls={detailsId}
-                onClick={() => setShowDetails((open) => !open)}
-                className="inline-flex cursor-pointer items-center gap-1 text-xs font-bold underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-crystal)]"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                <IconChevronDown size={14} aria-hidden="true" className={`transition-transform ${showDetails ? 'rotate-180' : ''}`} />
-                {t('game:notice.details')}
-              </button>
-              {showDetails && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                {details && (
+                  <button
+                    type="button"
+                    aria-expanded={showDetails}
+                    aria-controls={detailsId}
+                    onClick={() => setShowDetails((open) => !open)}
+                    className="inline-flex cursor-pointer items-center gap-1 text-xs font-bold underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-crystal)]"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    <IconChevronDown size={14} aria-hidden="true" className={`transition-transform ${showDetails ? 'rotate-180' : ''}`} />
+                    {t('game:notice.details')}
+                  </button>
+                )}
+                {tone === 'error' && (
+                  <CopyErrorButton
+                    report={() => ({
+                      title,
+                      message: typeof message === 'string' ? message : (messageRef.current?.textContent ?? ''),
+                      details,
+                    })}
+                  />
+                )}
+              </div>
+              {details && showDetails && (
                 <pre
                   id={detailsId}
                   className="mt-1.5 max-h-48 overflow-auto whitespace-pre-wrap break-words p-2.5 font-mono text-xs leading-relaxed"

@@ -19,6 +19,11 @@ public static class CommonTexts
     public static readonly Msg Retry = new("Erneut versuchen", "Try again");
     public static readonly Msg CopyDetails = new("Text kopieren", "Copy text");
 
+    // Copying an error message (rule: every error message is copyable). The status texts share one fixed slot next to the button.
+    public static readonly Msg Copy = new("Kopieren", "Copy");
+    public static readonly Msg Copied = new("Kopiert", "Copied");
+    public static readonly Msg CopyFailed = new("Kopieren nicht möglich", "Copy not possible");
+
     public static readonly Msg DialogInfo = new("Hinweis", "Note");
     public static readonly Msg DialogQuestion = new("Frage", "Question");
     public static readonly Msg DialogWarning = new("Achtung", "Attention");

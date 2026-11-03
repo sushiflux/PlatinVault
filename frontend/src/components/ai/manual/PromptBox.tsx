@@ -115,7 +115,7 @@ export function PromptBox({ load, extraActions }: PromptBoxProps) {
       {error && (
         <div className="pv-alert pv-alert-danger whitespace-pre-line break-words text-xs font-semibold" role="alert">
           {t('manual.copy.failed', { reason: error.message })}
-          <ErrorDetails details={error.details} />
+          <ErrorDetails message={t('manual.copy.failed', { reason: error.message })} details={error.details} />
         </div>
       )}
 

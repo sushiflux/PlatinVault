@@ -12,7 +12,8 @@ namespace Companion.Api.Endpoints;
 /// <summary>One line of the system check: Status "ok", "warn", "error" or "off" (not used / not configured).</summary>
 public sealed record SystemCheckDto(string Key, string Label, string Status, string Detail, int? LatencyMs);
 
-public sealed record SystemStatusDto(string Version, string Environment, DateTimeOffset CheckedAt, List<SystemCheckDto> Checks);
+/// <summary>SteamLocal = where Steam was looked for on this computer and what was found (the "Steam auf diesem Rechner" line in detail).</summary>
+public sealed record SystemStatusDto(string Version, string Environment, DateTimeOffset CheckedAt, List<SystemCheckDto> Checks, SteamLocalStatusDto? SteamLocal = null);
 
 /// <summary>
 /// "System" tab of the settings: is the backend up, the database reachable and current, the data folder writable, and
@@ -46,9 +47,7 @@ public static class SystemEndpoints
             checks.Add(await CheckDatabaseAsync(db, backups, ct));
             checks.Add(CheckDataDir(options.Value.DataDir));
 
-            checks.Add(localStats.IsLocalSteamAvailable()
-                ? new SystemCheckDto("steam-local", ServerTexts.SystemCheck.SteamLocalLabel, "ok", ServerTexts.SystemCheck.SteamLocalOk, null)
-                : new SystemCheckDto("steam-local", ServerTexts.SystemCheck.SteamLocalLabel, "off", ServerTexts.SystemCheck.SteamLocalOff, null));
+            checks.Add(SteamLocalInfo.Check(localStats));
 
             var lastBridge = liveTracker.GetLastBridgeEventAt();
             checks.Add(lastBridge is null
@@ -70,7 +69,7 @@ public static class SystemEndpoints
 
             checks.Add(await CheckTwitchAsync(twitchAuth, settingsStore, ct));
 
-            return Results.Ok(new SystemStatusDto(version.Current, environment.EnvironmentName, DateTimeOffset.UtcNow, checks));
+            return Results.Ok(new SystemStatusDto(version.Current, environment.EnvironmentName, DateTimeOffset.UtcNow, checks, SteamLocalInfo.Status(localStats)));
         });
     }
 

@@ -59,6 +59,18 @@ public static partial class ServerTexts
             "Auf diesem Server liegt keine Bridge bereit. Dieses Image wurde ohne PlatinVault.Bridge.exe gebaut – bitte eine aktuelle Version verwenden.",
             "There is no bridge on this server. This image was built without PlatinVault.Bridge.exe – please use a current version.");
 
+        public static readonly Msg MissingHintLinuxDevelopment = M(
+            "Auf diesem Server liegt keine Linux-Bridge bereit. Baue sie im Repository unter Linux oder WSL mit scripts/build-bridge-linux.sh (Ergebnis: artifacts/bridge-linux).",
+            "There is no Linux bridge on this server. Build it in the repository on Linux or WSL with scripts/build-bridge-linux.sh (result: artifacts/bridge-linux).");
+
+        public static readonly Msg MissingHintLinux = M(
+            "Auf diesem Server liegt keine Linux-Bridge bereit. Dieses Image oder Paket wurde ohne die Linux-Bridge gebaut – bitte eine aktuelle Version verwenden.",
+            "There is no Linux bridge on this server. This image or package was built without the Linux bridge – please use a current version.");
+
+        public static Msg PackageOsInvalid(string os) => M(
+            $"Unbekanntes Betriebssystem '{os}'. Erlaubt sind 'windows' und 'linux'.",
+            $"Unknown operating system '{os}'. Allowed are 'windows' and 'linux'.");
+
         public static readonly Msg PackageBodyInvalid = M(
             "Der Body muss JSON der Form {\"origin\":\"http://server:port\"} sein.",
             "The body must be JSON of the form {\"origin\":\"http://server:port\"}.");
@@ -554,7 +566,6 @@ public static partial class ServerTexts
         public static Msg DataNotWritable(string message) => M($"Nicht beschreibbar: {message}", $"Not writable: {message}");
 
         public static readonly Msg SteamLocalLabel = M("Steam auf diesem Rechner", "Steam on this computer");
-        public static readonly Msg SteamLocalOk = M("Live-Erkennung direkt aus den lokalen Steam-Dateien", "Live detection straight from the local Steam files");
         public static readonly Msg SteamLocalOff = M("Kein lokales Steam (Server, NAS, Unraid) – Echtzeit kommt über die PlatinVault Bridge", "No local Steam (server, NAS, Unraid) – real time comes through the PlatinVault Bridge");
 
         public static readonly Msg BridgeLabel = Msg.Same("PlatinVault Bridge");

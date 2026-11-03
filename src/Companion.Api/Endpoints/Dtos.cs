@@ -425,7 +425,9 @@ public sealed record BridgeStateRequest(
     long RunningAppId,
     string? GameName,
     List<BridgeAchievementDto>? Achievements,
-    DateTimeOffset? SentAt
+    DateTimeOffset? SentAt,
+    // "linux" from the Linux bridge; missing from the Windows bridge. Only decides which bundled bridge the answer announces for self-update.
+    string? Platform = null
 );
 
 /// <summary>
@@ -447,11 +449,12 @@ public sealed record BridgeTokenStatusDto(
     bool HasToken,
     string? Hint,
     DateTimeOffset? LastSeenAt,
-    string? BundledVersion = null
+    string? BundledVersion = null,
+    string? LinuxBundledVersion = null
 );
 
-/// <summary>Body of POST /api/bridge/package (the query parameter "origin" works as well).</summary>
-public sealed record BridgePackageRequest(string? Origin);
+/// <summary>Body of POST /api/bridge/package (the query parameters "origin" and "os" work as well). Os: "windows" (default) or "linux".</summary>
+public sealed record BridgePackageRequest(string? Origin, string? Os = null);
 
 /// <summary>Returned once, when a token is created; only its hash is stored.</summary>
 public sealed record BridgeTokenCreatedDto(
@@ -507,8 +510,50 @@ public sealed record SettingsResponseDto(
     string DashboardSortAll = Settings.DashboardSort.DefaultAll,
     // "Trophäen-Popup anzeigen" (setting "live.popup_target"): "app" / "overlay" / "both" (default). Only the Windows program has an
     // overlay; everywhere else the effect is "app".
-    string PopupTarget = Settings.SettingsStore.DefaultPopupTarget
+    string PopupTarget = Settings.SettingsStore.DefaultPopupTarget,
+    // "Steam-Ordner (optional)" (setting "steam.root"): the folder set by hand, null when none is set
+    string? SteamRoot = null,
+    // What this server can do with a Steam client on its own computer and what it found (null only for callers without the service)
+    SteamLocalSettingsDto? SteamLocal = null
 );
+
+/// <summary>
+/// The local Steam client as the settings need it. Platform: "windows", "linux", "other" (the server's computer). Mode: "native" = PlatinVault runs on a Windows or Linux computer and reads Steam there
+/// (the field "Steam-Ordner" makes sense), "container" = inside a container (usually no Steam; a mounted one works with
+/// Companion__Steam__Root), "unsupported" = another platform. Method: how Root was found ("manual", "configuration", "environment",
+/// "registry", "symlink", "knownPath", "none"). Experimental = Linux (reading Steam there is not verified on a real Linux Steam yet).
+/// ReadsLocally = the live trophies come straight from this computer's Steam (found and mode "native"): the UI does not push the bridge.
+/// </summary>
+public sealed record SteamLocalSettingsDto(string Platform, string Mode, bool Found, string? Root, string Method, string? MethodDetail, bool Experimental, string? ConfiguredRoot, bool ReadsLocally = false);
+
+/// <summary>POST /api/steam/local/check: is this folder usable as the Steam folder? (live check of the settings field)</summary>
+public sealed record SteamRootCheckRequest(string? Path);
+
+/// <summary>
+/// Valid = it can be saved. Problem: "none", "notAbsolute", "notFound", "noSteamApps", "libraryOnly" (a game library, not the Steam folder); Message = the explanation in the request's
+/// language (null when valid); Path = the normalized form that would be stored; ResolvedPath = the folder it leads to (links resolved).
+/// </summary>
+public sealed record SteamRootCheckResponse(bool Valid, string Problem, string? Message, string Path, string? ResolvedPath);
+
+/// <summary>One place where Steam was looked for (system check). Method as in <see cref="SteamLocalSettingsDto"/>.</summary>
+public sealed record SteamRootCandidateDto(string Path, string Method, string? Detail, string? ResolvedPath, bool Exists, bool HasSteamApps, bool IsDuplicate, bool Chosen, bool IsSteamRoot);
+
+/// <summary>
+/// The local Steam client in the system check. RunningGameDetection: "registry" (Windows), "processList" (Linux: reaper SteamLaunch
+/// AppId=...), "none". AccountDetection: "registry", "loginUsers", "statsFiles" (Linux, a best guess), "none".
+/// </summary>
+public sealed record SteamLocalStatusDto(
+    string Platform,
+    string Mode,
+    bool Found,
+    string? Root,
+    string Method,
+    string RunningGameDetection,
+    string AccountDetection,
+    bool Experimental,
+    string? StoredRoot,
+    string? ConfiguredRoot,
+    List<SteamRootCandidateDto> Candidates);
 
 /// <summary>The building blocks for the AI research (Settings > AI research). Scope/Spoilers/Presentation: one id or null; Focus: several ids.</summary>
 public sealed record ResearchBlocksDto(string? Scope, List<string> Focus, string? Spoilers, string? Presentation);
@@ -561,7 +606,10 @@ public sealed record UpdateSettingsRequest(
     // "app" / "overlay" / "both" (anything else is rejected with 400): null = keep
     string? PopupTarget = null,
     // "Nach Updates suchen": "startup" | "4h" | "daily" | "weekly" | "monthly" | "never" (anything else is rejected with 400): null = keep
-    string? UpdateCheckInterval = null
+    string? UpdateCheckInterval = null,
+    // "Steam-Ordner (optional)": null = keep, "" = remove (the automatic search applies again), else a folder that contains "steamapps"
+    // (anything else is rejected with 400 and a message that says what is wrong)
+    string? SteamRoot = null
 );
 
 public sealed record AiProviderModelsRequestDto(

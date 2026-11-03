@@ -10,7 +10,7 @@
     package\                   template the server zips with the exe and a generated bridge.json: LIESMICH.txt
 
   The bridge has its own version, independent of the app version: 1.0.<n>, where n is the number of commits that
-  touched the bridge or its shared Steam reader (so it only changes when the bridge itself changes). Without any
+  touched the bridge, its shared core or the Steam readers (so it only changes when the bridge itself changes). Without any
   commit n is 0. For CI/Docker without .git pass -Version 1.0.7 or set the environment variable BRIDGE_VERSION.
   The bridge version is the exe's file and assembly version. -ProductVersion (scripts\build-windows.ps1 passes the readable version of
   the PlatinVault build, e.g. "v2026.11.14 (15.116022)") sets the product version in its file properties; without it the product
@@ -29,8 +29,8 @@ $ErrorActionPreference = 'Stop'
 
 . (Join-Path $PSScriptRoot 'dev-common.ps1')
 
-# Paths the version counts commits for: the bridge itself and the Steam reader it compiles from the server project.
-$script:VersionPaths = @('src/PlatinVault.Bridge', 'src/Companion.Api/Services/SteamLocalStatsService.cs')
+# Paths the version counts commits for: the bridge itself, the bridge code it shares with the Linux bridge (compiled in) and the Steam readers.
+$script:VersionPaths = @('src/PlatinVault.Bridge', 'src/PlatinVault.Bridge.Core', 'src/PlatinVault.SteamLocal')
 
 function Get-BridgeVersion([string]$Explicit) {
     $value = $Explicit

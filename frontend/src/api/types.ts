@@ -431,6 +431,76 @@ export interface SettingsResponseDto {
   // The dashboard's sort order per view as "<order>:<asc|desc>" (see utils/dashboardSort.ts)
   dashboardSortFavorites?: string
   dashboardSortAll?: string
+  // "Steam-Ordner (optional)" (setting steam.root): the folder set by hand, null when the automatic search is used
+  steamRoot?: string | null
+  // The Steam client on the server's own computer (field "Steam-Ordner", see SteamLocalSettingsDto)
+  steamLocal?: SteamLocalSettingsDto | null
+}
+
+// "native" = PlatinVault runs on a Windows or Linux computer and reads Steam there; "container" = inside a container (usually no
+// Steam, a mounted one is configured with Companion__Steam__Root); "unsupported" = another platform
+export type SteamLocalMode = 'native' | 'container' | 'unsupported'
+// How the Steam folder in use was found
+export type SteamLocationMethod = 'none' | 'manual' | 'configuration' | 'environment' | 'registry' | 'symlink' | 'knownPath'
+
+export interface SteamLocalSettingsDto {
+  // The operating system of the computer the server runs on
+  platform: 'windows' | 'linux' | 'other'
+  mode: SteamLocalMode
+  found: boolean
+  root: string | null
+  method: SteamLocationMethod
+  // Variable name (environment), "native" / "flatpak" / "snap" (Linux standard paths), the registry value ...
+  methodDetail: string | null
+  // Linux: reading Steam's files is not verified on a real Linux Steam yet
+  experimental: boolean
+  // Companion:Steam:Root of the server's configuration (null when none)
+  configuredRoot: string | null
+  // The live trophies come straight from the Steam of the server's own computer (found + mode "native"): no bridge needed
+  readsLocally: boolean
+}
+
+// POST /api/steam/local/check: the live check of the field "Steam-Ordner" (same rules as saving; nothing is stored)
+export type SteamRootProblem = 'none' | 'notAbsolute' | 'notFound' | 'noSteamApps' | 'libraryOnly'
+
+export interface SteamRootCheckResponse {
+  valid: boolean
+  problem: SteamRootProblem
+  // What is wrong, in the UI language (null when valid)
+  message: string | null
+  // The normalized form that would be stored, and the folder it leads to (links resolved)
+  path: string
+  resolvedPath: string | null
+}
+
+// One place where Steam was looked for (system check)
+export interface SteamRootCandidateDto {
+  path: string
+  method: SteamLocationMethod
+  detail: string | null
+  resolvedPath: string | null
+  exists: boolean
+  hasSteamApps: boolean
+  isDuplicate: boolean
+  chosen: boolean
+  // The Steam client's own folder (steamapps + appcache or config), not just a game library
+  isSteamRoot: boolean
+}
+
+export interface SteamLocalStatusDto {
+  platform: 'windows' | 'linux' | 'other'
+  mode: SteamLocalMode
+  found: boolean
+  root: string | null
+  method: SteamLocationMethod
+  // "registry" (Windows), "processList" (Linux: reaper SteamLaunch AppId=...), "none"
+  runningGameDetection: 'registry' | 'processList' | 'none'
+  // "registry" (Windows); Linux, a best guess: "loginUsers" (config/loginusers.vdf) or "statsFiles"; "none"
+  accountDetection: 'registry' | 'loginUsers' | 'statsFiles' | 'none'
+  experimental: boolean
+  storedRoot: string | null
+  configuredRoot: string | null
+  candidates: SteamRootCandidateDto[]
 }
 
 export type AiProviderId = 'gemini' | 'claude' | 'openai'
@@ -563,6 +633,8 @@ export interface UpdateSettingsRequest {
   updateCheckInterval?: UpdateCheckInterval
   dashboardSortFavorites?: string
   dashboardSortAll?: string
+  // "Steam-Ordner": omitted = keep, "" = remove (automatic search), else a folder with "steamapps" (anything else: 400 with the reason)
+  steamRoot?: string
 }
 
 export interface AiExpandTabRequest {
@@ -632,7 +704,12 @@ export interface BridgeTokenStatusDto {
   lastSeenAt: string | null
   // Version of the bridge exe bundled with this server (null = not bundled, e.g. not built yet in development)
   bundledVersion?: string | null
+  // Version of the Linux bridge bundled with this server (null = not bundled)
+  linuxBundledVersion?: string | null
 }
+
+// Which bridge a download is for
+export type BridgeOs = 'windows' | 'linux'
 
 // POST /api/bridge/token: the plain token is only ever returned here, once
 export interface BridgeTokenCreatedDto {
@@ -817,12 +894,17 @@ export interface UpdateReleaseDto {
   notes: string | null
   publishedAt: string | null
   hasInstaller: boolean
+  // The Linux package of this release (file name and github.com download link); null when the release has none. The server always
+  // sends both; only the host "linuxPackage" uses them.
+  linuxPackageName?: string | null
+  linuxPackageUrl?: string | null
 }
 
 // 'devBuild': a dev build or development run, never offered a beta or release and does not ask GitHub
 export type UpdateState = 'disabled' | 'unchecked' | 'upToDate' | 'available' | 'error' | 'devBuild'
 
-// What a container should do about its image tag (only for host "server"; the Windows program installs itself)
+// What a container should do about its image tag (only for host "server"; the Windows program installs itself, the Linux package is
+// updated by running the install.sh of the new package)
 export type DockerAdvice = 'none' | 'useBeta' | 'betaStays' | 'switchToLatest'
 
 export interface UpdateStatusDto {
@@ -830,7 +912,7 @@ export interface UpdateStatusDto {
   currentTag: string
   currentChannel: 'release' | 'beta' | 'dev'
   betaUpdatesEnabled: boolean
-  host: 'desktop' | 'server'
+  host: 'desktop' | 'server' | 'linuxPackage'
   state: UpdateState
   available: UpdateReleaseDto | null
   latestRelease: UpdateReleaseDto | null
@@ -860,6 +942,8 @@ export interface SystemStatusDto {
   environment: string
   checkedAt: string
   checks: SystemCheckDto[]
+  // Where Steam was looked for on the server's computer (details of the check "steam-local")
+  steamLocal?: SteamLocalStatusDto | null
 }
 
 // Trophy cabinet: every game of the Steam library at 100 % (missing figures are null and hidden)

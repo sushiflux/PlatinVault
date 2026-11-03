@@ -37,6 +37,18 @@ public static class Glyphs
         g.DrawLine(pen, r.Left + r.Width / 2, body.Top + body.Height * 0.35f, r.Left + r.Width / 2, body.Top + body.Height * 0.65f);
     }
 
+    /// <summary>Two overlapping sheets (the "copy" icon).</summary>
+    public static void Copy(Graphics g, RectangleF r, Color c)
+    {
+        using var pen = Stroke(c, r);
+        PointF At(float x, float y) => new(r.Left + r.Width * x, r.Top + r.Height * y);
+        // The back sheet is only drawn where the front one does not cover it (an open frame), like the Tabler "copy" icon
+        g.DrawLines(pen, [At(0.70f, 0.38f), At(0.70f, 0.14f), At(0.14f, 0.14f), At(0.14f, 0.70f), At(0.38f, 0.70f)]);
+        var front = new RectangleF(r.Left + r.Width * 0.38f, r.Top + r.Height * 0.38f, r.Width * 0.48f, r.Height * 0.48f);
+        using var path = Draw.Rounded(front, r.Width * 0.08f);
+        g.DrawPath(pen, path);
+    }
+
     public static void Clock(Graphics g, RectangleF r, Color c)
     {
         using var pen = Stroke(c, r);

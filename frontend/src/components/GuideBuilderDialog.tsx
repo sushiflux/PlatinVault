@@ -128,7 +128,7 @@ export function GuideBuilderDialog({ slug, gameTitle, provider, onClose, onDone,
                 </p>
               )}
               {failure.message}
-              <ErrorDetails details={failure.details} />
+              <ErrorDetails title={failure.notice} message={failure.message} details={failure.details} />
               {onManual && (
                 <button type="button" className="pv-btn mt-2" onClick={onManual}>
                   <IconClipboardText size={15} className="shrink-0" aria-hidden="true" />

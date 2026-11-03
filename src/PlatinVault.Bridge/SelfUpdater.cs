@@ -6,7 +6,7 @@ namespace PlatinVault.Bridge;
 /// <c>GET /api/bridge/exe</c> next to the exe, verifies the hash and swaps the files. Restarting is up to the caller
 /// (it has to release the single-instance mutex first).
 /// </summary>
-internal sealed class SelfUpdater
+internal sealed class SelfUpdater : ISelfUpdater
 {
     private const string ExeFileName = BridgeEnvironment.ExeFileName;
 
@@ -64,6 +64,8 @@ internal sealed class SelfUpdater
         }
         return clean;
     }
+
+    bool ISelfUpdater.CleanupLeftovers() => CleanupLeftovers();
 
     /// <summary>
     /// Updates when the server offers a newer version than this one. Returns true when the new exe is in place and the

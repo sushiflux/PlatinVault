@@ -298,6 +298,7 @@
           "Microsoft.EntityFrameworkCore": "[10.0.14, )",
           "Microsoft.EntityFrameworkCore.Relational": "[10.0.14, )",
           "Microsoft.EntityFrameworkCore.Sqlite": "[10.0.14, )",
+          "PlatinVault.SteamLocal": "[1.0.0, )",
           "PlatinVault.Versioning": "[1.0.0, )"
         }
       },
@@ -313,6 +314,12 @@
         "type": "Project",
         "dependencies": {
           "PlatinVault.Windows.Common": "[1.0.0, )"
+        }
+      },
+      "platinvault.steamlocal": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.14, )"
         }
       },
       "platinvault.versioning": {

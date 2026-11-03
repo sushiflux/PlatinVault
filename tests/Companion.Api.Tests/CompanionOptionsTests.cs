@@ -41,4 +41,17 @@ public sealed class CompanionOptionsTests
         Assert.Equal(Path.Combine("browser-stack", "dp-keys"), options.ResolvedKeyRingDir);
         Assert.Equal(Path.Combine("browser-stack", "secrets"), options.ResolvedSecretsDir);
     }
+
+    [Theory]
+    [InlineData("linux-package", true)]
+    [InlineData(" Linux-Package ", true)]
+    [InlineData("", false)]
+    [InlineData("container", false)]
+    public void The_install_kind_tells_the_linux_package_apart(string kind, bool isLinuxPackage)
+    {
+        // The package's run.sh sets Companion__InstallKind=linux-package; every other value (and none) is not the package
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Companion:InstallKind"] = kind }).Build();
+        var options = configuration.GetSection(CompanionOptions.Section).Get<CompanionOptions>() ?? new CompanionOptions();
+        Assert.Equal(isLinuxPackage, options.IsLinuxPackage);
+    }
 }

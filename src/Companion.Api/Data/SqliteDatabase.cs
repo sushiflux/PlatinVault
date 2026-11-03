@@ -86,6 +86,26 @@ public static class SqliteDatabase
         return lines is ["ok"] ? null : string.Join("; ", lines);
     }
 
+    /// <summary>True when <paramref name="exception"/> (or an inner one) is SQLite's "unable to open database file" (error code 14, SQLITE_CANTOPEN).</summary>
+    public static bool IsCannotOpen(Exception exception)
+    {
+        for (var ex = exception; ex is not null; ex = ex.InnerException)
+        {
+            if (ex is SqliteException { SqliteErrorCode: SQLitePCL.raw.SQLITE_CANTOPEN }) return true;
+        }
+        return false;
+    }
+
+    /// <summary>The explained version of error code 14: hint about a blocking virus scanner and what to do, the original SQLite text kept at the end.</summary>
+    public static CannotOpenDatabaseException CannotOpen(string file, Exception inner, ILogger logger)
+    {
+        var technical = inner is SqliteException ? inner.Message : (inner.InnerException?.Message ?? inner.Message);
+        var text = ServerTexts.DatabaseGuard.CannotOpen(file, technical);
+        logger.LogCritical("{German}", text.De);
+        logger.LogCritical("{English}", text.En);
+        return new CannotOpenDatabaseException(text, inner);
+    }
+
     private static DamagedDatabaseException Damaged(string file, string detail, ILogger logger, Exception? inner)
     {
         var text = ServerTexts.DatabaseGuard.Damaged(file, detail);
@@ -136,6 +156,12 @@ public abstract class DatabaseRefusedException(Msg text, Exception? inner = null
 
     public override string Message => Text.ToString();
 }
+
+/// <summary>
+/// SQLite could not open the file or create its helper files (-wal, -shm): error code 14. Usually a virus scanner blocked or quarantined
+/// files in the data folder. <see cref="DatabaseRefusedException.Text"/> explains it and keeps SQLite's own text at the end; nothing was changed.
+/// </summary>
+public sealed class CannotOpenDatabaseException(Msg text, Exception? inner = null) : DatabaseRefusedException(text, inner);
 
 /// <summary>The database file failed SQLite's own check (<c>quick_check</c>) or is no SQLite file at all.</summary>
 public sealed class DamagedDatabaseException(Msg text, Exception? inner = null) : DatabaseRefusedException(text, inner);

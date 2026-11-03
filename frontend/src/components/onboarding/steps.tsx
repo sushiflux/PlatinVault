@@ -32,7 +32,7 @@ import type { LiveAchievementItemDto, NotificationPosition, RarityTier } from '.
 import { animationQueue } from '../../utils/animationQueue'
 import { CardMeta, GuideBadge } from '../GameCardParts'
 import { StatTile } from '../GameStatsPanel'
-import { useIsDesktopHost } from '../FooterParts'
+import { useReadsSteamLocally } from '../../utils/useReadsSteamLocally'
 import { ProgressBar } from '../ui/ProgressBar'
 import { TierIcon } from '../ui/TierIcon'
 import { TROPHY_TIER_COLORS, TrophyCard } from '../TrophyNotification'
@@ -674,8 +674,8 @@ function SetupVisual({ onOpenSettings }: TourStepContext) {
   const bridgeQuery = useQuery({ queryKey: ['bridge-token'], queryFn: fetchBridgeTokenStatus })
   const settings = settingsQuery.data
   const bridge = bridgeQuery.data
-  // The Windows program needs no bridge: its row is left out there
-  const desktopHost = useIsDesktopHost()
+  // No bridge needed where PlatinVault reads Steam itself (Windows program, native Linux package with a Steam folder): the row is left out
+  const readsSteamLocally = useReadsSteamLocally()
 
   const settingsState = (done: boolean): RowState =>
     settingsQuery.isLoading ? 'loading' : settings ? (done ? 'done' : 'open') : 'unknown'
@@ -719,7 +719,7 @@ function SetupVisual({ onOpenSettings }: TourStepContext) {
         action={hasAiKey ? change : t('steps.setup.visual.aiKey.action')}
         onAction={() => onOpenSettings('ki')}
       />
-      {!desktopHost && (
+      {!readsSteamLocally && (
         <SetupRow
           i={3}
           title={t('steps.setup.visual.bridge.title')}

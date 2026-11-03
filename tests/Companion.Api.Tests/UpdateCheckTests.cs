@@ -39,6 +39,27 @@ public sealed class UpdateCheckTests
             : [],
     };
 
+    // A release with the Linux package (tar.gz + sha256) attached, no Windows installer
+    private static object LinuxRelease(string tag, bool prerelease = false, bool withChecksum = true, string host = "github.com") => new
+    {
+        tag_name = tag,
+        draft = false,
+        prerelease,
+        html_url = $"https://github.com/sushiflux/PlatinVault/releases/tag/{tag}",
+        published_at = "2026-11-02T10:00:00Z",
+        assets = withChecksum
+            ? new object[]
+            {
+                new { name = $"PlatinVault-linux-x64-{tag}.tar.gz", browser_download_url = $"https://{host}/sushiflux/PlatinVault/releases/download/{tag}/PlatinVault-linux-x64-{tag}.tar.gz" },
+                new { name = $"PlatinVault-linux-x64-{tag}.tar.gz.sha256", browser_download_url = $"https://{host}/sushiflux/PlatinVault/releases/download/{tag}/PlatinVault-linux-x64-{tag}.tar.gz.sha256" },
+                new { name = "PlatinVault-Bridge-linux-x64.tar.gz", browser_download_url = $"https://{host}/sushiflux/PlatinVault/releases/download/{tag}/PlatinVault-Bridge-linux-x64.tar.gz" },
+            }
+            : new object[]
+            {
+                new { name = $"PlatinVault-linux-x64-{tag}.tar.gz", browser_download_url = $"https://{host}/sushiflux/PlatinVault/releases/download/{tag}/PlatinVault-linux-x64-{tag}.tar.gz" },
+            },
+    };
+
     private static RunningVersion Running(string tag, VersionKind kind) => new(VersionFormat.DisplayFromTag(tag), tag, kind, ReleaseVersion.Parse(tag));
 
     private static ReleaseListResult List(params object[] releases) =>
@@ -120,6 +141,57 @@ public sealed class UpdateCheckTests
         Assert.False(UpdateStatusBuilder.Build(running, list, false, desktopHost: true, desktopCanInstall: false).CanInstall);
         // A container is told about every newer version, installer or not
         Assert.Equal("v2026.11.14", UpdateStatusBuilder.Build(running, list, false, desktopHost: false, desktopCanInstall: false).Available!.Version.Text);
+    }
+
+    [Fact]
+    public void The_linux_package_is_found_only_with_its_checksum_and_only_on_github()
+    {
+        var feed = ReleaseFeed.Parse(Releases(
+            LinuxRelease("v2026.11.13"),
+            LinuxRelease("v2026.11.12", withChecksum: false),
+            LinuxRelease("v2026.11.11", host: "evil.example"),
+            Release("v2026.11.10")));
+        Assert.Equal("PlatinVault-linux-x64-v2026.11.13.tar.gz", feed[0].LinuxPackage!.Name);
+        Assert.EndsWith(".tar.gz.sha256", feed[0].LinuxPackage!.ChecksumUrl);
+        Assert.Null(feed[1].LinuxPackage);
+        Assert.Null(feed[2].LinuxPackage);
+        Assert.Null(feed[3].LinuxPackage);
+        // The bridge download next to the package is not mistaken for it
+        Assert.StartsWith("https://github.com/", feed[0].LinuxPackage!.Url);
+    }
+
+    [Fact]
+    public void The_linux_package_only_counts_versions_with_a_package_gets_no_image_advice_and_cannot_install()
+    {
+        // The newest release is an image-only build (for example platform: unraid): the package is not offered it
+        var list = List(LinuxRelease("v2026.11.13"), Release("v2026.11.14", installer: false));
+        var running = Running("v2026.11.12", VersionKind.Release);
+        var linux = UpdateStatusBuilder.Build(running, list, false, desktopHost: false, desktopCanInstall: false, linuxPackage: true);
+        Assert.True(linux.LinuxPackageHost);
+        Assert.Equal("v2026.11.13", linux.Available!.Version.Text);
+        Assert.False(linux.CanInstall);
+        Assert.Equal(DockerAdvice.None, linux.Docker);
+        // With the beta switch on and a running release the container advice would say "use :beta" - not for the package
+        var withBetas = UpdateStatusBuilder.Build(running, List(LinuxRelease("v2026.11.13.1.2-beta", prerelease: true)), true, false, false, linuxPackage: true);
+        Assert.Equal(DockerAdvice.None, withBetas.Docker);
+        Assert.Equal("v2026.11.13.1.2-beta", withBetas.Available!.Version.Text);
+        // Nothing newer with a package: up to date, although a newer image-only release exists
+        var upToDate = UpdateStatusBuilder.Build(Running("v2026.11.13", VersionKind.Release), list, false, false, false, linuxPackage: true);
+        Assert.Equal(UpdateState.UpToDate, upToDate.State);
+        Assert.False(UpdateStatusBuilder.Build(running, list, false, false, false).LinuxPackageHost);
+    }
+
+    [Fact]
+    public void The_update_status_names_the_host_and_the_package_of_the_offer()
+    {
+        var list = List(LinuxRelease("v2026.11.13"));
+        var running = Running("v2026.11.12", VersionKind.Release);
+        var dto = UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(running, list, false, false, false, linuxPackage: true));
+        Assert.Equal("linuxPackage", dto.Host);
+        Assert.Equal("PlatinVault-linux-x64-v2026.11.13.tar.gz", dto.Available!.LinuxPackageName);
+        Assert.StartsWith("https://github.com/", dto.Available.LinuxPackageUrl);
+        Assert.Equal("server", UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(running, list, false, false, false)).Host);
+        Assert.Equal("desktop", UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(running, list, false, true, false)).Host);
     }
 
     [Fact]

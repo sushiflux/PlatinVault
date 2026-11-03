@@ -26,6 +26,12 @@ public sealed class CompanionOptions
     /// </summary>
     public string? BridgeDir { get; set; }
 
+    /// <summary>
+    /// Folder with the bundled Linux bridge (platinvault-bridge, bridge-version.txt, package/). Empty = default: "bridge-linux" next to the app
+    /// in a release build (/app/bridge-linux in the container), artifacts/bridge-linux of the repository in Development.
+    /// </summary>
+    public string? BridgeLinuxDir { get; set; }
+
     public DatabaseOptions Database { get; set; } = new();
 
     public BackupOptions Backups { get; set; } = new();
@@ -44,8 +50,37 @@ public sealed class CompanionOptions
     /// "release" otherwise ("v2026.11.12 (13.557)"); set by the Docker build.</summary>
     public string ReleaseChannel { get; set; } = "release";
 
+    /// <summary>
+    /// How this server was installed. <see cref="LinuxPackageKind"/> ("linux-package") = the Linux package (a tar.gz with install.sh, started
+    /// by its run.sh as a systemd user service); the update check then shows "download the new package and run install.sh" instead of the
+    /// container tag advice. Empty = anything else (container, development).
+    /// </summary>
+    public string InstallKind { get; set; } = "";
+
+    /// <summary>The <see cref="InstallKind"/> of the Linux package (set by its run.sh).</summary>
+    public const string LinuxPackageKind = "linux-package";
+
+    /// <summary>True when this server is the Linux package.</summary>
+    public bool IsLinuxPackage => string.Equals(InstallKind?.Trim(), LinuxPackageKind, StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Where the update check reads the published betas and releases (see <c>UpdateService</c>).</summary>
     public UpdateCheckOptions Updates { get; set; } = new();
+
+    /// <summary>The local Steam client ("Companion:Steam:*").</summary>
+    public SteamLocalOptions Steam { get; set; } = new();
+}
+
+/// <summary>
+/// Where the server finds the Steam client of this computer ("Companion:Steam:*"). Normally nothing is set: the Windows program reads
+/// the registry, the native Linux package searches the usual Steam folders. For a packaging or a container with a mounted Steam folder.
+/// </summary>
+public sealed class SteamLocalOptions
+{
+    /// <summary>
+    /// The Steam folder (the one that contains <c>steamapps</c>), e.g. via the environment variable <c>Companion__Steam__Root</c>. The
+    /// setting "Steam-Ordner" in the app wins over it; an unusable folder is skipped and the search continues.
+    /// </summary>
+    public string? Root { get; set; }
 }
 
 /// <summary>

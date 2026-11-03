@@ -24,7 +24,7 @@
 - German and English, light and dark. One user, no sign-in - for your home network.
 What you need:
 - Achievements: your Steam account and a free Steam Web API key.
-- Live pop-ups: the PlatinVault Bridge on your gaming PC (ready-to-run download in the app). Without it you see your progress, just not live.
+- Live pop-ups: the PlatinVault Bridge on your gaming PC - for Windows and for Linux, including Steam Deck (ready-to-run download in the app; the Linux bridge is experimental). Without it you see your progress, just not live.
 - Guides: your own AI access - an API key from Google Gemini, Anthropic Claude or OpenAI, or your AI subscription via copy and paste. No AI access, no guides.
 - No database to set up - it is built in.
 
@@ -36,11 +36,11 @@ PlatinVault bringt deine Steam-Erfolge und KI-recherchierte 100%-Guides in eine 
 - Deutsch und Englisch, hell und dunkel. Ein Benutzer, ohne Anmeldung - fürs Heimnetz.
 Was du brauchst:
 - Erfolge: dein Steam-Konto und einen kostenlosen Steam-Web-API-Key.
-- Live-Popups: die PlatinVault Bridge auf deinem Gaming-PC (fertig eingerichtet als Download in der App). Ohne sie siehst du deinen Fortschritt, aber nicht live.
+- Live-Popups: die PlatinVault Bridge auf deinem Gaming-PC - für Windows und für Linux, auch Steam Deck (fertig eingerichtet als Download in der App; die Linux-Bridge ist experimentell). Ohne sie siehst du deinen Fortschritt, aber nicht live.
 - Guides: ein eigener KI-Zugang - ein API-Key von Google Gemini, Anthropic Claude oder OpenAI, oder dein KI-Abo per Kopieren und Einfügen. Ohne KI-Zugang keine Guides.
 - Keine Datenbank einzurichten - sie ist eingebaut.</Overview>
-  <Requires>Steam account + Steam Web API key (achievements). PlatinVault Bridge on the gaming PC for live trophy pop-ups (download in the app). Your own AI access for guides: an API key from Google Gemini, Anthropic Claude or OpenAI, or your own AI subscription via copy and paste - without it there are no guides. No separate database needed (built in). Keep the appdata folder on the cache pool (default /mnt/cache/appdata/platinvault), not on /mnt/user.
-Steam-Konto + Steam-Web-API-Key (Erfolge). PlatinVault Bridge auf dem Gaming-PC für Live-Trophäen-Popups (Download in der App). Eigener KI-Zugang für die Guides: ein API-Key von Google Gemini, Anthropic Claude oder OpenAI, oder dein eigenes KI-Abo per Kopieren und Einfügen - ohne ihn gibt es keine Guides. Keine eigene Datenbank nötig (eingebaut). Den Appdata-Ordner auf dem Cache-Pool lassen (Standard /mnt/cache/appdata/platinvault), nicht unter /mnt/user.</Requires>
+  <Requires>Steam account + Steam Web API key (achievements). PlatinVault Bridge on the gaming PC (Windows or Linux/Steam Deck) for live trophy pop-ups (download in the app). Your own AI access for guides: an API key from Google Gemini, Anthropic Claude or OpenAI, or your own AI subscription via copy and paste - without it there are no guides. No separate database needed (built in). Keep the appdata folder on the cache pool (default /mnt/cache/appdata/platinvault), not on /mnt/user.
+Steam-Konto + Steam-Web-API-Key (Erfolge). PlatinVault Bridge auf dem Gaming-PC (Windows oder Linux/Steam Deck) für Live-Trophäen-Popups (Download in der App). Eigener KI-Zugang für die Guides: ein API-Key von Google Gemini, Anthropic Claude oder OpenAI, oder dein eigenes KI-Abo per Kopieren und Einfügen - ohne ihn gibt es keine Guides. Keine eigene Datenbank nötig (eingebaut). Den Appdata-Ordner auf dem Cache-Pool lassen (Standard /mnt/cache/appdata/platinvault), nicht unter /mnt/user.</Requires>
   <Category>Tools:Utilities</Category>
   <WebUI>http://[IP]:[PORT:8080]/</WebUI>
   <Icon>https://raw.githubusercontent.com/sushiflux/PlatinVault/master/branding/icon.png</Icon>

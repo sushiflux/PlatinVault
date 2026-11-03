@@ -138,6 +138,11 @@ public static class CompanionHost
         builder.Services.AddSingleton<LiveAnnouncer>();
         builder.Services.AddSingleton<UnlockWatermarkStore>();
         builder.Services.AddSingleton<SecretStore>();
+        // Where the Steam client of this computer lives: Companion:Steam:Root, the setting "Steam-Ordner" (applied after the migration,
+        // see BuildAsync, and kept in sync by SettingsStore), the environment and the platform's own search. TryAdd: tests bring their own.
+        builder.Services.TryAddSingleton(sp => new SteamLocationProvider(
+            new SteamLocatorInput { ConfiguredRoot = sp.GetRequiredService<IOptions<CompanionOptions>>().Value.Steam.Root },
+            sp.GetRequiredService<ILogger<SteamLocationProvider>>()));
         builder.Services.AddSingleton<SteamLocalStatsService>();
         builder.Services.AddSingleton<SteamOpenIdService>();
         builder.Services.AddSingleton<TranslationService>();
@@ -232,11 +237,19 @@ public static class CompanionHost
         // Check the database file and bring its schema up to date (EF Core migrations) before serving requests. A damaged file or a
         // database of a newer PlatinVault stops the start (nothing is changed); the app is disposed first so the explanation in the
         // log is flushed.
+        var companion = app.Services.GetRequiredService<IOptions<CompanionOptions>>().Value;
         try
         {
-            var companion = app.Services.GetRequiredService<IOptions<CompanionOptions>>().Value;
-            await SqliteDatabase.PrepareAsync(companion.DatabaseFile, app.Logger, ct);
-            await DatabaseInitializer.MigrateAsync(app.Services, app.Logger, ct);
+            try
+            {
+                await SqliteDatabase.PrepareAsync(companion.DatabaseFile, app.Logger, ct);
+                await DatabaseInitializer.MigrateAsync(app.Services, app.Logger, ct);
+            }
+            catch (Exception ex) when (ex is not DatabaseRefusedException and not OperationCanceledException && SqliteDatabase.IsCannotOpen(ex))
+            {
+                // SQLite error 14 (file or helper files cannot be opened/created): a plain explanation instead of the bare SQLite text
+                throw SqliteDatabase.CannotOpen(companion.DatabaseFile, ex, app.Logger);
+            }
         }
         catch (DatabaseRefusedException)
         {
@@ -244,6 +257,9 @@ public static class CompanionHost
             await app.DisposeAsync();
             throw;
         }
+
+        // The Steam folder set by hand in the settings, before the live detection asks for the first time
+        await SettingsStore.ApplyStoredSteamRootAsync(app.Services, ct);
 
         // After the last hosted service stopped (the backup worker made its last backup): close the pooled SQLite connections, so SQLite
         // folds the WAL back into the file and removes it - the file is complete on its own once the server is gone

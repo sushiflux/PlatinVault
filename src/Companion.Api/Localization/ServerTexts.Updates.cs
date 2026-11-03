@@ -46,8 +46,8 @@ public static partial class ServerTexts
         public static readonly Msg InstallTitle = M("Update nicht gestartet", "Update not started");
 
         public static readonly Msg InstallOnlyDesktop = M(
-            "Updates installiert nur das Windows-Programm selbst. Ein Container (Unraid, NAS, Docker) wird über seinen Image-Tag aktualisiert – die Anleitung steht unter Einstellungen → System → Updates.",
-            "Only the Windows program installs updates itself. A container (Unraid, NAS, Docker) is updated through its image tag – see Settings → System → Updates.");
+            "Updates installiert nur das Windows-Programm selbst. Ein Container (Unraid, NAS, Docker) wird über seinen Image-Tag aktualisiert, das Linux-Paket durch erneutes Ausführen seiner install.sh – die Anleitung steht unter Einstellungen → System → Updates.",
+            "Only the Windows program installs updates itself. A container (Unraid, NAS, Docker) is updated through its image tag, the Linux package by running its install.sh again – see Settings → System → Updates.");
 
         public static readonly Msg InstallNotAllowed = M(
             "In dieser Umgebung (Entwicklungs- oder Testlauf) installiert PlatinVault keine Updates.",
@@ -101,6 +101,24 @@ public static partial class ServerTexts
                 ? "Install the newer version again, or wait for the next release and install it. "
                 : $"Install PlatinVault {needed} (or newer) again, or wait for the next release and install it. ")
             + $"Unknown changes: {unknown}");
+
+        /// <param name="file">The database file.</param>
+        /// <param name="technical">What SQLite reported (for example "SQLite Error 14: 'unable to open database file'.", not translated).</param>
+        public static Msg CannotOpen(string file, string technical) => M(
+            $"PlatinVault konnte die Datenbankdatei {file} nicht öffnen oder ihre Hilfsdateien ({Path.GetFileName(file)}-wal und {Path.GetFileName(file)}-shm) im selben Ordner nicht anlegen. "
+            + "Häufige Ursache, besonders unter Windows: Ein Virenschutz oder ein anderes Sicherheitsprogramm hat Dateien im Datenordner blockiert oder in Quarantäne verschoben. "
+            + "Weitere Ursachen: Der Ordner ist nicht beschreibbar, existiert nicht mehr oder die Platte ist voll. "
+            + "So geht es weiter: Prüfe die Quarantäne bzw. das Schutzprotokoll deines Virenschutzes und stelle blockierte Dateien aus dem Datenordner wieder her (oder trage den Ordner dort als Ausnahme ein), "
+            + "starte den Rechner neu und wiederhole dann die Installation bzw. den Start. "
+            + "Deine Daten bleiben erhalten: PlatinVault hat nichts gelöscht oder verändert. Wurde sogar die Datenbankdatei selbst in die Quarantäne verschoben, lässt sie sich von dort zurückholen; "
+            + $"die automatischen Sicherungen liegen im Ordner „backups“. Technische Meldung: {technical}",
+            $"PlatinVault could not open the database file {file} or create its helper files ({Path.GetFileName(file)}-wal and {Path.GetFileName(file)}-shm) in the same folder. "
+            + "Common cause, especially on Windows: a virus scanner or another security program has blocked files in the data folder or moved them to quarantine. "
+            + "Other causes: the folder is not writable, no longer exists, or the disk is full. "
+            + "What to do: check the quarantine or protection log of your virus scanner and restore blocked files from the data folder (or add the folder there as an exception), "
+            + "restart the computer, then repeat the installation or the start. "
+            + "Your data is kept: PlatinVault has not deleted or changed anything. Even if the database file itself was moved to quarantine, it can be restored from there; "
+            + $"the automatic backups are in the “backups” folder. Technical message: {technical}");
 
         /// <param name="file">The database file.</param>
         /// <param name="detail">What SQLite reported (quick_check result or error message, not translated).</param>

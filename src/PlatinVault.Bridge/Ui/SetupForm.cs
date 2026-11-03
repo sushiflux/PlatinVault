@@ -49,6 +49,7 @@ internal sealed class SetupForm : BrandedForm
     private readonly ScrollableText _tokenMessage;
     private readonly Panel _card;
     private readonly ScrollableText _cardText;
+    private readonly CopyControls _copy;
     private readonly CheckBox _autostart;
     private readonly CheckBox _startMenu;
     private readonly Button _primary;
@@ -65,7 +66,7 @@ internal sealed class SetupForm : BrandedForm
     public SetupForm(BridgeEnvironment env, CliOptions cli, InstanceGuard guard, StateSampler sampler, SetupMode mode,
         string? prefillServer, string? prefillToken, string version, string? installedVersion)
         : base(BridgeTexts.Setup.WindowTitle, BridgeEnvironment.ProductName, SubtitleFor(mode, version, installedVersion),
-            clientWidth: 560, clientHeight: 580)
+            clientWidth: 560, clientHeight: 620)
     {
         _env = env;
         _cli = cli;
@@ -118,11 +119,14 @@ internal sealed class SetupForm : BrandedForm
         _card = new Panel { Bounds = R(Pad, 346, ContentWidth, 82), BackColor = Theme.Card, BorderStyle = BorderStyle.FixedSingle };
         _cardText = new ScrollableText(SystemFonts.MessageBoxFont!, Theme.Card) { Bounds = R(12, 6, ContentWidth - 28, 70), Name = "txtConnection" };
         _card.Controls.Add(_cardText);
+        // Below the card: "Copy" for a failed connection test / install, with its status text beside it (shown only for a failure)
+        _copy = new CopyControls(() => _cardText.Text, R(Pad, 434, 104, 32), R(Pad + 114, 434, ContentWidth - 114, 32), "Connection");
+        _copy.Visible = false;
 
         _autostart = new CheckBox
         {
             Text = BridgeTexts.Setup.Autostart,
-            Bounds = R(Pad, 436, ContentWidth, 26),
+            Bounds = R(Pad, 476, ContentWidth, 26),
             // An update keeps what the user chose earlier; a first installation starts with both on.
             Checked = mode != SetupMode.Update || Installer.IsAutostartEnabled(env),
             ForeColor = Theme.Text,
@@ -132,7 +136,7 @@ internal sealed class SetupForm : BrandedForm
         _startMenu = new CheckBox
         {
             Text = BridgeTexts.Setup.StartMenu,
-            Bounds = R(Pad, 464, ContentWidth, 26),
+            Bounds = R(Pad, 504, ContentWidth, 26),
             Checked = mode != SetupMode.Update || File.Exists(env.StartMenuShortcutPath),
             ForeColor = Theme.Text,
             Name = "chkStartMenu",
@@ -142,7 +146,7 @@ internal sealed class SetupForm : BrandedForm
         string location = mode == SetupMode.SaveOnly
             ? BridgeTexts.Setup.LocationSave(Path.Combine(BridgeEnvironment.ExeDirectory, "bridge.json"))
             : BridgeTexts.Setup.LocationInstall(env.InstallRoot);
-        var locationLabel = Theme.CreateLabel(location, R(Pad, 500, ContentWidth, 20), Theme.Muted, small);
+        var locationLabel = Theme.CreateLabel(location, R(Pad, 540, ContentWidth, 20), Theme.Muted, small);
         locationLabel.AutoEllipsis = true;
         locationLabel.Name = "lblLocation";
 
@@ -152,12 +156,12 @@ internal sealed class SetupForm : BrandedForm
             SetupMode.Update => BridgeTexts.Setup.PrimaryUpdate,
             _ => BridgeTexts.Setup.PrimarySave,
         };
-        _primary = Theme.CreateButton(primaryText, R(Pad + ContentWidth - 210, 530, 210, 38), ButtonKind.Primary);
+        _primary = Theme.CreateButton(primaryText, R(Pad + ContentWidth - 210, 570, 210, 38), ButtonKind.Primary);
         _primary.Name = "btnInstall";
-        _cancel = Theme.CreateButton(BridgeTexts.Dialog.Cancel, R(Pad + ContentWidth - 210 - 12 - 120, 530, 120, 38), ButtonKind.Secondary);
+        _cancel = Theme.CreateButton(BridgeTexts.Dialog.Cancel, R(Pad + ContentWidth - 210 - 12 - 120, 570, 120, 38), ButtonKind.Secondary);
         _cancel.Name = "btnCancel";
         // Left of the action buttons: whoever just unpacked the ZIP can read the handbook before installing
-        _handbook = Theme.CreateButton(BridgeTexts.Setup.OpenHandbook, R(Pad, 530, 150, 38), ButtonKind.Secondary);
+        _handbook = Theme.CreateButton(BridgeTexts.Setup.OpenHandbook, R(Pad, 570, 150, 38), ButtonKind.Secondary);
         _handbook.Name = "btnHandbook";
         CancelButton = _cancel;
         AcceptButton = _primary;
@@ -169,7 +173,7 @@ internal sealed class SetupForm : BrandedForm
         }
 
         Controls.AddRange([intro, serverLabel, _server, _serverMessage, tokenLabel, _showToken, _token, _tokenMessage, _card,
-            _autostart, _startMenu, locationLabel, _handbook, _primary, _cancel]);
+            .. _copy.Controls, _autostart, _startMenu, locationLabel, _handbook, _primary, _cancel]);
 
         _server.TextChanged += (_, _) => OnInputChanged();
         _token.TextChanged += (_, _) => OnInputChanged();
@@ -187,6 +191,7 @@ internal sealed class SetupForm : BrandedForm
         FormClosed += (_, _) =>
         {
             _debounce.Dispose();
+            _copy.Dispose();
             _testCts?.Cancel();
         };
     }
@@ -213,7 +218,7 @@ internal sealed class SetupForm : BrandedForm
     internal IEnumerable<(string Name, Action Show)> TestStates()
     {
         const string steamId = "76561198012345678";
-        const string server = "http://192.168.178.10:5233";
+        const string server = "http://192.168.1.20:5233";
 
         void ServerError(string typed)
         {
@@ -223,8 +228,8 @@ internal sealed class SetupForm : BrandedForm
 
         yield return ("server-hint", () => SetMessage(_serverMessage, null, BridgeTexts.Setup.ServerHint));
         yield return ("server-invalid", () => ServerError("meinserver.example.org:5233/platinvault/pfad/lang"));
-        yield return ("server-credentials", () => ServerError("http://benutzer:passwort@192.168.178.10:5233"));
-        yield return ("server-query", () => ServerError("http://192.168.178.10:5233/?x=1"));
+        yield return ("server-credentials", () => ServerError("http://benutzer:passwort@192.168.1.20:5233"));
+        yield return ("server-query", () => ServerError("http://192.168.1.20:5233/?x=1"));
         yield return ("token-hint", () => SetMessage(_tokenMessage, null, BridgeTexts.Setup.TokenHint));
         yield return ("token-badchars", () => SetMessage(_tokenMessage, BridgeTexts.Setup.TokenBadChars, BridgeTexts.Setup.TokenHint));
 
@@ -234,8 +239,11 @@ internal sealed class SetupForm : BrandedForm
         yield return ("card-connected", () => SetCard(CardKind.Success, BridgeTexts.Setup.CardConnected(server, BridgeTexts.Setup.SteamAccount(steamId))));
         yield return ("card-connected-no-steam", () => SetCard(CardKind.Success, BridgeTexts.Setup.CardConnected(server, BridgeTexts.Setup.NoSteamAccount)));
         yield return ("card-token-invalid", () => SetCard(CardKind.Failure, BridgeTexts.Setup.CardTokenInvalid));
-        yield return ("card-unreachable", () => SetCard(CardKind.Failure, BridgeTexts.Setup.CardUnreachable(BridgeTexts.Network.ConnectionError)));
+        yield return ("card-unreachable", () => SetCard(CardKind.Failure, BridgeTexts.Setup.CardUnreachable(CoreTexts.Network.ConnectionError)));
         yield return ("card-rejected", () => SetCard(CardKind.Failure, BridgeTexts.Setup.CardRejected("HTTP 500")));
+        // After a click on "Copy" (and when the clipboard was busy) the status text fills its reserved slot; nothing moves
+        yield return ("card-rejected-copied", () => { SetCard(CardKind.Failure, BridgeTexts.Setup.CardRejected("HTTP 500")); _copy.CopyNow(); });
+        yield return ("card-rejected-copy-failed", () => _copy.ShowOutcome(false));
 
         // The longest answer a server really gives (409, ServerTexts.Bridge.OtherAccountDetail in the server project): the bridge
         // puts the server's "detail" into the card, in the language it asked for
@@ -252,7 +260,7 @@ internal sealed class SetupForm : BrandedForm
 
         // Texts of unlimited length (a reason from the network stack or the server, whatever the user typed): the slots keep their size, show the
         // text COMPLETELY and scroll. States named "long-..." may scroll; the check then demands that the full text is in the slot and reachable.
-        var reason = LayoutCheck.Repeat("connect ECONNREFUSED 192.168.178.10:5233 - the server did not answer within the time limit, no route to host. ", 2000);
+        var reason = LayoutCheck.Repeat("connect ECONNREFUSED 192.168.1.20:5233 - the server did not answer within the time limit, no route to host. ", 2000);
         var unbroken = new string('x', 2000);
         var typed = LayoutCheck.Repeat("meinserver.example.org:5233/platinvault/pfad/lang ", 600);
         yield return ("long-card-rejected", () => { LayoutCheck.ExpectedFullText = reason; SetCard(CardKind.Failure, BridgeTexts.Setup.CardRejected(reason)); });
@@ -373,13 +381,17 @@ internal sealed class SetupForm : BrandedForm
 
     // The reason comes from the network stack or the server and has no length limit. The card keeps its size and shows it COMPLETELY:
     // the text wraps and scrolls inside the card when it is longer than its four lines.
-    private void SetCard(CardKind kind, string text) =>
+    private void SetCard(CardKind kind, string text)
+    {
         _cardText.SetText(text, kind switch
         {
             CardKind.Success => Theme.Success,
             CardKind.Failure => Theme.Danger,
             _ => Theme.Muted,
         });
+        // A failure can be copied (rule "error messages are always copyable"); the button's row below the card is there from the start
+        _copy.Visible = kind == CardKind.Failure;
+    }
 
     private void StartConnectionTest()
     {

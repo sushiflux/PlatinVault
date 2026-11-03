@@ -110,6 +110,66 @@ const settings = {
     },
   },
 
+  steamLocal: {
+    title: 'Steam on this computer',
+    label: 'Steam folder (optional)',
+    hint: 'Only needed if PlatinVault does not find your Steam folder by itself. It is the folder that contains “steamapps”.',
+    placeholderWindows: 'e.g. C:\\Program Files (x86)\\Steam',
+    placeholderLinux: 'e.g. /home/<name>/.local/share/Steam',
+    save: 'Apply',
+    reset: 'Search automatically again',
+    checking: 'Checking …',
+    valid: 'Steam folder found: {{path}}',
+    problem: {
+      notAbsolute: '“{{path}}” is not a full path. Please enter the whole path.',
+      notFound: 'The folder “{{path}}” does not exist on the computer PlatinVault runs on – or PlatinVault is not allowed to read it.',
+      noSteamApps: '“{{path}}” is not a Steam folder: the subfolder “steamapps” is missing.',
+      libraryOnly:
+        'This is a game library, not the Steam folder: “{{path}}” contains “steamapps”, but neither “appcache” nor “config”. Enter the folder Steam itself is installed in.',
+    },
+    checkFailed: 'Check not possible: {{reason}}',
+    saved: 'Saved – PlatinVault now reads Steam from {{path}}.',
+    cleared: 'Removed – PlatinVault searches for Steam by itself again.',
+    saveFailed: 'The Steam folder could not be saved: {{reason}}',
+    found: 'In use: {{path}} (found via: {{via}})',
+    notFound: 'PlatinVault found no Steam on this computer.',
+    experimental: 'Linux: reading the Steam files is still experimental – it has not been checked on a real Linux Steam yet.',
+    bridgeNotNeeded:
+      'You do not need a bridge on this computer: PlatinVault reads Steam here itself and reports your achievements directly. The bridge is only needed if you play on another PC.',
+    configured: 'The server configuration names {{path}} (Companion:Steam:Root); a folder set here takes precedence.',
+    via: {
+      none: '–',
+      manual: 'this setting',
+      configuration: 'server configuration',
+      environment: 'environment variable {{detail}}',
+      registry: 'Windows registry',
+      symlink: 'symbolic link ({{variant}})',
+      knownPath: 'standard path ({{variant}})',
+    },
+    variant: {
+      native: 'native installation',
+      flatpak: 'Flatpak',
+      snap: 'Snap',
+    },
+    candidates: {
+      show_one: 'Show the place searched ({{count}})',
+      show_other: 'Show the places searched ({{count}})',
+      hide: 'Hide the places searched',
+      chosen: 'in use',
+      duplicate: 'the same folder as above',
+      missing: 'does not exist',
+      noSteamApps: 'without “steamapps”',
+      libraryOnly: 'only a game library (neither “appcache” nor “config”)',
+      usable: 'Steam folder',
+      resolved: 'leads to {{path}}',
+    },
+    detection: {
+      registry: 'Running game: from the Windows registry.',
+      processList: 'Running game: from the process list (Steam starts every game through “reaper SteamLaunch AppId=…”).',
+      none: 'Running game: cannot be detected on this computer.',
+    },
+  },
+
   twitch: {
     buttonTitle: 'Twitch button',
     buttonSwitch: 'Show the Twitch button on the game cards and the game page',
@@ -186,8 +246,29 @@ const settings = {
     tokenActive: 'Token active',
     tokenActiveHint: 'Token active ({{hint}})',
     intro:
-      'The PlatinVault Bridge is a small program for your gaming PC: it reads the Steam achievements there and reports new unlocks to PlatinVault in real time when PlatinVault runs on another machine (server, NAS, Unraid …). If PlatinVault runs directly on the gaming PC you do not need it. Easiest: “Download PlatinVault Bridge”, unzip the ZIP on the gaming PC and double-click “PlatinVault.Bridge.exe” – the setup window does the rest, server address and token are already filled in, and it updates itself. Afterwards it sits as an icon at the bottom right of the taskbar.',
+      'The PlatinVault Bridge is a small program for your gaming PC: it reads the Steam achievements there and reports new unlocks to PlatinVault in real time when PlatinVault runs on another machine (server, NAS, Unraid …) or in a Docker container. If PlatinVault runs directly on the gaming PC you do not need it. Choose the operating system of your gaming PC – server address and token are already inside the download, and the bridge updates itself.',
     introVersion: '(Bridge version {{version}})',
+    os: {
+      label: 'Gaming PC runs',
+      group: 'Operating system of the gaming PC',
+      windows: 'Windows',
+      linux: 'Linux / Steam Deck',
+    },
+    windows: {
+      steps:
+        'Windows: “Download PlatinVault Bridge”, unzip the ZIP on the gaming PC and double-click <code>PlatinVault.Bridge.exe</code> – the setup window does the rest. Afterwards it sits as an icon at the bottom right of the taskbar.',
+    },
+    linux: {
+      downloadHint: 'Ready-to-run bridge {{version}} for Linux (tar.gz)',
+      downloadMissing: 'This installation contains no Linux bridge',
+      stepsTitle: 'Linux, Steam Deck, Bazzite – how to install the bridge:',
+      step1: 'Download the archive (“Download PlatinVault Bridge”) and open a terminal in the download folder on the Linux machine.',
+      step2: 'Unpack: <code>tar -xzf PlatinVault-Bridge-linux-x64.tar.gz</code>, then <code>cd PlatinVault-Bridge</code>',
+      step3: 'Install and start: <code>./install.sh</code> – this sets up a background service for your user (no root, everything in your home folder).',
+      note: 'Not verified on real devices yet: reading the achievements on Linux, and whether the service keeps running in the Steam Deck’s Game Mode (it does in Desktop Mode).',
+      createdText:
+        'Run the command below once on your Linux gaming PC. After that the bridge runs as a service with <code>./install.sh</code> from the download package – or in the foreground with <code>platinvault-bridge run</code> to try it out.',
+    },
     status: {
       loading: 'Loading bridge status...',
       failed: 'Status could not be loaded: {{reason}}',
@@ -371,6 +452,13 @@ const settings = {
       composeSteps: 'Change the “image:” line in docker-compose.yml and run in the same folder:',
       otherTitle: 'Other NAS (Synology, QNAP, …)',
       otherSteps: 'In the container management of your NAS, change the image of the PlatinVault container to the tag you want and recreate the container with the new image. The data folder and the database stay as long as you do not delete them yourself.',
+    },
+    linux: {
+      title: 'Updating the Linux package',
+      intro: 'PlatinVault for Linux does not update itself. Download the new package, extract it and run its install.sh – the old version is stopped (with a last backup) and replaced, your data is kept.',
+      download: 'Download package: {{file}}',
+      filePlaceholder: 'PlatinVault-linux-x64-VERSION.tar.gz',
+      afterwards: 'If the port is taken, the installation stops and tells you – choose another one with “./install.sh --port 5300”. You find the package on the release page (view release notes on GitHub → files at the end of the page).',
     },
   },
 } satisfies Translation<typeof de>

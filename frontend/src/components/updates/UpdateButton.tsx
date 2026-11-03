@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { CopyErrorButton } from '../ui/CopyErrorButton'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useMutation } from '@tanstack/react-query'
@@ -93,6 +94,7 @@ function UpdatePanel({ anchor, panelId, data, offer, installing, message, onInst
 
   const pageUrl = releasePageUrl(offer)
   const desktop = data.host === 'desktop'
+  const linuxPackage = data.host === 'linuxPackage'
   const image = data.imageRepository
   // A beta is wanted but the container follows :latest - a plain "Update" would never deliver it, so the settings text says what to change
   const switchTag = data.dockerAdvice === 'useBeta' && offer.isBeta
@@ -160,8 +162,22 @@ function UpdatePanel({ anchor, panelId, data, offer, installing, message, onInst
           {message && (
             <p role={message.tone === 'error' ? 'alert' : 'status'} className="font-semibold" style={{ color: TONE_COLOR[message.tone] }}>
               {message.text}
+              {message.tone === 'error' && <CopyErrorButton className="ms-2 align-middle" report={{ message: message.text }} />}
             </p>
           )}
+        </div>
+      ) : linuxPackage ? (
+        <div className="mt-3 space-y-1.5" style={muted} data-testid="update-linux-steps">
+          <p>{t('header.update.linux.intro')}</p>
+          {offer.linuxPackageUrl && (
+            <a className="pv-hpop-link" href={offer.linuxPackageUrl} target="_blank" rel="noopener noreferrer" data-testid="update-linux-download">
+              <IconDownload size={14} aria-hidden="true" />
+              <span>{t('header.update.linux.download')}</span>
+            </a>
+          )}
+          <p>
+            <code>./install.sh</code>
+          </p>
         </div>
       ) : (
         <div className="mt-3 space-y-1.5" style={muted} data-testid="update-container-steps">

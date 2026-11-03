@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { textWithoutCopyButton } from '../../test/withoutCopyButton'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { InstallUpdateResponse, SettingsResponseDto, UpdateSettingsRequest, UpdateStatusDto } from '../../api/types'
@@ -120,7 +121,7 @@ describe('UpdatesSection', () => {
     const toggle = await screen.findByRole('switch', { name: 'Beta-Versionen erhalten' })
     await waitFor(() => expect((toggle as HTMLButtonElement).disabled).toBe(false))
     fireEvent.click(toggle)
-    expect((await screen.findByRole('alert')).textContent).toBe(
+    expect(textWithoutCopyButton(await screen.findByRole('alert'))).toBe(
       'Die Einstellung „Beta-Versionen erhalten“ wurde nicht gespeichert: Server nicht erreichbar: Verbindung abgelehnt (127.0.0.1:5231).'
     )
     await waitFor(() => expect(toggle.getAttribute('aria-checked')).toBe('false'))
@@ -134,7 +135,7 @@ describe('UpdatesSection', () => {
     const button = (await screen.findByRole('button', { name: /Jetzt nach Updates suchen/ })) as HTMLButtonElement
     await waitFor(() => expect(button.disabled).toBe(false))
     fireEvent.click(button)
-    await waitFor(() => expect(screen.getByRole('status').textContent).toBe(`Update-Prüfung fehlgeschlagen: ${long}`))
+    await waitFor(() => expect(textWithoutCopyButton(screen.getByRole('status'))).toBe(`Update-Prüfung fehlgeschlagen: ${long}`))
   })
 
   it('tells a beta container to stay until a release is at least as new, then to switch to :latest', async () => {
@@ -156,6 +157,37 @@ describe('UpdatesSection', () => {
     expect(await screen.findByText(/Der Installer läuft/)).toBeTruthy()
     // The Windows program installs itself: no image how-to
     expect(screen.queryByText('Container aktualisieren')).toBeNull()
+  })
+
+  it('Linux package: no container how-to, but the download of the offered package and the install.sh steps', async () => {
+    const offer = {
+      ...beta,
+      tag: 'v2026.11.15',
+      display: 'v2026.11.15 (14.80)',
+      isBeta: false,
+      hasInstaller: false,
+      linuxPackageName: 'PlatinVault-linux-x64-v2026.11.15.tar.gz',
+      linuxPackageUrl: 'https://github.com/sushiflux/PlatinVault/releases/download/v2026.11.15/PlatinVault-linux-x64-v2026.11.15.tar.gz',
+    }
+    fetchUpdateStatus.mockResolvedValue(status({ host: 'linuxPackage', state: 'available', available: offer }))
+    renderSection()
+    const how = await screen.findByTestId('updates-linux')
+    expect(how.textContent).toContain('Linux-Paket aktualisieren')
+    expect(how.textContent).toContain('tar xzf PlatinVault-linux-x64-v2026.11.15.tar.gz')
+    expect(how.textContent).toContain('cd PlatinVault-linux-x64-v2026.11.15')
+    expect(how.textContent).toContain('./install.sh')
+    expect(screen.getByTestId('updates-linux-download').getAttribute('href')).toBe(offer.linuxPackageUrl)
+    // No container steps, no install button (the package does not install itself)
+    expect(screen.queryByText('Container aktualisieren')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Update installieren' })).toBeNull()
+  })
+
+  it('Linux package without an offer: the steps stay (the download link keeps its room but is hidden)', async () => {
+    fetchUpdateStatus.mockResolvedValue(status({ host: 'linuxPackage' }))
+    renderSection()
+    const how = await screen.findByTestId('updates-linux')
+    expect(how.textContent).toContain('tar xzf PlatinVault-linux-x64-VERSION.tar.gz')
+    expect(screen.getByTestId('updates-linux-download').closest('div')?.getAttribute('aria-hidden')).toBe('true')
   })
 
   it('shows a calm note on a dev build and locks the switch and the check (no container how-to, no offer)', async () => {

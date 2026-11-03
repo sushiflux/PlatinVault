@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CopyErrorButton } from '../ui/CopyErrorButton'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { IconCheck, IconCopy, IconFolder, IconFolderOpen, IconLoader2 } from '@tabler/icons-react'
@@ -129,6 +130,7 @@ function FoldersCard() {
         candidates={[...candidates, shown?.text ?? '']}
       >
         {shown?.text ?? ''}
+        {shown?.tone === 'error' && <CopyErrorButton className="ms-2 align-middle" report={{ message: shown.text }} />}
       </ReservedText>
 
       <p className="border-t pt-3 text-xs leading-relaxed" style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-muted)' }}>

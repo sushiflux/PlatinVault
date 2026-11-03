@@ -172,6 +172,14 @@ internal sealed class DesktopApp : ApplicationContext
             _main.Bring();
             _main.ShowError(ex.Text, ex.Detail);
         }
+        catch (Exception ex) when (ex is not OperationCanceledException && SqliteDatabase.IsCannotOpen(ex))
+        {
+            // SQLite error 14 outside the server's own start check: the same plain explanation, SQLite's text kept at the end
+            DesktopLog.Error($"Start fehlgeschlagen: {ex}");
+            var text = Companion.Api.Localization.ServerTexts.DatabaseGuard.CannotOpen(_database.DatabaseFile, ex.Message);
+            _main.Bring();
+            _main.ShowError(new Msg(text.De, text.En), null);
+        }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             DesktopLog.Error($"Start fehlgeschlagen: {ex}");

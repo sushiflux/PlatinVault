@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { CopyErrorButton } from './ui/CopyErrorButton'
 import type { KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -172,6 +173,10 @@ function LicenseDialog({ onClose, initial }: { onClose: () => void; initial: Lic
                   <IconRefresh size={14} className={isFetching ? 'animate-spin' : ''} aria-hidden="true" />
                   <span>{t('licenses.retry')}</span>
                 </button>
+                <CopyErrorButton
+                  className="ms-3"
+                  report={{ message: t('licenses.loadFailed', { document: currentLabel, reason: error instanceof Error ? error.message : t('common:noServerResponse') }) }}
+                />
               </div>
             ) : (
               <>

@@ -31,12 +31,19 @@ internal sealed class StatusForm : BrandedForm
         var big = new Font(SystemFonts.MessageBoxFont!.FontFamily, 13f, FontStyle.Bold);
         var small = new Font(SystemFonts.MessageBoxFont.FontFamily, 9f);
 
-        _state = Theme.CreateLabel(BridgeTexts.Status.StateStarting, R(Pad, 112, 472, 30), Theme.Muted, big);
+        _state = Theme.CreateLabel(BridgeTexts.Status.StateStarting, R(Pad, 112, 250, 30), Theme.Muted, big);
         _state.Name = "lblState";
         // The reason of a failed connection comes from the network stack or the server and has no length limit: it wraps and scrolls in the
         // fixed slot instead of being cut off
         _detail = new ScrollableText(small, Theme.PageBack) { Bounds = R(Pad, 144, 472, 38), Name = "txtDetail" };
         Controls.AddRange([_state, _detail]);
+
+        // Right of the state: "Copy" for the connection error below it (shown only while there is one), the status text left of the button
+        var detail = _detail;
+        Copy = new CopyControls(() => _state.Text + Environment.NewLine + detail.Text, R(Pad + 472 - 104, 110, 104, 34), R(Pad + 262, 110, 472 - 104 - 262 - 8, 34));
+        Copy.Status.TextAlign = ContentAlignment.MiddleRight;
+        Copy.Visible = false;
+        Controls.AddRange(Copy.Controls);
 
         var rows = new (Msg Label, int Y)[]
         {
@@ -89,10 +96,20 @@ internal sealed class StatusForm : BrandedForm
         Controls.AddRange([open, log, close]);
     }
 
+    /// <summary>The "Copy" button for the connection error (rule "error messages are always copyable").</summary>
+    public CopyControls Copy { get; }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) Copy.Dispose();
+        base.Dispose(disposing);
+    }
+
     /// <summary>Shows the texts again in the bridge's current language (window title, header, labels, buttons and the last snapshot). Call on the UI thread.</summary>
     public void ApplyLanguage()
     {
         Text = BridgeTexts.Status.WindowTitle;
+        Copy.ApplyLanguage();
         SetSubtitle(BridgeTexts.Status.Subtitle);
         foreach (var (control, text) in _fixedTexts) control.Text = text();
         if (_lastSnapshot is { } snapshot) Apply(snapshot);
@@ -102,6 +119,8 @@ internal sealed class StatusForm : BrandedForm
     public void Apply(StatusSnapshot s)
     {
         _lastSnapshot = s;
+        // Only a state with a problem has a message worth copying
+        Copy.Visible = s.Connection is not (ConnectionKind.Online or ConnectionKind.Starting);
 
         switch (s.Connection)
         {

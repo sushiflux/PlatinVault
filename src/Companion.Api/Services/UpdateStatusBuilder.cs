@@ -2,6 +2,7 @@ using Companion.Api.Configuration;
 using Companion.Api.Desktop;
 using Companion.Api.Localization;
 using Companion.Api.Settings;
+using Microsoft.Extensions.Options;
 using PlatinVault.Versioning;
 
 namespace Companion.Api.Services;
@@ -66,7 +67,8 @@ public sealed record UpdateStatus(
     DateTimeOffset? NextManualCheckAt,
     bool CanInstall,
     DockerAdvice Docker,
-    UpdateCheckInterval CheckInterval = UpdateCheckIntervals.Default);
+    UpdateCheckInterval CheckInterval = UpdateCheckIntervals.Default,
+    bool LinuxPackageHost = false);
 
 /// <summary>
 /// Turns the release list into the update status - pure apart from <see cref="GetAsync"/>, which only collects its inputs. The rules
@@ -93,11 +95,12 @@ public static class UpdateStatusBuilder
             ? new ReleaseListResult(false, null, null, null, null, false, null)
             : await services.GetRequiredService<UpdateService>().GetAsync(mode, interval, ct);
         var desktop = services.GetService<IDesktopHost>();
-        return Build(running, list, betaEnabled, desktop is not null, desktop?.CanInstallUpdates == true, interval);
+        var linuxPackage = desktop is null && services.GetRequiredService<IOptions<CompanionOptions>>().Value.IsLinuxPackage;
+        return Build(running, list, betaEnabled, desktop is not null, desktop?.CanInstallUpdates == true, interval, linuxPackage);
     }
 
     public static UpdateStatus Build(RunningVersion running, ReleaseListResult list, bool betaEnabled, bool desktopHost, bool desktopCanInstall,
-        UpdateCheckInterval interval = UpdateCheckIntervals.Default)
+        UpdateCheckInterval interval = UpdateCheckIntervals.Default, bool linuxPackage = false)
     {
         var releases = list.Releases ?? [];
         var latestRelease = ReleaseFeed.LatestRelease(releases);
@@ -105,7 +108,7 @@ public static class UpdateStatusBuilder
         // A dev build is never offered anything (see UpdateState.DevBuild)
         var isDev = running.Kind == VersionKind.Dev;
         var available = running.Version is { } current && !isDev
-            ? ReleaseFeed.PickUpdate(releases, current, betaEnabled, requireInstaller: desktopHost)
+            ? ReleaseFeed.PickUpdate(releases, current, betaEnabled, requireInstaller: desktopHost, requireLinuxPackage: linuxPackage)
             : null;
 
         var error = list.Error;
@@ -134,8 +137,9 @@ public static class UpdateStatusBuilder
             list.Throttled,
             list.NextManualCheckAt,
             desktopHost && desktopCanInstall && state == UpdateState.Available && available?.Installer is not null,
-            desktopHost ? DockerAdvice.None : AdviceFor(running, betaEnabled, latestRelease),
-            interval);
+            desktopHost || linuxPackage ? DockerAdvice.None : AdviceFor(running, betaEnabled, latestRelease),
+            interval,
+            linuxPackage);
     }
 
     /// <summary>

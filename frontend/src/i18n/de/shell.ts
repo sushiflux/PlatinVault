@@ -34,6 +34,10 @@ const shell = {
         otherTitle: 'Andere NAS',
         other: 'Container in der Container-Verwaltung mit dem neuen Image neu erstellen.',
       },
+      linux: {
+        intro: 'PlatinVault für Linux aktualisiert sich nicht selbst: Paket herunterladen, entpacken und die install.sh darin ausführen. Deine Daten bleiben erhalten.',
+        download: 'Linux-Paket herunterladen',
+      },
     },
     handbook: {
       label: 'Handbuch',

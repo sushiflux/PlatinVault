@@ -63,6 +63,7 @@ internal static class Program
         }
 
         var version = ReadVersion(payload);
+        ErrorReport.AppVersion = version;
         var installed = layout.InstalledVersion;
         if (layout.Registry.GetString(InstallLayout.AppKeyPath, "Language") is { } language) UiLang.Current = language;
         var state = new SetupState

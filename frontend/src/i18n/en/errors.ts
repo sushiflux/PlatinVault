@@ -12,6 +12,18 @@ const errors = {
     tooManyRequests: 'Too many requests – please wait a moment (HTTP 429).',
     unexpected: 'Unexpected response from the server (HTTP {{status}}).',
   },
+  copy: {
+    button: 'Copy',
+    done: 'Copied',
+    failed: 'Copy not possible',
+    label: 'Copy error message',
+    doneAnnouncement: 'The error message was copied to the clipboard.',
+    failedAnnouncement: 'The error message could not be copied to the clipboard. You can select the text and copy it with Ctrl+C.',
+  },
+  report: {
+    details: 'Technical details',
+    code: 'Error code',
+  },
   boundary: {
     title: 'An unexpected error occurred',
     text: 'Please reload the page to continue.',

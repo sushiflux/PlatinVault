@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { CopyErrorButton } from '../components/ui/CopyErrorButton'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -85,6 +86,7 @@ import { OnboardingTour } from '../components/onboarding/OnboardingTour'
 import { useOnboardingTour } from '../components/onboarding/useOnboardingTour'
 import { SettingsModal, type SettingsTab } from '../components/SettingsModal'
 import { describeError } from '../utils/apiErrorText'
+import { errorCodeOf } from '../utils/errorReport'
 import { useAchievementNotes } from '../utils/useAchievementNotes'
 import { useMediaQuery } from '../utils/useMediaQuery'
 import { useStickyHeaderHeight } from '../utils/useStickyHeaderHeight'
@@ -603,6 +605,7 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
         >
           {t('loadFailed')}
         </p>
+        <CopyErrorButton report={{ message: t('loadFailed'), details: error instanceof Error ? error.message : null, code: errorCodeOf(error) }} />
         <Link to="/" className="pv-btn pv-btn-primary">
           <IconHome size={16} />
           <span>{t('backHome')}</span>
@@ -1282,7 +1285,7 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
                   </span>
                 )}
               </ReservedText>
-              <ErrorDetails details={expandError?.details} />
+              <ErrorDetails reserve title={expandError?.notice} message={expandError?.message} details={expandError?.details} />
 
               <div
                 className="flex justify-end gap-2 pt-3"

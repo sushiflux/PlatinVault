@@ -53,16 +53,23 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The shared file only needs ILogger<T>; the Web SDK imports this namespace implicitly, a plain app does not. -->
-    <Using Include="Microsoft.Extensions.Logging" />
+    <!--
+      Protocol, configuration file, language, log and polling loops shared with the Linux bridge: the sources of PlatinVault.Bridge.Core are
+      compiled into this assembly instead of being referenced as a second assembly. Reason: some antivirus heuristics classify the thin
+      remainder (installer, registry entries, self-update) of a Windows exe built with a separate Core assembly as adware and quarantine the
+      freshly built dll, while the same code in one assembly (as before the split) passes. Same code, one implementation.
+    -->
+    <Compile Include="..\PlatinVault.Bridge.Core\**\*.cs" Exclude="..\PlatinVault.Bridge.Core\obj\**;..\PlatinVault.Bridge.Core\bin\**" LinkBase="Core" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Single source of truth for reading the local Steam stats: the very same file the server compiles. -->
-    <Compile Include="..\Companion.Api\Services\SteamLocalStatsService.cs" Link="Shared\SteamLocalStatsService.cs" />
-    <!-- Release date, Metacritic, reviews and size on disk from the Steam client's files (dashboard sort orders), pushed to the server -->
-    <Compile Include="..\Companion.Api\Services\SteamAppInfoReader.cs" Link="Shared\SteamAppInfoReader.cs" />
-    <Compile Include="..\Companion.Api\Services\SteamLocalLibrary.cs" Link="Shared\SteamLocalLibrary.cs" />
+    <!-- Single source of truth for reading the local Steam files: the library the server uses too (reached through Core, listed for clarity). -->
+    <ProjectReference Include="..\PlatinVault.SteamLocal\PlatinVault.SteamLocal.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The Windows-only parts of the bridge need ILogger<T> for the shared readers; a plain app does not import this namespace implicitly. -->
+    <Using Include="Microsoft.Extensions.Logging" />
   </ItemGroup>
 
   <ItemGroup>

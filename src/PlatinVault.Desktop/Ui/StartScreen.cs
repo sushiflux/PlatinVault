@@ -15,15 +15,22 @@ internal sealed class StartScreen : UserControl
     private readonly PvScrollText _error = new() { Framed = true, Visible = false, Name = "txtStartError" };
     private readonly PvButton _logs = new() { Kind = PvButtonKind.Secondary, Visible = false, Name = "btnLogs" };
     private readonly PvButton _quit = new() { Kind = PvButtonKind.Primary, Visible = false, Name = "btnQuit" };
+    private readonly CopyBar _copy;
     private string _status = DesktopTexts.Window.Starting;
     private string? _title;
     private string? _hint;
+    private string _errorText = string.Empty;
 
     public StartScreen()
     {
         DoubleBuffered = true;
         SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.UserPaint, true);
-        Controls.AddRange([_bar, _error, _logs, _quit]);
+        // The dark brand surface: the copy button and its status use the dark palette like the other controls on it
+        _copy = new CopyBar(() => _errorText, 1f, Palette.Dark, Brand.NightBottom, "StartError");
+        foreach (var control in _copy.Controls) control.Visible = false;
+        // The status text lies on the gradient of the start surface: it shows that through instead of a flat rectangle
+        _copy.Status.TransparentBackground = true;
+        Controls.AddRange([_bar, _error, .. _copy.Controls, _logs, _quit]);
         _logs.Click += (_, _) => OpenLogsRequested?.Invoke();
         _quit.Click += (_, _) => QuitRequested?.Invoke();
         Resize += (_, _) => Layout2();
@@ -76,22 +83,26 @@ internal sealed class StartScreen : UserControl
         _bar.Running = false;
         var text = message.ToString();
         if (!string.IsNullOrWhiteSpace(detail)) text += Environment.NewLine + Environment.NewLine + detail;
+        _errorText = text;
         _error.SetText(text, p => p.Text);
         _error.Visible = _logs.Visible = _quit.Visible = true;
+        foreach (var control in _copy.Controls) control.Visible = true;
         Layout2();
         Invalidate();
     }
 
-    private Rectangle Block => new((Width - Px(BlockWidth)) / 2, Math.Max(Px(40), Height / 2 - Px(200)), Px(BlockWidth), Px(400));
+    private Rectangle Block => new((Width - Px(BlockWidth)) / 2, Math.Max(Px(40), Height / 2 - Px(200)), Px(BlockWidth), Px(410));
 
     private void Layout2()
     {
-        foreach (var control in new PvControl[] { _bar, _error, _logs, _quit }) control.S = S;
+        foreach (var control in new PvControl[] { _bar, _error, _logs, _quit, _copy.Button, _copy.Status }) control.S = S;
         var b = Block;
         _bar.Bounds = new Rectangle(b.Left, b.Top + Px(200), b.Width, Px(8));
-        _error.Bounds = new Rectangle(b.Left, b.Top + Px(150), b.Width, Px(150));
-        _quit.Bounds = new Rectangle(b.Right - Px(160), b.Top + Px(318), Px(160), Px(42));
-        _logs.Bounds = new Rectangle(b.Right - Px(160 + 12 + 190), b.Top + Px(318), Px(190), Px(42));
+        // Message slot, then the Copy row (button + status slot), then the buttons: all fixed from the start
+        _error.Bounds = new Rectangle(b.Left, b.Top + Px(150), b.Width, Px(122));
+        _copy.Place(new Rectangle(b.Left, b.Top + Px(280), b.Width, Px(34)), Px(12));
+        _quit.Bounds = new Rectangle(b.Right - Px(160), b.Top + Px(326), Px(160), Px(42));
+        _logs.Bounds = new Rectangle(b.Right - Px(160 + 12 + 190), b.Top + Px(326), Px(190), Px(42));
         _error.Relayout();
     }
 
@@ -114,7 +125,7 @@ internal sealed class StartScreen : UserControl
         else if (_hint is not null)
         {
             // Below the buttons on its own line; the folder is data, a long path is shortened in the middle (Open logs opens it anyway)
-            TextRenderer.DrawText(g, _hint, Fonts.Get(8.5f, S), new Rectangle(b.Left, b.Top + Px(372), b.Width, Px(20)), Brand.Faint,
+            TextRenderer.DrawText(g, _hint, Fonts.Get(8.5f, S), new Rectangle(b.Left, b.Top + Px(382), b.Width, Px(20)), Brand.Faint,
                 TextFormatFlags.NoPrefix | TextFormatFlags.PathEllipsis | TextFormatFlags.SingleLine | TextFormatFlags.Left);
         }
     }

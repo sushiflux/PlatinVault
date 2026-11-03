@@ -15,8 +15,10 @@ name: Release
 # "v2026.11.12 (13.557 β)" (release: "v2026.11.12 (13.557)") in the release title and the app - scripts/version-display.sh is the single
 # definition for this workflow, src/PlatinVault.Versioning/VersionFormat.cs for the programs.
 # The target is not part of the tag name: the annotated tag message carries a line "platform: unraid" (ids unraid,
-# windows-server, windows-desktop, comma-separated, or all); no such line means every target. unraid/all/empty build the
-# Docker image + Unraid template (job "build"); windows-desktop/all/empty build the Windows installer (job "windows").
+# windows-server, windows-desktop, linux, comma-separated, or all); no such line means every target. unraid/all/empty build the
+# Docker image + Unraid template (job "build"); windows-desktop/all/empty build the Windows installer (job "windows"); linux/all/empty
+# build the Linux package PlatinVault-linux-x64-<tag>.tar.gz (the server as a self-contained program with install.sh, scripts/build-linux.sh)
+# and the Linux bridge (job "linux"). windows-server has no job yet.
 #
 # Third kind, "Dev-Build" (user decision 2026-11-02): the real package for the user's own testing on his Unraid / Windows PC, never published.
 #   v2026.11.12.13.557-dev  -> dev build (five-segment id, no counter; checked against version.txt line 2 like a beta):
@@ -27,12 +29,10 @@ name: Release
 #                              customer-facing notes).
 # Note: the GHCR package itself is public (so Unraid can pull it without a login), hence ":dev" is technically pullable by anyone.
 #
-# Draft first (2026-11-03): the "build" job always creates the GitHub release as a DRAFT, the "windows" job attaches the installer to that
+# Draft first (2026-11-03): the "build" job always creates the GitHub release as a DRAFT, the "windows" and "linux" jobs attach their files to that
 # draft, and only the last job "publish" turns it into a pre-release (beta) or a normal release - after every selected platform job
 # succeeded and every expected file is attached. So a release is never visible (nor offered by the update check, which only sees
-# published releases) without its installer. A dev build stays a draft. Every release body ends with a rule and the line
-# "Code signing policy: <this repository>#code-signing-policy" (SignPath Foundation terms: the term "Code signing policy" on every
-# download/release page).
+# published releases) without its installer. A dev build stays a draft.
 #
 # Code signing of the Windows files (SignPath Foundation, free for open source): two stages, because the installer carries the program as
 # a ZIP appended to the setup exe - stage 1 signs our own binaries of the program folder and the bridge
@@ -60,6 +60,7 @@ jobs:
       is_dev: ${{ steps.version.outputs.is_dev }}
       kind: ${{ steps.version.outputs.kind }}
       builds_windows: ${{ steps.version.outputs.builds_windows }}
+      builds_linux: ${{ steps.version.outputs.builds_linux }}
       bridge_version: ${{ steps.version.outputs.bridge_version }}
       release_name: ${{ steps.version.outputs.release_name }}
       display_version: ${{ steps.version.outputs.display_version }}
@@ -101,7 +102,11 @@ jobs:
           case ",${platform}," in
             ",,"|*,windows-desktop,*|*,all,*) builds_windows=true ;;
           esac
-          echo "Build-Ziel: platform='${platform:-alle}' builds_unraid=$builds_unraid builds_windows=$builds_windows"
+          builds_linux=false
+          case ",${platform}," in
+            ",,"|*,linux,*|*,all,*) builds_linux=true ;;
+          esac
+          echo "Build-Ziel: platform='${platform:-alle}' builds_unraid=$builds_unraid builds_windows=$builds_windows builds_linux=$builds_linux"
 
           target_label=""
           if [[ -z "$platform" || ",${platform}," == *,all,* ]]; then
@@ -113,6 +118,7 @@ jobs:
                 unraid) name="Unraid" ;;
                 windows-server) name="Windows Server" ;;
                 windows-desktop) name="Windows Desktop" ;;
+                linux) name="Linux" ;;
                 *) name="$id" ;;
               esac
               target_label="${target_label:+$target_label, }$name"
@@ -136,7 +142,10 @@ jobs:
           fi
           display_version="$(sh scripts/version-display.sh display "$short_version" "$detail_version" "$kind")"
 
-          bridge_count="$(git rev-list --count HEAD -- src/PlatinVault.Bridge src/Companion.Api/Services/SteamLocalStatsService.cs)"
+          # Same paths as scripts/build-bridge.ps1 ($VersionPaths): the Windows bridge compiles the shared core and the Steam reader in
+          bridge_count="$(git rev-list --count HEAD -- src/PlatinVault.Bridge src/PlatinVault.Bridge.Core src/PlatinVault.SteamLocal)"
+          # The Linux bridge counts its own paths (one source: scripts/build-bridge-linux.sh --print-version)
+          bridge_linux_version="$(bash scripts/build-bridge-linux.sh --print-version)"
 
           channel=release
           # The release template points at the moving tag "latest" (a fixed version tag would never show an update in Unraid)
@@ -159,14 +168,11 @@ jobs:
             echo "::error::CHANGELOG.md hat keinen Eintrag \"## $display_version\" (Englisch und Deutsch) - Changelog beim Commit schreiben (Überschrift ## vNEXT bzw. ## vNEXT β)"
             exit 1
           fi
-          # Footer of every release body (SignPath Foundation terms: "Code signing policy" on every download/release page). The app shows
-          # the release notes too and knows this footer (the last block, after a "---" rule).
-          printf '\n---\n\nCode signing policy: %s/%s#code-signing-policy\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" >> "$notes_file"
           echo "Release-Notizen ($(wc -l < "$notes_file") Zeilen):"
           cat "$notes_file"
-          # Is there a GitHub release at all? A dev build only gets one when there is a Windows installer to attach to it
+          # Is there a GitHub release at all? A dev build only gets one when there is a Windows installer or a Linux package to attach to it
           has_release=true
-          if [[ "$is_dev" == "true" && "$builds_windows" != "true" ]]; then has_release=false; fi
+          if [[ "$is_dev" == "true" && "$builds_windows" != "true" && "$builds_linux" != "true" ]]; then has_release=false; fi
 
           {
             echo "tag=$tag"
@@ -178,6 +184,7 @@ jobs:
             echo "display_version=$display_version"
             echo "builds_unraid=$builds_unraid"
             echo "builds_windows=$builds_windows"
+            echo "builds_linux=$builds_linux"
             echo "docker_tag=${tag#v}"
             echo "template_tag=$template_tag"
             echo "app_version=$short_version"
@@ -185,6 +192,7 @@ jobs:
             echo "app_version_detail=$detail_version"
             echo "app_channel=$channel"
             echo "bridge_version=1.0.$bridge_count"
+            echo "bridge_linux_version=$bridge_linux_version"
             # The release title is the readable version, then the target (same shape as the changelog heading):
             # "v2026.11.12 (13.557 β) · Unraid, Windows"; the middle dot is written as its UTF-8 bytes
             echo "release_name=$display_version $(printf '\302\267') $target_label"
@@ -214,6 +222,7 @@ jobs:
             APP_VERSION_DETAIL=${{ steps.version.outputs.app_version_detail }}
             APP_CHANNEL=${{ steps.version.outputs.app_channel }}
             BRIDGE_VERSION=${{ steps.version.outputs.bridge_version }}
+            BRIDGE_LINUX_VERSION=${{ steps.version.outputs.bridge_linux_version }}
           # Update tools on the server (e.g. ShipLog, Docker Versions) read these labels: the source points at this (public) repository,
           # where every beta/release is published with its notes; the version is the tag (technical form, five segments for a beta)
           labels: |
@@ -292,7 +301,7 @@ jobs:
           if-no-files-found: error
 
       # Always created as a DRAFT (draft first): the "windows" job attaches its files, the "publish" job publishes it at the very end.
-      # A dev build only gets a (draft) release when there is a Windows installer to attach to it, and it stays a draft.
+      # A dev build only gets a (draft) release when there is a Windows installer or a Linux package to attach to it, and it stays a draft.
       - name: GitHub Release als Entwurf erstellen
         if: steps.version.outputs.has_release == 'true'
         uses: softprops/action-gh-release@v3
@@ -479,13 +488,92 @@ jobs:
             artifacts/windows/PlatinVault-Setup-*.exe.sha256
             artifacts/windows/PlatinVault.Bridge.exe
 
+  # Linux package (user decision 2026-11-03): PlatinVault as a native program for Linux desktops / Steam Deck / Bazzite - the server as a
+  # self-contained linux-x64 program plus the built web UI, handbook, licence texts and the install scripts (scripts/build-linux.sh), so
+  # it runs directly on the PC where Steam runs and needs no bridge. The package is smoke-tested here (scripts/test-linux-package.sh:
+  # start, web UI, documents, clean stop with backup, install/update/uninstall in a temporary home folder) before it is attached.
+  # Also builds the Linux bridge (PlatinVault-Bridge-linux-x64.tar.gz) for the Linux gaming PC of an Unraid/Docker installation.
+  # Runs after "build" (which created the draft release); the "publish" job publishes it at the end.
+  linux:
+    needs: build
+    if: needs.build.outputs.builds_linux == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      bridge_attached: ${{ steps.bridge.outputs.attached }}
+    permissions:
+      contents: write
+    steps:
+      - name: Repo auschecken
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: .NET einrichten
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Node einrichten
+        uses: actions/setup-node@v7
+        with:
+          node-version: 26
+
+      - name: Linux-Paket bauen
+        env:
+          # Readable version (product version in the file properties) - passed through the environment, so the beta sign survives
+          PV_PRODUCT_VERSION: ${{ needs.build.outputs.display_version }}
+          PV_CHANNEL: ${{ needs.build.outputs.kind }}
+        run: bash scripts/build-linux.sh --channel "$PV_CHANNEL" --product-version "$PV_PRODUCT_VERSION"
+
+      - name: Linux-Paket pruefen (Start, Oberflaeche, Dokumente, Installation, Update, Deinstallation)
+        env:
+          TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          ls -l artifacts/linux
+          (cd artifacts/linux && sha256sum -c "PlatinVault-linux-x64-${TAG}.tar.gz.sha256")
+          bash scripts/test-linux-package.sh "artifacts/linux/PlatinVault-linux-x64-${TAG}.tar.gz"
+
+      # The Linux bridge (src/PlatinVault.Bridge.Linux, headless systemd user service) for players on Linux whose server runs elsewhere.
+      # scripts/build-bridge-linux.sh writes artifacts/linux/PlatinVault-Bridge-linux-x64.tar.gz (+ .sha256); a missing file fails the job.
+      - name: Linux-Bridge bauen
+        id: bridge
+        run: |
+          bash scripts/build-bridge-linux.sh
+          test -f artifacts/linux/PlatinVault-Bridge-linux-x64.tar.gz
+          echo "attached=true" >> "$GITHUB_OUTPUT"
+
+      - name: Dateien fuer den Release-Entwurf sammeln
+        id: files
+        env:
+          TAG: ${{ needs.build.outputs.tag }}
+          BRIDGE: ${{ steps.bridge.outputs.attached }}
+        run: |
+          {
+            echo "list<<PV_FILES"
+            echo "artifacts/linux/PlatinVault-linux-x64-${TAG}.tar.gz"
+            echo "artifacts/linux/PlatinVault-linux-x64-${TAG}.tar.gz.sha256"
+            if [[ "$BRIDGE" == "true" ]]; then echo "artifacts/linux/PlatinVault-Bridge-linux-x64.tar.gz"; fi
+            echo "PV_FILES"
+          } >> "$GITHUB_OUTPUT"
+
+      # Attached to the DRAFT the "build" job created; the "publish" job publishes it after all platform jobs succeeded
+      - name: Linux-Paket an den Release-Entwurf haengen
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ needs.build.outputs.tag }}
+          draft: true
+          prerelease: ${{ needs.build.outputs.is_beta }}
+          fail_on_unmatched_files: true
+          files: ${{ steps.files.outputs.list }}
+
   # Publishes the draft (beta: pre-release, release: normal release and "Latest") only after every selected platform job succeeded and
   # only when every expected file is attached. A dev build is never published (its draft stays for the user's own download).
   publish:
-    needs: [build, windows]
+    needs: [build, windows, linux]
     if: >-
       always() && needs.build.result == 'success' && needs.build.outputs.is_dev != 'true' && needs.build.outputs.has_release == 'true' &&
-      (needs.windows.result == 'success' || needs.windows.result == 'skipped')
+      (needs.windows.result == 'success' || needs.windows.result == 'skipped') &&
+      (needs.linux.result == 'success' || needs.linux.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -496,12 +584,19 @@ jobs:
           TAG: ${{ needs.build.outputs.tag }}
           IS_BETA: ${{ needs.build.outputs.is_beta }}
           BUILDS_WINDOWS: ${{ needs.build.outputs.builds_windows }}
+          BUILDS_LINUX: ${{ needs.build.outputs.builds_linux }}
           BUILDS_UNRAID: ${{ needs.build.outputs.builds_unraid }}
           WINDOWS_RESULT: ${{ needs.windows.result }}
+          LINUX_RESULT: ${{ needs.linux.result }}
+          LINUX_BRIDGE: ${{ needs.linux.outputs.bridge_attached }}
         run: |
           # A Windows build that was asked for must have run (skipped here would mean it never started)
           if [[ "$BUILDS_WINDOWS" == "true" && "$WINDOWS_RESULT" != "success" ]]; then
             echo "::error::The Windows build did not succeed ($WINDOWS_RESULT) - the release stays a draft"
+            exit 1
+          fi
+          if [[ "$BUILDS_LINUX" == "true" && "$LINUX_RESULT" != "success" ]]; then
+            echo "::error::The Linux build did not succeed ($LINUX_RESULT) - the release stays a draft"
             exit 1
           fi
           assets="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
@@ -514,6 +609,11 @@ jobs:
             expect "PlatinVault-Setup-${TAG}.exe"
             expect "PlatinVault-Setup-${TAG}.exe.sha256"
             expect PlatinVault.Bridge.exe
+          fi
+          if [[ "$BUILDS_LINUX" == "true" ]]; then
+            expect "PlatinVault-linux-x64-${TAG}.tar.gz"
+            expect "PlatinVault-linux-x64-${TAG}.tar.gz.sha256"
+            if [[ "$LINUX_BRIDGE" == "true" ]]; then expect PlatinVault-Bridge-linux-x64.tar.gz; fi
           fi
           if [[ -n "$missing" ]]; then
             echo "::error::Missing on the draft:$missing - the release stays a draft"

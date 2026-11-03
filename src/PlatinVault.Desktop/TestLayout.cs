@@ -36,11 +36,19 @@ internal static class TestLayout
                     var tag = $"{language}-{(dark ? "dark" : "light")}-{scale * 100:0}";
                     using var window = new UninstallWindow(env.Layout, $"v2026.11.1 (12.345 {VersionFormat.BetaMark})", (_, _) => [], scale);
                     List<Rectangle>? baseline = null;
+                    List<(string Name, Rectangle Bounds)>? failedPage = null;
                     foreach (var (state, show) in window.TestStates())
                     {
                         show();
                         window.SavePicture(Path.Combine(folder, $"uninstall-{state}-{tag}.png"));
                         pictures++;
+                        // "Copied" appearing next to the Copy button must not move or resize anything on the error page
+                        if (state == "failed") failedPage = Descendants(window).Select(c => (c.Name, c.Bounds)).ToList();
+                        else if (state == "failed-copied" && failedPage is not null && !Descendants(window).Select(c => (c.Name, c.Bounds)).SequenceEqual(failedPage))
+                        {
+                            failures++;
+                            report.AppendLine($"FAIL uninstall-{state}-{tag}: the copy status moved or resized a control");
+                        }
                         failures += Measure(window, $"uninstall-{state}-{tag}", report);
                         // Window chrome and action bar stay where they are in every state
                         var fixedParts = window.Controls.Cast<Control>().Where(c => c.Name is "btnNext" or "btnCancel" or "btnClose" or "content").Select(c => c.Bounds).ToList();
@@ -75,6 +83,56 @@ internal static class TestLayout
                 using var bitmap = ControlSnapshot.Capture(screen, host.ClientSize);
                 bitmap.Save(Path.Combine(folder, $"start-{(errorState ? "error" : "progress")}-{language}.png"), System.Drawing.Imaging.ImageFormat.Png);
                 pictures++;
+                if (errorState)
+                {
+                    // After a click on "Copy" the status fills its slot; nothing on the screen may move
+                    var before = Descendants(screen).Select(c => (c.Name, c.Bounds)).ToList();
+                    screen.Controls.Find("btnCopyStartError", true).OfType<PvButton>().Single().PerformClick();
+                    using var copied = ControlSnapshot.Capture(screen, host.ClientSize);
+                    copied.Save(Path.Combine(folder, $"start-error-copied-{language}.png"), System.Drawing.Imaging.ImageFormat.Png);
+                    pictures++;
+                    if (!Descendants(screen).Select(c => (c.Name, c.Bounds)).SequenceEqual(before))
+                    {
+                        failures++;
+                        report.AppendLine($"FAIL start-error-copied-{language}: the copy status moved or resized a control");
+                    }
+                }
+            }
+
+            // Our own error message window with the copy button: before, after "Copied" and after "Copy not possible", light/dark, 100-250 %
+            foreach (var dark in new[] { false, true })
+            {
+                ThemeMode.Set(dark);
+                foreach (var scale in Scales)
+                {
+                    var tag = $"{language}-{(dark ? "dark" : "light")}-{scale * 100:0}";
+                    var buttons = new[] { new DialogButton(CommonTexts.Close, DialogResult.OK, PvButtonKind.Primary) };
+                    using var error = new MessageWindow(DialogKind.Error, DesktopTexts.Update.Failed(
+                        "Access to the path 'PlatinVault.exe' is denied. " + string.Concat(Enumerable.Repeat("The database could not be set up: SQLite Error 14: 'unable to open database file'. ", 6))), buttons, 0, scale);
+                    error.SavePicture(Path.Combine(folder, $"dialog-error-{tag}.png"));
+                    pictures++;
+                    failures += Measure(error, $"dialog-error-{tag}", report);
+                    var plain = Descendants(error).Select(c => (c.Name, c.Bounds)).ToList();
+                    foreach (var (name, ok) in new[] { ("copied", true), ("copy-failed", false) })
+                    {
+                        error.Copy!.ShowOutcome(ok);
+                        error.SavePicture(Path.Combine(folder, $"dialog-error-{name}-{tag}.png"));
+                        pictures++;
+                        failures += Measure(error, $"dialog-error-{name}-{tag}", report);
+                        if (!Descendants(error).Select(c => (c.Name, c.Bounds)).SequenceEqual(plain))
+                        {
+                            failures++;
+                            report.AppendLine($"FAIL dialog-error-{name}-{tag}: the copy status moved or resized a control");
+                        }
+                    }
+                    // The copy really contains the complete text, the version and the time
+                    error.Copy!.Copy();
+                    if (ErrorReport.LastCopied is not { } copiedText || !copiedText.Contains("unable to open database file", StringComparison.Ordinal) || !copiedText.Contains(" · ", StringComparison.Ordinal))
+                    {
+                        failures++;
+                        report.AppendLine($"FAIL dialog-error-{tag}: the copied text is incomplete");
+                    }
+                }
             }
 
             // Our own message window (update question) instead of a Windows message box

@@ -66,6 +66,10 @@ public sealed class MessageWindow : Form
     private readonly float _s;
     private readonly Palette _p;
     private readonly DialogKind _kind;
+    private readonly CopyBar? _copy;
+
+    /// <summary>The "Copy" button of an error dialog (null for the other kinds).</summary>
+    public CopyBar? Copy => _copy;
 
     public MessageWindow(DialogKind kind, string text, IReadOnlyList<DialogButton> buttons, int focusIndex, float? forcedScale, IWin32Window? owner = null)
     {
@@ -84,17 +88,16 @@ public sealed class MessageWindow : Form
         BackColor = _p.Page;
 
         var textWidth = W - Band - 32 - 28;
-        var font = Fonts.Get(10f, _s);
-        var needed = (int)Math.Ceiling(Draw.Measure(text, font, Px(textWidth) - Px(10)).Height / _s) + 4;
-        var textHeight = Math.Clamp(needed, 24, TextMax);
-        var height = 28 + 26 + 10 + textHeight + 24 + 42 + 22;
-        ClientSize = new Size(Px(W), Px(height));
-
         var title = new PvText { Text = TitleFor(kind), Points = 13f, Style = FontStyle.Bold, Display = true, S = _s, P = _p, Surface = _p.Page, Name = "lblTitle" };
         title.Bounds = R(Band + 32, 26, textWidth, 26);
+        // The slot is as tall as the text needs (the text breaks its own lines, so the control itself says how tall that is), up to TextMax
         var body = new PvScrollText { S = _s, P = _p, Surface = _p.Page, Points = 10f, Name = "txtMessage" };
-        body.Bounds = R(Band + 32, 26 + 26 + 10, textWidth, textHeight);
+        body.Bounds = R(Band + 32, 26 + 26 + 10, textWidth, TextMax);
         body.SetText(text, p => p.TextSecondary);
+        var textHeight = Math.Clamp((int)Math.Ceiling(body.ContentHeight / _s) + 4, 24, TextMax);
+        body.Height = Px(textHeight);
+        var height = 28 + 26 + 10 + textHeight + 24 + 42 + 22;
+        ClientSize = new Size(Px(W), Px(height));
         Controls.AddRange([title, body]);
 
         var right = W - 28;
@@ -109,6 +112,15 @@ public sealed class MessageWindow : Form
             created.Insert(0, button);
         }
         Controls.AddRange([.. created]);
+
+        // An error message can always be copied: the button sits at the left of the button row (the status slot beside it, both reserved)
+        var copyLeft = Band + 32;
+        if (kind == DialogKind.Error && right - copyLeft >= 200)
+        {
+            _copy = new CopyBar(() => text, _s, _p, _p.Page, "Message");
+            _copy.Place(R(copyLeft, height - 22 - 42, right - copyLeft, 42), Px(10));
+            Controls.AddRange([.. _copy.Controls]);
+        }
         var cancel = created.FirstOrDefault(b => b.DialogResult is DialogResult.Cancel or DialogResult.No) ?? created[0];
         CancelButton = cancel;
         ActiveControl = created[Math.Clamp(focusIndex, 0, created.Count - 1)];

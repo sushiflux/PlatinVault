@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { CopyErrorButton } from './ui/CopyErrorButton'
 import { IconLink, IconLoader2, IconSearch, IconX } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { linkSteamApp, searchSteamGames } from '../api/client'
@@ -105,6 +106,7 @@ export function SteamLinkDialog({ slug, initialQuery, onClose, onLinked }: Steam
 
         <div className="min-h-[1.25rem] text-xs font-bold" role="alert" style={{ color: 'var(--accent-crimson)' }}>
           {error}
+          {error && <CopyErrorButton className="ms-2 align-middle" report={{ message: error }} />}
         </div>
       </div>
     </div>

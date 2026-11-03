@@ -16,10 +16,16 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PlatinVault.Versioning\PlatinVault.Versioning.csproj" />
+    <ProjectReference Include="..\PlatinVault.SteamLocal\PlatinVault.SteamLocal.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Companion.Api.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Reading the local Steam client (moved into the shared library, used by the bridges too) -->
+    <Using Include="PlatinVault.SteamLocal" />
   </ItemGroup>
 
   <ItemGroup>
