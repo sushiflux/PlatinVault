@@ -260,10 +260,13 @@ internal sealed partial class SetupWindow : WizardWindow
         {
             // The official GNU AGPL v3 text (English only, like every official GNU licence text). Nothing to tick: the licence grants
             // rights and needs no consent to use the program
-            var box = c.Add(new PvScrollText { Framed = true, Points = 9f }, 0, 0, PageCanvas.Width, 252, "txtLicence");
+            var box = c.Add(new PvScrollText { Framed = true, Points = 9f }, 0, 0, PageCanvas.Width, 118, "txtLicence");
             if (state.LicenceText is { } text) box.SetText(LicenceForDisplay(text), p => p.TextSecondary);
             else box.SetText(SetupTexts.LicenceMissing, p => p.Danger);
-            c.Text(SetupTexts.LicenceSource, 0, 264, PageCanvas.Width, 44, 9f, color: p => p.Muted, name: "lblLicenceSource");
+            c.Text(SetupTexts.LicenceSource, 0, 128, PageCanvas.Width, 34, 9f, color: p => p.Muted, name: "lblLicenceSource");
+            // Which connections PlatinVault makes by itself and how to switch them off - shown during every installation and update
+            c.Text(SetupTexts.PrivacyTitle, 0, 174, PageCanvas.Width, 20, 9.5f, FontStyle.Bold, color: p => p.Text, name: "lblPrivacyTitle");
+            c.Text(SetupTexts.PrivacyText, 0, 196, PageCanvas.Width, 142, 9f, color: p => p.TextSecondary, name: "lblPrivacy");
         }
     }
 

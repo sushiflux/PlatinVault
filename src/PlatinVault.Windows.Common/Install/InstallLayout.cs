@@ -131,6 +131,24 @@ public sealed class InstallLayout
         if (TestRoot is not null) { yield return "--test-root"; yield return TestRoot; }
     }
 
+    /// <summary>
+    /// True when <paramref name="folder"/> is (what is left of) a PlatinVault program folder, so the setup may install over it. PlatinVault.exe
+    /// alone is not enough to recognise one: an antivirus can quarantine exactly that file and leave the rest behind, and the setup
+    /// must then repair the installation instead of refusing. The other markers are files only our build writes into the program folder:
+    /// <c>version.txt</c> and <c>release-channel.txt</c> (both written by build-windows.ps1) plus part of the program itself - the server library,
+    /// the shared version library or the built UI.
+    /// </summary>
+    public static bool IsProgramFolder(string folder)
+    {
+        if (!Directory.Exists(folder)) return false;
+        if (File.Exists(Path.Combine(folder, ExeName))) return true;
+        return File.Exists(Path.Combine(folder, "version.txt"))
+               && File.Exists(Path.Combine(folder, "release-channel.txt"))
+               && (File.Exists(Path.Combine(folder, "Companion.Api.dll"))
+                   || File.Exists(Path.Combine(folder, "PlatinVault.Versioning.dll"))
+                   || Directory.Exists(Path.Combine(folder, "wwwroot")));
+    }
+
     public static bool SamePath(string a, string b) =>
         string.Equals(Path.GetFullPath(a).TrimEnd('\\', '/'), Path.GetFullPath(b).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase);
 

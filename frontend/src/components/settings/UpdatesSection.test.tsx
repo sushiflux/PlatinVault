@@ -47,6 +47,7 @@ const beta = {
   display: 'v2026.11.12 (13.557 β)',
   isBeta: true,
   notesUrl: 'https://github.com/sushiflux/PlatinVault/releases/tag/v2026.11.12.13.557-beta',
+  notes: '### Fixed\n- Something fixed.',
   publishedAt: null,
   hasInstaller: true,
 }
@@ -87,7 +88,29 @@ describe('UpdatesSection', () => {
     expect(await screen.findByText('Neue Beta v2026.11.12 (13.557 β) verfügbar.')).toBeTruthy()
     // A release runs while betas are wanted: the container most likely still uses :latest
     expect(screen.getByRole('note').textContent).toContain('ghcr.io/sushiflux/platinvault:beta')
-    expect(screen.getByRole('link', { name: 'Release-Notizen ansehen' }).getAttribute('href')).toBe(beta.notesUrl)
+    // The notes open in an own dialog (not a link to GitHub); its footer keeps the GitHub link
+    expect(screen.queryByRole('link', { name: 'Release-Notizen ansehen' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Release-Notizen ansehen' }))
+    expect(await screen.findByText('Something fixed.')).toBeTruthy()
+    expect(screen.getByRole('link', { name: /auf GitHub ansehen/ }).getAttribute('href')).toBe(beta.notesUrl)
+  })
+
+  it('without a notes text there is no dialog button, but a plain link to the release page', async () => {
+    fetchUpdateStatus.mockResolvedValue(status({ state: 'available', available: { ...beta, notes: null } }))
+    renderSection()
+    const link = await screen.findByRole('link', { name: 'Release-Notizen auf GitHub ansehen' })
+    expect(link.getAttribute('href')).toBe(beta.notesUrl)
+    expect(link.getAttribute('target')).toBe('_blank')
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer')
+    expect(screen.queryByRole('button', { name: 'Release-Notizen ansehen' })).toBeNull()
+  })
+
+  it('without notes and without a release page there is nothing to open', async () => {
+    fetchUpdateStatus.mockResolvedValue(status({ state: 'available', available: { ...beta, notes: '', notesUrl: null } }))
+    renderSection()
+    await screen.findByText('Neue Beta v2026.11.12 (13.557 β) verfügbar.')
+    expect(screen.queryByRole('link', { name: /Release-Notizen/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Release-Notizen/ })).toBeNull()
   })
 
   it('shows a failed save of the switch in full and keeps the old position', async () => {

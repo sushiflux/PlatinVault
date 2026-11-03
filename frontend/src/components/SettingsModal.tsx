@@ -65,6 +65,7 @@ import { AI_STATUS_KEY } from './ai/useAiStatus'
 import { AiSelectionSection } from './settings/AiSelectionSection'
 import { emptyResearchBlocks, ResearchBlocksSection, sameResearchBlocks } from './settings/ResearchBlocksSection'
 import { SystemStatusSection } from './SystemStatusSection'
+import { FoldersSection } from './settings/FoldersSection'
 import { UpdatesSection } from './settings/UpdatesSection'
 import { useIsDesktopHost } from './FooterParts'
 import { ReservedText } from './ui/ReservedText'
@@ -1151,6 +1152,7 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
               {activeTab === 'system' && (
                 <div className="space-y-4">
                   <UpdatesSection />
+                  <FoldersSection />
                   <SystemStatusSection />
                 </div>
               )}

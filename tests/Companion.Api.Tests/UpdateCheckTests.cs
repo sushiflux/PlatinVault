@@ -22,13 +22,14 @@ public sealed class UpdateCheckTests
 {
     private static JsonElement Releases(params object[] releases) => JsonSerializer.SerializeToElement(releases);
 
-    private static object Release(string tag, bool prerelease = false, bool draft = false, bool installer = true) => new
+    private static object Release(string tag, bool prerelease = false, bool draft = false, bool installer = true, string? body = null) => new
     {
         tag_name = tag,
         draft,
         prerelease,
         html_url = $"https://github.com/sushiflux/PlatinVault/releases/tag/{tag}",
         published_at = "2026-11-02T10:00:00Z",
+        body,
         assets = installer
             ? new object[]
             {
@@ -162,6 +163,65 @@ public sealed class UpdateCheckTests
         Assert.Equal("available", dto.State);
         Assert.Equal("server", dto.Host);
         Assert.Equal("ghcr.io/sushiflux/platinvault", dto.ImageRepository);
+    }
+
+    // ---- release notes in the status (the UI never calls GitHub itself) -------------------------------------------------------
+
+    [Fact]
+    public void The_release_body_becomes_plain_text_notes_and_a_missing_or_empty_body_gives_null()
+    {
+        var feed = ReleaseFeed.Parse(Releases(
+            Release("v2026.11.14", body: "## Neu\r\n- Eins\r\n- Zwei\t(Tab)\u0007\r\n\r\n  "),
+            Release("v2026.11.13", body: "   "),
+            Release("v2026.11.12")));
+        Assert.Equal("## Neu\n- Eins\n- Zwei\t(Tab)", feed[0].Notes);
+        Assert.Null(feed[1].Notes);
+        Assert.Null(feed[2].Notes);
+    }
+
+    [Fact]
+    public void Notes_are_capped_and_never_cut_inside_a_surrogate_pair()
+    {
+        var long1 = new string('a', ReleaseFeed.MaxNotesLength + 500);
+        Assert.Equal(ReleaseFeed.MaxNotesLength, ReleaseFeed.Parse(Releases(Release("v2026.11.14", body: long1)))[0].Notes!.Length);
+
+        // an emoji (two UTF-16 units) straddling the limit is dropped completely, not halved
+        var straddling = new string('a', ReleaseFeed.MaxNotesLength - 1) + "\U0001F3C6" + "tail";
+        var cut = ReleaseFeed.Parse(Releases(Release("v2026.11.14", body: straddling)))[0].Notes!;
+        Assert.Equal(ReleaseFeed.MaxNotesLength - 1, cut.Length);
+        Assert.All(cut, ch => Assert.False(char.IsSurrogate(ch)));
+    }
+
+    [Fact]
+    public void The_status_carries_the_notes_as_the_json_field_notes()
+    {
+        var running = Running("v2026.11.12", VersionKind.Release);
+        var dto = UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(running, List(Release("v2026.11.13", body: "Neu: Notizen im Status")), false, false, false));
+        Assert.Equal("Neu: Notizen im Status", dto.Available!.Notes);
+        Assert.Equal("Neu: Notizen im Status", dto.LatestRelease!.Notes);
+
+        var json = JsonSerializer.SerializeToElement(dto, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        Assert.Equal("Neu: Notizen im Status", json.GetProperty("available").GetProperty("notes").GetString());
+
+        var without = UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(running, List(Release("v2026.11.13")), false, false, false));
+        var withoutJson = JsonSerializer.SerializeToElement(without, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        Assert.Equal(JsonValueKind.Null, withoutJson.GetProperty("available").GetProperty("notes").ValueKind);
+    }
+
+    [Fact]
+    public async Task Notes_come_from_the_one_releases_request_and_stay_in_the_cache_without_asking_GitHub_again()
+    {
+        var (service, github, _) = Service();
+        github.Answer = () => FakeGitHub.Json(Releases(Release("v2026.11.13", body: "Release notes of 13")));
+        var first = await service.GetAsync(UpdateCheckMode.Automatic, UpdateCheckInterval.Daily, CancellationToken.None);
+        var cached = await service.GetAsync(UpdateCheckMode.Automatic, UpdateCheckInterval.Daily, CancellationToken.None);
+
+        Assert.Equal("Release notes of 13", first.Releases!.Single().Notes);
+        Assert.Equal("Release notes of 13", cached.Releases!.Single().Notes);
+        Assert.Equal(1, github.Calls);
+        // the only request is the list of releases - never one per release for its notes
+        Assert.Single(github.Requests);
+        Assert.Contains("/releases", github.Requests[0].AbsolutePath);
     }
 
     // ---- GitHub calls: cache, throttle, failures ------------------------------------------------------------------------

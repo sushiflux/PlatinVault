@@ -286,6 +286,27 @@ const settings = {
     restartTour: 'Einführung erneut starten',
     hintsReset: 'Die Hinweise erscheinen beim nächsten Besuch jeder Seite wieder.',
   },
+  // Settings > System > Folders (Windows program only, components/settings/FoldersSection.tsx)
+  folders: {
+    title: 'Ordner',
+    intro: 'Hier liegt PlatinVault auf diesem PC. „Öffnen“ zeigt den Ordner im Windows-Explorer.',
+    programHint: 'Der Programmordner liegt in deinem Benutzerprofil, weil PlatinVault pro Benutzer ohne Administratorrechte installiert wird – so brauchen Updates keine Admin-Bestätigung.',
+    kinds: {
+      program: { label: 'Programmordner', hint: 'Die installierten Programmdateien' },
+      data: { label: 'Datenordner', hint: 'Datenbank und Einstellungen' },
+      backups: { label: 'Sicherungen', hint: 'Automatische Sicherungen der Datenbank' },
+      logs: { label: 'Protokolle', hint: 'Protokolle für die Fehlersuche' },
+    },
+    open: 'Öffnen',
+    openLabel: '{{folder}} öffnen',
+    copy: 'Pfad kopieren',
+    copyHint: 'Kopiert den Pfad in die Zwischenablage',
+    pathLoading: 'Wird gelesen …',
+    loadFailed: 'Die Ordner konnten nicht ermittelt werden: {{reason}}',
+    openFailed: 'Der Ordner „{{folder}}“ konnte nicht geöffnet werden: {{reason}}',
+    copied: 'Der Pfad von „{{folder}}“ wurde in die Zwischenablage kopiert.',
+    copyFailed: 'Der Pfad von „{{folder}}“ konnte nicht kopiert werden. Markiere ihn und kopiere ihn mit Strg+C.',
+  },
   // Settings > System > Updates: switch "Beta-Versionen erhalten" (every platform), check, install (Windows) or image tag (containers)
   updates: {
     title: 'Updates',
@@ -336,6 +357,7 @@ const settings = {
       saveFailed: 'Das Update-Intervall wurde nicht gespeichert: {{reason}}',
     },
     notes: 'Release-Notizen ansehen',
+    notesOnGitHub: 'Release-Notizen auf GitHub ansehen',
     install: 'Update installieren',
     confirm: {
       title: 'Update installieren?',

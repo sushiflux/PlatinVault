@@ -45,6 +45,19 @@ internal static class SetupTexts
     public static readonly Msg LicenceSource = new(
         "Quellcode: https://github.com/sushiflux/PlatinVault – der Lizenztext ist das englische Original der Free Software Foundation.",
         "Source code: https://github.com/sushiflux/PlatinVault – the licence text is the original published by the Free Software Foundation.");
+    // Shown on the licence page of every setup (new installation and update). Keep it true to the code: the connections PlatinVault makes without
+    // the user's own setup are the GitHub update check (switchable), the WebView2 download of this setup, and - with a German interface and no
+    // AI key - the Google translation of English Steam achievement texts (switchable). Everything else needs the user's own account or key.
+    public static readonly Msg PrivacyTitle = new("Netzwerk & Datenschutz", "Network & privacy");
+    public static readonly Msg PrivacyText = new(
+        "PlatinVault sendet keine Nutzungsdaten und hat keine Konten. Von selbst fragt es nur bei GitHub (api.github.com) nach neuen Versionen; GitHub sieht dabei deine IP-Adresse. " +
+        "Abschalten: Einstellungen → System → Updates → „Nach Updates suchen“ auf „Nie“. Fehlt Windows die WebView2-Laufzeit, lädt dieses Setup sie von Microsoft. " +
+        "Mit deutscher Oberfläche und ohne KI-Schlüssel gehen englische Erfolgstexte von Steam an Google Übersetzer (abschaltbar unter Einstellungen → Live & Sound). " +
+        "Steam, KI-Anbieter, Twitch und IGDB werden erst genutzt, wenn du dort selbst ein Konto oder einen Schlüssel einträgst.",
+        "PlatinVault sends no usage data and has no accounts. By itself it only asks GitHub (api.github.com) for new versions; GitHub sees your IP address when it does. " +
+        "To switch this off: Settings → System → Updates → “Check for updates” set to “Never”. If Windows lacks the WebView2 runtime, this setup downloads it from Microsoft. " +
+        "With a German interface and no AI key, English Steam achievement texts are sent to Google Translate (can be switched off under Settings → Live & Sound). " +
+        "Steam, AI providers, Twitch and IGDB are only used once you enter your own account or key there.");
     public static readonly Msg LicenceMissing = new(
         "Der Lizenztext fehlt im Installationspaket. Bitte die Installationsdatei erneut herunterladen.",
         "The licence text is missing from the setup package. Please download the setup file again.");
@@ -108,6 +121,7 @@ internal static class SetupTexts
     public static readonly Msg TaskFiles = new("Programmdateien kopieren", "Copying program files");
     public static readonly Msg TaskWebView = new("Fenster-Laufzeit prüfen (WebView2)", "Checking the window runtime (WebView2)");
     public static readonly Msg TaskDatabase = new("Datenbank einrichten", "Setting up the database");
+    public static readonly Msg TaskBackupExisting = new("Vorhandene Datenbank sichern", "Backing up the existing database");
     public static readonly Msg TaskShortcuts = new("Verknüpfungen und Autostart", "Shortcuts and autostart");
 
     public static readonly Msg Elevated = new(

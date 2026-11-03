@@ -6,6 +6,7 @@
   <PropertyGroup>
     <RootNamespace>PlatinVault.Versioning</RootNamespace>
     <AssemblyName>PlatinVault.Versioning</AssemblyName>
+    <AssemblyTitle>PlatinVault Versioning</AssemblyTitle>
   </PropertyGroup>
 
   <ItemGroup>

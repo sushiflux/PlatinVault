@@ -579,8 +579,17 @@ If PlatinVault runs directly on the gaming PC, you do not need the bridge.
 - **API keys** (Steam, AI) are stored encrypted in the appdata folder – not in the database – and only shown shortened.
   On Windows they are also bound to your Windows account. Do not share the appdata folder openly on your network: whoever
   has the whole folder also has the keys.
-- PlatinVault requests **Steam data** only for your own account and only when you ask for it.
-- **AI providers** receive the game name and public game information for the research – no personal data.
+- **No accounts, no telemetry:** PlatinVault sends no usage data to the developers. On its own it only makes these connections:
+  - **Update check at GitHub** (`api.github.com`): once a day by default; GitHub sees your IP address. Switch off: Settings →
+    **System** → **Updates** → **Look for updates** set to **Never (by hand only)**. An update is only downloaded after you confirm.
+  - **Microsoft WebView2:** if this runtime is missing on the Windows PC, the setup downloads it from Microsoft. WebView2 is Microsoft software with its own rules.
+  - **Google Translate:** with a German interface, no AI key, and no German text from Steam, the English achievement texts are sent
+    to Google to be translated. Switch off: Settings → **Live & Sound** → **Automatically translate English Steam achievements into German**.
+- PlatinVault requests **Steam data** only for your own account and only when you ask for it – with the Web API key and account you
+  enter yourself (`api.steampowered.com`, `store.steampowered.com`, `steamcommunity.com`, Steam's image servers).
+- **AI providers** receive the game name and public game information for the research – no personal data. Only the provider whose
+  key you entered is contacted, and only on an AI action (Google, Anthropic, OpenAI).
+- **Twitch and IGDB** are only asked with your own credentials. The **bridge** only talks to the PlatinVault server you entered.
 - PlatinVault deliberately has **no login** and is meant for one person. Run it in your home network, not openly on the
   internet.
 - **Licence and source code:** PlatinVault is free software under the **GNU Affero General Public License, version 3**
@@ -627,7 +636,8 @@ What the program adds:
 1. Download `PlatinVault-Setup-<version>.exe` from PlatinVault's releases on GitHub and start it with a double-click – **not** with
    "Run as administrator". PlatinVault is installed just for your Windows account and needs no administrator rights.
 2. **Windows SmartScreen:** the setup file is not digitally signed yet. Windows therefore shows "Windows protected your PC" the first
-   time. Click **More info** and then **Run anyway**.
+   time. Click **More info** and then **Run anyway**. If your antivirus flags the file or the program, see section 11.9. Who signs
+   the files and how to check a signature is described in the "Code signing policy" in the project's README on GitHub.
 3. The setup guides you through six steps:
 
    | Step | What happens |
@@ -704,6 +714,11 @@ is taken too, there is no shortcut – then open the guide from the icon next to
 
 - Program and data are kept apart: the program in the program folder, your data under `…\AppData\Local\PlatinVault` (database,
   backups, encrypted API keys, logs). An update only replaces the program.
+- **Why is the program in the user folder?** PlatinVault is installed per user: program folder
+  `%LOCALAPPDATA%\Programs\PlatinVault`, data `%LOCALAPPDATA%\PlatinVault`. So the installation needs no administrator rights, and
+  updates run without an admin confirmation. Windows hides the `AppData` folder by default – so there are shortcuts: in the menu of
+  the icon next to the clock **Open program folder**, **Open data folder** and **Open backup folder**, and in Settings → **System** →
+  **Folders** an **Open** button for each (plus **Copy path**). Explorer then shows the folder.
 - The database is a single file (`database\platinvault.db`). No separate database service runs, and nothing can be reached from outside.
 - **Backups** are made automatically: on start, every 6 hours and on quitting (so also before every update) – but only when something
   changed. The 20 newest are in `backups\recent`, plus one per day for 60 days in `backups\daily`.
@@ -717,7 +732,13 @@ PlatinVault checks by itself whether a new version exists – as often as set un
 under Settings → **System** → **Updates** (chapter 12). If there is one, the icon's menu shows **Install update …** and a notification
 appears. To look right away, use **Check for updates** in the icon's menu or **Check for updates now** in the settings; there you can
 also install a version that was found with **Install update**. After you confirm, PlatinVault downloads the setup, checks its checksum,
-quits (with a backup) and the setup updates the program. Your data stays unchanged.
+quits (with a backup) and the setup updates the program. Your data stays unchanged. Once the Windows files are digitally signed,
+PlatinVault also checks the signature of the downloaded setup and starts it only if it is valid. If you have an older, unsigned
+PlatinVault installed, this check applies only after the update to a signed version.
+
+**Reading the release notes:** in the settings under **System** → **Updates** (and in the header's update icon), **View release
+notes** opens a window of its own, **What’s new**, with the changes of that version – without opening the GitHub page. **View on
+GitHub** opens the release page in the browser; **Esc** closes the window.
 
 ## 11.7 Uninstalling
 
@@ -740,6 +761,27 @@ Then PlatinVault closes, removes autostart, shortcuts and the "Apps" entry and d
 | No overlay in the game | Does the game run in exclusive full screen? Switch to borderless full screen. Is **Show trophy popup** set to "Only in the app" (no tick at **Trophy overlay** in the icon's menu)? With "Both" the overlay stays away while the PlatinVault window is in front. **Test the overlay** shows a test card; if it says "not available", the log names the reason. |
 | Ctrl+Alt+G does nothing | Another program uses the keys – PlatinVault then takes Ctrl+Alt+Shift+G or none; the guide always opens from the icon next to the clock. |
 | No live trophies after restarting the PC | Is **Start with Windows** ticked in the icon's menu? |
+| Antivirus flags PlatinVault | See section 11.9. |
+
+## 11.9 Antivirus flags PlatinVault
+
+**Why can this happen?** PlatinVault's Windows files are not digitally signed yet. At the same time, on an update the program
+downloads an installer from the internet, starts it and quits itself – a sequence that the behaviour monitoring of some antivirus
+programs rates as suspicious for an unknown, unsigned program. It is a false alarm; the source code is
+publicly available. Some programs move files to quarantine in this case.
+
+**What you can do:**
+
+1. Add **exceptions** in your antivirus for the program folder `%LOCALAPPDATA%\Programs\PlatinVault` and the data folder
+   `%LOCALAPPDATA%\PlatinVault`.
+2. If files were moved to quarantine: restore the **key files** (your encrypted API keys in the data folder, subfolders
+   `server\secrets` and `server\dp-keys`). Do **not** restore the database helper files (`platinvault.db-wal` and
+   `platinvault.db-shm`) – they belong to an earlier state and can confuse the database. The database itself (`platinvault.db`)
+   and the backups are fine if needed; if necessary, restore a backup (section 11.5).
+3. **Run the setup again** (same or newer version). It detects a damaged program folder, for example one where `PlatinVault.exe` is
+   missing, repairs the installation and leaves your data untouched.
+4. If the antivirus keeps blocking file names after you have allowed them: remove the PlatinVault entries from the quarantine or the
+   block history, or restart Windows. Usually the entry is forgotten then. You can also report the file to your antivirus vendor as a false alarm.
 
 # 12 Updates and beta versions
 

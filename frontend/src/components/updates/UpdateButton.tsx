@@ -3,13 +3,15 @@ import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useMutation } from '@tanstack/react-query'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { IconCircleArrowUp, IconDownload, IconExternalLink, IconLoader2, IconSettings } from '@tabler/icons-react'
+import { IconCircleArrowUp, IconDownload, IconExternalLink, IconLoader2, IconNotes, IconSettings } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { installUpdate } from '../../api/client'
 import type { UpdateReleaseDto, UpdateStatusDto } from '../../api/types'
+import { hasReleaseNotes, releasePageUrl } from '../../api/releaseNotes'
 import { useConfirm } from '../ui/ConfirmDialog'
 import { iconButtonClass } from '../ui/IconButton'
 import { Tooltip } from '../ui/Tooltip'
+import { ReleaseNotesViewer } from './ReleaseNotesDialog'
 import { updateOffer, useHeaderUpdateStatus } from './updateOffer'
 
 const PANEL_WIDTH = 336
@@ -33,12 +35,13 @@ interface PanelProps {
   installing: boolean
   message: { tone: Tone; text: string } | null
   onInstall: () => void
+  onShowNotes: () => void
   onOpenSettings: () => void
   onClose: () => void
 }
 
 /** The popover: new version, release notes, and the action that fits the platform. Written in px like the language menu. */
-function UpdatePanel({ anchor, panelId, data, offer, installing, message, onInstall, onOpenSettings, onClose }: PanelProps) {
+function UpdatePanel({ anchor, panelId, data, offer, installing, message, onInstall, onShowNotes, onOpenSettings, onClose }: PanelProps) {
   const { t } = useTranslation('shell')
   const { t: ts } = useTranslation('settings')
   const reduce = useReducedMotion() ?? false
@@ -88,6 +91,7 @@ function UpdatePanel({ anchor, panelId, data, offer, installing, message, onInst
     }
   }
 
+  const pageUrl = releasePageUrl(offer)
   const desktop = data.host === 'desktop'
   const image = data.imageRepository
   // A beta is wanted but the container follows :latest - a plain "Update" would never deliver it, so the settings text says what to change
@@ -121,11 +125,19 @@ function UpdatePanel({ anchor, panelId, data, offer, installing, message, onInst
         <span style={muted}>{t('header.update.youHave', { current: data.currentVersion })}</span>
       </div>
 
-      {offer.notesUrl && (
-        <a className="pv-hpop-link mt-3" href={offer.notesUrl} target="_blank" rel="noopener noreferrer">
-          <IconExternalLink size={14} aria-hidden="true" />
+      {hasReleaseNotes(offer) ? (
+        <button type="button" className="pv-hpop-link mt-3" onClick={onShowNotes} data-testid="update-notes">
+          <IconNotes size={14} aria-hidden="true" />
           <span>{ts('updates.notes')}</span>
-        </a>
+        </button>
+      ) : (
+        // No notes text came with the release: a plain external link to its page, if there is one
+        pageUrl && (
+          <a className="pv-hpop-link mt-3" href={pageUrl} target="_blank" rel="noopener noreferrer" data-testid="update-notes-link">
+            <IconExternalLink size={14} aria-hidden="true" />
+            <span>{ts('updates.notesOnGitHub')}</span>
+          </a>
+        )
       )}
 
       {desktop ? (
@@ -200,6 +212,7 @@ export function UpdateButton({ onOpenSettings }: { onOpenSettings: () => void })
   const data = status.data
   const offer = updateOffer(data)
   const [open, setOpen] = useState(false)
+  const [notesOpen, setNotesOpen] = useState(false)
   const [message, setMessage] = useState<{ tone: Tone; text: string } | null>(null)
   const [attention] = useState(() => !attentionPlayed)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -227,6 +240,12 @@ export function UpdateButton({ onOpenSettings }: { onOpenSettings: () => void })
       confirmLabel: ts('updates.confirm.confirm'),
     })
     if (ok) install.mutate(offer.tag)
+  }
+
+  // The popover closes and the notes dialog takes over; closing the dialog returns the focus to the icon
+  const showNotes = () => {
+    setOpen(false)
+    setNotesOpen(true)
   }
 
   const openAll = () => {
@@ -265,11 +284,13 @@ export function UpdateButton({ onOpenSettings }: { onOpenSettings: () => void })
             installing={install.isPending}
             message={message}
             onInstall={() => void onInstall()}
+            onShowNotes={showNotes}
             onOpenSettings={openAll}
             onClose={close}
           />
         )}
       </AnimatePresence>
+      <ReleaseNotesViewer release={notesOpen ? offer : null} onClose={() => setNotesOpen(false)} restoreFocusRef={buttonRef} />
     </>
   )
 }

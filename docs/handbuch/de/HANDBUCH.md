@@ -601,8 +601,17 @@ Läuft PlatinVault direkt auf dem Gaming-PC, brauchst du keine Bridge.
 - **API-Keys** (Steam, KI) werden verschlüsselt im Appdata-Ordner gespeichert – nicht in der Datenbank – und danach nur
   gekürzt angezeigt. Unter Windows sind sie zusätzlich an dein Windows-Konto gebunden. Gib den Appdata-Ordner nicht
   offen im Netzwerk frei: Wer den ganzen Ordner hat, hat auch die Keys.
-- **Steam-Daten** ruft PlatinVault nur für dein eigenes Konto und auf deinen Wunsch ab.
-- **KI-Anbieter** bekommen für die Recherche den Spielnamen und öffentliche Spielinformationen – keine persönlichen Daten.
+- **Keine Konten, keine Telemetrie:** PlatinVault sendet keine Nutzungsdaten an die Entwickler. Von selbst baut es nur diese Verbindungen auf:
+  - **Update-Suche bei GitHub** (`api.github.com`): standardmäßig einmal am Tag; GitHub sieht dabei deine IP-Adresse. Abschalten:
+    Einstellungen → **System** → **Updates** → **Nach Updates suchen** auf **Nie (nur von Hand)**. Ein Update wird erst nach deiner Bestätigung geladen.
+  - **Microsoft WebView2:** Fehlt diese Laufzeit auf dem Windows-PC, lädt der Installer sie von Microsoft nach. WebView2 ist Microsoft-Software mit eigenen Regeln.
+  - **Google Übersetzer:** Bei deutscher Oberfläche, ohne KI-Schlüssel und wenn Steam keinen deutschen Text hat, werden die englischen
+    Erfolgstexte zum Übersetzen an Google gesendet. Abschalten: Einstellungen → **Live & Sound** → **Englische Steam-Erfolge automatisch ins Deutsche übersetzen**.
+- **Steam-Daten** ruft PlatinVault nur für dein eigenes Konto und auf deinen Wunsch ab – mit dem Web-API-Key und dem Konto, die du selbst einträgst
+  (`api.steampowered.com`, `store.steampowered.com`, `steamcommunity.com`, Steam-Bilderserver).
+- **KI-Anbieter** bekommen für die Recherche den Spielnamen und öffentliche Spielinformationen – keine persönlichen Daten. Es wird nur der
+  Anbieter angesprochen, dessen Schlüssel du eingetragen hast, und nur bei einer KI-Aktion (Google, Anthropic, OpenAI).
+- **Twitch und IGDB** werden nur mit deinen eigenen Zugangsdaten befragt. Die **Bridge** spricht nur mit dem PlatinVault-Server, den du eingetragen hast.
 - PlatinVault hat bewusst **keine Anmeldung** und ist für einen Nutzer gedacht. Betreibe es im Heimnetz, nicht offen im
   Internet.
 - **Lizenz und Quellcode:** PlatinVault ist freie Software unter der **GNU Affero General Public License, Version 3**
@@ -651,7 +660,9 @@ Was das Programm zusätzlich kann:
    Doppelklick – **nicht** mit „Als Administrator ausführen“. PlatinVault wird nur für dein Windows-Konto installiert und braucht keine
    Administratorrechte.
 2. **Windows-SmartScreen:** Die Installationsdatei ist noch nicht digital signiert. Windows zeigt deshalb beim ersten Start
-   „Der Computer wurde durch Windows geschützt“. Klicke auf **Weitere Informationen** und dann auf **Trotzdem ausführen**.
+   „Der Computer wurde durch Windows geschützt“. Klicke auf **Weitere Informationen** und dann auf **Trotzdem ausführen**. Meldet
+   dein Virenschutz die Datei oder das Programm, hilft Abschnitt 11.9. Wer die Dateien signieren soll und wie du eine Signatur prüfst,
+   steht in der „Code signing policy“ im README des Projekts auf GitHub.
 3. Der Installer führt dich durch sechs Schritte:
 
    | Schritt | Was passiert |
@@ -733,6 +744,11 @@ neben der Uhr.
 
 - Programm und Daten liegen getrennt: das Programm im Programmordner, deine Daten unter `…\AppData\Local\PlatinVault` (Datenbank,
   Sicherungen, verschlüsselte API-Keys, Protokolle). Ein Update ersetzt nur das Programm.
+- **Warum liegt das Programm im Benutzerordner?** PlatinVault wird pro Benutzer installiert: Programmordner
+  `%LOCALAPPDATA%\Programs\PlatinVault`, Daten `%LOCALAPPDATA%\PlatinVault`. Dadurch braucht die Installation keine Administratorrechte, und
+  Updates laufen ohne Admin-Bestätigung. Der Ordner `AppData` ist in Windows standardmäßig ausgeblendet – deshalb gibt es Abkürzungen:
+  im Menü des Symbols neben der Uhr **Programmordner öffnen**, **Datenordner öffnen** und **Sicherungsordner öffnen**, und in den
+  Einstellungen → **System** → **Ordner** je ein Knopf **Öffnen** (dazu **Pfad kopieren**). Der Explorer zeigt dann den Ordner.
 - Die Datenbank ist eine einzige Datei (`database\platinvault.db`). Es läuft kein eigener Datenbank-Dienst, und von außen ist nichts erreichbar.
 - **Sicherungen** entstehen automatisch: beim Start, alle 6 Stunden und beim Beenden (also auch vor jedem Update) – aber nur, wenn sich
   etwas geändert hat. Die 20 neuesten liegen in `backups\recent`, dazu eine pro Tag für 60 Tage in `backups\daily`.
@@ -747,7 +763,13 @@ PlatinVault sieht von selbst nach, ob es eine neue Version gibt – so oft, wie 
 Symbols **Update auf … installieren** und eine Benachrichtigung. Sofort nachsehen kannst du mit **Nach Updates suchen** im Menü des
 Symbols oder mit **Jetzt nach Updates suchen** in den Einstellungen; dort installierst du ein gefundenes Update auch direkt mit
 **Update installieren**. Nach deiner Bestätigung lädt PlatinVault den Installer, prüft seine Prüfsumme, beendet sich (mit Sicherung)
-und der Installer aktualisiert das Programm. Deine Daten bleiben unverändert.
+und der Installer aktualisiert das Programm. Deine Daten bleiben unverändert. Sobald die Windows-Dateien digital signiert sind,
+prüft PlatinVault zusätzlich die Signatur des geladenen Installers und startet ihn nur, wenn sie gültig ist. Hast du ein
+älteres, unsigniertes PlatinVault installiert, gilt diese Prüfung erst nach dem Update auf eine signierte Version.
+
+**Release-Notizen lesen:** In den Einstellungen unter **System** → **Updates** (und im Update-Symbol der Kopfzeile) öffnet
+**Release-Notizen ansehen** ein eigenes Fenster **Das ist neu** mit den Änderungen der Version – ohne dass du die GitHub-Seite öffnen musst.
+**Auf GitHub ansehen** öffnet die Release-Seite im Browser; **Esc** schließt das Fenster.
 
 ## 11.7 Deinstallieren
 
@@ -771,6 +793,27 @@ Danach beendet sich PlatinVault, entfernt Autostart, Verknüpfungen und den Eint
 | Kein Overlay im Spiel | Läuft das Spiel im exklusiven Vollbild? Auf „randloses Vollbild“ umstellen. Steht **Trophäen-Popup anzeigen** auf „Nur in der App“ (Haken **Trophäen-Overlay** im Menü des Symbols fehlt)? Bei „Beides“ bleibt das Overlay weg, solange das PlatinVault-Fenster vorne ist. **Overlay testen** zeigt eine Test-Karte; meldet es „nicht verfügbar“, steht der Grund im Protokoll. |
 | Strg+Alt+G tut nichts | Ein anderes Programm hat die Tasten belegt – PlatinVault nimmt dann Strg+Alt+Umschalt+G oder keine; der Guide geht immer über das Symbol neben der Uhr. |
 | Keine Live-Trophäen nach dem Neustart des PCs | Ist **Mit Windows starten** im Menü des Symbols angehakt? |
+| Der Virenschutz meldet PlatinVault | Siehe Abschnitt 11.9. |
+
+## 11.9 Virenschutz meldet PlatinVault
+
+**Warum kann das passieren?** Die Windows-Dateien von PlatinVault sind noch nicht digital signiert. Gleichzeitig lädt das Programm bei einem
+Update einen Installer aus dem Internet, startet ihn und beendet sich selbst – ein Ablauf, den die Verhaltensüberwachung mancher
+Virenschutzprogramme bei einem unbekannten, unsignierten Programm als verdächtig einstuft. Es handelt sich
+um einen Fehlalarm; der Quellcode ist öffentlich einsehbar. Manche Programme verschieben dabei Dateien in die Quarantäne.
+
+**Was du tun kannst:**
+
+1. Trage in deinem Virenschutz **Ausnahmen** ein für den Programmordner `%LOCALAPPDATA%\Programs\PlatinVault` und den Datenordner
+   `%LOCALAPPDATA%\PlatinVault`.
+2. Wurden Dateien in die Quarantäne verschoben: Stelle die **Schlüsseldateien** (deine verschlüsselten API-Keys im Datenordner,
+   Unterordner `server\secrets` und `server\dp-keys`) wieder her. Stelle **nicht** die Hilfsdateien der Datenbank wieder her
+   (`platinvault.db-wal` und `platinvault.db-shm`) – sie gehören zu einem früheren Zustand und können die Datenbank durcheinanderbringen.
+   Die Datenbank selbst (`platinvault.db`) und die Sicherungen sind bei Bedarf in Ordnung; wenn nötig, spiele eine Sicherung zurück (Abschnitt 11.5).
+3. Führe den **Installer erneut aus** (gleiche oder neuere Version). Er erkennt einen beschädigten Programmordner, in dem zum Beispiel
+   `PlatinVault.exe` fehlt, repariert die Installation und lässt deine Daten unberührt.
+4. Blockiert der Virenschutz danach weiter Dateinamen, obwohl du sie freigegeben hast: Entferne die PlatinVault-Einträge aus der
+   Quarantäne bzw. dem Blockierverlauf oder starte Windows neu. Meist ist der Eintrag dann vergessen. Du kannst die Datei auch dem Hersteller deines Virenschutzes als Fehlalarm melden.
 
 # 12 Updates und Beta-Versionen
 

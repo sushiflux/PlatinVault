@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { IconCloudDownload, IconDownload, IconExternalLink, IconLoader2, IconRefresh } from '@tabler/icons-react'
+import { IconCloudDownload, IconDownload, IconExternalLink, IconLoader2, IconNotes, IconRefresh } from '@tabler/icons-react'
+import { hasReleaseNotes, releasePageUrl } from '../../api/releaseNotes'
 import { checkForUpdates, fetchUpdateStatus, installUpdate, updateSettings } from '../../api/client'
 import type { UpdateCheckInterval, UpdateStatusDto } from '../../api/types'
 import { useFormat } from '../../i18n/format'
@@ -9,6 +10,7 @@ import { Switch } from '../ui/Switch'
 import { ReservedText } from '../ui/ReservedText'
 import { StackedLabel } from '../ui/StackedLabel'
 import { useConfirm } from '../ui/ConfirmDialog'
+import { ReleaseNotesViewer } from '../updates/ReleaseNotesDialog'
 import { UPDATE_CHECK_INTERVALS, UPDATE_STATUS_KEY } from '../updates/updateOffer'
 import { errorText, RESULT_TONE_COLOR, updateResult, updateResultCandidates, type ResultTone } from '../updates/updateResult'
 
@@ -27,6 +29,7 @@ export function UpdatesSection() {
   const queryClient = useQueryClient()
   const [switchError, setSwitchError] = useState<string | null>(null)
   const [intervalError, setIntervalError] = useState<string | null>(null)
+  const [notesOpen, setNotesOpen] = useState(false)
   const [installMessage, setInstallMessage] = useState<{ tone: ResultTone; text: string } | null>(null)
 
   const status = useQuery({ queryKey: UPDATE_STATUS_KEY, queryFn: fetchUpdateStatus, retry: false })
@@ -206,18 +209,37 @@ export function UpdatesSection() {
 
       {/* Release notes and (Windows program) the install button; the row keeps its height when there is nothing to offer */}
       <div className={`flex flex-wrap items-center gap-2 ${available ? '' : 'invisible'}`} aria-hidden={available ? undefined : true}>
-        {available?.notesUrl ? (
-          <a className="pv-btn !py-1 !px-3 !text-xs" href={available.notesUrl} target="_blank" rel="noopener noreferrer">
-            <IconExternalLink size={14} aria-hidden="true" />
-            <span>{t('updates.notes')}</span>
-          </a>
-        ) : (
-          // Holds the row's height while there is nothing to offer
-          <span className="pv-btn invisible !py-1 !px-3 !text-xs" aria-hidden="true">
-            <IconExternalLink size={14} />
-            <span>{t('updates.notes')}</span>
-          </span>
-        )}
+        {/* One grid cell: invisible copies of every label this slot can show take the room of the longest one, so the row wraps the
+            same way (and is as high) whether nothing, the dialog button or the GitHub link is shown - in both languages */}
+        <span className="inline-grid">
+          {[
+            { icon: IconNotes, label: t('updates.notes') },
+            { icon: IconExternalLink, label: t('updates.notesOnGitHub') },
+          ].map(({ icon: Icon, label }) => (
+            <span key={label} className="pv-btn invisible col-start-1 row-start-1 !py-1 !px-3 !text-xs" aria-hidden="true">
+              <Icon size={14} />
+              <span>{label}</span>
+            </span>
+          ))}
+          {available && hasReleaseNotes(available) ? (
+            <button type="button" className="pv-btn col-start-1 row-start-1 justify-self-start !py-1 !px-3 !text-xs" onClick={() => setNotesOpen(true)} data-testid="updates-notes">
+              <IconNotes size={14} aria-hidden="true" />
+              <span>{t('updates.notes')}</span>
+            </button>
+          ) : available && releasePageUrl(available) ? (
+            // No notes text came with the release: a plain external link to its page
+            <a
+              className="pv-btn col-start-1 row-start-1 justify-self-start !py-1 !px-3 !text-xs"
+              href={releasePageUrl(available) ?? undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="updates-notes-link"
+            >
+              <IconExternalLink size={14} aria-hidden="true" />
+              <span>{t('updates.notesOnGitHub')}</span>
+            </a>
+          ) : null}
+        </span>
         {desktop && (
           <button
             type="button"
@@ -242,6 +264,7 @@ export function UpdatesSection() {
       )}
 
       {data && !desktop && !devBuild && <DockerHowTo data={data} latestTag={latestTag} betaTag={betaTag} />}
+      <ReleaseNotesViewer release={notesOpen ? available : null} onClose={() => setNotesOpen(false)} />
     </div>
   )
 }

@@ -21,6 +21,7 @@ const release = {
   display: 'v2026.11.12 (13.557)',
   isBeta: false,
   notesUrl: 'https://github.com/sushiflux/PlatinVault/releases/tag/v2026.11.12',
+  notes: '### New\n- A thing **happened**.',
   publishedAt: null,
   hasInstaller: true,
 }
@@ -74,6 +75,42 @@ describe('updateOffer (visibility rule)', () => {
 })
 
 describe('UpdateButton', () => {
+  it('the notes button closes the popover and opens the notes dialog; closing returns the focus to the icon', async () => {
+    fetchUpdateStatus.mockResolvedValue(status())
+    renderButton()
+    const icon = await screen.findByTestId('update-button')
+    fireEvent.click(icon)
+    fireEvent.click(await screen.findByTestId('update-notes'))
+    await waitFor(() => expect(screen.queryByTestId('update-panel')).toBeNull())
+    const dialog = await screen.findByTestId('release-notes')
+    expect(await screen.findByText('happened')).toBeTruthy()
+    expect(dialog.textContent).toContain('v2026.11.12 (13.557)')
+    fireEvent.keyDown(document, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByTestId('release-notes')).toBeNull())
+    await waitFor(() => expect(document.activeElement).toBe(icon))
+  })
+
+  it('without a notes text the popover offers a plain external link instead of the dialog; without a page nothing', async () => {
+    fetchUpdateStatus.mockResolvedValue(status({ available: { ...release, notes: null } }))
+    renderButton()
+    fireEvent.click(await screen.findByTestId('update-button'))
+    const link = await screen.findByTestId('update-notes-link')
+    expect(link.getAttribute('href')).toBe(release.notesUrl)
+    expect(link.getAttribute('target')).toBe('_blank')
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer')
+    expect(link.textContent).toBe('Release-Notizen auf GitHub ansehen')
+    expect(screen.queryByTestId('update-notes')).toBeNull()
+  })
+
+  it('no notes and no page: no notes entry at all', async () => {
+    fetchUpdateStatus.mockResolvedValue(status({ available: { ...release, notes: null, notesUrl: null } }))
+    renderButton()
+    fireEvent.click(await screen.findByTestId('update-button'))
+    await screen.findByTestId('update-panel')
+    expect(screen.queryByTestId('update-notes')).toBeNull()
+    expect(screen.queryByTestId('update-notes-link')).toBeNull()
+  })
+
   it.each(['upToDate', 'devBuild', 'error', 'unchecked'] as const)('shows nothing for state %s', async (state) => {
     fetchUpdateStatus.mockResolvedValue(status({ state, available: null, error: state === 'error' ? 'GitHub down' : null }))
     renderButton()
@@ -95,7 +132,8 @@ describe('UpdateButton', () => {
     fireEvent.click(await screen.findByTestId('update-button'))
     const panel = await screen.findByTestId('update-panel')
     expect(panel.textContent).toContain('v2026.11.12 (13.557)')
-    expect(screen.getByRole('link', { name: /Release-Notizen/ }).getAttribute('href')).toBe(release.notesUrl)
+    expect(screen.getByRole('button', { name: /Release-Notizen/ })).toBeTruthy()
+    expect(screen.queryByRole('link', { name: /Release-Notizen/ })).toBeNull()
     expect(screen.getByTestId('update-container-steps').textContent).toContain('docker compose pull')
     expect(screen.queryByRole('button', { name: /Update installieren/ })).toBeNull()
     fireEvent.keyDown(panel, { key: 'Escape' })

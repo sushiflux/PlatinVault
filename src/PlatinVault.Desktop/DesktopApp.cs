@@ -33,11 +33,14 @@ internal sealed class DesktopApp : ApplicationContext
     private readonly GlobalHotkey _hotkey = new();
     private readonly DatabaseHost _database;
     private readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(60) };
+    private readonly ISignatureVerifier _signatures = new WinTrustVerifier();
     private readonly CancellationTokenSource _life = new();
     private DesktopServer? _server;
     private System.Windows.Forms.Timer? _updateTimer;
     private UpdateOffer? _update;
     private bool _quitting;
+    // The installer of an update that is being downloaded, checked or run: the cleanup of old installers never deletes it
+    private volatile string? _installerInProgress;
     private bool _startRequested;
 
     public DesktopApp(DesktopEnvironment env, AppInstance instance)
@@ -121,7 +124,8 @@ internal sealed class DesktopApp : ApplicationContext
 
             _database.Prepare(progress);
             // Updates started from the settings use the same download/verify/run flow as the tray; never in development or test runs
-            var desktopHost = new LocalDesktopHost(_env.Options.TestLaunch, null, _env.UpdateCheckAllowed ? InstallFromSettingsAsync : null);
+            var desktopHost = new LocalDesktopHost(_env.Options.TestLaunch, null, _env.UpdateCheckAllowed ? InstallFromSettingsAsync : null,
+                ProgramFolders(), recordFolderOpens: _env.Quiet);
             _server = await DesktopServer.CreateAsync(_env, _settings, _database, desktopHost, start: true, _life.Token);
             DesktopLog.Info($"Server läuft auf {_server.BaseUri}.");
             await ApplyStoredLanguageAsync();
@@ -149,6 +153,7 @@ internal sealed class DesktopApp : ApplicationContext
                     await CheckForUpdateAsync(UpdateCheckMode.Automatic, interactive: false);
                 };
                 _updateTimer.Start();
+                _ = CleanUpOldInstallersAsync();
             }
         }
         catch (DatabaseRefusedException ex)
@@ -178,6 +183,15 @@ internal sealed class DesktopApp : ApplicationContext
             _started.TrySetResult();
         }
     }
+
+    /// <summary>The four folders the app's settings (and the tray) can open: the program itself, its data, the backups and the logs.</summary>
+    private IReadOnlyList<DesktopFolder> ProgramFolders() =>
+    [
+        new(DesktopFolderKinds.Program, _env.InstallDir),
+        new(DesktopFolderKinds.Data, _env.Data.Root),
+        new(DesktopFolderKinds.Backups, _env.Data.Backups),
+        new(DesktopFolderKinds.Logs, _env.Data.Logs),
+    ];
 
     /// <summary>The tray, the notifications and the overlay speak the language the user chose in the app (ui.language), else Windows'.</summary>
     private async Task ApplyStoredLanguageAsync()
@@ -433,6 +447,8 @@ internal sealed class DesktopApp : ApplicationContext
         }
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(new ToolStripMenuItem(DesktopTexts.Tray.Handbook, null, (_, _) => OpenHandbook()));
+        menu.Items.Add(new ToolStripMenuItem(DesktopTexts.Tray.ProgramFolder, null, (_, _) => OpenProgramFolder()));
+        menu.Items.Add(new ToolStripMenuItem(DesktopTexts.Tray.DataFolder, null, (_, _) => MainWindow.OpenFolder(_env.Data.Root)));
         menu.Items.Add(new ToolStripMenuItem(DesktopTexts.Tray.Backups, null, (_, _) => MainWindow.OpenFolder(_env.Data.Backups)));
         menu.Items.Add(new ToolStripMenuItem(DesktopTexts.Tray.Logs, null, (_, _) => MainWindow.OpenFolder(_env.Data.Logs)));
         if (_env.UpdateCheckAllowed || _update is not null) menu.Items.Add(new ToolStripSeparator());
@@ -481,6 +497,11 @@ internal sealed class DesktopApp : ApplicationContext
         _settings.Save(_env.Data.SettingsFile);
         var hotkey = _hotkey.Keys is { } keys ? " " + DesktopTexts.Tray.HotkeyReady(keys) : string.Empty;
         _tray.Notify(DesktopTexts.Tray.StillRunningTitle, DesktopTexts.Tray.StillRunningText + hotkey);
+    }
+
+    private void OpenProgramFolder()
+    {
+        if (FolderOpener.TryOpen(_env.InstallDir, createIfMissing: false) is { } error) Dialogs.Error(null, DesktopTexts.Tray.FolderNotOpened(_env.InstallDir, error));
     }
 
     private void OpenHandbook()
@@ -544,6 +565,25 @@ internal sealed class DesktopApp : ApplicationContext
         else if (changed && _settings.NotificationsEnabled) _tray.Notify("PlatinVault", DesktopTexts.Update.Available(offer.Version.Display));
     }
 
+    /// <summary>
+    /// Removes the installers of earlier updates from the updates folder. Right after an update the installer that started this program may
+    /// still be closing (its file is locked), so there is a second pass a little later.
+    /// </summary>
+    private async Task CleanUpOldInstallersAsync()
+    {
+        try
+        {
+            UpdateChecker.CleanupOldInstallers(_env.Data.Updates, _installerInProgress, minAge: TimeSpan.Zero);
+            await Task.Delay(TimeSpan.FromMinutes(2), _life.Token);
+            // By now an update may be under way (download, slow revocation check): its installer is skipped, and so is everything young
+            UpdateChecker.CleanupOldInstallers(_env.Data.Updates, _installerInProgress, UpdateChecker.DelayedCleanupMinAge);
+        }
+        catch (Exception ex) when (ex is OperationCanceledException or IOException or UnauthorizedAccessException)
+        {
+            // Housekeeping only: whatever is left is taken at the next start
+        }
+    }
+
     /// <summary>The tray's update entry: asks first (own dialog), then downloads, verifies and runs the installer.</summary>
     private async Task InstallUpdateAsync(UpdateOffer offer)
     {
@@ -554,6 +594,8 @@ internal sealed class DesktopApp : ApplicationContext
         if (answer != DialogResult.OK) return;
         var result = await DownloadAndRunAsync(offer, _life.Token);
         if (result.Outcome == DesktopUpdateOutcome.ChecksumMismatch) Dialogs.Error(null, DesktopTexts.Update.ChecksumMismatch);
+        else if (result.Outcome == DesktopUpdateOutcome.SignatureRejected) Dialogs.Error(null, DesktopTexts.Update.SignatureRejected(result.Detail ?? "?"));
+        else if (result.Outcome == DesktopUpdateOutcome.ProgramSignatureInvalid) Dialogs.Error(null, DesktopTexts.Update.ProgramSignatureInvalid(result.Detail ?? "?"));
         else if (result.Outcome == DesktopUpdateOutcome.Failed) Dialogs.Error(null, DesktopTexts.Update.Failed(result.Detail ?? "?"));
     }
 
@@ -571,15 +613,39 @@ internal sealed class DesktopApp : ApplicationContext
         try
         {
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, _life.Token);
+            // From here until the installer runs (or is refused) this file belongs to the update in progress: no cleanup may touch it
+            _installerInProgress = UpdateChecker.TargetPath(offer, _env.Data.Updates);
             var installer = await new UpdateChecker(_http).DownloadAsync(offer, _env.Data.Updates, linked.Token);
-            if (installer is null) return new DesktopUpdateStart(DesktopUpdateOutcome.ChecksumMismatch, null);
-            DesktopLog.Info($"Update {offer.Version.Text}: Installer geprüft, wird gestartet.");
+            if (installer is null)
+            {
+                _installerInProgress = null;
+                return new DesktopUpdateStart(DesktopUpdateOutcome.ChecksumMismatch, null);
+            }
+            // The checksum comes from the same GitHub release as the file, so it only proves a complete download. The digital signature
+            // proves who built it: when this program is signed, the installer must be signed by the same publisher (never started otherwise).
+            var runningExe = Environment.ProcessPath ?? Path.Combine(_env.InstallDir, InstallLayout.ExeName);
+            var decision = await Task.Run(() => UpdateSignaturePolicy.Check(_signatures, runningExe, installer), linked.Token);
+            if (!decision.MayRun)
+            {
+                DesktopLog.Warn($"Update {offer.Version.Text}: Installer nicht gestartet, Signaturprüfung abgelehnt ({decision.Verdict}): {decision.Detail}");
+                try { File.Delete(installer); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { DesktopLog.Warn($"Abgelehnter Installer nicht gelöscht: {ex.Message}"); }
+                _installerInProgress = null;
+                return new DesktopUpdateStart(decision.Verdict == UpdateSignatureVerdict.ProgramSignatureInvalid
+                    ? DesktopUpdateOutcome.ProgramSignatureInvalid : DesktopUpdateOutcome.SignatureRejected, decision.Detail);
+            }
+            DesktopLog.Info(decision.Verdict == UpdateSignatureVerdict.AcceptedProgramUnsigned
+                ? $"Update {offer.Version.Text}: Installer geprüft (nur Prüfsumme: {decision.Detail}), wird gestartet."
+                : $"Update {offer.Version.Text}: Installer geprüft (Prüfsumme, Signatur: {decision.Detail}), wird gestartet.");
+            // Everything older in the updates folder is no longer needed; the installer being started stays
+            UpdateChecker.CleanupOldInstallers(_env.Data.Updates, keep: installer, minAge: TimeSpan.Zero);
             // The installer asks this program to quit (the server makes its last backup) and starts it again at the end
             Process.Start(new ProcessStartInfo(installer, "--update") { UseShellExecute = false })?.Dispose();
             return new DesktopUpdateStart(DesktopUpdateOutcome.Started, null);
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException or OperationCanceledException or System.ComponentModel.Win32Exception or UnauthorizedAccessException)
         {
+            _installerInProgress = null;
             DesktopLog.Warn($"Update {offer.Version.Text} nicht gestartet: {ex.Message}");
             return new DesktopUpdateStart(DesktopUpdateOutcome.Failed, ex.Message);
         }

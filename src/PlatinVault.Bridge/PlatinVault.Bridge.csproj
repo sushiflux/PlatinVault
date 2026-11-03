@@ -26,6 +26,14 @@
     -->
     <Version>1.0.0</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <!--
+      File properties: the bridge's own version stays its assembly and file version (Program.GetVersion reads the assembly version for
+      the self-update and the "Apps" entry), set here after Directory.Build.props so a build-wide PvFileVersion can never replace it.
+      The product version (InformationalVersion) is the readable version of the PlatinVault build it ships with (PvProductVersion).
+    -->
+    <AssemblyTitle>PlatinVault Bridge</AssemblyTitle>
+    <AssemblyVersion>$(Version)</AssemblyVersion>
+    <FileVersion>$(Version)</FileVersion>
 
     <!-- Same runtime identifier for build and publish keeps the restore graph (and packages.lock.json) identical. -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>

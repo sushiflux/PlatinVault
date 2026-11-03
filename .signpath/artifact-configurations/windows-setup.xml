@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SignPath artifact configuration "windows-setup" (stage 2 of the Windows release, .github/workflows/release.yml, job "windows").
+  This file is the source for what is configured in SignPath (Project -> Artifact configurations -> windows-setup): change it here first,
+  then paste it into SignPath.
+
+  The artifact is the finished installer PlatinVault-Setup-<tag>.exe: the setup program with the already signed program (stage 1)
+  appended as a ZIP. The Authenticode signature goes after that payload; the installer finds its payload in the last 64 KiB, so the
+  signature does not break it. Same metadata restrictions as stage 1 (product name, product version = parameter productVersion).
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="productVersion" required="true" />
+  </parameters>
+  <zip-file>
+    <pe-file path="PlatinVault-Setup-v*.exe" product-name="PlatinVault" product-version="${productVersion}">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>

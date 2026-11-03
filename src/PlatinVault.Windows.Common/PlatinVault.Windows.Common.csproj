@@ -9,6 +9,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>PlatinVault.Windows</RootNamespace>
     <AssemblyName>PlatinVault.Windows.Common</AssemblyName>
+    <AssemblyTitle>PlatinVault Windows Common</AssemblyTitle>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <!-- No forms designer is used: positions and values are set in code -->

@@ -131,6 +131,31 @@ const shell = {
     linkBrowser: 'Open the Steam profile of {{name}} in the browser',
     linkLibrary: '{{games}} in the library',
   },
+  // The release notes dialog (components/updates/ReleaseNotesDialog.tsx)
+  releaseNotes: {
+    title: 'What’s new',
+    titleLabel: 'Release notes {{version}}',
+    betaPill: 'Beta',
+    published: 'published {{date}}',
+    platforms: 'for {{platforms}}',
+    github: 'View on GitHub',
+    githubLabel: 'View the release notes {{version}} on GitHub (opens a new tab)',
+    policy: 'Code signing policy',
+    policyLabel: 'View the code signing policy (opens a new tab)',
+    close: 'Close',
+    closeHint: 'Esc',
+    empty: 'There are no notes for this version that can be shown here. The release page on GitHub shows what GitHub has for it.',
+    categories: {
+      new: 'New',
+      change: 'Changed',
+      fix: 'Fixed',
+      security: 'Security',
+      removed: 'Removed',
+      deprecated: 'Deprecated',
+    },
+    itemCount_one: '{{count}} item',
+    itemCount_other: '{{count}} items',
+  },
 } satisfies Translation<typeof de>
 
 export default shell

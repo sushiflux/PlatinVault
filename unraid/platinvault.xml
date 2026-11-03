@@ -14,6 +14,8 @@
   <Support>https://github.com/sushiflux/PlatinVault</Support>
   <Project>https://github.com/sushiflux/PlatinVault</Project>
   <ReadMe>https://github.com/sushiflux/PlatinVault#readme</ReadMe>
+  <TemplateURL>https://raw.githubusercontent.com/sushiflux/PlatinVault/master/unraid/platinvault.xml</TemplateURL>
+  <License>AGPL-3.0-only</License>
   <Overview>PlatinVault brings your Steam achievements and AI-researched 100% guides together in one app.
 - Live trophies: every Steam achievement pops up the moment you unlock it, as a trophy with sound.
 - AI guide for every game: walkthrough in game order, missables, roadmap, collectibles, checklists that tick themselves off, puzzles with hidden solutions, story &amp; lore behind a spoiler lock.

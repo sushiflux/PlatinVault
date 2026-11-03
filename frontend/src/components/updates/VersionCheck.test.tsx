@@ -20,6 +20,7 @@ const release = {
   display: 'v2026.11.12 (13.557)',
   isBeta: false,
   notesUrl: null,
+  notes: null,
   publishedAt: null,
   hasInstaller: true,
 }

@@ -812,6 +812,9 @@ export interface UpdateReleaseDto {
   isBeta: boolean
   // The release page with its notes in the public repository (github.com only), null when unknown
   notesUrl: string | null
+  // The release notes text (Markdown: English block, "---", German block, optionally a code signing policy footer) from the GitHub
+  // release body; null when the release has no body. The server always sends the field, the app never asks GitHub itself.
+  notes: string | null
   publishedAt: string | null
   hasInstaller: boolean
 }
@@ -1080,4 +1083,16 @@ export interface LaunchCommandDto {
 export interface LaunchStatusDto {
   bridgeConnected: boolean
   bridgeLastSeenAt: string | null
+}
+
+// Windows program only (GET /api/desktop/folders answers 404 anywhere else): where PlatinVault keeps its files on this PC
+export type DesktopFolderKind = 'program' | 'data' | 'backups' | 'logs'
+
+export interface DesktopFolderDto {
+  kind: DesktopFolderKind
+  path: string
+}
+
+export interface DesktopFoldersDto {
+  folders: DesktopFolderDto[]
 }

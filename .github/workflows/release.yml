@@ -26,6 +26,23 @@ name: Release
 #                              never sees them). The release notes are not taken from any changelog file (a dev build has no
 #                              customer-facing notes).
 # Note: the GHCR package itself is public (so Unraid can pull it without a login), hence ":dev" is technically pullable by anyone.
+#
+# Draft first (2026-11-03): the "build" job always creates the GitHub release as a DRAFT, the "windows" job attaches the installer to that
+# draft, and only the last job "publish" turns it into a pre-release (beta) or a normal release - after every selected platform job
+# succeeded and every expected file is attached. So a release is never visible (nor offered by the update check, which only sees
+# published releases) without its installer. A dev build stays a draft. Every release body ends with a rule and the line
+# "Code signing policy: <this repository>#code-signing-policy" (SignPath Foundation terms: the term "Code signing policy" on every
+# download/release page).
+#
+# Code signing of the Windows files (SignPath Foundation, free for open source): two stages, because the installer carries the program as
+# a ZIP appended to the setup exe - stage 1 signs our own binaries of the program folder and the bridge
+# (.signpath/artifact-configurations/windows-app.xml), they are packed into the installer, stage 2 signs the installer (windows-setup.xml).
+# Every signing request waits for a manual approval in SignPath (up to 60 minutes per stage). Signing runs only when the repository
+# variables SIGNPATH_ORGANIZATION_ID, SIGNPATH_PROJECT_SLUG, SIGNPATH_SIGNING_POLICY_SLUG and the secret SIGNPATH_API_TOKEN exist, and only
+# for betas and releases (dev builds only with the variable SIGNPATH_SIGN_DEV=true). Without them the result is the unsigned installer
+# exactly as before ("signing skipped (SignPath not configured)" in the log). Optional variables: SIGNPATH_APP_ARTIFACT_CONFIGURATION_SLUG
+# (default windows-app), SIGNPATH_SETUP_ARTIFACT_CONFIGURATION_SLUG (default windows-setup). All jobs run on GitHub-hosted runners
+# (SignPath's origin verification for open-source projects requires that).
 on:
   push:
     tags:
@@ -41,16 +58,19 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
       is_beta: ${{ steps.version.outputs.is_beta }}
       is_dev: ${{ steps.version.outputs.is_dev }}
-      is_draft: ${{ steps.version.outputs.is_draft }}
+      kind: ${{ steps.version.outputs.kind }}
       builds_windows: ${{ steps.version.outputs.builds_windows }}
       bridge_version: ${{ steps.version.outputs.bridge_version }}
       release_name: ${{ steps.version.outputs.release_name }}
+      display_version: ${{ steps.version.outputs.display_version }}
+      has_release: ${{ steps.version.outputs.has_release }}
+      builds_unraid: ${{ steps.version.outputs.builds_unraid }}
     permissions:
       contents: write
       packages: write
     steps:
       - name: Repo auschecken
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           # Full history: the bridge version 1.0.<n> counts the commits of the bridge files
           fetch-depth: 0
@@ -123,7 +143,7 @@ jobs:
           template_tag=latest
           # Release notes: this version's entry of CHANGELOG.md (English, rule, German). A dev build has none, its draft gets a one-line text.
           notes_file=dist/release-notes.md
-          release_body=""
+          mkdir -p dist
           if [[ "$is_beta" == "true" ]]; then
             channel=beta
             # The beta template points at the moving tag "beta": the test container is updated in place by Unraid's own update
@@ -132,30 +152,30 @@ jobs:
             channel=dev
             # Same for the dev template and its moving tag "dev" (the image is never tagged beta/latest)
             template_tag=dev
-            notes_file=""
-            release_body="Dev build for internal testing only - not a release, not offered as an update."
           fi
-          if [[ -n "$notes_file" ]]; then
-            mkdir -p dist
-            if ! sh scripts/release-notes.sh CHANGELOG.md "$display_version" > "$notes_file"; then
-              echo "::error::CHANGELOG.md hat keinen Eintrag \"## $display_version\" (Englisch und Deutsch) - Changelog beim Commit schreiben (Überschrift ## vNEXT bzw. ## vNEXT β)"
-              exit 1
-            fi
-            echo "Release-Notizen ($(wc -l < "$notes_file") Zeilen):"
-            cat "$notes_file"
+          if [[ "$is_dev" == "true" ]]; then
+            printf '%s\n' "Dev build for internal testing only - not a release, not offered as an update." > "$notes_file"
+          elif ! sh scripts/release-notes.sh CHANGELOG.md "$display_version" > "$notes_file"; then
+            echo "::error::CHANGELOG.md hat keinen Eintrag \"## $display_version\" (Englisch und Deutsch) - Changelog beim Commit schreiben (Überschrift ## vNEXT bzw. ## vNEXT β)"
+            exit 1
           fi
-          # Only a dev build is a draft (visible to collaborators only); a beta is a public pre-release, a release a normal release
-          is_draft=false
-          if [[ "$is_dev" == "true" ]]; then is_draft=true; fi
+          # Footer of every release body (SignPath Foundation terms: "Code signing policy" on every download/release page). The app shows
+          # the release notes too and knows this footer (the last block, after a "---" rule).
+          printf '\n---\n\nCode signing policy: %s/%s#code-signing-policy\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" >> "$notes_file"
+          echo "Release-Notizen ($(wc -l < "$notes_file") Zeilen):"
+          cat "$notes_file"
+          # Is there a GitHub release at all? A dev build only gets one when there is a Windows installer to attach to it
+          has_release=true
+          if [[ "$is_dev" == "true" && "$builds_windows" != "true" ]]; then has_release=false; fi
 
           {
             echo "tag=$tag"
             echo "is_beta=$is_beta"
             echo "is_dev=$is_dev"
-            echo "is_draft=$is_draft"
             echo "kind=$kind"
             echo "notes_file=$notes_file"
-            echo "release_body=$release_body"
+            echo "has_release=$has_release"
+            echo "display_version=$display_version"
             echo "builds_unraid=$builds_unraid"
             echo "builds_windows=$builds_windows"
             echo "docker_tag=${tag#v}"
@@ -217,11 +237,13 @@ jobs:
           # unraid/platinvault.xml in the repository is the RELEASE form (":latest" plus the "beta" tag choice) - the raw file customers
           # fetch with wget; the beta and dev templates are derived from it here
           grep -q '<Repository>ghcr.io/sushiflux/platinvault:latest</Repository>' unraid/platinvault.xml
+          grep -q '<TemplateURL>https://raw.githubusercontent.com/sushiflux/PlatinVault/master/unraid/platinvault.xml</TemplateURL>' unraid/platinvault.xml
           sed "s#ghcr.io/sushiflux/platinvault:latest#ghcr.io/sushiflux/platinvault:${{ steps.version.outputs.template_tag }}#" \
             unraid/platinvault.xml > "$template"
           if [[ "${{ steps.version.outputs.is_beta }}" == "true" ]]; then
-            # The beta template (hand-copied to the own Unraid for testing) has no tag choice: its default already is ":beta"
-            sed -i -e '/<DefaultTagDescription>/d' -e '/<Branch>/,/<\/Branch>/d' "$template"
+            # The beta template (hand-copied to the own Unraid for testing) has no tag choice: its default already is ":beta". It has no
+            # TemplateURL either (see the check at the end of this step).
+            sed -i -e '/<DefaultTagDescription>/d' -e '/<Branch>/,/<\/Branch>/d' -e '/<TemplateURL>/d' "$template"
           fi
           if [[ "${{ steps.version.outputs.is_dev }}" == "true" ]]; then
             # The dev template can run next to a real installation: own container name, own appdata folder (its own SQLite database -
@@ -230,7 +252,7 @@ jobs:
             template=dist/PlatinVault-Dev.xml
             mv dist/platinvault.xml "$template"
             sed -i \
-              -e '/<DefaultTagDescription>/d' -e '/<Branch>/,/<\/Branch>/d' \
+              -e '/<DefaultTagDescription>/d' -e '/<Branch>/,/<\/Branch>/d' -e '/<TemplateURL>/d' \
               -e 's#<Name>PlatinVault</Name>#<Name>PlatinVault-Dev</Name>#' \
               -e 's#/mnt/cache/appdata/platinvault#/mnt/cache/appdata/platinvault-dev#g' \
               -e '/Name="WebUI Port"/s/5233/5239/g' \
@@ -250,6 +272,13 @@ jobs:
               exit 1
             fi
           fi
+          # Only the release template (the raw file in the repository) carries the TemplateURL: Community Applications matches an
+          # installed template to its feed entry by that URL, and Unraid's (today disabled) template refresh would copy names, defaults and
+          # descriptions from it - a beta/dev container must never be taken for the release one or get its appdata path and port back.
+          if [[ "${{ steps.version.outputs.kind }}" != "release" ]] && grep -q '<TemplateURL>' "$template"; then
+            echo "::error::A beta/dev template must not carry the TemplateURL of the release template"
+            exit 1
+          fi
           grep -q "<Repository>ghcr.io/sushiflux/platinvault:${{ steps.version.outputs.template_tag }}</Repository>" "$template"
 
       # The dev template is not attached to any release: it is a workflow artifact of this run (private repository, 30 days)
@@ -262,64 +291,237 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
-      # A dev build only gets a (draft) release when there is a Windows installer to attach to it (the "windows" job adds it)
-      - name: GitHub Release erstellen
-        if: steps.version.outputs.is_dev != 'true' || steps.version.outputs.builds_windows == 'true'
+      # Always created as a DRAFT (draft first): the "windows" job attaches its files, the "publish" job publishes it at the very end.
+      # A dev build only gets a (draft) release when there is a Windows installer to attach to it, and it stays a draft.
+      - name: GitHub Release als Entwurf erstellen
+        if: steps.version.outputs.has_release == 'true'
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: ${{ steps.version.outputs.release_name }}
-          draft: ${{ steps.version.outputs.is_draft }}
+          draft: true
           prerelease: ${{ steps.version.outputs.is_beta }}
-          body: ${{ steps.version.outputs.release_body }}
           body_path: ${{ steps.version.outputs.notes_file }}
           files: ${{ steps.version.outputs.builds_unraid == 'true' && steps.version.outputs.is_dev != 'true' && 'dist/platinvault.xml' || '' }}
 
-  # Windows program: the designed installer PlatinVault-Setup-<version>.exe (scripts/build-windows.ps1). Built on Windows because the
-  # program and the installer are WinForms exes (the database is SQLite inside the program, nothing else is bundled or compiled).
-  # Runs after "build" (which created the release) and attaches the installer, its .sha256 and the bridge exe to it.
+  # Windows program: the designed installer PlatinVault-Setup-<version>.exe (scripts/build-windows.ps1, in stages). Built on Windows because
+  # the program and the installer are WinForms exes (the database is SQLite inside the program, nothing else is bundled or compiled).
+  # Runs after "build" (which created the draft release) and attaches the installer, its .sha256 and the bridge exe to it - signed when
+  # SignPath is configured (see the top of this file), otherwise unsigned as before.
   windows:
     needs: build
     if: needs.build.outputs.builds_windows == 'true'
     runs-on: windows-latest
     permissions:
       contents: write
+      # The SignPath action reads this run's job details and downloads the uploaded artifact with the GitHub token
+      actions: read
     steps:
       - name: Repo auschecken
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           # Full history: the bridge version 1.0.<n> counts the commits of the bridge files
           fetch-depth: 0
 
       - name: .NET einrichten
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
       - name: Node einrichten
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           node-version: 26
 
-      - name: Windows-Programm und Installer bauen
-        shell: powershell
+      # Signing is switched on by the repository settings alone - nothing to change here once SignPath has approved the project
+      - name: Signieren? (SignPath)
+        id: signing
+        shell: bash
+        env:
+          ORGANIZATION_ID: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          POLICY_SLUG: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          HAS_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN != '' }}
+          SIGN_DEV: ${{ vars.SIGNPATH_SIGN_DEV }}
+          KIND: ${{ needs.build.outputs.kind }}
         run: |
-          $buildArgs = @{ BridgeVersion = '${{ needs.build.outputs.bridge_version }}' }
+          sign=false
+          if [[ -z "$ORGANIZATION_ID" || -z "$PROJECT_SLUG" || -z "$POLICY_SLUG" || "$HAS_TOKEN" != "true" ]]; then
+            echo "signing skipped (SignPath not configured): the Windows files stay unsigned"
+            echo "::notice::signing skipped (SignPath not configured) - the Windows files of this build are unsigned"
+          elif [[ "$KIND" == "dev" && "$SIGN_DEV" != "true" ]]; then
+            echo "signing skipped (dev build; the repository variable SIGNPATH_SIGN_DEV=true signs dev builds too)"
+            echo "::notice::signing skipped (dev build) - the Windows files of this build are unsigned"
+          else
+            sign=true
+            echo "Signing with SignPath (project $PROJECT_SLUG, policy $POLICY_SLUG): two signing requests, each waits for an approval in SignPath"
+          fi
+          echo "sign=$sign" >> "$GITHUB_OUTPUT"
+
+      # Stage 1: UI, bridge and the program folder; with signing also the folder of our own binaries for SignPath (to-sign/app)
+      - name: Windows-Programm bauen (Stufe 1)
+        shell: powershell
+        env:
+          # Readable version (product version in the file properties) - passed through the environment, so the beta sign survives
+          PV_PRODUCT_VERSION: ${{ needs.build.outputs.display_version }}
+        run: |
+          $buildArgs = @{ Stage = 'app'; BridgeVersion = '${{ needs.build.outputs.bridge_version }}'; ProductVersion = $env:PV_PRODUCT_VERSION }
           if ('${{ needs.build.outputs.is_beta }}' -eq 'true') { $buildArgs['Beta'] = $true }
           if ('${{ needs.build.outputs.is_dev }}' -eq 'true') { $buildArgs['Dev'] = $true }
+          if ('${{ steps.signing.outputs.sign }}' -eq 'true') { $buildArgs['PrepareSigning'] = $true }
+          .\scripts\build-windows.ps1 @buildArgs
+
+      # The artifact must be a workflow artifact of this run (SignPath's origin verification); the default ZIP matches the <zip-file> root
+      # of the artifact configuration. Names differ per stage (upload-artifact fails on the same file name twice in one run).
+      - name: Programmdateien fuer die Signatur hochladen
+        id: upload-app
+        if: steps.signing.outputs.sign == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-app-unsigned
+          path: artifacts/windows-cache/to-sign/app
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Warte auf die Freigabe in SignPath (Stufe 1 von 2)
+        if: steps.signing.outputs.sign == 'true'
+        shell: bash
+        run: |
+          echo "::notice::Signing request 1 of 2 (program files: PlatinVault.exe, server, bridge) waits for an approval in SignPath (up to 60 minutes) - approve it at https://app.signpath.io"
+
+      - name: Programmdateien signieren (SignPath, Stufe 1)
+        id: sign-app
+        if: steps.signing.outputs.sign == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_APP_ARTIFACT_CONFIGURATION_SLUG || 'windows-app' }}
+          github-artifact-id: ${{ steps.upload-app.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: artifacts/windows-cache/signed/app
+          parameters: |
+            productVersion: ${{ toJSON(needs.build.outputs.display_version) }}
+
+      # Stage 2: the (signed) program into the installer; the .sha256 is written again after the installer itself is signed
+      - name: Installer bauen (Stufe 2)
+        shell: powershell
+        env:
+          PV_PRODUCT_VERSION: ${{ needs.build.outputs.display_version }}
+        run: |
+          $buildArgs = @{ Stage = 'setup'; ProductVersion = $env:PV_PRODUCT_VERSION }
+          if ('${{ needs.build.outputs.is_beta }}' -eq 'true') { $buildArgs['Beta'] = $true }
+          if ('${{ needs.build.outputs.is_dev }}' -eq 'true') { $buildArgs['Dev'] = $true }
+          if ('${{ steps.signing.outputs.sign }}' -eq 'true') { $buildArgs['SignedAppDir'] = 'artifacts\windows-cache\signed\app' }
+          .\scripts\build-windows.ps1 @buildArgs
+
+      - name: Installer fuer die Signatur hochladen
+        id: upload-setup
+        if: steps.signing.outputs.sign == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-setup-unsigned
+          path: artifacts/windows/PlatinVault-Setup-*.exe
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Warte auf die Freigabe in SignPath (Stufe 2 von 2)
+        if: steps.signing.outputs.sign == 'true'
+        shell: bash
+        run: |
+          echo "::notice::Signing request 2 of 2 (the installer) waits for an approval in SignPath (up to 60 minutes) - approve it at https://app.signpath.io"
+
+      - name: Installer signieren (SignPath, Stufe 2)
+        id: sign-setup
+        if: steps.signing.outputs.sign == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_SETUP_ARTIFACT_CONFIGURATION_SLUG || 'windows-setup' }}
+          github-artifact-id: ${{ steps.upload-setup.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: artifacts/windows-cache/signed/setup
+          parameters: |
+            productVersion: ${{ toJSON(needs.build.outputs.display_version) }}
+
+      # Final files: the signed installer replaces the built one, the payload must still be found, the signatures of the installer,
+      # PlatinVault.exe and the bridge must be "Valid" (otherwise the job fails), and the .sha256 comes from the final installer
+      - name: Endgueltige Dateien pruefen (Signatur, SHA-256)
+        shell: powershell
+        run: |
+          $buildArgs = @{ Stage = 'checksum' }
+          if ('${{ needs.build.outputs.is_beta }}' -eq 'true') { $buildArgs['Beta'] = $true }
+          if ('${{ needs.build.outputs.is_dev }}' -eq 'true') { $buildArgs['Dev'] = $true }
+          if ('${{ steps.signing.outputs.sign }}' -eq 'true') {
+            $buildArgs['SignedSetup'] = 'artifacts\windows-cache\signed\setup'
+            $buildArgs['RequireSignature'] = $true
+          }
           .\scripts\build-windows.ps1 @buildArgs
           Get-ChildItem artifacts\windows | Format-Table Name, Length
 
-      # The same release the "build" job created: a draft for a dev build, a public pre-release for a beta, a normal release otherwise.
-      # Customers and the program's own update check download from here (drafts are invisible to the update check).
-      - name: Installer an das Release haengen
+      # Attached to the DRAFT the "build" job created; the "publish" job publishes it after all platform jobs succeeded
+      - name: Installer an den Release-Entwurf haengen
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.build.outputs.tag }}
-          draft: ${{ needs.build.outputs.is_draft }}
+          draft: true
           prerelease: ${{ needs.build.outputs.is_beta }}
+          fail_on_unmatched_files: true
           files: |
             artifacts/windows/PlatinVault-Setup-*.exe
             artifacts/windows/PlatinVault-Setup-*.exe.sha256
             artifacts/windows/PlatinVault.Bridge.exe
 
+  # Publishes the draft (beta: pre-release, release: normal release and "Latest") only after every selected platform job succeeded and
+  # only when every expected file is attached. A dev build is never published (its draft stays for the user's own download).
+  publish:
+    needs: [build, windows]
+    if: >-
+      always() && needs.build.result == 'success' && needs.build.outputs.is_dev != 'true' && needs.build.outputs.has_release == 'true' &&
+      (needs.windows.result == 'success' || needs.windows.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Release veroeffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.build.outputs.tag }}
+          IS_BETA: ${{ needs.build.outputs.is_beta }}
+          BUILDS_WINDOWS: ${{ needs.build.outputs.builds_windows }}
+          BUILDS_UNRAID: ${{ needs.build.outputs.builds_unraid }}
+          WINDOWS_RESULT: ${{ needs.windows.result }}
+        run: |
+          # A Windows build that was asked for must have run (skipped here would mean it never started)
+          if [[ "$BUILDS_WINDOWS" == "true" && "$WINDOWS_RESULT" != "success" ]]; then
+            echo "::error::The Windows build did not succeed ($WINDOWS_RESULT) - the release stays a draft"
+            exit 1
+          fi
+          assets="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
+          echo "Dateien am Entwurf:"
+          echo "$assets"
+          missing=""
+          expect() { grep -qxF "$1" <<< "$assets" || missing="$missing $1"; }
+          if [[ "$BUILDS_UNRAID" == "true" ]]; then expect platinvault.xml; fi
+          if [[ "$BUILDS_WINDOWS" == "true" ]]; then
+            expect "PlatinVault-Setup-${TAG}.exe"
+            expect "PlatinVault-Setup-${TAG}.exe.sha256"
+            expect PlatinVault.Bridge.exe
+          fi
+          if [[ -n "$missing" ]]; then
+            echo "::error::Missing on the draft:$missing - the release stays a draft"
+            exit 1
+          fi
+          if [[ "$IS_BETA" == "true" ]]; then
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease
+          else
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease=false --latest
+          fi
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json name,isDraft,isPrerelease,url --jq '"\(.name): draft=\(.isDraft) prerelease=\(.isPrerelease) \(.url)"'

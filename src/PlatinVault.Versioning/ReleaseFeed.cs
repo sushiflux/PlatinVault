@@ -10,9 +10,10 @@ public sealed record InstallerAsset(string Name, string Url, string ChecksumUrl)
 /// One published beta or release of the public repository. <see cref="IsPreRelease"/> is true for a beta tag, a former release
 /// candidate tag, or a release GitHub marks as pre-release (a mismatch is treated as the safer "beta", so a release-only installation
 /// is never offered it). <see cref="NotesUrl"/> is the release page with its notes; <see cref="Installer"/> is null when the release
-/// has no Windows installer (e.g. an image-only build).
+/// has no Windows installer (e.g. an image-only build). <see cref="Notes"/> is the release text (GitHub "body") as plain text, capped at
+/// <see cref="ReleaseFeed.MaxNotesLength"/> characters; null when the release has none.
 /// </summary>
-public sealed record PublishedRelease(ReleaseVersion Version, bool IsPreRelease, string? NotesUrl, DateTimeOffset? PublishedAt, InstallerAsset? Installer);
+public sealed record PublishedRelease(ReleaseVersion Version, bool IsPreRelease, string? NotesUrl, DateTimeOffset? PublishedAt, InstallerAsset? Installer, string? Notes = null);
 
 /// <summary>
 /// Reads the GitHub releases list of the public repository (<c>GET /repos/{owner}/{repo}/releases</c>) and decides which version to
@@ -41,7 +42,7 @@ public static class ReleaseFeed
             var notes = Text(release, "html_url") is { } html && IsGitHubUrl(html) ? html : null;
             DateTimeOffset? published = DateTimeOffset.TryParse(Text(release, "published_at"), CultureInfo.InvariantCulture,
                 DateTimeStyles.AssumeUniversal, out var at) ? at : null;
-            result.Add(new PublishedRelease(version, version.IsPreRelease || markedPreRelease, notes, published, FindInstaller(release)));
+            result.Add(new PublishedRelease(version, version.IsPreRelease || markedPreRelease, notes, published, FindInstaller(release), CleanNotes(Text(release, "body"))));
         }
         return result;
     }
@@ -92,6 +93,33 @@ public static class ReleaseFeed
         var list = releases as IReadOnlyCollection<PublishedRelease> ?? releases.ToList();
         var release = LatestRelease(list);
         return list.Where(r => r.IsPreRelease && (release is null || r.Version > release.Version)).MaxBy(r => r.Version);
+    }
+
+    /// <summary>Longest release text kept (characters): a release body is a few KB; this only protects the status answer and the cache.</summary>
+    public const int MaxNotesLength = 64 * 1024;
+
+    /// <summary>
+    /// The release body as plain text: control characters (except line breaks and tabs) removed, line endings as "\n", surrounding blank
+    /// space trimmed, cut at <see cref="MaxNotesLength"/> (never inside a surrogate pair); null when nothing is left. Nothing is interpreted
+    /// here - the UI renders the text safely itself.
+    /// </summary>
+    internal static string? CleanNotes(string? body)
+    {
+        if (string.IsNullOrWhiteSpace(body)) return null;
+        var text = body.Replace("\r\n", "\n").Replace('\r', '\n');
+        var builder = new System.Text.StringBuilder(Math.Min(text.Length, MaxNotesLength + 1));
+        foreach (var ch in text)
+        {
+            if (char.IsControl(ch) && ch is not ('\n' or '\t')) continue;
+            builder.Append(ch);
+        }
+        var clean = builder.ToString().Trim();
+        if (clean.Length > MaxNotesLength)
+        {
+            var length = char.IsHighSurrogate(clean[MaxNotesLength - 1]) ? MaxNotesLength - 1 : MaxNotesLength;
+            clean = clean[..length].TrimEnd();
+        }
+        return clean.Length == 0 ? null : clean;
     }
 
     private static string? Text(JsonElement element, string property) =>

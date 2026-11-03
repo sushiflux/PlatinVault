@@ -3719,6 +3719,275 @@ html:has(.pv-lang) {
   outline-offset: 2px;
 }
 
+/* Release notes dialog (components/updates/ReleaseNotesDialog.tsx). Layout: header / scrolling body / footer, inside the viewport
+   on a phone and on a 32:9 screen alike (a fixed reading width, centred). Each category section carries its accent through
+   --cat / --cat-bg / --cat-border, set inline from the category. */
+.pv-notes {
+  display: flex;
+  flex-direction: column;
+  inline-size: min(100%, 46rem);
+  max-block-size: min(100%, 52rem);
+  overflow: hidden;
+}
+
+.pv-notes-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding: 1.15rem 1.35rem 1rem;
+  background: linear-gradient(180deg, var(--accent-crystal-bg), transparent 140%);
+  border-block-end: 1px solid var(--border-subtle);
+}
+
+.pv-notes-headtile {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  color: var(--accent-crystal);
+  background: var(--bg-surface);
+  border: 1px solid var(--accent-crystal-border);
+  border-radius: var(--radius-md);
+}
+
+.pv-notes-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+.pv-notes-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.65rem;
+  margin-block-start: 0.3rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.pv-notes-pill {
+  padding: 0.05rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+  border: 1px solid var(--accent-gold-border);
+  border-radius: var(--radius-sm);
+}
+
+.pv-notes-body {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1.15rem 1.35rem 1.35rem;
+}
+
+.pv-notes-body:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: -2px;
+}
+
+/* Loading, error and empty state keep the room of a short entry, so the window does not jump when the text arrives */
+.pv-notes-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.6rem;
+  min-block-size: 11rem;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+p.pv-notes-state:not(.pv-notes-state--error) {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.pv-notes-state--error {
+  color: var(--accent-crimson);
+  font-weight: 600;
+}
+
+.pv-notes-state--error p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.pv-notes-summary {
+  padding-block-end: 0.35rem;
+}
+
+.pv-notes-p {
+  margin: 0;
+  font-size: 0.93rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+.pv-notes-summary .pv-notes-p + .pv-notes-p,
+.pv-notes-section-body .pv-notes-p + .pv-notes-p {
+  margin-block-start: 0.55rem;
+}
+
+.pv-notes-section {
+  overflow: hidden;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.pv-notes-section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  background: var(--cat-bg);
+  border-block-end: 1px solid var(--cat-border);
+}
+
+.pv-notes-tile {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.85rem;
+  block-size: 1.85rem;
+  color: var(--cat);
+  background: var(--bg-surface);
+  border: 1px solid var(--cat-border);
+  border-radius: var(--radius-sm);
+}
+
+.pv-notes-count {
+  flex: none;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.pv-notes-section-body {
+  padding: 0.35rem 0.85rem 0.8rem;
+}
+
+.pv-notes-section-body .pv-notes-p {
+  margin-block-start: 0.45rem;
+  font-size: 0.9rem;
+}
+
+.pv-notes-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pv-notes-list li {
+  position: relative;
+  margin-block-start: 0.55rem;
+  padding-inline-start: 1.1rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.pv-notes-list li::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0.1rem;
+  inset-block-start: 0.62em;
+  inline-size: 0.4rem;
+  block-size: 0.4rem;
+  background: var(--cat);
+  border-radius: 50%;
+}
+
+.pv-notes-body strong {
+  color: var(--text-primary);
+}
+
+.pv-notes-body code {
+  padding: 0.05rem 0.3rem;
+  font-family: ui-monospace, "Cascadia Mono", "JetBrains Mono", Consolas, monospace;
+  font-size: 0.85em;
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+}
+
+.pv-notes-body a {
+  color: var(--accent-crystal);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pv-notes-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  padding: 0.8rem 1.35rem;
+  background: var(--bg-elevated);
+  border-block-start: 1px solid var(--border-subtle);
+}
+
+/* "View on GitHub": a quiet text link, the primary action of the footer is "Close" */
+.pv-notes-ghlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+.pv-notes-ghlink:hover {
+  color: var(--text-primary);
+}
+
+.pv-notes-ghlink:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .pv-notes-head {
+    padding: 0.9rem 0.95rem 0.8rem;
+    gap: 0.7rem;
+  }
+
+  .pv-notes-headtile {
+    display: none;
+  }
+
+  .pv-notes-body {
+    padding: 0.9rem 0.95rem 1rem;
+  }
+
+  .pv-notes-foot {
+    padding: 0.7rem 0.95rem;
+  }
+}
+
 /* The version at the foot of a page as a button (components/updates/VersionCheck.tsx): looks like the plain version until hovered or focused */
 .pv-vercheck {
   display: inline-flex;

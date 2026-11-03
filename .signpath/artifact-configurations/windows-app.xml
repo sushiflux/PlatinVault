@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SignPath artifact configuration "windows-app" (stage 1 of the Windows release, .github/workflows/release.yml, job "windows").
+  This file is the source for what is configured in SignPath (Project -> Artifact configurations -> windows-app): change it here first,
+  then paste it into SignPath. scripts/build-windows.ps1 (-Stage app -PrepareSigning) reads the same file and copies exactly the files
+  listed here (with their folders) into the artifact that is uploaded for signing, so the list cannot drift.
+
+  Only our own binaries are signed (SignPath Foundation: "sign your own binaries only"); the .NET runtime, WebView2Loader.dll, e_sqlite3.dll
+  and every other third-party file stay as they are. Every file must exist exactly once (SignPath's default min/max matches = 1).
+  Metadata restrictions (required by SignPath Foundation): product name = the project's name, product version = the same readable version
+  for every binary of one build ("v2026.11.14 (15.116022)", parameter productVersion, passed by the workflow).
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="productVersion" required="true" />
+  </parameters>
+  <zip-file>
+    <pe-file path="PlatinVault.exe" product-name="PlatinVault" product-version="${productVersion}">
+      <authenticode-sign />
+    </pe-file>
+    <pe-file path="PlatinVault.dll" product-name="PlatinVault" product-version="${productVersion}">
+      <authenticode-sign />
+    </pe-file>
+    <pe-file path="Companion.Api.exe" product-name="PlatinVault" product-version="${productVersion}">
+      <authenticode-sign />
+    </pe-file>
+    <pe-file path="Companion.Api.dll" product-name="PlatinVault" product-version="${productVersion}">
+      <authenticode-sign />
+    </pe-file>
+    <pe-file path="PlatinVault.Versioning.dll" product-name="PlatinVault" product-version="${productVersion}">
+      <authenticode-sign />
+    </pe-file>
+    <pe-file path="PlatinVault.Windows.Common.dll" product-name="PlatinVault" product-version="${productVersion}">
+      <authenticode-sign />
+    </pe-file>
+    <directory path="bridge">
+      <pe-file path="PlatinVault.Bridge.exe" product-name="PlatinVault" product-version="${productVersion}">
+        <authenticode-sign />
+      </pe-file>
+    </directory>
+  </zip-file>
+</artifact-configuration>

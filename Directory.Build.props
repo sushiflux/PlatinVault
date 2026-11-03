@@ -12,10 +12,31 @@
     <NuGetAuditMode>all</NuGetAuditMode>
     <NuGetAuditLevel>low</NuGetAuditLevel>
 
+    <!-- File properties of every binary (Product name, Company, Copyright); the code signing service checks the product name too -->
     <Authors>SushiFlux</Authors>
     <Company>SushiFlux</Company>
     <Product>PlatinVault</Product>
     <Copyright>© 2026 SushiFlux</Copyright>
+    <!-- The product version is the build's readable version below, never "<version>+<commit>" -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+
+  <!--
+    Version of a packaged build (scripts/build-windows.ps1 and scripts/build-bridge.ps1 pass both as global properties, so every
+    referenced project gets the same values):
+      PvProductVersion = the readable version of the build, e.g. "v2026.11.14 (15.116022)", beta "... β)", dev "...-dev)"
+                         (scripts/version-display.sh, the twin of src/PlatinVault.Versioning/VersionFormat.cs) -> InformationalVersion
+                         = "Product version" in the file properties; identical for all binaries of one build.
+      PvFileVersion    = the numeric form of version.txt line 1, e.g. 2026.11.14.0 (four parts, each at most 65535) -> FileVersion and
+                         AssemblyVersion.
+    Without them (dotnet build/watch/test, the Docker image) the SDK defaults stay and everything builds as before. The bridge keeps its
+    own version 1.0.<n> as file/assembly version (see PlatinVault.Bridge.csproj).
+  -->
+  <PropertyGroup Condition="'$(PvProductVersion)' != ''">
+    <InformationalVersion>$(PvProductVersion)</InformationalVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(PvFileVersion)' != ''">
+    <FileVersion>$(PvFileVersion)</FileVersion>
+    <AssemblyVersion>$(PvFileVersion)</AssemblyVersion>
   </PropertyGroup>
 </Project>
-

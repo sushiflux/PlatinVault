@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using Companion.Api.Services;
 using PlatinVault.Bridge.Ui;
@@ -312,12 +311,8 @@ internal static class Program
         return new RunOutcome(exitCode);
     }
 
-    private static string GetVersion()
-    {
-        var assembly = typeof(Program).Assembly;
-        var info = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-        if (!string.IsNullOrWhiteSpace(info)) return info.Split('+')[0];
-        return assembly.GetName().Version?.ToString(3) ?? "0.0.0";
-    }
+    // The bridge's own version 1.0.<n> is its assembly version (PlatinVault.Bridge.csproj). The informational version ("product version")
+    // is the readable version of the PlatinVault build (e.g. "v2026.11.14 (15.116022)") and is not comparable, so it is not used here.
+    private static string GetVersion() => typeof(Program).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
 
 }

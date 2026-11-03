@@ -5,8 +5,11 @@ using PlatinVault.Versioning;
 
 namespace Companion.Api.Endpoints;
 
-/// <summary>A published beta or release: technical tag, readable form, the page with its notes.</summary>
-public sealed record UpdateReleaseDto(string Tag, string Display, bool IsBeta, string? NotesUrl, DateTimeOffset? PublishedAt, bool HasInstaller);
+/// <summary>
+/// A published beta or release: technical tag, readable form, the page with its notes (<c>NotesUrl</c>) and the notes themselves as plain
+/// text (<c>Notes</c> = the GitHub release body, at most 64 KiB, null when the release has none), so the UI never has to call GitHub itself.
+/// </summary>
+public sealed record UpdateReleaseDto(string Tag, string Display, bool IsBeta, string? NotesUrl, DateTimeOffset? PublishedAt, bool HasInstaller, string? Notes = null);
 
 /// <summary>
 /// Settings > System > Updates. <c>State</c>: "disabled" | "unchecked" | "upToDate" | "available" | "error" | "devBuild" (a dev build is
@@ -82,6 +85,8 @@ public static class UpdateEndpoints
             {
                 DesktopUpdateOutcome.Started => Results.Ok(new InstallUpdateResponse(true, offer.Version.Text)),
                 DesktopUpdateOutcome.ChecksumMismatch => Problems.Create(StatusCodes.Status502BadGateway, ServerTexts.Updates.InstallTitle, ServerTexts.Updates.InstallChecksumMismatch),
+                DesktopUpdateOutcome.SignatureRejected => Problems.Create(StatusCodes.Status502BadGateway, ServerTexts.Updates.InstallTitle, ServerTexts.Updates.InstallSignatureRejected(result.Detail ?? "?")),
+                DesktopUpdateOutcome.ProgramSignatureInvalid => Problems.Create(StatusCodes.Status409Conflict, ServerTexts.Updates.InstallTitle, ServerTexts.Updates.InstallProgramSignatureInvalid(result.Detail ?? "?")),
                 DesktopUpdateOutcome.NotSupported => Problems.Create(StatusCodes.Status409Conflict, ServerTexts.Updates.InstallTitle, ServerTexts.Updates.InstallNotAllowed),
                 _ => Problems.Create(StatusCodes.Status502BadGateway, ServerTexts.Updates.InstallTitle, ServerTexts.Updates.InstallFailed(result.Detail ?? "?")),
             };
@@ -109,7 +114,7 @@ public static class UpdateEndpoints
 
     private static UpdateReleaseDto? Release(PublishedRelease? release) => release is null
         ? null
-        : new UpdateReleaseDto(release.Version.Text, release.Version.Display, release.IsPreRelease, release.NotesUrl, release.PublishedAt, release.Installer is not null);
+        : new UpdateReleaseDto(release.Version.Text, release.Version.Display, release.IsPreRelease, release.NotesUrl, release.PublishedAt, release.Installer is not null, release.Notes);
 
     private static string StateId(UpdateState state) => state switch
     {

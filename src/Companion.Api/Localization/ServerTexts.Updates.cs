@@ -61,6 +61,14 @@ public static partial class ServerTexts
             "Der heruntergeladene Installer stimmt nicht mit der veröffentlichten Prüfsumme überein und wurde gelöscht. Es wurde nichts installiert. Versuche es später erneut.",
             "The downloaded installer does not match the published checksum and was deleted. Nothing was installed. Please try again later.");
 
+        public static Msg InstallSignatureRejected(string reason) => M(
+            $"Die digitale Signatur des heruntergeladenen Installers ist nicht in Ordnung: Sie fehlt, ist ungültig oder stammt nicht vom selben Herausgeber wie dein installiertes PlatinVault oder gehört nicht zu PlatinVault. Der Installer wurde gelöscht und nicht gestartet, es wurde nichts installiert. Versuche es später erneut oder lade den Installer von Hand von der offiziellen Release-Seite. Technische Einzelheiten: {reason}",
+            $"The digital signature of the downloaded installer is not acceptable: it is missing, invalid, from a different publisher than your installed PlatinVault or not a PlatinVault installer. The installer was deleted and not started, nothing was installed. Try again later or download the installer by hand from the official release page. Technical details: {reason}");
+
+        public static Msg InstallProgramSignatureInvalid(string reason) => M(
+            $"Die digitale Signatur deines installierten PlatinVault ist nicht mehr gültig (Dateien verändert oder beschädigt?), deshalb lässt sich ein Update nicht sicher prüfen. Es wurde nichts installiert. Installiere PlatinVault bitte von Hand neu: Lade den Installer von der offiziellen Release-Seite herunter und führe ihn aus, deine Daten bleiben dabei erhalten. Technische Einzelheiten: {reason}",
+            $"The digital signature of your installed PlatinVault is no longer valid (files changed or damaged?), so an update cannot be checked safely. Nothing was installed. Please reinstall PlatinVault by hand: download the installer from the official release page and run it, your data is kept. Technical details: {reason}");
+
         public static Msg InstallFailed(string reason) => M(
             $"Der Installer konnte nicht geladen oder gestartet werden: {reason}",
             $"The installer could not be downloaded or started: {reason}");

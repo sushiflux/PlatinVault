@@ -278,6 +278,27 @@ const settings = {
     restartTour: 'Restart the introduction',
     hintsReset: 'The hints will appear again the next time you visit each page.',
   },
+  // Settings > System > Folders (Windows program only, components/settings/FoldersSection.tsx)
+  folders: {
+    title: 'Folders',
+    intro: 'This is where PlatinVault lives on this PC. “Open” shows the folder in Windows Explorer.',
+    programHint: 'The program folder is in your user profile because PlatinVault is installed per user, without administrator rights – so updates need no admin confirmation.',
+    kinds: {
+      program: { label: 'Program folder', hint: 'The installed program files' },
+      data: { label: 'Data folder', hint: 'Database and settings' },
+      backups: { label: 'Backups', hint: 'Automatic backups of the database' },
+      logs: { label: 'Logs', hint: 'Log files for troubleshooting' },
+    },
+    open: 'Open',
+    openLabel: 'Open {{folder}}',
+    copy: 'Copy path',
+    copyHint: 'Copies the path to the clipboard',
+    pathLoading: 'Reading …',
+    loadFailed: 'The folders could not be determined: {{reason}}',
+    openFailed: 'The folder “{{folder}}” could not be opened: {{reason}}',
+    copied: 'The path of “{{folder}}” was copied to the clipboard.',
+    copyFailed: 'The path of “{{folder}}” could not be copied. Select it and copy it with Ctrl+C.',
+  },
   // Settings > System > Updates
   updates: {
     title: 'Updates',
@@ -328,6 +349,7 @@ const settings = {
       saveFailed: 'The update interval was not saved: {{reason}}',
     },
     notes: 'View release notes',
+    notesOnGitHub: 'View release notes on GitHub',
     install: 'Install update',
     confirm: {
       title: 'Install the update?',

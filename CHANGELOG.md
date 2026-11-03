@@ -7,6 +7,36 @@
 <a name="english"></a>
 ## English
 
+## v2026.11.15 (27.4718)
+
+### ✨ New
+
+- **"What's new" window:** the release notes of a new version open in PlatinVault's own window – sorted into New, Changed,
+  Fixed and more, in your language – instead of a link to GitHub.
+- **Open folders (Windows program):** the tray menu and Settings → System → Folders open the program folder, the data
+  folder, the backups and the logs with one click; every path can be copied.
+
+### 🔄 Changed
+
+- **Privacy at a glance:** the installer now says which connections PlatinVault makes by itself and how to switch them off.
+  The README has a privacy policy and a code signing policy, and every release page links the code signing policy.
+- **Release notes come from your PlatinVault:** the app window no longer contacts GitHub itself to show them.
+- **Windows file properties** show the product name PlatinVault and the full version.
+- **Handbook:** new section "Antivirus flags PlatinVault" – what to do when a virus scanner blocks or quarantines files.
+
+### 🔒 Security
+
+- **Prepared for signed Windows releases:** once the Windows files are signed, the program only installs an update whose
+  installer carries a valid signature for PlatinVault – otherwise it refuses with a complete message. The signing
+  application is still pending, so this release is not signed yet.
+
+### 🔧 Fix
+
+- **The installer repairs a damaged installation:** if an antivirus removed the program file, the installer no longer
+  refuses with "the folder already contains other files". It repairs the installation, backs up your database first and
+  keeps all your data.
+- Installers downloaded for earlier updates are cleaned up automatically.
+
 ## v2026.11.14 (15.116022)
 
 PlatinVault brings your Steam achievements and AI-researched 100 % guides together in one app. Every achievement you
@@ -60,6 +90,38 @@ free and open source.
 
 <a name="deutsch"></a>
 ## Deutsch
+
+## v2026.11.15 (27.4718)
+
+### ✨ Neu
+
+- **Fenster „Das ist neu“:** Die Release-Notizen einer neuen Version öffnen sich in einem eigenen PlatinVault-Fenster –
+  sortiert nach Neu, Geändert, Behoben und mehr, in deiner Sprache – statt als Link zu GitHub.
+- **Ordner öffnen (Windows-Programm):** Das Menü am Symbol neben der Uhr und Einstellungen → System → Ordner öffnen
+  Programmordner, Datenordner, Sicherungen und Protokolle mit einem Klick; jeden Pfad kannst du kopieren.
+
+### 🔄 Geändert
+
+- **Datenschutz auf einen Blick:** Der Installer sagt jetzt, mit welchen Diensten PlatinVault von selbst Kontakt aufnimmt
+  und wie du das abschaltest. Die README hat eine Datenschutzerklärung und eine Richtlinie zur Code-Signierung, jede
+  Release-Seite verweist darauf.
+- **Release-Notizen kommen von deinem PlatinVault:** Das App-Fenster fragt dafür nicht mehr selbst bei GitHub nach.
+- **Dateieigenschaften unter Windows** zeigen den Produktnamen PlatinVault und die volle Version.
+- **Handbuch:** neuer Abschnitt „Virenschutz meldet PlatinVault“ – was du tun kannst, wenn ein Virenscanner Dateien
+  blockiert oder in Quarantäne verschiebt.
+
+### 🔒 Sicherheit
+
+- **Vorbereitet für signierte Windows-Versionen:** Sobald die Windows-Dateien signiert sind, installiert das Programm nur
+  noch ein Update, dessen Installer eine gültige Signatur für PlatinVault trägt – sonst lehnt es mit einer vollständigen
+  Meldung ab. Der Antrag für die Signatur läuft noch, diese Version ist deshalb noch nicht signiert.
+
+### 🔧 Behoben
+
+- **Der Installer repariert eine beschädigte Installation:** Hat ein Virenschutz die Programmdatei entfernt, lehnt der
+  Installer nicht mehr mit „Im Ordner liegen schon andere Dateien“ ab. Er repariert die Installation, sichert vorher deine
+  Datenbank und behält alle Daten.
+- Installer, die für frühere Updates heruntergeladen wurden, werden automatisch aufgeräumt.
 
 ## v2026.11.14 (15.116022)
 

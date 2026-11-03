@@ -41,6 +41,12 @@ internal sealed partial class InstallEngine(InstallLayout layout, Payload payloa
     /// </summary>
     public Func<Msg, Task<bool>>? ConfirmWithoutBackup { get; init; }
 
+    /// <summary>Starts PlatinVault.exe for <c>--backup-now</c> / <c>--prepare</c> (exe, arguments, line callback, timeout) and returns its exit code.</summary>
+    internal delegate Task<int> ToolRunner(string exe, IEnumerable<string> args, Action<string> onLine, TimeSpan timeout, CancellationToken ct);
+
+    /// <summary>Test aid: replaces the real process start (a test has no real PlatinVault.exe to run). Null = start the program.</summary>
+    internal ToolRunner? Tool { get; init; }
+
     public async Task RunAsync(InstallRequest request, IProgress<InstallProgress> progress, CancellationToken ct)
     {
         var target = Path.GetFullPath(request.InstallDir);
@@ -59,18 +65,11 @@ internal sealed partial class InstallEngine(InstallLayout layout, Payload payloa
         progress.Report(new InstallProgress(0.04f, InstallTask.Stop, SetupTexts.TaskStop));
         if (!await Task.Run(() => AppInstance.RequestQuitAndWait(layout, TimeSpan.FromSeconds(120)), ct)) throw new InstallException(InstallTexts.StillRunning);
         var oldExe = Path.Combine(target, InstallLayout.ExeName);
-        if (File.Exists(oldExe) && Directory.Exists(layout.Data.Database))
-        {
-            var output = new List<string>();
-            var backupExit = await RunToolAsync(oldExe, ["--backup-now", .. layout.InheritedArguments()], line => { lock (output) output.Add(line); }, TimeSpan.FromMinutes(5), ct);
-            if (backupExit != 0)
-            {
-                string reason;
-                lock (output) reason = output.Count > 0 ? string.Join(" ", output.TakeLast(6)) : $"PlatinVault.exe --backup-now (exit code {backupExit})";
-                var question = SetupTexts.BackupFailed(reason);
-                if (ConfirmWithoutBackup is null || !await ConfirmWithoutBackup(question)) throw new InstallException(SetupTexts.BackupFailedCancelled(reason));
-            }
-        }
+        var hasDatabase = File.Exists(DatabaseFile(layout));
+        // The previous program makes the backup. When it is gone (an antivirus removed PlatinVault.exe, a half-deleted folder) the NEW program
+        // does it right after the files are in place and before it touches the database in step 5 - see FinishAsync.
+        var backupWithNewProgram = hasDatabase && !File.Exists(oldExe);
+        if (hasDatabase && !backupWithNewProgram) await BackupAsync(oldExe, ct);
 
         // 3 - files: staging folder on the same drive, then swap
         progress.Report(new InstallProgress(0.1f, InstallTask.Files, SetupTexts.TaskFiles));
@@ -102,7 +101,7 @@ internal sealed partial class InstallEngine(InstallLayout layout, Payload payloa
         var hadOld = Directory.Exists(backup);
         try
         {
-            await FinishAsync(request, target, progress, ct);
+            await FinishAsync(request, target, backupWithNewProgram, progress, ct);
         }
         catch (Exception ex) when (ex is InstallException or IOException or UnauthorizedAccessException or InvalidOperationException)
         {
@@ -130,7 +129,26 @@ internal sealed partial class InstallEngine(InstallLayout layout, Payload payloa
         }
     }
 
-    private async Task FinishAsync(InstallRequest request, string target, IProgress<InstallProgress> progress, CancellationToken ct)
+    /// <summary>The SQLite file of the Windows program; the same relative place the program itself uses (DatabaseHost.DatabaseFile).</summary>
+    internal static string DatabaseFile(InstallLayout layout) => Path.Combine(layout.Data.Database, "platinvault.db");
+
+    /// <summary>
+    /// <c>--backup-now</c> of <paramref name="exe"/> (the program that is about to be replaced, or the new one when the old one is gone).
+    /// Exit code 0 = a backup was made or nothing had changed; anything else asks the user (our own dialog) whether to go on without one -
+    /// a headless run (no dialog) cancels.
+    /// </summary>
+    private async Task BackupAsync(string exe, CancellationToken ct)
+    {
+        var output = new List<string>();
+        var backupExit = await (Tool ?? RunToolAsync)(exe, ["--backup-now", .. layout.InheritedArguments()], line => { lock (output) output.Add(line); }, TimeSpan.FromMinutes(5), ct);
+        if (backupExit == 0) return;
+        string reason;
+        lock (output) reason = output.Count > 0 ? string.Join(" ", output.TakeLast(6)) : $"PlatinVault.exe --backup-now (exit code {backupExit})";
+        var question = SetupTexts.BackupFailed(reason);
+        if (ConfirmWithoutBackup is null || !await ConfirmWithoutBackup(question)) throw new InstallException(SetupTexts.BackupFailedCancelled(reason));
+    }
+
+    private async Task FinishAsync(InstallRequest request, string target, bool backupWithNewProgram, IProgress<InstallProgress> progress, CancellationToken ct)
     {
         // 4 - WebView2 runtime
         progress.Report(new InstallProgress(0.58f, InstallTask.WebView, SetupTexts.TaskWebView));
@@ -149,9 +167,16 @@ internal sealed partial class InstallEngine(InstallLayout layout, Payload payloa
         }
 
         // 5 - database: the installed program sets it up itself and reports progress lines
+        if (backupWithNewProgram)
+        {
+            // Repair of a damaged installation: the old PlatinVault.exe was missing, so its backup could not be made earlier. The new program's
+            // --backup-now only copies the file (VACUUM INTO), it migrates nothing - so this still happens before --prepare changes the schema.
+            progress.Report(new InstallProgress(0.6f, InstallTask.Database, SetupTexts.TaskBackupExisting));
+            await BackupAsync(Path.Combine(target, InstallLayout.ExeName), ct);
+        }
         progress.Report(new InstallProgress(0.62f, InstallTask.Database, SetupTexts.TaskDatabase));
         string? errorDe = null, errorEn = null;
-        var exit = await RunToolAsync(Path.Combine(target, InstallLayout.ExeName), ["--prepare", .. layout.InheritedArguments()], line =>
+        var exit = await (Tool ?? RunToolAsync)(Path.Combine(target, InstallLayout.ExeName), ["--prepare", .. layout.InheritedArguments()], line =>
         {
             var match = ProgressLine().Match(line);
             if (match.Success)
@@ -185,7 +210,8 @@ internal sealed partial class InstallEngine(InstallLayout layout, Payload payloa
     public static Msg? CheckFolder(string folder)
     {
         if (!InstallLayout.IsSafeProgramFolder(folder)) return SetupTexts.FolderUnsafe(folder);
-        if (Directory.Exists(folder) && Directory.EnumerateFileSystemEntries(folder).Any() && !File.Exists(Path.Combine(folder, InstallLayout.ExeName)))
+        // A folder with files is fine when it is a PlatinVault program folder - also one whose PlatinVault.exe is gone (see IsProgramFolder)
+        if (Directory.Exists(folder) && Directory.EnumerateFileSystemEntries(folder).Any() && !InstallLayout.IsProgramFolder(folder))
             return SetupTexts.FolderNotEmpty(folder);
         return null;
     }

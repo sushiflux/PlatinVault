@@ -132,7 +132,8 @@ export function parseMarkdown(source: string): MarkdownBlock[] {
 // `code`, **bold**, [text](http(s)-url) and bare http(s) URLs. Anything else stays plain text (React escapes it).
 const INLINE = /(`[^`\n]+`)|(\*\*[^*\n]+\*\*)|(\[[^\]\n]+\]\(https?:\/\/[^\s)]+\))|(https?:\/\/[^\s<>`)\]]*[^\s<>`)\].,;:!?])/g
 
-function renderInline(text: string): ReactNode[] {
+/** Inline Markdown (`code`, **bold**, links) of one line of text as React nodes. Exported for the release notes dialog. */
+export function renderInline(text: string): ReactNode[] {
   const out: ReactNode[] = []
   let last = 0
   let key = 0

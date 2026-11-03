@@ -47,6 +47,11 @@ internal static class DesktopTexts
         public static readonly Msg Notifications = new("Windows-Benachrichtigungen", "Windows notifications");
         public static readonly Msg Autostart = new("Mit Windows starten", "Start with Windows");
         public static readonly Msg Handbook = new("Handbuch öffnen", "Open handbook");
+        public static Msg FolderNotOpened(string path, string reason) => new(
+            $"Der Ordner „{path}“ konnte nicht geöffnet werden: {reason}",
+            $"The folder “{path}” could not be opened: {reason}");
+        public static readonly Msg ProgramFolder = new("Programmordner öffnen", "Open program folder");
+        public static readonly Msg DataFolder = new("Datenordner öffnen", "Open data folder");
         public static readonly Msg Backups = new("Sicherungsordner öffnen", "Open backup folder");
         public static readonly Msg Logs = new("Protokolle öffnen", "Open logs");
         public static Msg Update(string version) => new($"Update auf {version} installieren …", $"Install update {version} …");
@@ -138,6 +143,14 @@ internal static class DesktopTexts
         public static readonly Msg NotChecked = new(
             "Die Update-Prüfung hat noch kein Ergebnis. Versuche es in einer Minute erneut.",
             "The update check has no result yet. Please try again in a minute.");
+
+        public static Msg SignatureRejected(string reason) => new(
+            $"Die digitale Signatur des heruntergeladenen Installers ist nicht in Ordnung: Sie fehlt, ist ungültig oder stammt nicht vom selben Herausgeber wie dein installiertes PlatinVault oder gehört nicht zu PlatinVault. Der Installer wurde gelöscht und nicht gestartet, es wurde nichts installiert. Versuche es später erneut oder lade den Installer von Hand von der offiziellen Release-Seite. Technische Einzelheiten: {reason}",
+            $"The digital signature of the downloaded installer is not acceptable: it is missing, invalid, from a different publisher than your installed PlatinVault or not a PlatinVault installer. The installer was deleted and not started, nothing was installed. Try again later or download the installer by hand from the official release page. Technical details: {reason}");
+
+        public static Msg ProgramSignatureInvalid(string reason) => new(
+            $"Die digitale Signatur deines installierten PlatinVault ist nicht mehr gültig (Dateien verändert oder beschädigt?), deshalb lässt sich ein Update nicht sicher prüfen. Es wurde nichts installiert. Installiere PlatinVault bitte von Hand neu: Lade den Installer von der offiziellen Release-Seite herunter und führe ihn aus, deine Daten bleiben dabei erhalten. Technische Einzelheiten: {reason}",
+            $"The digital signature of your installed PlatinVault is no longer valid (files changed or damaged?), so an update cannot be checked safely. Nothing was installed. Please reinstall PlatinVault by hand: download the installer from the official release page and run it, your data is kept. Technical details: {reason}");
 
         public static readonly Msg ChecksumMismatch = new(
             "Die heruntergeladene Datei stimmt nicht mit der veröffentlichten Prüfsumme überein und wurde gelöscht. Bitte später erneut versuchen.",

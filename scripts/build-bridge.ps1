@@ -12,13 +12,17 @@
   The bridge has its own version, independent of the app version: 1.0.<n>, where n is the number of commits that
   touched the bridge or its shared Steam reader (so it only changes when the bridge itself changes). Without any
   commit n is 0. For CI/Docker without .git pass -Version 1.0.7 or set the environment variable BRIDGE_VERSION.
+  The bridge version is the exe's file and assembly version. -ProductVersion (scripts\build-windows.ps1 passes the readable version of
+  the PlatinVault build, e.g. "v2026.11.14 (15.116022)") sets the product version in its file properties; without it the product
+  version is the bridge version.
 
   Windows PowerShell 5.1 compatible. Console output is German and ASCII-only.
 
-  Aufruf:  .\scripts\build-bridge.ps1 [-Version 1.0.7]
+  Aufruf:  .\scripts\build-bridge.ps1 [-Version 1.0.7] [-ProductVersion 'v2026.11.14 (15.116022)']
 #>
 param(
-    [string]$Version
+    [string]$Version,
+    [string]$ProductVersion
 )
 
 $ErrorActionPreference = 'Stop'
@@ -72,7 +76,7 @@ if (Test-Path -LiteralPath $outputDir) {
 Write-Step "Veroeffentliche PlatinVault.Bridge $bridgeVersion (Release, win-x64, eigenstaendig, WinForms, eine Datei) ..."
 Push-Location $script:RootDir
 try {
-    $null = Invoke-Native 'dotnet' @(
+    $publishArgs = @(
         'publish', 'src/PlatinVault.Bridge',
         '-c', 'Release',
         '-r', 'win-x64',
@@ -81,6 +85,8 @@ try {
         "-p:Version=$bridgeVersion",
         '-o', 'artifacts/bridge'
     )
+    if ($ProductVersion) { $publishArgs += "-p:PvProductVersion=$ProductVersion" }
+    $null = Invoke-Native 'dotnet' $publishArgs
 }
 finally {
     Pop-Location

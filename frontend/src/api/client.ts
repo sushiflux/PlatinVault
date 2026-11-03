@@ -38,6 +38,8 @@ import type {
   SystemStatusDto,
   UpdateSettingsRequest,
   UpdateStatusDto,
+  DesktopFolderKind,
+  DesktopFoldersDto,
   InstallUpdateResponse,
   IgdbGameDto,
   TwitchLiveCountsDto,
@@ -519,6 +521,17 @@ export async function checkForUpdates(): Promise<UpdateStatusDto> {
 export async function installUpdate(tag: string): Promise<InstallUpdateResponse> {
   const res = await fetch('/api/updates/install', { method: 'POST', headers: MUTATION_HEADERS, body: JSON.stringify({ tag }) })
   return handleResponse<InstallUpdateResponse>(res)
+}
+
+// Windows program only: the folders of the installation, and "open in Explorer" (404 on a server, where there is no such program)
+export async function fetchDesktopFolders(): Promise<DesktopFoldersDto> {
+  const res = await fetch('/api/desktop/folders')
+  return handleResponse<DesktopFoldersDto>(res)
+}
+
+export async function openDesktopFolder(kind: DesktopFolderKind): Promise<void> {
+  const res = await fetch(`/api/desktop/folders/${encodeURIComponent(kind)}/open`, { method: 'POST', headers: MUTATION_HEADERS })
+  return handleResponse<void>(res)
 }
 
 export async function fetchSystemStatus(): Promise<SystemStatusDto> {

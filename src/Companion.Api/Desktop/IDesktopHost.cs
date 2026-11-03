@@ -24,7 +24,35 @@ public interface IDesktopHost
     /// </summary>
     Task<DesktopUpdateStart> InstallUpdateAsync(PublishedRelease release, CancellationToken ct) =>
         Task.FromResult(new DesktopUpdateStart(DesktopUpdateOutcome.NotSupported, null));
+
+    /// <summary>The folders the settings can show and open (program, data, backups, logs), each with its full path. Empty = none.</summary>
+    IReadOnlyList<DesktopFolder> Folders => [];
+
+    /// <summary>
+    /// Opens one of the known folders (<see cref="DesktopFolderKinds"/>) in Windows Explorer. The caller has validated the kind; the path
+    /// is always taken from <see cref="Folders"/>, never from a request. Never throws; the result says what happened.
+    /// </summary>
+    DesktopFolderOpenResult OpenFolder(string kind) => new(false, null);
 }
+
+/// <summary>The four folders of the Windows program the user may open from the app. Anything else is refused.</summary>
+public static class DesktopFolderKinds
+{
+    public const string Program = "program";
+    public const string Data = "data";
+    public const string Backups = "backups";
+    public const string Logs = "logs";
+
+    public static readonly IReadOnlyList<string> All = [Program, Data, Backups, Logs];
+
+    public static bool IsKnown(string? kind) => kind is not null && All.Contains(kind, StringComparer.Ordinal);
+}
+
+/// <summary>A folder of the Windows program: <paramref name="Kind"/> is one of <see cref="DesktopFolderKinds"/>.</summary>
+public sealed record DesktopFolder(string Kind, string Path);
+
+/// <summary>Outcome of <see cref="IDesktopHost.OpenFolder"/>; <paramref name="Detail"/> is the system's own error text (not translated).</summary>
+public sealed record DesktopFolderOpenResult(bool Opened, string? Detail);
 
 /// <summary>Outcome of <see cref="IDesktopHost.LaunchGame"/>; <paramref name="Detail"/> is the system's own error text (not translated).</summary>
 public sealed record LocalLaunchResult(bool Started, bool SteamMissing, string? Detail)
@@ -45,6 +73,18 @@ public enum DesktopUpdateOutcome
 
     /// <summary>This host does not install updates (development or test run).</summary>
     NotSupported,
+
+    /// <summary>
+    /// The installer's digital signature is missing, invalid or from another publisher than the running program; it was deleted and not
+    /// started. The detail names the technical reason (not translated).
+    /// </summary>
+    SignatureRejected,
+
+    /// <summary>
+    /// The installed program itself has a digital signature that Windows does not accept (changed or damaged files), so no downloaded
+    /// installer can be judged against it; the installer was deleted and not started. The fix is a manual reinstall.
+    /// </summary>
+    ProgramSignatureInvalid,
 }
 
 /// <summary>Outcome of <see cref="IDesktopHost.InstallUpdateAsync"/>; <paramref name="Detail"/> is the system's own error text (not translated).</summary>

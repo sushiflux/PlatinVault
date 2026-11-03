@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 using PlatinVault.Desktop.Database;
+using PlatinVault.Desktop.Server;
 using PlatinVault.Windows.Localization;
 using PlatinVault.Windows.Ui;
 
@@ -299,9 +300,7 @@ internal sealed partial class MainWindow : ChromeWindow
 
     public static void OpenFolder(string folder)
     {
-        Directory.CreateDirectory(folder);
-        try { Process.Start(new ProcessStartInfo("explorer.exe", $"\"{folder}\"") { UseShellExecute = false })?.Dispose(); }
-        catch (System.ComponentModel.Win32Exception ex) { DesktopLog.Warn($"Ordner konnte nicht geöffnet werden: {ex.Message}"); }
+        FolderOpener.TryOpen(folder);
     }
 
     /// <summary>Opens a path of the app (e.g. "/games/elden-ring") unless the window already shows it, then brings the window up.</summary>

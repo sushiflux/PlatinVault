@@ -11,15 +11,40 @@ namespace PlatinVault.Desktop.Server;
 /// <c>steam://run/&lt;AppID&gt;</c> through Windows - no browser in between, so no "open Steam?" question. The address is always
 /// built from a validated number. In a test run (<c>--test-launch</c>) the address is only recorded: a test never starts a game.
 /// Updates started from the settings (Settings > System > Updates) are handed to <paramref name="installUpdate"/> - the program's own
-/// download/verify/run flow; without it (development and test runs) this host installs nothing.
+/// download/verify/run flow; without it (development and test runs) this host installs nothing. The folders the app may open come from
+/// <paramref name="folders"/> (program, data, backups, logs); a test or off-screen run (<paramref name="recordFolderOpens"/>) only records an "open" instead of starting Explorer.
 /// </summary>
 internal sealed class LocalDesktopHost(bool recordOnly, string? recordFile,
-    Func<PublishedRelease, CancellationToken, Task<DesktopUpdateStart>>? installUpdate = null) : IDesktopHost
+    Func<PublishedRelease, CancellationToken, Task<DesktopUpdateStart>>? installUpdate = null,
+    IReadOnlyList<DesktopFolder>? folders = null, bool recordFolderOpens = false) : IDesktopHost
 {
     public bool CanInstallUpdates => installUpdate is not null;
 
     public Task<DesktopUpdateStart> InstallUpdateAsync(PublishedRelease release, CancellationToken ct) =>
         installUpdate?.Invoke(release, ct) ?? Task.FromResult(new DesktopUpdateStart(DesktopUpdateOutcome.NotSupported, null));
+
+    public IReadOnlyList<DesktopFolder> Folders => folders ?? [];
+
+    /// <summary>Test aid: the folders "opened" while <c>recordFolderOpens</c> is on, in order.</summary>
+    public List<string> OpenedFolders { get; } = [];
+
+    public DesktopFolderOpenResult OpenFolder(string kind)
+    {
+        // The path comes from the list this host was given - the request only names the kind
+        if (Folders.FirstOrDefault(f => string.Equals(f.Kind, kind, StringComparison.Ordinal)) is not { } folder)
+        {
+            return new DesktopFolderOpenResult(false, "folder not available");
+        }
+        if (recordFolderOpens)
+        {
+            DesktopLog.Info($"Testlauf: Ordner nur aufgezeichnet ({kind}: {folder.Path}).");
+            lock (OpenedFolders) OpenedFolders.Add(kind);
+            return new DesktopFolderOpenResult(true, null);
+        }
+        // The program folder is never created (it exists or the installation is broken); data, backups and logs may still be empty
+        var error = FolderOpener.TryOpen(folder.Path, createIfMissing: kind != DesktopFolderKinds.Program);
+        return new DesktopFolderOpenResult(error is null, error);
+    }
 
     public LocalLaunchResult LaunchGame(int appId)
     {

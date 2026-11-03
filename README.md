@@ -71,6 +71,10 @@ Eine Datenbank musst du nirgends einrichten: PlatinVault bringt sie mit (eine Da
 Updates sucht PlatinVault selbst (wie oft, stellst du unter Einstellungen → System → Updates ein) und installiert sie auf
 Knopfdruck.
 
+Wer die Windows-Dateien signiert und wie du das prüfst, steht unter [Code-Signing-Richtlinie](#code-signing-richtlinie)
+(englisch: [Code signing policy](#code-signing-policy)). Meldet dein Virenschutz PlatinVault, hilft das Handbuch
+(Abschnitt „Probleme unter Windows“).
+
 ### Unraid
 
 In den Community Applications ist PlatinVault noch nicht. Bis dahin installierst du es mit der Vorlage aus diesem Repository:
@@ -171,6 +175,50 @@ Installation wählen. Mit **Docker Compose**: Zeile `image:` ändern, dann `dock
 Zurück von `:beta` auf `:latest` erst, wenn ein Release erschienen ist, das mindestens so neu ist wie deine Beta – sonst
 wäre es ein Schritt zurück auf eine ältere Version (die App sagt dir, wann es so weit ist).
 
+### Code-Signing-Richtlinie
+
+*(Englische Fassung: [Code signing policy](#code-signing-policy).)*
+
+- **Was signiert wird:** der Windows-Installer (`PlatinVault-Setup-<Version>.exe`), `PlatinVault.exe` samt unseren eigenen DLLs und die
+  Bridge (`PlatinVault.Bridge.exe`). Fremde Bibliotheken (.NET-Laufzeit, WebView2, SQLite) bleiben, wie ihre Hersteller sie liefern.
+- **Wie:** Die Dateien werden von GitHub Actions aus diesem Repository gebaut und über SignPath signiert; jede Signatur eines
+  Releases braucht eine manuelle Freigabe.
+- **Rollen:** Autoren und Reviewer (Committers and reviewers): [SushiFlux](https://github.com/sushiflux). Freigebende (Approvers):
+  [SushiFlux](https://github.com/sushiflux). Das Projekt hat einen einzigen Betreuer, der alle Rollen hält.
+- Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+- **Signatur prüfen:** Rechtsklick auf die Datei → Eigenschaften → **Digitale Signaturen**, oder in PowerShell
+  `Get-AuthenticodeSignature .\PlatinVault-Setup-<Version>.exe | Format-List` (Status `Valid`, Signaturgeber „SignPath Foundation“).
+- **Stand:** Der Antrag bei der SignPath Foundation läuft noch. **Bis zur Zusage sind die Windows-Dateien nicht signiert.** Sobald sie
+  signiert sind, prüft das Update-Werkzeug des Windows-Programms vor dem Start eines heruntergeladenen Installers dessen Signatur.
+- Datenschutz: siehe unten [Datenschutz](#datenschutz) bzw. [Privacy policy](#privacy-policy).
+
+### Datenschutz
+
+PlatinVault hat keine Konten und sendet keine Nutzungsdaten oder Telemetrie an uns. Alle Daten bleiben auf deinem Rechner bzw.
+Server. Diese Verbindungen baut PlatinVault selbst auf:
+
+**Ohne dass du etwas einrichtest**
+
+- **Update-Suche bei GitHub** (`api.github.com`): standardmäßig einmal am Tag; GitHub sieht deine IP-Adresse und die Programmkennung.
+  Abschalten: Einstellungen → System → Updates → „Nach Updates suchen“ auf „Nie“. Ein Update wird nur nach deiner Bestätigung
+  von github.com geladen.
+- **WebView2-Laufzeit von Microsoft:** Nur wenn sie auf dem Windows-PC fehlt, lädt der Installer sie nach. WebView2 selbst ist
+  Microsoft-Software mit eigenen Regeln.
+- **Google Übersetzer** (`translate.googleapis.com`): Bei deutscher Oberfläche, ohne KI-Schlüssel und wenn Steam keinen deutschen
+  Text hat, gehen die englischen Erfolgstexte an Google Übersetzer. Abschalten: Einstellungen → Live & Sound → „Englische
+  Steam-Erfolge automatisch ins Deutsche übersetzen“.
+
+**Erst nachdem du es eingerichtet hast**
+
+- **Steam** (`api.steampowered.com`, `store.steampowered.com`, `steamcommunity.com`, Steam-CDN für Bilder): mit deinem Web-API-Key
+  und dem Steam-Konto, das du verbindest. „Mit Steam anmelden“ läuft über steamcommunity.com.
+- **KI-Anbieter** mit deinem eigenen Schlüssel (`generativelanguage.googleapis.com`, `api.anthropic.com`, `api.openai.com`): nur bei
+  KI-Aktionen; gesendet werden Spielname und öffentliche Spielinformationen.
+- **Twitch und IGDB** mit deinen eigenen Zugangsdaten (`id.twitch.tv`, `api.twitch.tv`, `api.igdb.com`).
+- **Bridge:** spricht nur mit dem PlatinVault-Server, den du eingetragen hast.
+
+Mehr dazu im Handbuch, Kapitel „Daten und Datenschutz“.
+
 ### Handbuch
 
 Das Handbuch (Deutsch und Englisch) ist in der App eingebaut (Buch-Symbol in der Kopfzeile) und liegt dem Windows-Programm und der Bridge bei.
@@ -250,6 +298,9 @@ There is no database to set up anywhere: PlatinVault brings its own (one file in
 
 PlatinVault looks for updates itself (how often is up to you under Settings → System → Updates) and installs them at the
 click of a button.
+
+Who signs the Windows files and how to check it is described in the [Code signing policy](#code-signing-policy). If your
+antivirus flags PlatinVault, see the handbook (section "Problems on Windows").
 
 ### Unraid
 
@@ -364,6 +415,52 @@ version available to others over a network – must offer the source code under 
 repository; the app shows the licence and a link here under "Licences", together with the notices for all bundled
 open-source components ([`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md)). Contributions: see
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+<a name="code-signing-policy"></a>
+## Code signing policy
+
+*(Deutsche Fassung: [Code-Signing-Richtlinie](#code-signing-richtlinie).)*
+
+- **What is signed:** the Windows installer (`PlatinVault-Setup-<version>.exe`), `PlatinVault.exe` with our own DLLs, and the
+  bridge (`PlatinVault.Bridge.exe`). Third-party libraries (.NET runtime, WebView2, SQLite) stay as their vendors ship them.
+- **How:** the files are built by GitHub Actions from this repository and signed through SignPath; every release signature
+  needs a manual approval.
+- **Roles:** Committers and reviewers: [SushiFlux](https://github.com/sushiflux). Approvers: [SushiFlux](https://github.com/sushiflux).
+  The project has a single maintainer who holds all roles.
+- Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+- **Check a signature:** right-click the file → Properties → **Digital Signatures**, or in PowerShell
+  `Get-AuthenticodeSignature .\PlatinVault-Setup-<version>.exe | Format-List` (status `Valid`, signer "SignPath Foundation").
+- **Status:** the application at the SignPath Foundation is still pending. **Until it is approved, the Windows files are
+  unsigned.** Once they are signed, the Windows program's updater checks an installer's signature before starting it.
+- Privacy: see the [Privacy policy](#privacy-policy).
+
+<a name="privacy-policy"></a>
+## Privacy policy
+
+PlatinVault has no accounts and sends no usage data or telemetry to us. All data stays on your computer or server. These are the
+connections PlatinVault makes on its own:
+
+**Without any setup on your side**
+
+- **Update check at GitHub** (`api.github.com`): once a day by default; GitHub sees your IP address and the program identifier.
+  Switch off: Settings → System → Updates → "Check for updates" set to "Never". An update is downloaded from github.com only after
+  you confirm.
+- **WebView2 runtime from Microsoft:** the installer downloads it only if it is missing on the Windows PC. WebView2 itself is
+  Microsoft software with its own rules.
+- **Google Translate** (`translate.googleapis.com`): with a German interface, no AI key, and no German text from Steam, the English
+  achievement texts are sent to Google Translate. Switch off: Settings → Live & Sound → "Automatically translate English Steam
+  achievements into German".
+
+**Only after you set it up**
+
+- **Steam** (`api.steampowered.com`, `store.steampowered.com`, `steamcommunity.com`, Steam CDN for images): with your Web API key and
+  the Steam account you connect. "Sign in with Steam" goes through steamcommunity.com.
+- **AI providers** with your own key (`generativelanguage.googleapis.com`, `api.anthropic.com`, `api.openai.com`): only on AI
+  actions; the game name and public game information are sent.
+- **Twitch and IGDB** with your own credentials (`id.twitch.tv`, `api.twitch.tv`, `api.igdb.com`).
+- **Bridge:** talks only to the PlatinVault server you entered.
+
+More in the handbook, chapter "Data and privacy".
 
 <a name="development"></a>
 ## Entwicklung / Development
