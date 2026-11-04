@@ -5,10 +5,25 @@ import { overlayStateMessage, readOverlayEvent } from './overlayMessages'
 const achievement = { apiName: 'ACH_1', displayName: 'First Blood', rarityTier: 'Gold' }
 
 describe('overlay messages of the Windows program', () => {
-  it('reads an unlock with game, position and language', () => {
+  it('reads an unlock with game, position, duration and language', () => {
     expect(
-      readOverlayEvent({ pvOverlay: { kind: 'achievement', achievement, gameName: 'Elden Ring', position: 'fullscreen', language: 'en' } })
-    ).toEqual({ kind: 'achievement', achievement, gameName: 'Elden Ring', position: 'fullscreen', language: 'en' })
+      readOverlayEvent({ pvOverlay: { kind: 'achievement', achievement, gameName: 'Elden Ring', position: 'fullscreen', seconds: 8, language: 'en' } })
+    ).toEqual({ kind: 'achievement', achievement, gameName: 'Elden Ring', position: 'fullscreen', seconds: 8, language: 'en' })
+  })
+
+  it('takes the popup duration as whole seconds within 2..10 and 5 when the program sends none', () => {
+    const seconds = (value: unknown) => {
+      const event = readOverlayEvent({ pvOverlay: { kind: 'achievement', achievement, seconds: value } })
+      return event?.kind === 'achievement' ? event.seconds : null
+    }
+    expect(seconds(2)).toBe(2)
+    expect(seconds(10)).toBe(10)
+    expect(seconds(1)).toBe(2)
+    expect(seconds(99)).toBe(10)
+    expect(seconds(6.4)).toBe(6)
+    expect(seconds(undefined)).toBe(5)
+    expect(seconds('7')).toBe(5)
+    expect(seconds(null)).toBe(5)
   })
 
   it('falls back to the default position and ignores unknown languages', () => {

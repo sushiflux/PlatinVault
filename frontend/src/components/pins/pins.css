@@ -1,0 +1,450 @@
+/* ==================== "IM BLICK" (components/pins) ====================
+   The achievements the player keeps in view, on every tab of a game's page. Two places, chosen by the window (pinsLayout.ts):
+   - landscape and wide: a COLUMN on the right, the mirror image of the chapter navigation (the surface, border, radius, sticky offset
+     and height rule are shared with it in gamenav/gamenav.css),
+   - everything else: a DOCK at the bottom. It sits in the page flow (sticky to the bottom edge of the window), so it never covers the
+     content: at the end of the page it simply follows the last content. It publishes its height as --pv-dock-h; the chapter navigation
+     gets shorter by it, the round "back to top" button and the notices stand above it.
+   The cards have a FIXED size: a counter moving, an achievement being unlocked or a pin being added changes nothing around them.
+   Colours are the app's tokens. Contrast (computed, light / dark): name text-primary on the surface 12.6 / 11.6, status text-muted
+   7.6 / 6.6, done text (--accent-gold-text) on the gold tint 6.4 / 8.9, done check (white on #92400e 7.9; #3b2603 on #fcd34d 10.4). */
+
+/* ---- The card ---- */
+.pv-pin {
+  position: relative;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  inline-size: 17rem;
+  block-size: 5rem;
+  overflow: hidden;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  scroll-snap-align: start;
+}
+
+.pv-pin[data-done] {
+  background: var(--accent-gold-bg);
+  border-color: var(--accent-gold-border);
+}
+
+.pv-pin-main {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  inline-size: 100%;
+  block-size: 100%;
+  padding: 0.55rem 0.6rem;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.pv-pin-main:hover {
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+}
+
+.pv-pin-main:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: -3px;
+}
+
+.pv-pin-icon {
+  position: relative;
+  flex: 0 0 auto;
+  inline-size: 2.9rem;
+  block-size: 2.9rem;
+  overflow: hidden;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.pv-pin-icon img {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+/* The "done" mark in the corner of the icon: deep gold with a light check in the light theme, light gold with a dark check in the dark one */
+.pv-pin-check {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-end: 0;
+  display: grid;
+  place-items: center;
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+  color: light-dark(#ffffff, #3b2603);
+  background: var(--accent-gold-text);
+  border-start-start-radius: var(--radius-sm);
+}
+
+.pv-pin-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.2rem;
+  min-inline-size: 0;
+  block-size: 100%;
+}
+
+/* Two lines at most (our tooltip on the card has the whole name); the room on the right is the remove button's */
+.pv-pin-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  padding-inline-end: 1.5rem;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+/* The line under the name always has the same height: tier icon, then a counter with its bar, or the state in words */
+.pv-pin-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-block-size: 1.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.pv-pin-state {
+  min-inline-size: 0;
+  color: var(--text-muted);
+}
+
+.pv-pin[data-done] .pv-pin-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--accent-gold-text);
+  font-weight: 800;
+}
+
+.pv-pin-counter {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-inline-size: 0;
+}
+
+.pv-pin-counter-text {
+  color: var(--accent-crystal);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pv-pin-bar {
+  display: block;
+  block-size: 4px;
+  overflow: hidden;
+  background: var(--bg-elevated);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+}
+
+.pv-pin-bar > span {
+  display: block;
+  block-size: 100%;
+  background: var(--accent-crystal);
+  border-radius: 999px;
+  transition: inline-size 0.3s ease;
+}
+
+.pv-pin-remove {
+  position: absolute;
+  inset-block-start: 0.25rem;
+  inset-inline-end: 0.25rem;
+}
+
+/* A placeholder while the live data of the game is still loading */
+.pv-pin-skeleton {
+  inline-size: 100%;
+  block-size: 100%;
+  background: linear-gradient(90deg, var(--bg-elevated), color-mix(in srgb, var(--bg-elevated) 60%, var(--bg-surface)), var(--bg-elevated));
+}
+
+/* ---- The title line (dock bar and column head) ---- */
+.pv-pins-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-inline-size: 0;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.pv-pins-title svg {
+  flex: 0 0 auto;
+  color: var(--accent-crystal);
+}
+
+.pv-pins-count {
+  padding: 0.16em 0.55em;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* "Geschaffte entfernen": a calm text button; its place is kept while there is nothing to remove (it is invisible then) */
+.pv-pins-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+  min-block-size: 2rem;
+  padding: 0 0.6rem;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pv-pins-clear:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
+}
+
+.pv-pins-clear:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+}
+
+.pv-pins-clear[data-idle] {
+  visibility: hidden;
+}
+
+/* ---- The dock ---- */
+.pv-gdock {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 33;
+  inline-size: 100%;
+  box-sizing: border-box;
+  padding-inline: var(--pv-gutter);
+  padding-block-end: env(safe-area-inset-bottom, 0px);
+  background: var(--bg-glass);
+  backdrop-filter: blur(14px);
+  border-block-start: 1px solid var(--border-subtle);
+  box-shadow: 0 -14px 26px -18px light-dark(rgba(30, 41, 59, 0.3), rgba(0, 0, 0, 0.65));
+}
+
+.pv-gdock-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-block-size: 2.75rem;
+}
+
+.pv-gdock-toggle {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-inline-size: 0;
+  min-block-size: 2.75rem;
+  padding: 0;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.pv-gdock-toggle:hover {
+  color: var(--text-primary);
+}
+
+.pv-gdock-toggle:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* The row of cards scrolls sideways; the cards keep their size */
+.pv-gdock-row {
+  display: flex;
+  padding-block: 0.1rem 0.7rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.pv-gdock-row > .pv-pin {
+  margin-inline-end: 0.6rem;
+}
+
+/* Small windows: the action is the icon alone (its name is the accessible name and the tooltip) */
+@media (max-width: 479px) {
+  .pv-pins-clear > span {
+    display: none;
+  }
+
+  .pv-pins-clear {
+    padding-inline: 0.5rem;
+  }
+}
+
+/* ---- The column ---- */
+.pv-gpins {
+  inline-size: clamp(15rem, 17vw, 19rem);
+  transition: inline-size 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: pv-gpins-in 0.26s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+/* The last pin is gone: the column leaves the way it came */
+.pv-gpins[data-leaving] {
+  animation: pv-gpins-out 0.22s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none;
+}
+
+/* The content column gives up the room smoothly instead of jumping when the first pin is set */
+@keyframes pv-gpins-in {
+  from {
+    inline-size: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes pv-gpins-out {
+  to {
+    inline-size: 0;
+    opacity: 0;
+  }
+}
+
+/* The content keeps the air on the column's side that the left padding gives it on the nav's side */
+.pv-gbody:has(> .pv-gpins) > .content-column > main {
+  padding-inline-end: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .pv-gbody:has(> .pv-gpins) > .content-column > main {
+    padding-inline-end: 2rem;
+  }
+}
+
+.pv-gpins-list {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-block-size: 0;
+  padding: 0.6rem 0.5rem 0.2rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.pv-gpins-list > .pv-pin {
+  inline-size: 100%;
+  margin-block-end: 0.5rem;
+}
+
+.pv-gpins-foot {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  padding: 0.6rem 0.5rem;
+}
+
+.pv-gpins-foot::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--border-strong) 70%, var(--border-subtle)) 14%,
+    color-mix(in srgb, var(--border-strong) 70%, var(--border-subtle)) 86%,
+    transparent
+  );
+}
+
+/* Collapsed: the pin icon and small icon buttons of the cards */
+.pv-gpins[data-collapsed='true'] {
+  inline-size: 4.25rem;
+}
+
+.pv-gpins[data-collapsed='true'] .pv-gnav-head {
+  flex-direction: column;
+  justify-content: center;
+  padding-inline: 0.4rem;
+}
+
+.pv-gpins[data-collapsed='true'] .pv-gpins-list {
+  align-items: center;
+  padding-inline: 0.4rem;
+}
+
+.pv-pin-mini {
+  position: relative;
+  display: block;
+  flex: 0 0 auto;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  margin-block-end: 0.5rem;
+  padding: 0;
+  overflow: hidden;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.pv-pin-mini[data-done] {
+  border-color: var(--accent-gold-border);
+  box-shadow: 0 0 0 1px var(--accent-gold-border);
+}
+
+.pv-pin-mini img {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.pv-pin-mini:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-gpins,
+  .pv-gpins[data-leaving] {
+    transition: none;
+    animation: none;
+  }
+
+  .pv-pin-bar > span {
+    transition: none;
+  }
+}

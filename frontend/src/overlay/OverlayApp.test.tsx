@@ -80,6 +80,45 @@ describe('OverlayApp: the in-game overlay page', () => {
     expect(fake.sent[fake.sent.length - 1]).toEqual({ pvOverlayState: 'idle', received: 1 })
   })
 
+  it('shows the popup for the seconds the program sends, then reports idle', async () => {
+    const fake = fakeChannel()
+    render(<OverlayApp channel={fake.channel} />)
+    await act(async () => {
+      fake.send({ pvOverlay: { kind: 'achievement', achievement, position: 'top-left', seconds: 3 } })
+      await vi.advanceTimersByTimeAsync(100)
+    })
+    expect(screen.getByText('Erster Sieg')).toBeTruthy()
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2800)
+    })
+    expect(screen.getByText('Erster Sieg')).toBeTruthy()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200)
+    })
+    expect(screen.queryByText('Erster Sieg')).toBeNull()
+
+    // 3 s popup + 1 s pause + the idle delay: not idle a moment before, idle right after
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000 + OVERLAY_IDLE_DELAY_MS - 150)
+    })
+    expect(fake.sent.filter((m) => (m as { pvOverlayState: string }).pvOverlayState === 'idle')).toEqual([])
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200)
+    })
+    expect(fake.sent[fake.sent.length - 1]).toEqual({ pvOverlayState: 'idle', received: 1 })
+  })
+
+  it('keeps the full-screen popup up for a longer time from the program (10 s)', async () => {
+    const fake = fakeChannel()
+    render(<OverlayApp channel={fake.channel} />)
+    await act(async () => {
+      fake.send({ pvOverlay: { kind: 'achievement', achievement, position: 'fullscreen', seconds: 10 } })
+      await vi.advanceTimersByTimeAsync(9900)
+    })
+    expect(document.querySelector('[data-fullscreen-achievement]')).not.toBeNull()
+  })
+
   it('a new event during the idle pause keeps it busy (the program must not hide it)', async () => {
     const fake = fakeChannel()
     render(<OverlayApp channel={fake.channel} />)

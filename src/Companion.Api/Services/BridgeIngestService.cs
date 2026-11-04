@@ -144,7 +144,7 @@ public sealed class BridgeIngestService(
         Achieved: true,
         UnlockTime: unlockTime ?? DateTime.Now,
         GlobalPercent: 25.0,
-        RarityTier: SteamLiveTrackerService.CalculateRarityTier(25.0),
+        RarityTier: SteamLiveTrackerService.CalculateRarityTier(25.0, apiName, null),
         // No worldwide share is known here (HasGlobalPercent stays false), so the label is empty
         RarityLabel: SteamLiveTrackerService.CalculateRarityLabel(25.0, hasGlobalPercent: false),
         IsHidden: false,

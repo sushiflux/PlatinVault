@@ -2,7 +2,7 @@
 title: PlatinVault
 subtitle: Handbook
 tagline: Live trophies for your Steam games and 100 % guides in one place – how to set up PlatinVault and use it every day.
-version: v2026.11.17
+version: v2026.11.18
 date: 2026-11-03
 status: Release
 copyright: © 2026 SushiFlux
@@ -58,6 +58,8 @@ appdata folder.
 2. Start the container and open PlatinVault in the browser: `http://<IP of your Unraid>:5233`.
 3. The first time, you first choose your **language** on a full-screen page (Deutsch or English; the language of your browser is preselected, and you can change it at any time later in the top bar). Then a short **tour** guides you through the app. Start it again any time with the **?** at the top right.
 
+**Own domain / reverse proxy:** if you open PlatinVault under a name of your own domain (for example `pv.example.com` through a reverse proxy, a web server placed in front), enter that name in the template under "Show more settings" at `PLATINVAULT_ALLOWED_HOSTS`. Separate several names with `;`; `*.example.com` covers every name below it. You need nothing for IP addresses, `localhost`, names without a dot (for example `tower`) and names ending in `.local`, `.lan`, `.home.arpa`, `.internal` or `.fritz.box`. Background: PlatinVault refuses other names so that foreign web pages cannot reach it by a trick with the name system (DNS rebinding). If you already open PlatinVault this way, enter the name once after the update. If your proxy rewrites the name, the live popups also need `PLATINVAULT_ALLOWED_ORIGINS=https://pv.example.com`.
+
 You get updates through Unraid like for any other container; your data in the appdata folder stays. Whether your container
 gets only releases or betas too is decided by its image tag – see chapter 12.
 
@@ -86,6 +88,7 @@ Good to know:
   somewhere else regularly.
 - **User id:** the files in `data` belong to the user with the numbers `PUID`/`PGID`; the default is 1000 / 1000, on most Linux systems
   the first normal user. The command `id` shows your numbers; enter other values (and a different port, default 5233) in the file `.env`.
+- **Own domain / reverse proxy:** as on Unraid (section 3.1): if you open PlatinVault under your own domain, enter it in the file `.env` as `PLATINVAULT_ALLOWED_HOSTS=pv.example.com` (several separated by `;`, `*.example.com` for every name below it) and restart with `docker compose up -d`. IP addresses, `localhost`, names without a dot, `.local`, `.lan`, `.home.arpa`, `.internal` and `.fritz.box` need nothing. If your proxy rewrites the name, also set `PLATINVAULT_ALLOWED_ORIGINS=https://pv.example.com`.
 - **Updating:** `docker compose pull && docker compose up -d` in the same folder. Your data stays. You get the beta version by changing
   the `image:` line in the Compose file to `ghcr.io/sushiflux/platinvault:beta` (chapter 12).
 - **Backups:** PlatinVault backs up its database itself - on start, then every 6 hours and when the container stops - into the folder
@@ -472,6 +475,19 @@ in the corner of its icon; locked achievements have a grey icon.
   note texts and the note search then disappear everywhere. Notes you have already written are **not deleted** – they are back
   as soon as you switch the option on again.
 
+### In View: achievements you are working on
+
+With the **pin button** on an achievement – it is in all four views and in the detail window – you keep up to **10 achievements per game** in view. If 10 are pinned already, remove one first. Pinned achievements appear on **every tab** of the game page, also while you read the guide:
+
+- **Wide window in landscape:** as a collapsible column on the right beside the content.
+- **Portrait and narrow windows:** as a collapsible bar at the bottom. On a phone it starts collapsed as one slim line.
+
+Whether the column or the bar is open or collapsed is remembered for each of the two layouts separately.
+
+Counter achievements count live while you play. Clicking a card opens the detail window with the guide tip and your note. When you unlock a pinned achievement it stays as **Done**; **Remove completed** takes all of them out at once. If you do not want to do this by hand, let PlatinVault remove them itself (Settings → **Live & sound** → "In View", see chapter 7). The browser and the Windows program share the same selection because it is stored on the server – an achievement you pin on your phone is there on your PC too.
+
+**When Steam cannot be reached:** PlatinVault fetches the worldwide shares at start and then every hour for the games in your collection, and keeps the last good values even across a restart. If a request fails, the saved values stay untouched; PlatinVault tries again after 2 minutes, then with growing pauses up to 30 minutes. A notice (with a **Copy** button) then appears above the list: it shows either the date of the saved values or – if there are none yet – that the tiers are provisional and the shares are missing. Usually an antivirus or a firewall is blocking the connection to Steam.
+
 **How PlatinVault rates rarity:** Everywhere in the app – in the statistics and in the name a trophy popup carries – the same
 scale with five steps applies:
 
@@ -485,7 +501,7 @@ scale with five steps applies:
 
 The **colour** of a trophy (gold, silver, bronze) follows the same share, but with its own limits: **gold** is held by at
 most 10 % of players, **silver** by at most 50 %, **bronze** by more than 50 %. **Platinum** is what you get when you own
-every trophy of a game. If Steam provides no share for a trophy, PlatinVault names no rarity step for it and leaves it out of
+every trophy of a game. Story chapters are an exception: achievements earned by completing a numbered story chapter (e.g. "Complete Chapter 5") always count as Bronze, however rare they are worldwide. The rarity label (e.g. "Ultra rare") still shows the real worldwide share. Collection achievements like "Complete all chapters on Hard" are not affected. If Steam provides no share for a trophy, PlatinVault names no rarity step for it and leaves it out of
 the statistics.
 
 ## 6.4 Statistics
@@ -582,9 +598,9 @@ stays covered until you open it on purpose; PlatinVault asks per game.
 In the **Live & Sound** tab of the settings:
 
 - Turn popups on or off, choose their **position** on the screen: nine spots (top left to bottom right) or **Full screen**.
-  Clicking a position shows a preview right away. With **Full screen** the whole window belongs to the new trophy for about five
-  seconds: a large trophy in the colour of its tier, name, description, rarity and game – in landscape and in portrait. A click
+  Clicking a position shows a preview right away. With **Full screen** the whole window belongs to the new trophy for the chosen display time: a large trophy in the colour of its tier, name, description, rarity and game – in landscape and in portrait. A click
   anywhere or the Esc key ends the popup early; the next trophy then follows.
+- **Trophy pop-up duration:** a slider below the positions. It sets how long a new achievement stays on screen: whole seconds from 2 to 10, default 5. It applies to the card, the full-screen popup, the previews and the overlay over the game. The full-screen popup closes sooner if you click or press Esc. The platinum moment keeps its own length.
 - **Show trophy popup:** **Only in the app**, **Only in the game** or **Both** (default). "In the game" means: as an overlay over the
   game – only the Windows program has it (see 11.3). In the browser and on Unraid the two game choices are greyed out; there the popup
   always appears in the app. The sound plays **exactly once** per trophy, also with "Both".
@@ -592,6 +608,7 @@ In the **Live & Sound** tab of the settings:
   recordings.
 - Set the volume, **preview the sound** and **test the platinum moment**.
 - Switch **notes on achievements** on or off ("Notes on achievements", on by default; see 6.3).
+- **In View:** switch **"Automatically remove unlocked achievements from 'In View'"** (off by default). Off: an unlocked achievement stays as "Done" until you remove it yourself. On: PlatinVault removes it after the trophy popup (see 6.3) – a finished card stays for as long as the **Trophy pop-up duration** says.
 - Switch **Switch to the game when it starts** on or off (on by default; see below).
 
 When you start a game from your collection, every open PlatinVault window jumps to that game's **live trophies**, so you do
@@ -703,6 +720,7 @@ bridge. If `status` does not help, please tell us what it and the log show.
 |---|---|
 | Something does not load or shows errors | Settings → **System**: shows whether backend, database, data folder, Steam, bridge and keys are fine. |
 | "PlatinVault server not reachable – the browser got no answer" | The server does not answer at all. Is the program or container running (on Unraid: in the Docker list), and is the network connection to the server working? Then run the action again. |
+| When opening, it says "PlatinVault refused this request: the name … is not allowed" | You open PlatinVault under a name it does not know (for example your own domain through a reverse proxy). Enter exactly that name in the container variable `PLATINVAULT_ALLOWED_HOSTS` and restart the container (sections 3.1 and 3.2). With the server's IP address it works at once without an entry. |
 | The library stays empty | Check the Steam Web API key; set game details to public in your Steam profile. |
 | No live popups | Is the game in PlatinVault? If PlatinVault runs on a server: is the bridge connected (taskbar icon, or `platinvault-bridge status` on Linux, system check)? |
 | On Linux: "PlatinVault found no Steam on this computer" | In the **Steam** tab enter the folder with `steamapps` under **Steam folder (optional)** (section 4.1). With Flatpak Steam it is usually under `~/.var/app/com.valvesoftware.Steam/.local/share/Steam`. Under Settings → **System**, **Show the places searched** shows where PlatinVault looked. If PlatinVault runs in Docker, it cannot see the computer's Steam folder – use the Linux package or the Linux bridge. |
@@ -716,6 +734,7 @@ bridge. If `status` does not help, please tell us what it and the log show.
 | A chapter says "could not be researched" | Click **Research this chapter again** (details in 6.2). The reason is in the note; for a quota or key problem first look in Settings → **AI research** or pick another AI with the arrow on the button. |
 | "The server was restarted and the research was interrupted" | The server was briefly gone during the research (update, restart). Finished chapters are saved; start the same action again, it carries on from there. |
 | Achievements in English | The game has no texts in your language on Steam; with an AI key PlatinVault translates them automatically. |
+| A notice above the trophy list says "Rarity values are not up to date" or "not available" | PlatinVault cannot reach Steam right now to fetch the worldwide shares. It shows the last saved values (with their date) and tries again by itself. Check your internet connection and whether an antivirus or firewall blocks PlatinVault from the network; **Copy** in the notice gives you the full text for support. |
 | No counter on a trophy | The game has no counter on Steam. |
 | PlatinVault does not start: "This database has already been used by PlatinVault …" | The database comes from a newer version (for example a beta). So that nothing breaks, the older version does not start and changes nothing. Install the named version (or newer) again or wait for the next release (chapter 12). |
 
@@ -863,6 +882,7 @@ Then PlatinVault closes, removes autostart, shortcuts and the "Apps" entry and d
 | No overlay in the game | Does the game run in exclusive full screen? Switch to borderless full screen. Is **Show trophy popup** set to "Only in the app" (no tick at **Trophy overlay** in the icon's menu)? With "Both" the overlay stays away while the PlatinVault window is in front. **Test the overlay** shows a test card; if it says "not available", the log names the reason. |
 | Ctrl+Alt+G does nothing | Another program uses the keys – PlatinVault then takes Ctrl+Alt+Shift+G or none; the guide always opens from the icon next to the clock. |
 | No live trophies after restarting the PC | Is **Start with Windows** ticked in the icon's menu? |
+| The update says "… is being used by another process" or "The program files could not be copied" | The installer waits up to 30 seconds ("Waiting for Windows to release the program files …") for the old program and its helpers to quit, and retries several times. If it still fails, the message names the programs holding the files: close them (often an antivirus that is just checking the files) or restart the PC and run the update again. Your data stays unchanged. |
 | Antivirus flags PlatinVault | See section 11.9. |
 
 ## 11.9 Antivirus flags PlatinVault

@@ -2798,6 +2798,11 @@ ol.pv-md-list {
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.28);
 }
 
+/* The "Im Blick" dock (game page, bottom edge) publishes its height: the notices stand above it, not over it */
+.pv-notice-stack {
+  margin-block-end: var(--pv-dock-h, 0px);
+}
+
 /* Floating notices (components/ui/FloatingNotice.tsx) normally lie along the bottom edge. A dialog keeps its action buttons in its
    footer, so while one is open the notices move to the TOP edge instead - on a phone (and on a short window) a bottom notice would
    cover "Save"/"Close". Written outside the Tailwind layers on purpose, so it wins over the bottom-5 / bottom-24 utilities. Both stacks

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { IconBulb, IconCheck, IconEye, IconEyeOff, IconLanguage, IconNote, IconUsers, IconX } from '@tabler/icons-react'
 import type { LiveAchievementItemDto, RarityTier } from '../api/types'
 import { useFormat } from '../i18n/format'
+import { PinIconButton, type PinControl } from './pins/PinIconButton'
 import { GhostIconButton } from './ui/GhostIconButton'
 import { ProgressBar } from './ui/ProgressBar'
 import { TIER_ICON_COLORS, TierIcon } from './ui/TierIcon'
@@ -132,6 +133,8 @@ export interface TrophyItemProps {
   onNote: () => void
   // Opens the detail dialog (tiles and list)
   onOpen: () => void
+  // "Im Blick" (pinned achievements): the pin button. Missing = this list has no pins (no button at all)
+  pin?: PinControl
 }
 
 function hasCounter(ach: LiveAchievementItemDto): boolean {
@@ -458,6 +461,7 @@ export function LargeCard({
   onToggleOriginal,
   notesEnabled,
   onNote,
+  pin,
   bare = false,
 }: Omit<TrophyItemProps, 'onOpen'> & { bare?: boolean }) {
   const { t } = useTrophyText()
@@ -473,6 +477,7 @@ export function LargeCard({
           <h4 className="min-w-0 flex-1 break-words text-[0.95rem] font-medium leading-snug" style={{ color: 'var(--text-primary)' }}>
             {ach.displayName}
           </h4>
+          {pin && <PinIconButton name={ach.displayName} pin={pin} />}
           {notesEnabled && <NoteIconButton ach={ach} onNote={onNote} />}
         </div>
 
@@ -554,6 +559,7 @@ function CompactHead({
   onToggleTip,
   notesEnabled,
   onNote,
+  pin,
 }: {
   ach: LiveAchievementItemDto
   tip?: string
@@ -563,6 +569,7 @@ function CompactHead({
   onToggleTip: () => void
   notesEnabled: boolean
   onNote: () => void
+  pin?: PinControl
 }) {
   const { t } = useTranslation('live')
   return (
@@ -579,6 +586,7 @@ function CompactHead({
           <IconBulb size={16} aria-hidden="true" />
         </GhostIconButton>
       )}
+      {pin && <PinIconButton name={ach.displayName} pin={pin} />}
       {notesEnabled && <NoteIconButton ach={ach} onNote={onNote} />}
     </div>
   )
@@ -646,7 +654,7 @@ export type CompactProps = Omit<TrophyItemProps, 'onOpen' | 'onToggleOriginal'>
 // centred on a green-tinted ground (a deeper green than the mint of the text area, so the cut between image strip and
 // text stays visible; grey while locked); the unlock marker is the green tag in that panel. No bottom row at all: the unlock date
 // closes the meta line. The card is as high as its content (description at most two lines).
-export function CompactCard({ ach, tip, covered, showOriginal, onReveal, notesEnabled, onNote }: CompactProps) {
+export function CompactCard({ ach, tip, covered, showOriginal, onReveal, notesEnabled, onNote, pin }: CompactProps) {
   const [expanded, setExpanded] = useState(false)
   const [tipOpen, setTipOpen] = useState(false)
 
@@ -673,6 +681,7 @@ export function CompactCard({ ach, tip, covered, showOriginal, onReveal, notesEn
           onToggleTip={() => setTipOpen((v) => !v)}
           notesEnabled={notesEnabled}
           onNote={onNote}
+          pin={pin}
         />
         <MetaLine ach={ach} unlock />
         <CompactDetails
@@ -695,10 +704,11 @@ export function CompactCard({ ach, tip, covered, showOriginal, onReveal, notesEn
 // Kacheln: icon tiles in a dense grid; everything else in our tooltip (hover, focus) and the detail dialog (click)
 // ---------------------------------------------------------------------------------------------------------------
 
-export function TrophyTile({ ach, tip, covered, notesEnabled, onOpen }: TrophyItemProps) {
+export function TrophyTile({ ach, tip, covered, notesEnabled, onOpen, pin }: TrophyItemProps) {
   const { t, tierName, percentText, detailText } = useTrophyText()
   return (
-    <Tooltip label={ach.displayName} description={detailText(ach, tip, covered, notesEnabled)} className="flex min-w-0">
+    <div className="relative flex min-w-0">
+    <Tooltip label={ach.displayName} description={detailText(ach, tip, covered, notesEnabled)} className="flex min-w-0 flex-1">
       <button
         type="button"
         onClick={onOpen}
@@ -736,6 +746,9 @@ export function TrophyTile({ ach, tip, covered, notesEnabled, onOpen }: TrophyIt
         </span>
       </button>
     </Tooltip>
+    {/* In the corner of the tile, beside the centred icon: the tile keeps its size */}
+    {pin && <PinIconButton name={ach.displayName} pin={pin} className="absolute end-1 top-1 inline-flex" />}
+    </div>
   )
 }
 
@@ -752,16 +765,17 @@ export function tierColorVar(tier: RarityTier): string {
 // Liste: one row per achievement
 // ---------------------------------------------------------------------------------------------------------------
 
-export function TrophyRow({ ach, tip, covered, notesEnabled, onOpen }: TrophyItemProps) {
+export function TrophyRow({ ach, tip, covered, notesEnabled, onOpen, pin }: TrophyItemProps) {
   const { t, tierName, number, percentText, unlockStamp, detailText } = useTrophyText()
   const unlocked = ach.achieved ? (unlockStamp(ach) ?? t('trophy.unlocked')) : null
   return (
-    <Tooltip label={ach.displayName} description={detailText(ach, tip, covered, notesEnabled)} className="flex min-w-0">
+    <div className="relative flex min-w-0">
+    <Tooltip label={ach.displayName} description={detailText(ach, tip, covered, notesEnabled)} className="flex min-w-0 flex-1">
       <button
         type="button"
         onClick={onOpen}
         aria-label={t(ach.achieved ? 'trophy.itemLabelUnlocked' : 'trophy.itemLabelOpen', { name: ach.displayName, tier: tierName(ach.rarityTier) })}
-        className="pv-card flex min-h-[3.25rem] w-full min-w-0 cursor-pointer items-center gap-3 !px-3 !py-1.5 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-crystal)]"
+        className={`pv-card flex min-h-[3.25rem] w-full min-w-0 cursor-pointer items-center gap-3 !px-3 !py-1.5 text-left ${pin ? '!pe-11' : ''} focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-crystal)]`}
         style={{ background: cardBackground(ach), boxShadow: 'none', borderRadius: CARD_RADIUS }}
       >
         <AchievementIcon ach={ach} size={36} />
@@ -800,6 +814,9 @@ export function TrophyRow({ ach, tip, covered, notesEnabled, onOpen }: TrophyIte
         </span>
       </button>
     </Tooltip>
+    {/* Vertically centred at the end of the row, in the room the row keeps free for it */}
+    {pin && <PinIconButton name={ach.displayName} pin={pin} className="absolute end-2.5 top-1/2 inline-flex -translate-y-1/2" />}
+    </div>
   )
 }
 

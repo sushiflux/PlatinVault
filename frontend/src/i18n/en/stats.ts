@@ -179,7 +179,7 @@ const stats = {
 
   tiers: {
     title: 'Trophies by tier',
-    subtitle: 'The tier follows rarity: gold up to 10%, silver up to 50%, bronze above that. Platinum is for completing them all.',
+    subtitle: 'The tier follows rarity: gold up to 10%, silver up to 50%, bronze above that. Achievements for completing a story chapter are always bronze. Platinum is for completing them all.',
     tableCaption: 'Trophies by tier',
     colTier: 'Tier',
     colUnlocked: 'Unlocked',
@@ -191,7 +191,7 @@ const stats = {
     rulePlatinum: 'All trophies of the game',
     ruleGold: 'At most 10% of players have them',
     ruleSilver: 'At most 50% of players have them',
-    ruleBronze: 'Earned by more than 50% of players',
+    ruleBronze: 'Earned by more than 50% of players – or for completing a chapter',
     tipTitle: '{{tier}} trophies',
     tipUnlocked: 'Unlocked',
     tipValue: '{{unlocked}} of {{total}}',

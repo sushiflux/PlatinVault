@@ -2,7 +2,7 @@
 title: PlatinVault
 subtitle: Handbuch
 tagline: Live-Trophäen für deine Steam-Spiele und 100-%-Guides an einem Ort – so richtest du PlatinVault ein und nutzt es im Alltag.
-version: v2026.11.17
+version: v2026.11.18
 date: 2026-11-03
 status: Release
 copyright: © 2026 SushiFlux
@@ -60,6 +60,8 @@ Appdata-Ordner.
    die Sprache deines Browsers, ändern kannst du sie später jederzeit oben in der Kopfzeile). Danach führt dich eine kurze **Tour** durch die App. Du kannst sie jederzeit über das **?** oben rechts
    wieder starten.
 
+**Eigene Domain / Reverse-Proxy:** Rufst du PlatinVault über einen Namen mit eigener Domain auf (zum Beispiel `pv.example.com` über einen Reverse-Proxy, also einen vorgeschalteten Webserver), trage diesen Namen in der Vorlage unter „Show more settings“ bei `PLATINVAULT_ALLOWED_HOSTS` ein. Mehrere Namen trennst du mit `;`, `*.example.com` gilt für alle Namen darunter. Nötig ist das nicht für IP-Adressen, `localhost`, Namen ohne Punkt (zum Beispiel `tower`) und Namen auf `.local`, `.lan`, `.home.arpa`, `.internal` oder `.fritz.box`. Hintergrund: PlatinVault lehnt andere Namen ab, damit fremde Webseiten es nicht über eine Täuschung im Namenssystem (DNS-Rebinding) ansprechen können. Rufst du PlatinVault schon jetzt so auf, trage den Namen nach dem Update einmal ein. Schreibt dein Proxy den Namen um, kommt für die Live-Popups zusätzlich `PLATINVAULT_ALLOWED_ORIGINS=https://pv.example.com` dazu.
+
 Updates bekommst du über Unraid wie bei jedem anderen Container; deine Daten im Appdata-Ordner bleiben erhalten. Ob dein
 Container nur Releases oder auch Betas bekommt, entscheidet sein Image-Tag – siehe Kapitel 12.
 
@@ -90,6 +92,7 @@ Gut zu wissen:
 - **Benutzer-ID:** Die Dateien in `data` gehören dem Benutzer mit den Zahlen `PUID`/`PGID`; Standard ist 1000 / 1000, auf den meisten
   Linux-Systemen der erste normale Benutzer. Mit dem Befehl `id` siehst du deine Zahlen; andere Werte (und einen anderen Port,
   Standard 5233) trägst du in der Datei `.env` ein.
+- **Eigene Domain / Reverse-Proxy:** Wie bei Unraid (Abschnitt 3.1): Rufst du PlatinVault unter einer eigenen Domain auf, trage sie in der Datei `.env` als `PLATINVAULT_ALLOWED_HOSTS=pv.example.com` ein (mehrere mit `;`, `*.example.com` für alle Namen darunter) und starte mit `docker compose up -d` neu. IP-Adressen, `localhost`, Namen ohne Punkt, `.local`, `.lan`, `.home.arpa`, `.internal` und `.fritz.box` brauchen nichts. Schreibt dein Proxy den Namen um, setze zusätzlich `PLATINVAULT_ALLOWED_ORIGINS=https://pv.example.com`.
 - **Aktualisieren:** `docker compose pull && docker compose up -d` im selben Ordner. Deine Daten bleiben erhalten. Die Betaversion
   bekommst du, indem du in der Compose-Datei die Zeile `image:` auf `ghcr.io/sushiflux/platinvault:beta` änderst (Kapitel 12).
 - **Sicherungen:** PlatinVault sichert seine Datenbank selbst – beim Start, danach alle 6 Stunden und beim Stoppen des Containers – in
@@ -497,6 +500,19 @@ gleich aus: ein **grünes Häkchen** in der Ecke des Symbols; offene Erfolge hab
   verschwinden Notiz-Knöpfe, Notiztexte und die Notiz-Suche überall. Bereits geschriebene Notizen werden dabei **nicht
   gelöscht** – sie sind wieder da, sobald du die Option wieder einschaltest.
 
+### Im Blick: Erfolge, an denen du gerade arbeitest
+
+Mit dem **Stecknadel-Knopf** an einem Erfolg – er steht in allen vier Ansichten und im Detailfenster – behältst du bis zu **10 Erfolge pro Spiel** im Blick. Sind schon 10 angeheftet, nimm zuerst einen heraus. Die angehefteten Erfolge erscheinen auf **jedem Reiter** der Spielseite, also auch beim Lesen des Guides:
+
+- **Breites Fenster im Querformat:** als einklappbare Spalte rechts neben dem Inhalt.
+- **Hochformat und schmale Fenster:** als einklappbare Leiste unten. Auf dem Handy startet sie eingeklappt als eine schlanke Zeile.
+
+Ob Spalte oder Leiste ein- oder ausgeklappt ist, merkt sich der Browser bzw. das Programm für jede der beiden Darstellungen getrennt.
+
+Zähler-Erfolge zählen live mit, während du spielst. Ein Klick auf eine Karte öffnet das Detailfenster mit Guide-Tipp und deiner Notiz. Schaltest du einen angehefteten Erfolg frei, steht er als **Geschafft** da; mit **Geschaffte entfernen** nimmst du alle auf einmal heraus. Wer das nicht von Hand machen will, lässt PlatinVault sie selbst entfernen (Einstellungen → **Live & Sound** → „Im Blick“, siehe Kapitel 7). Browser und Windows-Programm teilen sich dieselbe Auswahl, weil sie auf dem Server gespeichert ist – ein Erfolg, den du am Handy anheftest, steht auch am PC da.
+
+**Wenn Steam nicht erreichbar ist:** Die weltweiten Anteile holt PlatinVault beim Start und danach stündlich für die Spiele deiner Sammlung und behält den letzten guten Stand auch über einen Neustart hinweg. Scheitert ein Abruf, ändert sich an den gespeicherten Werten nichts; PlatinVault versucht es nach 2 Minuten wieder, danach mit wachsenden Pausen bis zu 30 Minuten. Über der Liste erscheint dann ein Hinweis (mit **Kopieren**-Knopf): Entweder zeigt er das Datum der gespeicherten Werte, oder – wenn es noch gar keine gibt – dass die Stufen vorläufig sind und die Anteile fehlen. Meist blockiert dann ein Virenschutz oder eine Firewall die Verbindung zu Steam.
+
 **So ordnet PlatinVault die Seltenheit ein:** Überall in der App – in den Statistiken und in der Bezeichnung, die ein
 Trophäen-Popup trägt – gilt dieselbe Skala mit fünf Stufen:
 
@@ -508,7 +524,7 @@ Trophäen-Popup trägt – gilt dieselbe Skala mit fünf Stufen:
 
 Die **Farbe** einer Trophäe (Gold, Silber, Bronze) richtet sich nach demselben Anteil, aber mit eigenen Grenzen: **Gold**
 haben höchstens 10 % der Spieler, **Silber** höchstens 50 %, **Bronze** mehr als 50 %. **Platin** bekommst du, wenn du alle
-Trophäen eines Spiels hast. Liefert Steam für eine Trophäe keinen Anteil, nennt PlatinVault dafür keine Seltenheitsstufe und
+Trophäen eines Spiels hast. Eine Ausnahme gibt es bei Story-Kapiteln: Erfolge, die man durch das Abschließen eines nummerierten Story-Kapitels erhält (z. B. „Schließe Kapitel 5 ab.“), zählen immer als Bronze – unabhängig davon, wie selten sie weltweit sind. Die Seltenheitsangabe (z. B. „Extrem selten“) zeigt weiterhin den echten weltweiten Anteil. Sammel-Erfolge wie „Schließe alle Kapitel auf Schwer ab“ sind davon nicht betroffen. Liefert Steam für eine Trophäe keinen Anteil, nennt PlatinVault dafür keine Seltenheitsstufe und
 rechnet sie in den Statistiken nicht mit.
 
 ## 6.4 Statistiken
@@ -608,9 +624,10 @@ und bleibt verdeckt, bis du ihn bewusst öffnest; PlatinVault fragt dafür pro S
 Im Reiter **Live & Sound** der Einstellungen:
 
 - Popups an- oder ausschalten, **Position** auf dem Bildschirm wählen: neun Plätze (links oben bis rechts unten) oder **Vollbild**.
-  Ein Klick auf eine Position zeigt sofort eine Vorschau. Bei **Vollbild** gehört das ganze Fenster für etwa fünf Sekunden der
+  Ein Klick auf eine Position zeigt sofort eine Vorschau. Bei **Vollbild** gehört das ganze Fenster für die eingestellte Anzeigedauer der
   neuen Trophäe: großer Pokal in der Farbe der Stufe, Name, Beschreibung, Seltenheit und Spiel – im Quer- wie im Hochformat. Ein Klick
   irgendwo oder die Taste Esc beendet das Popup früher; danach geht es mit der nächsten Trophäe weiter.
+- **Anzeigedauer der Trophäen-Popups:** Ein Schieberegler unter den Positionen. Er bestimmt, wie lange ein neuer Erfolg auf dem Bildschirm bleibt: ganze Sekunden von 2 bis 10, Standard 5. Das gilt für die Karte, das Vollbild-Popup, die Proben und das Overlay über dem Spiel. Das Vollbild-Popup schließt früher, wenn du klickst oder Esc drückst. Der Platin-Moment behält seine eigene Länge.
 - **Trophäen-Popup anzeigen:** **Nur in der App**, **Nur im Spiel** oder **Beides** (Standard). „Im Spiel“ heißt: als Overlay über dem
   Spiel – das gibt es nur im Windows-Programm (siehe 11.3). Im Browser und auf Unraid sind die beiden Spiel-Wahlen ausgegraut, dort
   erscheint das Popup immer in der App. Der Ton erklingt bei jeder Trophäe **genau einmal**, auch bei „Beides“.
@@ -618,6 +635,7 @@ Im Reiter **Live & Sound** der Einstellungen:
   echter Instrumente.
 - Lautstärke einstellen, **Sound probehören** und den **Platin-Moment testen**.
 - **Notizen an Erfolgen** ein- oder ausschalten (Standard: an; siehe 6.3).
+- **Im Blick:** Schalter **„Freigeschaltete automatisch aus ‚Im Blick‘ entfernen“** (Standard: aus). Aus: Ein freigeschalteter Erfolg bleibt als „Geschafft“ stehen, bis du ihn selbst entfernst. An: PlatinVault nimmt ihn nach dem Trophäen-Popup selbst heraus (siehe 6.3) – eine fertige Karte bleibt dafür so lange stehen, wie die **Anzeigedauer** es vorgibt.
 - **Beim Spielstart automatisch zum Spiel wechseln** ein- oder ausschalten (Standard: an; siehe unten).
 
 Startest du ein Spiel aus deiner Sammlung, springt jedes geöffnete PlatinVault-Fenster zu den **Live-Trophäen** dieses Spiels,
@@ -733,6 +751,7 @@ der Linux-Bridge. Hilft `status` nicht weiter, melde uns bitte, was es und das P
 |---|---|
 | Etwas lädt nicht oder zeigt Fehler | Einstellungen → **System**: zeigt, ob Backend, Datenbank, Datenordner, Steam, Bridge und Keys in Ordnung sind. |
 | „PlatinVault-Server nicht erreichbar – der Browser hat keine Antwort bekommen“ | Der Server antwortet gar nicht. Läuft das Programm bzw. der Container (auf Unraid in der Docker-Liste), und ist die Netzwerkverbindung zum Server in Ordnung? Danach die Aktion noch einmal ausführen. |
+| Beim Öffnen steht „PlatinVault hat diese Anfrage abgelehnt: Der Name … ist nicht freigegeben“ | Du rufst PlatinVault unter einem Namen auf, den es nicht kennt (zum Beispiel eine eigene Domain über einen Reverse-Proxy). Trage genau diesen Namen in der Variable `PLATINVAULT_ALLOWED_HOSTS` des Containers ein und starte den Container neu (Abschnitt 3.1 und 3.2). Mit der IP-Adresse des Servers geht es sofort ohne Eintrag. |
 | Die Bibliothek bleibt leer | Steam Web API-Key prüfen; im Steam-Profil die Spieldetails auf öffentlich stellen. |
 | Keine Live-Popups | Ist das Spiel in PlatinVault angelegt? Läuft PlatinVault auf einem Server: Ist die Bridge verbunden (Symbol in der Taskleiste bzw. `platinvault-bridge status` unter Linux, System-Check)? |
 | Unter Linux: „PlatinVault hat auf diesem Rechner kein Steam gefunden“ | Im Reiter **Steam** unter **Steam-Ordner (optional)** den Ordner mit `steamapps` eintragen (Abschnitt 4.1). Bei Flatpak-Steam liegt er meist unter `~/.var/app/com.valvesoftware.Steam/.local/share/Steam`. Unter Einstellungen → **System** zeigt **Gesuchte Orte anzeigen**, wo PlatinVault gesucht hat. Läuft PlatinVault in Docker, sieht es den Steam-Ordner des Rechners nicht – nimm das Linux-Paket oder die Linux-Bridge. |
@@ -746,6 +765,7 @@ der Linux-Bridge. Hilft `status` nicht weiter, melde uns bitte, was es und das P
 | Ein Kapitel zeigt „konnte nicht recherchiert werden“ | Auf **Kapitel erneut recherchieren** klicken (Details siehe 6.2). Der Grund steht im Hinweis; bei einem Quoten- oder Key-Problem zuerst unter Einstellungen → **KI-Recherche** nachsehen oder über den Pfeil am Knopf eine andere KI wählen. |
 | „Der Server wurde neu gestartet, die Recherche wurde unterbrochen“ | Der Server war während der Recherche kurz weg (Update, Neustart). Fertige Kapitel sind gespeichert; starte dieselbe Aktion noch einmal, sie macht dort weiter. |
 | Erfolge auf Englisch | Das Spiel hat bei Steam keine deutschen Texte; mit KI-Key übersetzt PlatinVault sie automatisch. |
+| Über der Trophäenliste steht „Seltenheitswerte sind nicht aktuell“ bzw. „nicht verfügbar“ | PlatinVault erreicht Steam gerade nicht, um die weltweiten Anteile zu holen. Es zeigt den letzten gespeicherten Stand (mit Datum) und versucht es von selbst wieder. Prüfe die Internetverbindung und ob ein Virenschutz oder eine Firewall PlatinVault den Zugriff ins Netz verbietet; **Kopieren** im Hinweis gibt dir den vollständigen Text für den Support. |
 | Kein Zähler bei einer Trophäe | Das Spiel hat bei Steam keinen Zähler hinterlegt. |
 | PlatinVault startet nicht: „Diese Datenbank wurde bereits von PlatinVault … benutzt“ | Die Datenbank kommt von einer neueren Version (zum Beispiel einer Beta). Damit nichts kaputtgeht, startet die ältere Version nicht und ändert nichts. Installiere die genannte Version (oder neuer) wieder oder warte auf das nächste Release (Kapitel 12). |
 
@@ -903,6 +923,7 @@ Danach beendet sich PlatinVault, entfernt Autostart, Verknüpfungen und den Eint
 | Kein Overlay im Spiel | Läuft das Spiel im exklusiven Vollbild? Auf „randloses Vollbild“ umstellen. Steht **Trophäen-Popup anzeigen** auf „Nur in der App“ (Haken **Trophäen-Overlay** im Menü des Symbols fehlt)? Bei „Beides“ bleibt das Overlay weg, solange das PlatinVault-Fenster vorne ist. **Overlay testen** zeigt eine Test-Karte; meldet es „nicht verfügbar“, steht der Grund im Protokoll. |
 | Strg+Alt+G tut nichts | Ein anderes Programm hat die Tasten belegt – PlatinVault nimmt dann Strg+Alt+Umschalt+G oder keine; der Guide geht immer über das Symbol neben der Uhr. |
 | Keine Live-Trophäen nach dem Neustart des PCs | Ist **Mit Windows starten** im Menü des Symbols angehakt? |
+| Das Update meldet „… wird von einem anderen Prozess verwendet“ oder „Die Programmdateien konnten nicht kopiert werden“ | Der Installer wartet bis zu 30 Sekunden („Warte, bis Windows die Programmdateien freigibt …“), bis sich das alte Programm und seine Hilfsprogramme beendet haben, und versucht es mehrfach. Klappt es trotzdem nicht, nennt die Meldung die Programme, die die Dateien festhalten: schließe sie (oft ein Virenschutz, der die Dateien gerade prüft) oder starte den PC neu und führe das Update erneut aus. Deine Daten bleiben dabei unverändert. |
 | Der Virenschutz meldet PlatinVault | Siehe Abschnitt 11.9. |
 
 ## 11.9 Virenschutz meldet PlatinVault

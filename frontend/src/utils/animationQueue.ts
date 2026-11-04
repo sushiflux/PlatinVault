@@ -1,5 +1,6 @@
 import type { LiveAchievementItemDto, NotificationPosition } from '../api/types'
 import { soundEngine } from './audio'
+import { popupSecondsToMs } from './popupSeconds'
 
 // What the 100% moment is about: all Steam achievements unlocked, or every checklist item of the guide ticked
 export interface PlatinumData {
@@ -9,14 +10,17 @@ export interface PlatinumData {
 }
 
 type QueueItem =
-  // position: only for previews (settings), which must show at the clicked spot before it is saved
-  | { type: 'achievement'; data: LiveAchievementItemDto; position?: NotificationPosition }
+  // position / seconds: for previews (settings), which must show at the clicked spot and for the chosen duration before it is saved,
+  // and for the overlay page, which gets both from the program with every unlock; without them the global setting applies
+  | { type: 'achievement'; data: LiveAchievementItemDto; position?: NotificationPosition; seconds?: number }
   | { type: 'platinum'; data: PlatinumData }
 
 export interface QueueState {
   currentAchievement: LiveAchievementItemDto | null
   currentPosition: NotificationPosition | null
   currentPlatinum: PlatinumData | null
+  // How long the current trophy popup stays (the card slides out a little before that); the chosen duration when none is showing
+  visibleMs: number
   // True from the first item until the last one is gone, its pause included (the overlay window of the Windows program hides
   // itself only after that, so no exit animation is cut off)
   busy: boolean
@@ -27,7 +31,8 @@ type QueueListener = (state: QueueState) => void
 // The platinum moment stays this long if nobody clicks it away
 const PLATINUM_VISIBLE_MS = 14000
 
-// A trophy popup (card or full screen) stays this long if nobody dismisses it
+// A trophy popup (card or full screen) stays this long if nobody dismisses it, until the setting "Anzeigedauer der Trophäen-Popups"
+// (live.popup_seconds, 2..10 s) is known: setPopupSeconds()
 export const ACHIEVEMENT_VISIBLE_MS = 5000
 
 // Pause after a popup is gone, before the next one starts (also leaves the exit animation time to finish)
@@ -40,6 +45,10 @@ class AnimationQueueManager {
   private currentAchievement: LiveAchievementItemDto | null = null
   private currentPosition: NotificationPosition | null = null
   private currentPlatinum: PlatinumData | null = null
+  // The chosen duration of a trophy popup; read when a popup starts, so a change applies to the next one (also to those already waiting)
+  private popupMs = ACHIEVEMENT_VISIBLE_MS
+  // The duration of the popup that is showing now (kept apart from popupMs: the card's exit timer must not restart mid-popup)
+  private currentVisibleMs = ACHIEVEMENT_VISIBLE_MS
   private listeners: Set<QueueListener> = new Set()
   // Raised by clearQueue: a run that started before must not touch the state afterwards (it would hide the next popup early)
   private generation = 0
@@ -59,6 +68,7 @@ class AnimationQueueManager {
       currentAchievement: this.currentAchievement,
       currentPosition: this.currentPosition,
       currentPlatinum: this.currentPlatinum,
+      visibleMs: this.currentAchievement ? this.currentVisibleMs : this.popupMs,
       busy: this.isProcessing || this.queue.length > 0,
     }
   }
@@ -75,8 +85,13 @@ class AnimationQueueManager {
     else void this.processNext()
   }
 
-  public enqueueAchievement(achievement: LiveAchievementItemDto, options?: { position?: NotificationPosition }) {
-    this.queue.push({ type: 'achievement', data: achievement, position: options?.position })
+  /** Sets how long trophy popups stay (whole seconds, clamped to 2..10); the platinum moment keeps its own length. */
+  public setPopupSeconds(seconds: unknown) {
+    this.popupMs = popupSecondsToMs(seconds)
+  }
+
+  public enqueueAchievement(achievement: LiveAchievementItemDto, options?: { position?: NotificationPosition; seconds?: number }) {
+    this.queue.push({ type: 'achievement', data: achievement, position: options?.position, seconds: options?.seconds })
     void this.processNext()
   }
 
@@ -117,13 +132,15 @@ class AnimationQueueManager {
     const generation = this.generation
 
     if (nextItem.type === 'achievement') {
+      const visibleMs = nextItem.seconds === undefined ? this.popupMs : popupSecondsToMs(nextItem.seconds)
+      this.currentVisibleMs = visibleMs
       this.currentAchievement = nextItem.data
       this.currentPosition = nextItem.position ?? null
       this.notify()
 
       soundEngine.playTrophyUnlock(nextItem.data.rarityTier)
 
-      await this.delayUnlessDismissed(ACHIEVEMENT_VISIBLE_MS)
+      await this.delayUnlessDismissed(visibleMs)
       if (generation !== this.generation) return
 
       this.currentAchievement = null

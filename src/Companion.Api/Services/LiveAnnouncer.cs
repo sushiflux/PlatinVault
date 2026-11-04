@@ -1,5 +1,7 @@
+using Companion.Api.Data;
 using Companion.Api.Endpoints;
 using Companion.Api.Hubs;
+using Companion.Api.Settings;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Companion.Api.Services;
@@ -112,7 +114,8 @@ public sealed class LiveAnnouncer(
     LiveEventFeed liveEvents,
     LiveEventLog eventLog,
     LiveConnectionCounter connections,
-    ILogger<LiveAnnouncer> logger)
+    ILogger<LiveAnnouncer> logger,
+    IServiceScopeFactory? scopeFactory = null)
 {
     public async Task AnnounceUnlockAsync(LiveAchievementItemDto achievement, string? gameName, int appId, string source, CancellationToken ct)
     {
@@ -136,6 +139,39 @@ public sealed class LiveAnnouncer(
             logger.LogWarning(
                 "Kein PlatinVault-Fenster mit dem Live-Kanal verbunden - das Popup für {Name} erscheint erst, wenn sich ein Fenster (neu) verbindet (höchstens {Minutes} Minuten lang).",
                 achievement.DisplayName, (int)LiveEventLog.MaxAge.TotalMinutes);
+        }
+
+        await UnpinUnlockedAsync(achievement, appId, ct);
+    }
+
+    /// <summary>
+    /// With the setting "live.pins_after_unlock" = "remove" an announced unlock is taken off the game's pinned achievements ("Im Blick"),
+    /// then every window is told with "PinsChanged". This is the one place both unlock sources (local worker, bridge) pass, so the rule
+    /// exists once. Runs after the popup went out and never fails the announcement.
+    /// </summary>
+    private async Task UnpinUnlockedAsync(LiveAchievementItemDto achievement, int appId, CancellationToken ct)
+    {
+        if (scopeFactory is null || appId <= 0 || string.IsNullOrWhiteSpace(achievement.ApiName))
+        {
+            return;
+        }
+        try
+        {
+            await using var scope = scopeFactory.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<CompanionDbContext>();
+            if (await SettingsStore.ReadPinsAfterUnlockAsync(db, ct) != "remove")
+            {
+                return;
+            }
+            var change = await PinnedAchievements.RemoveAsync(db, (uint)appId, [achievement.ApiName], ct);
+            if (change.Changed)
+            {
+                await PinEndpoints.BroadcastChangedAsync(hubContext, (uint)appId, logger, ct);
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Angehefteter Erfolg {Name} konnte nach dem Freischalten nicht gelöst werden.", achievement.ApiName);
         }
     }
 

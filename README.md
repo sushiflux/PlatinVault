@@ -141,6 +141,8 @@ Der Appdata-Ordner steht standardmäßig auf `/mnt/cache/appdata/platinvault`, a
 berichten von beschädigten SQLite-Datenbanken, wenn die Datei über die Freigabe-Schicht `/mnt/user/...` (FUSE) erreicht wird
 (Erfahrungsberichte im Unraid-Forum, keine offizielle Aussage). Heißt dein Pool anders, passe den Pfad an (z. B.
 `/mnt/<poolname>/appdata/platinvault`). Updates holt Unraid über „Update“ im Docker-Reiter, deine Einstellungen bleiben erhalten.
+Rufst du PlatinVault unter einer eigenen Domain auf (Reverse-Proxy), trage sie in der Vorlage unter „Show more settings“ bei
+`PLATINVAULT_ALLOWED_HOSTS` ein (siehe „Eigene Domain / Reverse-Proxy“ unter Linux / Docker).
 
 ### Linux / Docker
 
@@ -169,6 +171,10 @@ die Datenbank und die automatischen Sicherungen – steckt im Container.
 
 - **Kein Login:** PlatinVault hat bewusst keine Anmeldung. Betreibe es nur im eigenen Heimnetz und stelle den Port nicht
   ins Internet.
+- **Eigene Domain / Reverse-Proxy:** Zum Schutz vor DNS-Rebinding nimmt PlatinVault nur IP-Adressen, `localhost`, Namen ohne
+  Punkt (z. B. `tower`) und Namen auf `.local`, `.lan`, `.home.arpa`, `.internal` und `.fritz.box` an. Rufst du es unter einer eigenen Domain
+  auf, trage sie in die Variable `PLATINVAULT_ALLOWED_HOSTS` ein (z. B. `pv.example.com`, mehrere mit `;`, `*.example.com` für alle
+  Unternamen). Schreibt dein Proxy den Host um, braucht der Live-Kanal zusätzlich `PLATINVAULT_ALLOWED_ORIGINS=https://pv.example.com`.
 - **Benutzer-ID:** Die Daten in `data/` gehören dem Benutzer `PUID:PGID`, Standard `1000:1000` – auf den meisten
   Linux-Systemen der erste normale Benutzer (`id` zeigt deine Zahlen). Anderen Port oder andere Zahlen setzt du in einer
   Datei `.env` neben der Compose-Datei (Vorlage: `.env.example`).
@@ -394,6 +400,8 @@ The appdata folder defaults to `/mnt/cache/appdata/platinvault`, i.e. directly o
 corrupted SQLite databases when the file is reached through the share layer `/mnt/user/...` (FUSE) (reports in the Unraid
 forum, not an official statement). If your pool has a different name, adjust the path (e.g. `/mnt/<poolname>/appdata/platinvault`).
 Unraid fetches updates through "Update" on the Docker tab; your settings stay.
+If you open PlatinVault under your own domain (reverse proxy), enter it in the template under "Show more settings" at
+`PLATINVAULT_ALLOWED_HOSTS` (see "Own domain / reverse proxy" under Linux / Docker).
 
 ### Linux / Docker
 
@@ -423,6 +431,10 @@ database and the automatic backups - is inside the container.
 
 - **No login:** PlatinVault deliberately has no sign-in. Run it in your own home network only and do not expose the port to
   the internet.
+- **Own domain / reverse proxy:** to guard against DNS rebinding, PlatinVault only accepts IP addresses, `localhost`, names
+  without a dot (e.g. `tower`) and names ending in `.local`, `.lan`, `.home.arpa`, `.internal` and `.fritz.box`. If you open it under your own
+  domain, put it into the variable `PLATINVAULT_ALLOWED_HOSTS` (e.g. `pv.example.com`, several separated by `;`, `*.example.com` for
+  every name below it). If your proxy rewrites the host, the live channel also needs `PLATINVAULT_ALLOWED_ORIGINS=https://pv.example.com`.
 - **User id:** the files in `data/` belong to the user `PUID:PGID`, default `1000:1000` - on most Linux systems the first
   normal user (`id` shows your numbers). Set a different port or other numbers in a file named `.env` next to the Compose
   file (template: `.env.example`).

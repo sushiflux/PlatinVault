@@ -53,6 +53,11 @@ const settings = {
       fullscreen: 'Full screen',
     },
     positionFullscreenHint: 'The whole window shows the trophy for a few seconds. A click or Esc ends it sooner.',
+    duration: {
+      label: 'Trophy pop-up duration',
+      value: '{{seconds}} s',
+      hint: 'How long a new achievement stays on screen ({{min}}–{{max}} seconds). The full-screen popup closes sooner if you click or press Esc.',
+    },
     target: {
       label: 'Show trophy popup',
       app: 'Only in the app',
@@ -71,6 +76,10 @@ const settings = {
     notesSwitch: 'Show and allow personal notes on achievements',
     notesText:
       'On: in the trophy list you can leave a personal note on every achievement; it appears on the card and is found by the search. Off: note buttons, note texts and the note search disappear everywhere. Notes you have already written are not deleted – they are back as soon as you switch the option on again.',
+    pinsTitle: 'In View',
+    pinsSwitch: 'Automatically remove unlocked achievements from “In View”',
+    pinsText:
+      'With the pin button on an achievement you keep up to 10 achievements per game in view on every tab of the game. Off (default): an unlocked achievement stays as “Done” until you remove it or all completed ones yourself. On: PlatinVault takes it out by itself – the card stays as “Done” for about as long as the trophy popup and then slides out.',
     gameStartTitle: 'Game start',
     gameStartSwitch: 'Switch to the game when it starts',
     gameStartText:

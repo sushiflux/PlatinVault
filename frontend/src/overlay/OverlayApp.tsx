@@ -5,7 +5,7 @@ import { FullscreenAchievement } from '../components/FullscreenAchievement'
 import { PlatinumCelebration } from '../components/PlatinumCelebration'
 import { TrophyNotification } from '../components/TrophyNotification'
 import { applyLanguage } from '../i18n'
-import { animationQueue } from '../utils/animationQueue'
+import { ACHIEVEMENT_VISIBLE_MS, animationQueue } from '../utils/animationQueue'
 import type { QueueState } from '../utils/animationQueue'
 import { soundEngine } from '../utils/audio'
 import { webViewChannel } from '../utils/programWindow'
@@ -26,7 +26,7 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, refetchOnWindowFocus: false, retry: false } },
 })
 
-const EMPTY: QueueState = { currentAchievement: null, currentPosition: null, currentPlatinum: null, busy: false }
+const EMPTY: QueueState = { currentAchievement: null, currentPosition: null, currentPlatinum: null, visibleMs: ACHIEVEMENT_VISIBLE_MS, busy: false }
 
 interface OverlayAppProps {
   // Injected by tests; the real page uses window.chrome.webview
@@ -85,7 +85,7 @@ function OverlayLayer({ channel }: { channel: WebViewChannel | null }) {
       const enqueue = () => {
         if (overlayEvent.kind === 'achievement') {
           if (overlayEvent.gameName) gameNames.current.set(overlayEvent.achievement, overlayEvent.gameName)
-          animationQueue.enqueueAchievement(overlayEvent.achievement, { position: overlayEvent.position })
+          animationQueue.enqueueAchievement(overlayEvent.achievement, { position: overlayEvent.position, seconds: overlayEvent.seconds })
         } else {
           animationQueue.enqueuePlatinum(overlayEvent.gameName, overlayEvent.total)
         }
@@ -109,7 +109,7 @@ function OverlayLayer({ channel }: { channel: WebViewChannel | null }) {
   const achievement = state.currentAchievement
   return (
     <>
-      <TrophyNotification achievement={fullscreen ? null : achievement} position={fullscreen ? 'top-right' : position} />
+      <TrophyNotification achievement={fullscreen ? null : achievement} position={fullscreen ? 'top-right' : position} visibleMs={state.visibleMs} />
       <FullscreenAchievement
         achievement={fullscreen ? achievement : null}
         gameName={achievement ? (gameNames.current.get(achievement) ?? null) : null}

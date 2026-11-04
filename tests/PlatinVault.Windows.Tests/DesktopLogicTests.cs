@@ -248,13 +248,14 @@ public sealed class OverlayMessagesTests
     };
 
     [Fact]
-    public void An_unlock_is_sent_with_the_app_s_field_names_position_and_language()
+    public void An_unlock_is_sent_with_the_app_s_field_names_position_duration_and_language()
     {
-        using var json = System.Text.Json.JsonDocument.Parse(PlatinVault.Desktop.Ui.OverlayMessages.Achievement(Sample(), "Elden Ring", "fullscreen", "en"));
+        using var json = System.Text.Json.JsonDocument.Parse(PlatinVault.Desktop.Ui.OverlayMessages.Achievement(Sample(), "Elden Ring", "fullscreen", 8, "en"));
         var payload = json.RootElement.GetProperty("pvOverlay");
         Assert.Equal("achievement", payload.GetProperty("kind").GetString());
         Assert.Equal("Elden Ring", payload.GetProperty("gameName").GetString());
         Assert.Equal("fullscreen", payload.GetProperty("position").GetString());
+        Assert.Equal(8, payload.GetProperty("seconds").GetInt32());
         Assert.Equal("en", payload.GetProperty("language").GetString());
         var achievement = payload.GetProperty("achievement");
         Assert.Equal("ACH_1", achievement.GetProperty("apiName").GetString());

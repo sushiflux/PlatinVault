@@ -34,6 +34,7 @@ import type {
   LiveGameAchievementsDto,
   LiveGameInfoDto,
   LiveEventsResponseDto,
+  LivePinsDto,
   LiveStatusDto,
   SettingsResponseDto,
   SteamLibraryResponseDto,
@@ -184,6 +185,38 @@ export async function saveLiveAchievementNote(appId: number, apiName: string, no
     body: JSON.stringify({ appId, apiName, note }),
   })
   return handleResponse<{ success: boolean }>(res)
+}
+
+// "Im Blick": the pinned achievements of one game. Every call answers with the complete state, so the caller can replace its copy.
+export async function fetchPins(appId: number): Promise<LivePinsDto> {
+  const res = await fetch(`/api/live/pins?appId=${encodeURIComponent(String(appId))}`)
+  return handleResponse<LivePinsDto>(res)
+}
+
+// Appends the pin (idempotent). 400 with a complete message when the maximum is reached.
+export async function pinAchievement(appId: number, apiName: string): Promise<LivePinsDto> {
+  const res = await fetch('/api/live/pins', {
+    method: 'POST',
+    headers: MUTATION_HEADERS,
+    body: JSON.stringify({ appId, apiName }),
+  })
+  return handleResponse<LivePinsDto>(res)
+}
+
+export async function unpinAchievement(appId: number, apiName: string): Promise<LivePinsDto> {
+  const query = `appId=${encodeURIComponent(String(appId))}&apiName=${encodeURIComponent(apiName)}`
+  const res = await fetch(`/api/live/pins?${query}`, { method: 'DELETE', headers: MUTATION_HEADERS })
+  return handleResponse<LivePinsDto>(res)
+}
+
+// "Geschaffte entfernen": several pins at once
+export async function removePins(appId: number, apiNames: string[]): Promise<LivePinsDto> {
+  const res = await fetch('/api/live/pins/remove', {
+    method: 'POST',
+    headers: MUTATION_HEADERS,
+    body: JSON.stringify({ appId, apiNames }),
+  })
+  return handleResponse<LivePinsDto>(res)
 }
 
 export async function triggerLiveTestPopup(type: 'bronze' | 'silver' | 'gold' | 'platinum', gameName?: string, total?: number): Promise<void> {

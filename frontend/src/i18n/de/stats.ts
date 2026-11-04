@@ -188,7 +188,7 @@ const stats = {
   // TierMeters
   tiers: {
     title: 'Trophäen nach Stufe',
-    subtitle: 'Die Stufe richtet sich nach der Seltenheit: Gold bis 10 %, Silber bis 50 %, Bronze darüber. Platin gibt es für alle.',
+    subtitle: 'Die Stufe richtet sich nach der Seltenheit: Gold bis 10 %, Silber bis 50 %, Bronze darüber. Erfolge für ein abgeschlossenes Story-Kapitel sind immer Bronze. Platin gibt es für alle.',
     tableCaption: 'Trophäen nach Stufe',
     colTier: 'Stufe',
     colUnlocked: 'Freigeschaltet',
@@ -200,7 +200,7 @@ const stats = {
     rulePlatinum: 'Alle Trophäen des Spiels',
     ruleGold: 'Höchstens 10 % der Spieler haben sie',
     ruleSilver: 'Höchstens 50 % der Spieler haben sie',
-    ruleBronze: 'Von mehr als 50 % der Spieler erreicht',
+    ruleBronze: 'Von mehr als 50 % der Spieler erreicht – oder ein abgeschlossenes Kapitel',
     tipTitle: '{{tier}}-Trophäen',
     tipUnlocked: 'Freigeschaltet',
     tipValue: '{{unlocked}} von {{total}}',

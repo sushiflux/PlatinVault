@@ -14,7 +14,7 @@ import { LaunchProvider } from './components/launch/LaunchProvider'
 import { ConfirmProvider } from './components/ui/ConfirmDialog'
 import { DashboardPage } from './pages/DashboardPage'
 import { GameGuidePage } from './pages/GameGuidePage'
-import { animationQueue } from './utils/animationQueue'
+import { ACHIEVEMENT_VISIBLE_MS, animationQueue } from './utils/animationQueue'
 import type { PlatinumData } from './utils/animationQueue'
 import { DEFAULT_SOUND_THEME, soundEngine } from './utils/audio'
 import { connectLiveHub } from './utils/liveConnection'
@@ -36,6 +36,8 @@ function GlobalLiveOverlayBridge() {
   const [activeNotification, setActiveNotification] =
     useState<LiveAchievementItemDto | null>(null)
   const [activePlatinum, setActivePlatinum] = useState<PlatinumData | null>(null)
+  // How long the popup that is showing stays (the chosen duration); the card slides out shortly before the queue removes it
+  const [visibleMs, setVisibleMs] = useState(ACHIEVEMENT_VISIBLE_MS)
   // Set only while a settings preview runs: shows the popup at the clicked spot before it is saved
   const [previewPosition, setPreviewPosition] = useState<NotificationPosition | null>(null)
 
@@ -67,13 +69,16 @@ function GlobalLiveOverlayBridge() {
       soundEngine.setEnabled(settings.playSounds)
       soundEngine.setVolume(settings.soundVolume ?? 0.15)
       soundEngine.setTheme(settings.soundTheme || DEFAULT_SOUND_THEME)
+      // Setting "Anzeigedauer der Trophäen-Popups": the queue is the one place that times the popups (card and full screen)
+      animationQueue.setPopupSeconds(settings.popupSeconds)
     }
   }, [settings])
 
   useEffect(() => {
     const unsub = animationQueue.subscribe(
-      ({ currentAchievement, currentPosition, currentPlatinum }) => {
+      ({ currentAchievement, currentPosition, currentPlatinum, visibleMs: ms }) => {
         setActiveNotification(currentAchievement)
+        setVisibleMs(ms)
         setPreviewPosition(currentPosition)
         setActivePlatinum(currentPlatinum)
       }
@@ -100,8 +105,12 @@ function GlobalLiveOverlayBridge() {
           void queryClient.invalidateQueries({ queryKey: ['live-status'] })
           void queryClient.invalidateQueries({ queryKey: ['live-achievements'] })
         },
+        onPinsChanged: (appId) => {
+          void queryClient.invalidateQueries({ queryKey: ['live-pins', appId] })
+        },
         onConnected: () => {
           void queryClient.invalidateQueries({ queryKey: ['live-status'] })
+          void queryClient.invalidateQueries({ queryKey: ['live-pins'] })
           refreshTrophies()
         },
       },
@@ -126,6 +135,7 @@ function GlobalLiveOverlayBridge() {
       <TrophyNotification
         achievement={fullscreen || !showHere ? null : activeNotification}
         position={position === 'fullscreen' ? 'top-right' : position}
+        visibleMs={visibleMs}
       />
       {/* Always mounted: its screen reader announcement only works when the live region exists before the text appears */}
       <FullscreenAchievement

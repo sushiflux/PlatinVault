@@ -84,9 +84,32 @@ export interface LiveTrophyTierSummaryDto {
   total: number
 }
 
+// How trustworthy the rarity (global unlock share) values of the list are: "ok", "stale" (the last known values are shown) or
+// "unavailable" (no values). message = the readable reason in the UI language, detail = the raw technical text. An older server sends none.
+export type RarityState = 'ok' | 'stale' | 'unavailable'
+
+export interface LiveRarityDto {
+  state: RarityState
+  fetchedAt: string | null
+  message: string | null
+  detail: string | null
+}
+
+// "Im Blick": the achievements a player pinned for one game (apiNames = the order of the cards), max = how many may be pinned
+export interface LivePinsDto {
+  appId: number
+  apiNames: string[]
+  max: number
+}
+
+// What happens to a pin when its achievement is unlocked: it stays (shown as done) or the server removes it
+export type PinsAfterUnlock = 'keep' | 'remove'
+
 export interface LiveGameAchievementsDto {
   game: LiveGameInfoDto
   achievements: LiveAchievementItemDto[]
+  // Missing on an older server (counts as "ok")
+  rarity?: LiveRarityDto
   totalCount: number
   achievedCount: number
   remainingCount: number
@@ -491,6 +514,8 @@ export interface SettingsResponseDto {
   soundTheme: SoundTheme
   popupPosition: NotificationPosition
   popupTarget: PopupTarget
+  // Setting "live.popup_seconds": how long a trophy popup stays on screen, whole seconds 2..10 (default 5)
+  popupSeconds: number
   // Steam language name for achievement texts ("german" / "english"); follows uiLanguage, never edited on its own
   language: string
   // The language of the whole app ("de" / "en"); null until the user has chosen one (first start: language screen)
@@ -511,6 +536,8 @@ export interface SettingsResponseDto {
   twitchStreamsEnabled: boolean
   // Switch "features.achievement_notes" (on by default): off hides the personal notes on achievements everywhere (stored notes are kept)
   achievementNotesEnabled: boolean
+  // Setting "pins.after_unlock": what happens to a pinned achievement ("Im Blick") once it is unlocked; missing on an older server = keep
+  pinsAfterUnlock?: PinsAfterUnlock
   // AI selection: "default" = one Standard-KI writes a guide, "mixed" = chapters spread over every provider with a key, "ask" = every
   // AI action asks first. aiDefaultProvider = the Standard-KI that is effective now (null without any key).
   aiSelectionMode: AiSelectionMode
@@ -699,6 +726,8 @@ export interface UpdateSettingsRequest {
   soundTheme?: SoundTheme
   popupPosition?: NotificationPosition
   popupTarget?: PopupTarget
+  // Whole seconds 2..10 (anything else is refused with 400); omitted = keep
+  popupSeconds?: number
   // "de" or "en"; the server also sets the Steam achievement language from it
   uiLanguage?: UiLanguage
   autoTranslate?: boolean
@@ -716,6 +745,7 @@ export interface UpdateSettingsRequest {
   clearTwitchKey?: boolean
   twitchStreamsEnabled?: boolean
   achievementNotesEnabled?: boolean
+  pinsAfterUnlock?: PinsAfterUnlock
   // AI selection (omitted = keep)
   aiSelectionMode?: AiSelectionMode
   aiDefaultProvider?: AiProviderId

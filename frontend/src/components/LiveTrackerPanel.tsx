@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
-import { CopyErrorButton } from './ui/CopyErrorButton'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
   IconCheck,
@@ -8,17 +7,15 @@ import {
   IconEyeOff,
   IconRefresh,
   IconSearch,
-  IconX,
 } from '@tabler/icons-react'
-import {
-  fetchLiveAchievements,
-  fetchLiveStatus,
-  saveLiveAchievementNote,
-} from '../api/client'
+import { fetchLiveAchievements, fetchLiveStatus } from '../api/client'
 import type { LiveAchievementItemDto, LiveGameAchievementsDto, RarityTier } from '../api/types'
 import { useFormat } from '../i18n/format'
 import { useAchievementNotes } from '../utils/useAchievementNotes'
 import { useSteamReach } from '../utils/useSteamReach'
+import { AchievementNoteDialog } from './AchievementNoteDialog'
+import { RarityNotice } from './RarityNotice'
+import { usePins } from './pins/pinsContext'
 import { useTierLabel } from './platinum/TierTrophy'
 import { GhostIconButton } from './ui/GhostIconButton'
 import { TierIcon } from './ui/TierIcon'
@@ -97,8 +94,9 @@ export function LiveTrackerPanel({
   tips = {},
   onSummaryElement,
 }: LiveTrackerPanelProps) {
-  const queryClient = useQueryClient()
   const { t } = useTranslation(['live', 'common'])
+  // "Im Blick": null on a page without pins (then no list item has a pin button)
+  const pins = usePins()
   const tierLabel = useTierLabel()
   // Personal notes can be switched off in the settings; off = no note control, text, search or hint anywhere in this list
   const { enabled: notesEnabled, ready: notesSettingReady } = useAchievementNotes()
@@ -117,10 +115,6 @@ export function LiveTrackerPanel({
   >('default')
   const [editingNoteAch, setEditingNoteAch] =
     useState<LiveAchievementItemDto | null>(null)
-  const [noteDraft, setNoteDraft] = useState('')
-  // A save in flight, and what the server (or the network) answered when it failed: shown in the note dialog, which stays open
-  const [noteSaving, setNoteSaving] = useState(false)
-  const [noteError, setNoteError] = useState<string | null>(null)
   const [revealedSingleIds, setRevealedSingleIds] = useState<
     Record<string, boolean>
   >({})
@@ -187,35 +181,6 @@ export function LiveTrackerPanel({
     return list
   }, [liveData, activeTab, selectedRarity, searchQuery, sortBy, notesEnabled])
 
-  const closeNoteEditor = () => {
-    setEditingNoteAch(null)
-    setNoteError(null)
-  }
-
-  const handleSaveNote = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!editingNoteAch || !liveData || noteSaving) return
-    setNoteSaving(true)
-    setNoteError(null)
-    try {
-      await saveLiveAchievementNote(liveData.game.appId, editingNoteAch.apiName, noteDraft)
-    } catch (err: unknown) {
-      // The dialog stays open with the draft; say what went wrong (the server's own text, or that it could not be reached)
-      const reason =
-        err instanceof TypeError
-          ? t('noteDialog.serverUnreachable')
-          : err instanceof Error
-            ? err.message
-            : t('common:unknownError')
-      setNoteError(t('noteDialog.saveFailed', { reason }))
-      return
-    } finally {
-      setNoteSaving(false)
-    }
-    closeNoteEditor()
-    await queryClient.invalidateQueries({ queryKey: ['live-achievements'] })
-  }
-
   // Everything one list item needs: the spoiler cover, the translation toggle and the way to the note editor and the details
   const itemProps = (ach: LiveAchievementItemDto): TrophyItemProps => ({
     ach,
@@ -225,12 +190,11 @@ export function LiveTrackerPanel({
     onReveal: () => setRevealedSingleIds((prev) => ({ ...prev, [ach.apiName]: true })),
     onToggleOriginal: () => setShowOriginalIds((prev) => ({ ...prev, [ach.apiName]: !prev[ach.apiName] })),
     notesEnabled,
-    onNote: () => {
-      setEditingNoteAch(ach)
-      setNoteDraft(ach.userNote)
-      setNoteError(null)
-    },
+    onNote: () => setEditingNoteAch(ach),
     onOpen: () => setDetailName(ach.apiName),
+    pin: pins
+      ? { pinned: pins.isPinned(ach.apiName), canPin: !pins.full, max: pins.max, onToggle: () => pins.toggle(ach.apiName) }
+      : undefined,
   })
   const detailAch = detailName ? liveData?.achievements.find((a) => a.apiName === detailName) : undefined
 
@@ -281,6 +245,9 @@ export function LiveTrackerPanel({
           </div>
         </div>
       </div>
+
+      {/* The rarity values are old or missing: said once, completely, above the list (nothing while they are fine) */}
+      {liveData?.rarity && liveData.rarity.state !== 'ok' && <RarityNotice rarity={liveData.rarity} />}
 
       {/* Filter Bar & Trophy Grid */}
       {expanded && (
@@ -405,74 +372,9 @@ export function LiveTrackerPanel({
         />
       )}
 
-      {/* Personal Note Modal */}
-      {notesEnabled && editingNoteAch && (
-        <div
-          className="pv-modal-backdrop"
-          onClick={closeNoteEditor}
-        >
-          <div
-            className="pv-modal w-full max-w-md p-5 space-y-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h4
-                  className="text-base font-extrabold"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  {t('noteDialog.title')}
-                </h4>
-                <p
-                  className="text-xs"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  {editingNoteAch.displayName}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={closeNoteEditor}
-                className="pv-btn !p-1.5"
-                aria-label={t('common:close')}
-              >
-                <IconX size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveNote} className="space-y-3">
-              <textarea
-                rows={4}
-                value={noteDraft}
-                onChange={(e) => {
-                  setNoteDraft(e.target.value)
-                  // A failure answer belongs to the text that was sent
-                  setNoteError(null)
-                }}
-                placeholder={t('noteDialog.placeholder')}
-                className="pv-input w-full"
-              />
-              {noteError && (
-                <p role="alert" className="pv-alert pv-alert-danger !px-3 !py-2 text-xs font-semibold">
-                  {noteError}
-                  <CopyErrorButton className="ms-2 align-middle" report={{ message: noteError }} />
-                </p>
-              )}
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={closeNoteEditor}
-                  className="pv-btn"
-                >
-                  {t('common:cancel')}
-                </button>
-                <button type="submit" disabled={noteSaving} className="pv-btn pv-btn-emerald">
-                  {t('noteDialog.save')}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* Personal note of one achievement */}
+      {notesEnabled && editingNoteAch && liveData && (
+        <AchievementNoteDialog key={editingNoteAch.apiName} ach={editingNoteAch} appId={liveData.game.appId} onClose={() => setEditingNoteAch(null)} />
       )}
     </section>
   )

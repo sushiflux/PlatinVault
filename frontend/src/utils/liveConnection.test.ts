@@ -193,6 +193,23 @@ describe('connectLiveHub', () => {
     expect(connection.stopped).toBe(true)
   })
 
+  it('reports a PinsChanged event with its app id and ignores a payload without one', async () => {
+    const connection = new FakeConnection()
+    connection.up = true
+    const onPinsChanged = vi.fn()
+    connectLiveHub(
+      { onAchievement: vi.fn(), onPlatinum: vi.fn(), onGameChanged: vi.fn(), onPinsChanged },
+      { createConnection: () => connection, fetchEvents: async () => response('a', []), storage: null, schedule: manualScheduler().schedule }
+    )
+    await flush()
+
+    connection.emit('PinsChanged', { appId: 440 })
+    connection.emit('PinsChanged', {})
+    connection.emit('PinsChanged', null)
+    expect(onPinsChanged).toHaveBeenCalledTimes(1)
+    expect(onPinsChanged).toHaveBeenCalledWith(440)
+  })
+
   it('never stops retrying (delays settle at 10 s)', () => {
     expect(retryDelayMs(0)).toBe(0)
     expect(retryDelayMs(3)).toBe(5000)

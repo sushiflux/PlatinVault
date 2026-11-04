@@ -5,8 +5,12 @@
    Active = accent colour + a sliding marker; hover = a soft tint only; focus = a ring inside the tab (never clipped). Everything
    is rem-based, so it follows the UI size. Contrast: text-secondary on the surfaces >= 7:1, accent on surface >= 5.9:1. */
 
-/* ---- The side nav ---- */
-.pv-gnav {
+/* ---- The side nav ----
+   The "Im Blick" column on the right (components/pins) is the mirror image of this panel and shares this rule: the same surface, border,
+   radius, sticky offset and height. With the "Im Blick" dock at the bottom of the window (components/pins, publishes --pv-dock-h) the
+   panel is shorter by the dock's height, so its foot is never covered. */
+.pv-gnav,
+.pv-gpins {
   position: sticky;
   /* Below the header and the trophy bar (GameTrophyBar.tsx publishes --pv-gbar-bottom), a little air above the panel */
   inset-block-start: calc(var(--pv-gbar-bottom, 8rem) + 1rem);
@@ -14,12 +18,11 @@
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
-  inline-size: clamp(14rem, 20vw, 18rem);
   /* The panel always has the height that is free under the bars (never more): the foot (the info symbol) therefore sits at the
      bottom of the window whatever the number of chapters, the list in between scrolls, and nothing changes its size when a guide
      has a few chapters more or less. A page never gets taller because of the nav (top margin + this + bottom margin = 100dvh). */
-  block-size: calc(100dvh - var(--pv-gbar-bottom, 8rem) - 3rem);
-  max-block-size: calc(100dvh - var(--pv-gbar-bottom, 8rem) - 3rem);
+  block-size: calc(100dvh - var(--pv-gbar-bottom, 8rem) - 3rem - var(--pv-dock-h, 0px));
+  max-block-size: calc(100dvh - var(--pv-gbar-bottom, 8rem) - 3rem - var(--pv-dock-h, 0px));
   /* Level with the first card of the content (main's padding: 1.5rem from 640 px, 2rem from 1024 px); stuck it sits 1rem below the bar */
   margin-block-start: 1.5rem;
   margin-block-end: 1rem;
@@ -27,6 +30,10 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
+}
+
+.pv-gnav {
+  inline-size: clamp(14rem, 20vw, 18rem);
   transition: inline-size 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -416,7 +423,8 @@
 }
 
 @media (min-width: 1024px) {
-  .pv-gnav {
+  .pv-gnav,
+  .pv-gpins {
     margin-block-start: 2rem;
   }
 }

@@ -39,6 +39,7 @@ describe('animationQueue: trophy popups', () => {
 
   afterEach(() => {
     animationQueue.clearQueue()
+    animationQueue.setPopupSeconds(5)
     unsubscribe()
     vi.useRealTimers()
   })
@@ -124,6 +125,126 @@ describe('animationQueue: trophy popups', () => {
     expect(current()).toBe('P')
     await vi.advanceTimersByTimeAsync(200)
     expect(current()).toBeNull()
+  })
+})
+
+describe('animationQueue: duration of the trophy popups (setting live.popup_seconds)', () => {
+  let shown: (string | null)[]
+  let visible: number[]
+  let unsubscribe: () => void
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    shown = []
+    visible = []
+    unsubscribe = animationQueue.subscribe((state) => {
+      shown.push(state.currentAchievement?.apiName ?? null)
+      visible.push(state.visibleMs)
+    })
+  })
+
+  afterEach(() => {
+    animationQueue.clearQueue()
+    animationQueue.setPopupSeconds(5)
+    unsubscribe()
+    vi.useRealTimers()
+  })
+
+  const current = () => shown[shown.length - 1]
+
+  it('keeps 5 seconds until the setting is known', () => {
+    animationQueue.enqueueAchievement(achievement('A'))
+    expect(visible[visible.length - 1]).toBe(5000)
+  })
+
+  it.each([2, 3, 10])('shows a popup for the chosen %i seconds, then the pause, then the next one for the same time', async (seconds) => {
+    animationQueue.setPopupSeconds(seconds)
+    animationQueue.enqueueAchievement(achievement('A'))
+    animationQueue.enqueueAchievement(achievement('B'))
+    expect(current()).toBe('A')
+    expect(visible[visible.length - 1]).toBe(seconds * 1000)
+
+    await vi.advanceTimersByTimeAsync(seconds * 1000 - 1)
+    expect(current()).toBe('A')
+    await vi.advanceTimersByTimeAsync(1)
+    expect(current()).toBeNull()
+
+    // Several unlocks in a row still play one after another, each for the chosen time
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(current()).toBe('B')
+    await vi.advanceTimersByTimeAsync(seconds * 1000 - 1)
+    expect(current()).toBe('B')
+    await vi.advanceTimersByTimeAsync(1)
+    expect(current()).toBeNull()
+  })
+
+  it('uses the same time for the full-screen popup', async () => {
+    animationQueue.setPopupSeconds(3)
+    animationQueue.enqueueAchievement(achievement('F'), { position: 'fullscreen' })
+    await vi.advanceTimersByTimeAsync(2999)
+    expect(current()).toBe('F')
+    await vi.advanceTimersByTimeAsync(1)
+    expect(current()).toBeNull()
+  })
+
+  it('a click or Esc (dismissAchievement) still ends the popup early, whatever the chosen time', async () => {
+    animationQueue.setPopupSeconds(10)
+    animationQueue.enqueueAchievement(achievement('F'), { position: 'fullscreen' })
+    animationQueue.enqueueAchievement(achievement('G'))
+    await vi.advanceTimersByTimeAsync(500)
+    animationQueue.dismissAchievement()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(current()).toBeNull()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(current()).toBe('G')
+  })
+
+  it('a time given with the item (settings preview, overlay page) wins over the global one', async () => {
+    animationQueue.setPopupSeconds(10)
+    animationQueue.enqueueAchievement(achievement('A'), { seconds: 2 })
+    expect(visible[visible.length - 1]).toBe(2000)
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(current()).toBeNull()
+  })
+
+  it('clamps nonsense to the allowed 2..10 seconds', () => {
+    animationQueue.setPopupSeconds(99)
+    animationQueue.enqueueAchievement(achievement('A'))
+    expect(visible[visible.length - 1]).toBe(10000)
+    animationQueue.clearQueue()
+    animationQueue.setPopupSeconds(0)
+    animationQueue.enqueueAchievement(achievement('B'))
+    expect(visible[visible.length - 1]).toBe(2000)
+    animationQueue.clearQueue()
+    animationQueue.setPopupSeconds(undefined)
+    animationQueue.enqueueAchievement(achievement('C'))
+    expect(visible[visible.length - 1]).toBe(5000)
+  })
+
+  it('a change applies to the next popup, not to the one that is showing', async () => {
+    animationQueue.setPopupSeconds(4)
+    animationQueue.enqueueAchievement(achievement('A'))
+    animationQueue.enqueueAchievement(achievement('B'))
+    await vi.advanceTimersByTimeAsync(1000)
+    animationQueue.setPopupSeconds(8)
+    expect(visible[visible.length - 1]).toBe(4000)
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(current()).toBeNull()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(current()).toBe('B')
+    expect(visible[visible.length - 1]).toBe(8000)
+  })
+
+  it('does not touch the platinum moment', async () => {
+    animationQueue.setPopupSeconds(2)
+    const platinum: (string | null)[] = []
+    const stop = animationQueue.subscribe((state) => platinum.push(state.currentPlatinum?.gameName ?? null))
+    animationQueue.enqueuePlatinum('Game', 10)
+    await vi.advanceTimersByTimeAsync(500 + 13000)
+    expect(platinum[platinum.length - 1]).toBe('Game')
+    await vi.advanceTimersByTimeAsync(1100)
+    expect(platinum[platinum.length - 1]).toBeNull()
+    stop()
   })
 })
 

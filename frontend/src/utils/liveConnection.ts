@@ -116,6 +116,8 @@ export interface LiveHubHandlers {
   onAchievement(achievement: LiveAchievementItemDto): void
   onPlatinum(gameName: string, total: number): void
   onGameChanged(): void
+  /** The pinned achievements ("Im Blick") of a game changed: in another window, or removed by the server after an unlock. */
+  onPinsChanged?(appId: number): void
   /** After every successful (re)connect: refresh whatever may have changed meanwhile. */
   onConnected?(): void
 }
@@ -210,6 +212,10 @@ export function connectLiveHub(handlers: LiveHubHandlers, deps: LiveHubDeps): ()
     if (gate.accept(meta as LiveEventMeta | undefined)) handlers.onPlatinum(gameName, total)
   })
   connection.on('GameChanged', () => handlers.onGameChanged())
+  connection.on('PinsChanged', (payload) => {
+    const appId = (payload as { appId?: unknown } | null | undefined)?.appId
+    if (typeof appId === 'number') handlers.onPinsChanged?.(appId)
+  })
   connection.onreconnected(afterConnect)
   // Only reached when the automatic reconnect gave up or the server closed the connection: start over
   connection.onclose(() => {

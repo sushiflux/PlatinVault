@@ -34,6 +34,7 @@ import {
   gameExportUrl,
   fetchGameDetail,
   fetchLiveAchievements,
+  fetchLiveStatus,
   researchLore,
   resetGameProgress,
   redoChapter,
@@ -60,6 +61,8 @@ import { ErrorDetails } from '../components/ui/ErrorDetails'
 import { useConfirm } from '../components/ui/ConfirmDialog'
 import { CabinetToolGroup } from '../components/cabinet/CabinetToolGroup'
 import { GameTrophyBar } from '../components/GameTrophyBar'
+import { PinsScope, usePinCount, type PinsFailure } from '../components/pins/pinsContext'
+import { PinsSurface } from '../components/pins/PinsSurface'
 import { ChapterDrawerButton, ChapterSidebar, DRAWER_QUERY } from '../components/gamenav/ChapterSidebar'
 import { tabDomId, type ChapterItem } from '../components/gamenav/ChapterTabs'
 import { SectionTabs, type SectionItem } from '../components/gamenav/SectionTabs'
@@ -244,6 +247,8 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
   const [pageJobKind, setPageJobKind] = useState<AiJobKind>('complete')
   const [actionError, setActionError] = useState<PageNotice | null>(null)
   const [actionInfo, setActionInfo] = useState<PageNotice | null>(null)
+  // A failed pin action ("Im Blick"): the same notice as every other failed action, with the server's complete text and the copy button
+  const showPinFailure = useCallback((failure: PinsFailure) => setActionError({ title: failure.title, message: failure.message, details: failure.details }), [])
   const [completing, setCompleting] = useState(false)
   // Failed chapters are being researched again
   const [retrying, setRetrying] = useState(false)
@@ -312,12 +317,16 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
   // list: Steam reports those unlocks itself, the list only feeds the tips of the live trophies tab
   const guideTabs = game ? game.tabs.filter((t) => t.slug !== LORE_TAB_SLUG && !t.isAchievementList) : []
 
-  // Trophy progress for the header, straight from Steam (same query as the live trophies tab, so no extra requests)
+  // Trophy progress for the header and the "Im Blick" cards, straight from Steam (same query as the live trophies tab, so no extra requests).
+  // Faster (3 s) only while THIS game runs and has pinned achievements, so a pinned counter moves on every tab; otherwise the calm 15 s.
+  // (The live tab brings its own faster pace while it is open.)
+  const pinCount = usePinCount(game?.steamAppId)
+  const { data: liveStatus } = useQuery({ queryKey: ['live-status'], queryFn: fetchLiveStatus, refetchInterval: 4000 })
   const { data: liveTrophies } = useQuery({
     queryKey: ['live-achievements', game?.steamAppId ?? 'auto'],
     queryFn: () => fetchLiveAchievements(game?.steamAppId ?? undefined),
     enabled: Boolean(game?.steamAppId),
-    refetchInterval: 15000,
+    refetchInterval: pinCount > 0 && game?.steamAppId && liveStatus?.runningAppId === game.steamAppId ? 3000 : 15000,
   })
 
   useEffect(() => {
@@ -937,6 +946,7 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
       </header>
 
       {/* The trophy bar (sections right, the "Kapitel" button on a phone) spans the window; below it the chapter side nav and the content */}
+      <PinsScope appId={game.steamAppId} onError={showPinFailure}>
       <div className="app-shell">
         <GameTrophyBar
           data={liveTrophies}
@@ -1156,8 +1166,13 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
         </ItemLinkContext.Provider>
         </AchievementLookupProvider>
         </div>
+        {/* "Im Blick" in a wide landscape window: the column on the right, the mirror image of the chapter navigation */}
+        <PinsSurface placement="column" achievements={liveTrophies?.achievements} tips={achievementTips} />
         </div>
+        {/* ... and everywhere else the dock at the bottom of the window (it follows the content, it never covers it) */}
+        <PinsSurface placement="dock" achievements={liveTrophies?.achievements} tips={achievementTips} />
       </div>
+      </PinsScope>
 
       {/* The version, credit, copyright and licences are in the info card at the foot of the side navigation (gamenav/NavInfo.tsx). Only a game
           without chapters has no navigation: then the page-end footer carries them (it brings its own "back to top" button) */}

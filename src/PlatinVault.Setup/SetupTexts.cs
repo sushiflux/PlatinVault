@@ -136,6 +136,17 @@ internal static class SetupTexts
     public static Msg CopyFailed(string folder, string reason) => new(
         $"Die Programmdateien konnten nicht nach „{folder}“ kopiert werden: {reason}",
         $"The program files could not be copied to “{folder}”: {reason}");
+    public static readonly Msg WaitingForRelease = new(
+        "Warte, bis Windows die Programmdateien freigibt …",
+        "Waiting for Windows to release the program files …");
+    /// <summary>The files stayed locked after all retries; names the programs holding them (the Restart Manager's answer) or says that none was found.</summary>
+    public static Msg CopyFailedLocked(string folder, string reason, IReadOnlyList<string> holders) => holders.Count > 0
+        ? new(
+            $"Die Programmdateien konnten nicht nach „{folder}“ kopiert werden: {reason} Die Dateien werden gerade benutzt von: {string.Join(", ", holders)}. Schließe diese Programme oder starte den PC neu und versuche es dann erneut. Deine Daten sind unverändert.",
+            $"The program files could not be copied to “{folder}”: {reason} The files are currently in use by: {string.Join(", ", holders)}. Close these programs or restart the PC, then try again. Your data is unchanged.")
+        : new(
+            $"Die Programmdateien konnten nicht nach „{folder}“ kopiert werden: {reason} Es ließ sich kein Programm ermitteln, das die Dateien festhält. Möglicherweise prüft gerade ein Virenschutz die Dateien oder ein Programm hat den Ordner geöffnet. Warte einen Moment oder starte den PC neu und versuche es dann erneut. Deine Daten sind unverändert.",
+            $"The program files could not be copied to “{folder}”: {reason} No program holding the files could be identified. A virus scanner may be checking the files, or a program may have the folder open. Wait a moment or restart the PC, then try again. Your data is unchanged.");
     public static Msg WebViewFailed(string reason) => new(
         $"Die „Microsoft Edge WebView2 Runtime“ fehlt und konnte nicht installiert werden: {reason} Installiere sie von https://developer.microsoft.com/microsoft-edge/webview2/ und starte die Installation erneut.",
         $"The “Microsoft Edge WebView2 Runtime” is missing and could not be installed: {reason} Install it from https://developer.microsoft.com/microsoft-edge/webview2/ and run setup again.");

@@ -230,10 +230,10 @@ internal sealed class DesktopApp : ApplicationContext
     private async Task OnUnlockAsync(LiveUnlockEvent unlock)
     {
         var foreground = _main.IsForeground;
-        var (target, position) = await ReadPopupChoiceAsync();
+        var (target, position, seconds) = await ReadPopupChoiceAsync();
         if (OverlayRouting.ShowsOverlay(target, foreground))
         {
-            _overlay.Present(OverlayMessages.Achievement(unlock.Achievement, unlock.GameName, position, UiLang.Current));
+            _overlay.Present(OverlayMessages.Achievement(unlock.Achievement, unlock.GameName, position, seconds, UiLang.Current));
         }
         if (_settings.NotificationsEnabled && !foreground && !_env.Silent)
         {
@@ -246,7 +246,7 @@ internal sealed class DesktopApp : ApplicationContext
     private async Task OnPlatinum(LivePlatinumEvent platinum)
     {
         var foreground = _main.IsForeground;
-        var (target, _) = await ReadPopupChoiceAsync();
+        var (target, _, _) = await ReadPopupChoiceAsync();
         if (OverlayRouting.ShowsOverlay(target, foreground))
         {
             _overlay.Present(OverlayMessages.Platinum(platinum.GameName, platinum.Total, UiLang.Current));
@@ -332,21 +332,25 @@ internal sealed class DesktopApp : ApplicationContext
         }
     }
 
-    /// <summary>"Trophäen-Popup anzeigen" and the popup position (also "fullscreen") as the user chose them in the app; defaults when unreadable.</summary>
-    private async Task<(string Target, string Position)> ReadPopupChoiceAsync()
+    /// <summary>
+    /// "Trophäen-Popup anzeigen", the popup position (also "fullscreen") and the popup duration in seconds as the user chose them in the
+    /// app; defaults when unreadable. Read for every unlock, so a change in the settings applies to the very next popup.
+    /// </summary>
+    private async Task<(string Target, string Position, int Seconds)> ReadPopupChoiceAsync()
     {
-        if (_server is null) return (SettingsStore.DefaultPopupTarget, SettingsStore.DefaultPopupPosition);
+        if (_server is null) return (SettingsStore.DefaultPopupTarget, SettingsStore.DefaultPopupPosition, SettingsStore.DefaultPopupSeconds);
         try
         {
             using var scope = _server.App.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<CompanionDbContext>();
             var target = await SettingsStore.ReadPopupTargetAsync(db, _life.Token);
             var stored = await db.AppSettings.AsNoTracking().Where(s => s.Key == SettingsStore.KeyPopupPosition).Select(s => s.Value).FirstOrDefaultAsync(_life.Token);
-            return (target, SettingsStore.NormalizePopupPosition(stored) ?? SettingsStore.DefaultPopupPosition);
+            var seconds = await SettingsStore.ReadPopupSecondsAsync(db, _life.Token);
+            return (target, SettingsStore.NormalizePopupPosition(stored) ?? SettingsStore.DefaultPopupPosition, seconds);
         }
         catch (Exception ex) when (ex is InvalidOperationException or Microsoft.Data.Sqlite.SqliteException)
         {
-            return (SettingsStore.DefaultPopupTarget, SettingsStore.DefaultPopupPosition);
+            return (SettingsStore.DefaultPopupTarget, SettingsStore.DefaultPopupPosition, SettingsStore.DefaultPopupSeconds);
         }
     }
 
@@ -361,7 +365,7 @@ internal sealed class DesktopApp : ApplicationContext
             if (!_env.Quiet) Dialogs.Error(null, DesktopTexts.Overlay.Unavailable);
             return;
         }
-        var (_, position) = await ReadPopupChoiceAsync();
+        var (_, position, seconds) = await ReadPopupChoiceAsync();
         var test = new LiveAchievementItemDto(
             ApiName: "PV_OVERLAY_TEST", DisplayName: DesktopTexts.Overlay.TestName, Description: DesktopTexts.Overlay.TestDescription,
             OriginalDescription: null, IsTranslated: false, IconUrl: "/favicon.svg", IconGrayUrl: "/favicon.svg", Achieved: true,
@@ -370,7 +374,7 @@ internal sealed class DesktopApp : ApplicationContext
             HasGlobalPercent = true,
             RarityBand = "ultraRare",
         };
-        _overlay.Present(OverlayMessages.Achievement(test, DesktopTexts.Overlay.TestGame, position, UiLang.Current));
+        _overlay.Present(OverlayMessages.Achievement(test, DesktopTexts.Overlay.TestGame, position, seconds, UiLang.Current));
     }
 
     /// <summary>Tray switch "Trophäen-Overlay über dem Spiel": the same app setting as Settings > Live & Sound (on = "both", off = "app").</summary>
@@ -379,7 +383,7 @@ internal sealed class DesktopApp : ApplicationContext
         if (_server is null) return;
         try
         {
-            var (target, _) = await ReadPopupChoiceAsync();
+            var (target, _, _) = await ReadPopupChoiceAsync();
             var next = OverlayRouting.TrayToggled(target);
             using (var scope = _server.App.Services.CreateScope())
             {
@@ -648,7 +652,13 @@ internal sealed class DesktopApp : ApplicationContext
             // Everything older in the updates folder is no longer needed; the installer being started stays
             UpdateChecker.CleanupOldInstallers(_env.Data.Updates, keep: installer, minAge: TimeSpan.Zero);
             // The installer asks this program to quit (the server makes its last backup) and starts it again at the end
-            Process.Start(new ProcessStartInfo(installer, "--update") { UseShellExecute = false })?.Dispose();
+            // Its own folder as working directory: inheriting ours (the program folder) would keep that folder open, and the installer
+            // could not swap it ("being used by another process").
+            Process.Start(new ProcessStartInfo(installer, "--update")
+            {
+                UseShellExecute = false,
+                WorkingDirectory = Path.GetDirectoryName(installer) ?? Environment.SystemDirectory,
+            })?.Dispose();
             return new DesktopUpdateStart(DesktopUpdateOutcome.Started, null);
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException or OperationCanceledException or System.ComponentModel.Win32Exception or UnauthorizedAccessException)

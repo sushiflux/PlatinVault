@@ -52,6 +52,12 @@ const settings = {
     },
     // Under the nine position buttons: the tenth way, the whole window
     positionFullscreenHint: 'Das ganze Fenster zeigt die Trophäe für einige Sekunden. Ein Klick oder Esc beendet sie früher.',
+    // "Anzeigedauer der Trophäen-Popups" (setting live.popup_seconds): slider under the position buttons
+    duration: {
+      label: 'Anzeigedauer der Trophäen-Popups',
+      value: '{{seconds}} s',
+      hint: 'Wie lange ein neuer Erfolg auf dem Bildschirm bleibt ({{min}}–{{max}} Sekunden). Das Vollbild-Popup schließt früher, wenn du klickst oder Esc drückst.',
+    },
     // "Trophäen-Popup anzeigen": where the popup appears (setting live.popup_target)
     target: {
       label: 'Trophäen-Popup anzeigen',
@@ -74,6 +80,10 @@ const settings = {
     notesSwitch: 'Eigene Notizen an Erfolgen anzeigen und erlauben',
     notesText:
       'An: In der Trophäenliste kannst du an jedem Erfolg eine eigene Notiz hinterlegen; sie erscheint auf der Karte und wird bei der Suche mitgefunden. Aus: Notiz-Knöpfe, Notiztexte und die Notiz-Suche verschwinden überall. Bereits geschriebene Notizen werden dabei nicht gelöscht – sie sind wieder da, sobald du die Option wieder einschaltest.',
+    pinsTitle: 'Im Blick',
+    pinsSwitch: 'Freigeschaltete automatisch aus „Im Blick“ entfernen',
+    pinsText:
+      'Mit dem Stecknadel-Knopf an einem Erfolg behältst du bis zu 10 Erfolge pro Spiel auf jedem Reiter des Spiels im Blick. Aus (Standard): Ein freigeschalteter Erfolg bleibt als „Geschafft“ stehen, bis du ihn oder alle Geschafften selbst entfernst. An: PlatinVault nimmt ihn selbst heraus – die Karte bleibt noch etwa so lange als „Geschafft“ stehen wie das Trophäen-Popup und gleitet dann hinaus.',
     gameStartTitle: 'Spielstart',
     gameStartSwitch: 'Beim Spielstart automatisch zum Spiel wechseln',
     gameStartText:

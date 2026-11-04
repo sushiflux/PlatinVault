@@ -146,6 +146,7 @@ public static class CompanionHost
         builder.Services.AddSingleton<SteamLocalStatsService>();
         builder.Services.AddSingleton<SteamOpenIdService>();
         builder.Services.AddSingleton<TranslationService>();
+        builder.Services.AddSingleton<AchievementPercentageService>();
         builder.Services.AddSingleton<SteamLiveTrackerService>();
         builder.Services.AddSingleton<BridgeIngestService>();
         builder.Services.AddSingleton<BridgeBundle>();
@@ -162,6 +163,7 @@ public static class CompanionHost
         builder.Services.AddSingleton<TwitchLiveCountService>();
         builder.Services.AddHostedService<SteamMonitorWorker>();
         builder.Services.AddHostedService<HistoryRecorderWorker>();
+        builder.Services.AddHostedService<AchievementPercentageWorker>();
 
         builder.Services.AddScoped<SettingsStore>();
         builder.Services.AddScoped<BridgeTokenStore>();
@@ -229,10 +231,17 @@ public static class CompanionHost
             await next();
         });
 
+        // DNS rebinding protection for the server/container build (AllowedHosts "*"): first, before anything is served (HostGuard).
+        // The Windows program and the Linux package use ASP.NET Core's own host filtering instead.
+        app.UseHostGuard();
+
         app.UseDefaultFiles();
         app.UseStaticFiles();
         // Language of the request (Accept-Language, else the stored app language) - before everything that produces texts
         app.UseRequestLanguage();
+        // Where CORS sits in the usual order (after forwarded headers, before the rate limiter): only the app's own origin may use the
+        // live hub, a foreign web page gets 403 before any WebSocket upgrade (HubOriginGuard)
+        app.UseHubOriginGuard();
         app.UseRateLimiter();
 
         // Check the database file and bring its schema up to date (EF Core migrations) before serving requests. A damaged file or a

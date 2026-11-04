@@ -23,6 +23,12 @@ public static partial class ServerTexts
     public static readonly Msg SecurityHeaderTitle = M("Sicherheits-Header fehlt", "Security header missing");
     public static readonly Msg SecurityHeaderDetail = M("Anfrage abgelehnt: X-Requested-With Header ist erforderlich.", "Request rejected: the X-Requested-With header is required.");
 
+    // DNS rebinding protection (HostGuard): plain text, both languages at once - the request may not even reach the language middleware's
+    // idea of who is asking, and a reverse-proxy user must understand it in any case
+    public static Msg HostRefused(string host) => Msg.Same(
+        $"PlatinVault hat diese Anfrage abgelehnt: Der Name \"{host}\" ist nicht freigegeben (Schutz gegen DNS-Rebinding). Frei sind IP-Adressen, localhost, Namen ohne Punkt (z. B. tower) und Namen auf .local, .lan, .home.arpa, .internal und .fritz.box. Rufst du PlatinVault absichtlich unter \"{host}\" auf (z. B. über einen Reverse-Proxy mit eigener Domain), setze im Container die Variable PLATINVAULT_ALLOWED_HOSTS={host} (mehrere mit ; trennen, *.example.com für alle Unternamen) und starte ihn neu.\n\n" +
+        $"PlatinVault refused this request: the name \"{host}\" is not allowed (protection against DNS rebinding). Allowed are IP addresses, localhost, names without a dot (e.g. tower) and names ending in .local, .lan, .home.arpa, .internal and .fritz.box. If you open PlatinVault under \"{host}\" on purpose (e.g. through a reverse proxy with your own domain), set the container variable PLATINVAULT_ALLOWED_HOSTS={host} (separate several with ;, *.example.com for every name below it) and restart it.\n");
+
     public static readonly Msg TooManyRequestsTitle = M("Zu viele Anfragen", "Too many requests");
     public static readonly Msg TooManyRequestsDetail = M("Zu viele Anfragen in kurzer Zeit. Bitte warte einen Moment und versuche es erneut.", "Too many requests in a short time. Please wait a moment and try again.");
 
@@ -187,6 +193,9 @@ public static partial class ServerTexts
         public static Msg PopupTargetInvalid(string value) => Msg.Same(
             $"Anzeige des Trophäen-Popups \"{value}\" ist unbekannt – erlaubt sind \"app\", \"overlay\" und \"both\". / Trophy popup display \"{value}\" is unknown – allowed: \"app\", \"overlay\" and \"both\".");
 
+        public static Msg PopupSecondsInvalid(double value) => Msg.Same(
+            $"Anzeigedauer der Trophäen-Popups \"{value.ToString(System.Globalization.CultureInfo.InvariantCulture)}\" ist ungültig – erlaubt sind ganze Sekunden von {Companion.Api.Settings.SettingsStore.MinPopupSeconds} bis {Companion.Api.Settings.SettingsStore.MaxPopupSeconds}. / Trophy pop-up duration \"{value.ToString(System.Globalization.CultureInfo.InvariantCulture)}\" is invalid – allowed: whole seconds from {Companion.Api.Settings.SettingsStore.MinPopupSeconds} to {Companion.Api.Settings.SettingsStore.MaxPopupSeconds}.");
+
         public static Msg UpdateIntervalInvalid(string value) => Msg.Same(
             $"Update-Intervall \"{value}\" ist unbekannt – erlaubt sind \"startup\", \"4h\", \"daily\", \"weekly\", \"monthly\" und \"never\". / Update interval \"{value}\" is unknown – allowed: \"startup\", \"4h\", \"daily\", \"weekly\", \"monthly\" and \"never\".");
 
@@ -205,6 +214,37 @@ public static partial class ServerTexts
 
         public static Msg ResearchBlockInvalid(string group, string id) => Msg.Same(
             $"Recherche-Baustein \"{id}\" gibt es in der Gruppe \"{group}\" nicht. / The research block \"{id}\" does not exist in the group \"{group}\".");
+
+        public static Msg PinsAfterUnlockInvalid(string value) => Msg.Same(
+            $"Verhalten angehefteter Erfolge nach dem Freischalten \"{value}\" ist unbekannt – erlaubt sind \"keep\" und \"remove\". / Behaviour of pinned achievements after unlocking \"{value}\" is unknown – allowed: \"keep\" and \"remove\".");
+    }
+
+    // ---- Pinned achievements ("Im Blick") -------------------------------------------------------------------------------
+
+    public static class Pins
+    {
+        public static readonly Msg LimitTitle = M("Maximum erreicht", "Limit reached");
+        public static readonly Msg ConflictTitle = M("Gleichzeitig geändert", "Changed at the same time");
+
+        public static readonly Msg InvalidDetail = M(
+            "AppId und ApiName sind erforderlich; der ApiName darf höchstens 200 Zeichen lang sein.",
+            "AppId and ApiName are required; the ApiName may be at most 200 characters long.");
+
+        public static readonly Msg InvalidListDetail = M(
+            "AppId und eine Liste von ApiNames sind erforderlich; jeder ApiName darf höchstens 200 Zeichen lang sein.",
+            "AppId and a list of ApiNames are required; each ApiName may be at most 200 characters long.");
+
+        public static Msg TooManyNames(int max) => M(
+            $"Es können höchstens {max} Erfolge auf einmal gelöst werden.",
+            $"At most {max} achievements can be unpinned at once.");
+
+        public static Msg LimitReached(int max) => M(
+            $"Es sind bereits {max} Erfolge angeheftet – das ist das Maximum pro Spiel. Löse zuerst einen Erfolg, dann kannst du einen neuen anheften.",
+            $"{max} achievements are already pinned – that is the maximum per game. Unpin one first, then you can pin a new one.");
+
+        public static readonly Msg ConflictDetail = M(
+            "Die angehefteten Erfolge wurden gleichzeitig von einem anderen Fenster geändert und konnten nicht gespeichert werden. Bitte versuche es noch einmal.",
+            "The pinned achievements were changed by another window at the same time and could not be saved. Please try again.");
     }
 
     // ---- Guide via the user's own AI subscription (copy the prompt, paste the answer) ---------------------------------------
@@ -489,6 +529,15 @@ public static partial class ServerTexts
         public static readonly Msg NoGameDetected = M("Kein Spiel erkannt", "No game detected");
         public static readonly Msg Ready = M("Bereit", "Ready");
         public static readonly Msg PlayingNow = M("Heute (Gerade aktiv)", "Today (playing now)");
+
+        // Worldwide unlock shares (they decide Gold/Silver/Bronze): what the UI says when Steam could not be asked
+        public static readonly Msg RarityStale = M(
+            "Steam konnte nicht erreicht werden, deshalb gelten die zuletzt gespeicherten Seltenheitswerte. Die Stufen Gold, Silber und Bronze können leicht abweichen. Prüfe die Internetverbindung sowie Firewall oder Virenschutz – PlatinVault versucht es automatisch erneut.",
+            "Steam could not be reached, so the last saved rarity values are used. The tiers Gold, Silver and Bronze may be slightly off. Check your internet connection and the firewall or antivirus – PlatinVault retries automatically.");
+
+        public static readonly Msg RarityUnavailable = M(
+            "Die weltweiten Freischaltquoten konnten nicht von Steam geladen werden. Die Stufen Gold, Silber und Bronze sind deshalb nur vorläufig: alle Erfolge zählen vorerst als Silber. Prüfe die Internetverbindung sowie Firewall oder Virenschutz – PlatinVault versucht es automatisch erneut.",
+            "The worldwide unlock rates could not be loaded from Steam. The tiers Gold, Silver and Bronze are therefore only provisional: all achievements count as Silver for now. Check your internet connection and the firewall or antivirus – PlatinVault retries automatically.");
 
         /// <summary>"45 Min." / "1,5 Std." — in the language given (the cached info is built per language, not per request).</summary>
         public static string Playtime(int minutes, string language)

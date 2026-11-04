@@ -374,6 +374,7 @@ public static class ApiEndpoints
         api.MapLaunch();
         api.MapUpdates();
         api.MapDesktop();
+        api.MapPins();
 
         // Live Steam Achievement & Trophy Tracker endpoints
         api.MapGet("/live/status", async (SteamLiveTrackerService liveTracker, CancellationToken ct) =>

@@ -147,6 +147,53 @@ const live = {
     // Stands for the name when it cannot be found out
     unknownGame: 'ein Spiel',
   },
+  // "Im Blick": up to 10 achievements per game stay in view on every tab of the game page (dock at the bottom, column on the right in a wide landscape window)
+  pins: {
+    title: 'Im Blick',
+    region: 'Im Blick: angeheftete Erfolge',
+    list: 'Angeheftete Erfolge',
+    countLabel: '{{n}} von {{max}} Erfolgen im Blick',
+    expand: '„Im Blick“ ausklappen',
+    collapse: '„Im Blick“ einklappen',
+    clearDone: {
+      label: 'Geschaffte entfernen',
+      description: 'Nimmt alle freigeschalteten Erfolge aus „Im Blick“. Die Erfolge selbst bleiben unverändert.',
+    },
+    // The pin button on every achievement of the trophy list and in the detail dialog
+    button: {
+      pin: '„{{name}}“ im Blick behalten',
+      unpin: '„{{name}}“ nicht mehr im Blick',
+      full: 'Es sind schon {{max}} Erfolge im Blick – nimm zuerst einen heraus.',
+    },
+    card: {
+      done: 'Geschafft',
+      open: 'Noch offen',
+      progress: 'Fortschritt',
+      remove: '„{{name}}“ nicht mehr im Blick',
+      labelOpen: '{{name}}, {{tier}}, noch offen. Anklicken für Details',
+      labelCounter: '{{name}}, {{tier}}, {{current}} von {{max}}. Anklicken für Details',
+      labelDone: '{{name}}, {{tier}}, geschafft. Anklicken für Details',
+      labelUnknown: '{{name}}. Diesen Erfolg gibt es in den Spieldaten nicht (mehr). Anklicken für Details',
+    },
+    failed: {
+      pin: 'Erfolg konnte nicht in „Im Blick“ aufgenommen werden',
+      unpin: 'Erfolg konnte nicht aus „Im Blick“ entfernt werden',
+      remove: 'Geschaffte Erfolge konnten nicht aus „Im Blick“ entfernt werden',
+      fallback: 'Der Server hat keinen Grund genannt.',
+    },
+  },
+  // Notice above the trophy list when the rarity values (share of players) are old or missing
+  rarity: {
+    stale: {
+      title: 'Seltenheitswerte sind nicht aktuell',
+      fallback: 'Die Seltenheitswerte konnten nicht neu geladen werden; angezeigt wird der letzte bekannte Stand.',
+    },
+    unavailable: {
+      title: 'Seltenheitswerte nicht verfügbar',
+      fallback: 'Die Seltenheitswerte konnten nicht geladen werden; die Stufen und Anteile der Erfolge fehlen deshalb.',
+    },
+    updatedAt: 'Stand: {{date}}',
+  },
   // The browser refused to play an achievement sound because the page has not been clicked since it was (re)loaded
   soundBlocked: {
     title: 'Ton vom Browser gesperrt',

@@ -19,6 +19,7 @@ import {
   IconLogin2,
   IconMusic,
   IconNote,
+  IconPin,
   IconHeartbeat,
   IconPlugConnected,
   IconPlus,
@@ -61,6 +62,7 @@ import { animationQueue } from '../utils/animationQueue'
 import { DEFAULT_SOUND_THEME, normalizeSoundTheme, SOUND_THEMES, soundEngine } from '../utils/audio'
 import { defaultBridgeOs } from '../utils/bridgeOs'
 import { copyText } from '../utils/clipboard'
+import { DEFAULT_POPUP_SECONDS, MAX_POPUP_SECONDS, MIN_POPUP_SECONDS, normalizePopupSeconds } from '../utils/popupSeconds'
 import { DEFAULT_POPUP_TARGET, normalizePopupTarget, POPUP_TARGETS } from '../utils/popupTarget'
 import { steamClientUrl, useOpenInSteamClient } from '../utils/steamClient'
 import { useSteamReach } from '../utils/useSteamReach'
@@ -190,9 +192,13 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
     useState<NotificationPosition>('top-right')
   // "Trophäen-Popup anzeigen": in the app, in the game (overlay of the Windows program) or both
   const [popupTarget, setPopupTarget] = useState<PopupTarget>(DEFAULT_POPUP_TARGET)
+  // "Anzeigedauer der Trophäen-Popups" (live.popup_seconds): whole seconds, 2..10
+  const [popupSeconds, setPopupSeconds] = useState(DEFAULT_POPUP_SECONDS)
   const [autoTranslate, setAutoTranslate] = useState(true)
   // Personal notes on achievements (off hides them everywhere; stored notes are kept)
   const [achievementNotes, setAchievementNotes] = useState(true)
+  // "Im Blick": true = the server removes an unlocked achievement from the pinned ones (pinsAfterUnlock 'remove'), false = it stays as done
+  const [pinsRemoveOnUnlock, setPinsRemoveOnUnlock] = useState(false)
   // Switch every open window to the game page when a game of the collection is started
   const [autoSwitchGame, setAutoSwitchGame] = useState(true)
 
@@ -311,8 +317,10 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
         setSoundTheme(normalizeSoundTheme(data.soundTheme))
         setPopupPosition(data.popupPosition || 'top-right')
         setPopupTarget(normalizePopupTarget(data.popupTarget))
+        setPopupSeconds(normalizePopupSeconds(data.popupSeconds))
         setAutoTranslate(data.autoTranslate !== false)
         setAchievementNotes(data.achievementNotesEnabled !== false)
+        setPinsRemoveOnUnlock(data.pinsAfterUnlock === 'remove')
         setAutoSwitchGame(data.autoSwitchGameEnabled !== false)
 
         setGeminiKey('')
@@ -434,7 +442,7 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
       rarityBand: 'ultraRare',
       isHidden: false,
       userNote: '',
-    }, { position: pos })
+    }, { position: pos, seconds: popupSeconds })
   }
 
   const handleSave = async (e: React.FormEvent) => {
@@ -472,6 +480,7 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
         soundTheme,
         popupPosition,
         popupTarget,
+        popupSeconds,
         autoTranslate,
         geminiApiKey: geminiKey.trim() || undefined,
         clearGeminiKey: clearGemini,
@@ -486,6 +495,7 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
         clearTwitchKey: clearTwitch,
         twitchStreamsEnabled: twitchButton,
         achievementNotesEnabled: achievementNotes,
+        pinsAfterUnlock: pinsRemoveOnUnlock ? 'remove' : 'keep',
         autoSwitchGameEnabled: autoSwitchGame,
       })
 
@@ -782,6 +792,44 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
                           {t('live.positionFullscreenHint')}
                         </p>
 
+                        {/* "Anzeigedauer der Trophäen-Popups" (live.popup_seconds): a native range input (keyboard: arrows, Home, End) with
+                            a fixed-width value, so nothing moves while it is changed. The test popups above use the chosen value. */}
+                        <div className="mt-3" data-popup-seconds="">
+                          <div
+                            className="mb-1 flex items-baseline justify-between gap-3 text-xs font-bold"
+                            style={{ color: 'var(--text-secondary)' }}
+                          >
+                            <label htmlFor="pv-popup-seconds">{t('live.duration.label')}</label>
+                            <output
+                              htmlFor="pv-popup-seconds"
+                              className="inline-block min-w-[3.5rem] text-right tabular-nums"
+                              data-popup-seconds-value=""
+                            >
+                              {t('live.duration.value', { seconds: popupSeconds })}
+                            </output>
+                          </div>
+                          <input
+                            id="pv-popup-seconds"
+                            type="range"
+                            min={MIN_POPUP_SECONDS}
+                            max={MAX_POPUP_SECONDS}
+                            step="1"
+                            value={popupSeconds}
+                            onChange={(e) => setPopupSeconds(normalizePopupSeconds(Number(e.target.value)))}
+                            aria-valuetext={t('live.duration.value', { seconds: popupSeconds })}
+                            aria-describedby="pv-popup-seconds-hint"
+                            className="pv-range w-full"
+                            style={{ accentColor: 'var(--accent-gold)' }}
+                          />
+                          <p
+                            id="pv-popup-seconds-hint"
+                            className="mt-1 text-xs leading-relaxed"
+                            style={{ color: 'var(--text-muted)' }}
+                          >
+                            {t('live.duration.hint', { min: MIN_POPUP_SECONDS, max: MAX_POPUP_SECONDS })}
+                          </p>
+                        </div>
+
                         {/* "Trophäen-Popup anzeigen" (live.popup_target): same button look as the positions above. Without the Windows
                             program there is no overlay: those two choices stay visible but disabled, the effect is "in the app". */}
                         <div className="mt-3" role="group" aria-labelledby="pv-popup-target-label">
@@ -862,6 +910,20 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
                     </Switch>
                     <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                       {t('live.notesText')}
+                    </p>
+                  </div>
+
+                  {/* "Im Blick" (pinned achievements): what happens to a pin once its achievement is unlocked (setting pins.after_unlock) */}
+                  <div className="pv-card space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-extrabold" style={{ color: 'var(--accent-crystal)' }}>
+                      <IconPin size={18} />
+                      <span>{t('live.pinsTitle')}</span>
+                    </div>
+                    <Switch checked={pinsRemoveOnUnlock} onChange={setPinsRemoveOnUnlock} className={SWITCH_ROW}>
+                      {t('live.pinsSwitch')}
+                    </Switch>
+                    <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                      {t('live.pinsText')}
                     </p>
                   </div>
                 </div>

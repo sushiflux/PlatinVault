@@ -472,8 +472,25 @@ public sealed record LiveGameAchievementsDto(
     LiveTrophyTierSummaryDto Silver,
     LiveTrophyTierSummaryDto Bronze,
     LiveAchievementItemDto? LatestAchievement,
-    int SyncedGuideItemsCount
+    int SyncedGuideItemsCount,
+    // Where the worldwide unlock shares (which decide Gold/Silver/Bronze) come from; see LiveRarityStatusDto
+    LiveRarityStatusDto Rarity
 );
+
+/// <summary>
+/// State of the worldwide unlock shares. "ok" = values from a successful fetch and the last attempt did not fail; "stale" = stored values
+/// are used because the last refresh failed (FetchedAt = when those values were fetched); "unavailable" = no values at all, every
+/// achievement counts as Silver. Message = a complete sentence in the language of the request (null when ok); Detail = the technical
+/// error text (null when ok), shown under "technical details".
+/// </summary>
+public sealed record LiveRarityStatusDto(string State, DateTimeOffset? FetchedAt, string? Message, string? Detail);
+
+/// <summary>The pinned achievements ("Im Blick") of one game in display order; Max = how many may be pinned per game.</summary>
+public sealed record PinnedAchievementsDto(uint AppId, IReadOnlyList<string> ApiNames, int Max);
+
+public sealed record PinAchievementRequest(uint AppId, string? ApiName);
+
+public sealed record UnpinAchievementsRequest(uint AppId, List<string>? ApiNames);
 
 public sealed record LiveStatusDto(
     uint RunningAppId,
@@ -603,7 +620,11 @@ public sealed record SettingsResponseDto(
     // "Steam-Ordner (optional)" (setting "steam.root"): the folder set by hand, null when none is set
     string? SteamRoot = null,
     // What this server can do with a Steam client on its own computer and what it found (null only for callers without the service)
-    SteamLocalSettingsDto? SteamLocal = null
+    SteamLocalSettingsDto? SteamLocal = null,
+    // What happens to a pinned achievement when it is unlocked (setting "live.pins_after_unlock"): "keep" (default) / "remove"
+    string PinsAfterUnlock = Settings.SettingsStore.DefaultPinsAfterUnlock,
+    // How long a trophy popup stays on screen, in whole seconds (setting "live.popup_seconds", 2..10, default 5)
+    int PopupSeconds = Settings.SettingsStore.DefaultPopupSeconds
 );
 
 /// <summary>
@@ -698,7 +719,12 @@ public sealed record UpdateSettingsRequest(
     string? UpdateCheckInterval = null,
     // "Steam-Ordner (optional)": null = keep, "" = remove (the automatic search applies again), else a folder that contains "steamapps"
     // (anything else is rejected with 400 and a message that says what is wrong)
-    string? SteamRoot = null
+    string? SteamRoot = null,
+    // "keep" / "remove" (anything else is rejected with 400): null = keep what is stored
+    string? PinsAfterUnlock = null,
+    // Trophy popup duration in whole seconds, 2..10 (anything else, a fraction included, is rejected with 400): null = keep what is stored.
+    // A double on purpose: "5.5" reaches the validation and gets the bilingual message instead of a generic binding error.
+    double? PopupSeconds = null
 );
 
 public sealed record AiProviderModelsRequestDto(

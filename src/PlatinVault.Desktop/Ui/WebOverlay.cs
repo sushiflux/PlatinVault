@@ -51,8 +51,9 @@ internal static class OverlayMessages
     // The same JSON shape as SignalR sends to the app (camelCase): the overlay page hands it to the very same components
     private static readonly JsonSerializerOptions Web = new(JsonSerializerDefaults.Web);
 
-    public static string Achievement(LiveAchievementItemDto achievement, string? gameName, string position, string language) =>
-        JsonSerializer.Serialize(new { pvOverlay = new { kind = "achievement", achievement, gameName, position, language } }, Web);
+    /// <param name="seconds">How long the popup stays (setting live.popup_seconds); the page clamps it to 2..10 and uses 5 when it is missing.</param>
+    public static string Achievement(LiveAchievementItemDto achievement, string? gameName, string position, int seconds, string language) =>
+        JsonSerializer.Serialize(new { pvOverlay = new { kind = "achievement", achievement, gameName, position, seconds, language } }, Web);
 
     public static string Platinum(string gameName, int total, string language) =>
         JsonSerializer.Serialize(new { pvOverlay = new { kind = "platinum", gameName, total, language } }, Web);

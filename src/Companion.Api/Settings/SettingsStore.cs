@@ -47,6 +47,13 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
     /// (the Windows program's overlay), "both" (default). Without the Windows program there is no overlay and the effect is always "app".
     /// </summary>
     public const string KeyPopupTarget = "live.popup_target";
+
+    /// <summary>
+    /// How long a trophy popup (the card and the full-screen popup, in the app, in the browser and in the overlay of the Windows program)
+    /// stays on screen, in whole seconds (<see cref="MinPopupSeconds"/>..<see cref="MaxPopupSeconds"/>, default <see cref="DefaultPopupSeconds"/>).
+    /// The platinum celebration keeps its own length.
+    /// </summary>
+    public const string KeyPopupSeconds = "live.popup_seconds";
     /// <summary>Steam language name for achievement texts ("german" / "english"). Not edited on its own: it follows <see cref="KeyUiLanguage"/>.</summary>
     public const string KeyLanguage = "live.language";
 
@@ -137,6 +144,27 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
         return NormalizePopupTarget(stored) ?? DefaultPopupTarget;
     }
 
+    public const int MinPopupSeconds = 2;
+    public const int MaxPopupSeconds = 10;
+    public const int DefaultPopupSeconds = 5;
+
+    /// <summary>The popup duration for a submitted value, or null when it is not a whole number of seconds from 2 to 10.</summary>
+    public static int? NormalizePopupSeconds(double value) =>
+        double.IsFinite(value) && value == Math.Floor(value) && value >= MinPopupSeconds && value <= MaxPopupSeconds ? (int)value : null;
+
+    /// <summary>The popup duration for a stored text (invariant digits); the default when it is missing or hand-edited to something unusable.</summary>
+    public static int ParsePopupSeconds(string? stored) =>
+        double.TryParse(stored, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds)
+            ? NormalizePopupSeconds(seconds) ?? DefaultPopupSeconds
+            : DefaultPopupSeconds;
+
+    /// <summary>The stored popup duration in seconds (5 when nothing or an unusable value is stored); the Windows program reads it for every unlock.</summary>
+    public static async Task<int> ReadPopupSecondsAsync(CompanionDbContext db, CancellationToken ct = default)
+    {
+        var stored = await db.AppSettings.AsNoTracking().Where(x => x.Key == KeyPopupSeconds).Select(x => x.Value).FirstOrDefaultAsync(ct);
+        return ParsePopupSeconds(stored);
+    }
+
     /// <summary>Whether a popup target value is stored at all (the Windows program migrates its former overlay switch only when not).</summary>
     public static Task<bool> HasPopupTargetAsync(CompanionDbContext db, CancellationToken ct = default) =>
         db.AppSettings.AsNoTracking().AnyAsync(x => x.Key == KeyPopupTarget, ct);
@@ -147,6 +175,33 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
         var normalized = NormalizePopupTarget(target) ?? throw new SettingsValidationException(ServerTexts.Settings.PopupTargetInvalid(target));
         await UpsertSettingAsync(KeyPopupTarget, normalized, ct);
         await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// Pinned achievements ("Im Blick"): up to <see cref="MaxPinnedAchievements"/> per game, stored as a JSON array of API names in the
+    /// row "pins.{appId}" (see <see cref="PinnedAchievements"/>).
+    /// </summary>
+    public const int MaxPinnedAchievements = 10;
+
+    /// <summary>What happens to a pinned achievement when it is unlocked: "keep" (default, it stays pinned) or "remove" (it is unpinned).</summary>
+    public const string KeyPinsAfterUnlock = "live.pins_after_unlock";
+
+    public static readonly string[] PinsAfterUnlockModes = ["keep", "remove"];
+
+    public const string DefaultPinsAfterUnlock = "keep";
+
+    /// <summary>The known mode for a submitted or stored value (trimmed, case-insensitive), or null when it is not one of <see cref="PinsAfterUnlockModes"/>.</summary>
+    public static string? NormalizePinsAfterUnlock(string? value)
+    {
+        var v = value?.Trim().ToLowerInvariant();
+        return v is not null && PinsAfterUnlockModes.Contains(v) ? v : null;
+    }
+
+    /// <summary>The stored mode ("keep" when nothing or an unknown value is stored).</summary>
+    public static async Task<string> ReadPinsAfterUnlockAsync(CompanionDbContext db, CancellationToken ct = default)
+    {
+        var stored = await db.AppSettings.AsNoTracking().Where(x => x.Key == KeyPinsAfterUnlock).Select(x => x.Value).FirstOrDefaultAsync(ct);
+        return NormalizePinsAfterUnlock(stored) ?? DefaultPinsAfterUnlock;
     }
 
     /// <summary>The known popup position for a submitted or stored value (trimmed, case-insensitive), or null when it is not one of <see cref="PopupPositions"/>.</summary>
@@ -198,6 +253,8 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
         // A hand-edited unknown value falls back to the default instead of reaching the UI
         var popupPosition = NormalizePopupPosition(all.GetValueOrDefault(KeyPopupPosition)) ?? DefaultPopupPosition;
         var popupTarget = NormalizePopupTarget(all.GetValueOrDefault(KeyPopupTarget)) ?? DefaultPopupTarget;
+        var popupSeconds = ParsePopupSeconds(all.GetValueOrDefault(KeyPopupSeconds));
+        var pinsAfterUnlock = NormalizePinsAfterUnlock(all.GetValueOrDefault(KeyPinsAfterUnlock)) ?? DefaultPinsAfterUnlock;
         var uiLanguage = NormalizeUiLanguage(all.GetValueOrDefault(KeyUiLanguage));
         var language = all.GetValueOrDefault(KeyLanguage, "german");
         var autoTranslate = !all.TryGetValue(KeyAutoTranslate, out var at) || !bool.TryParse(at, out var atb) || atb;
@@ -255,7 +312,9 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
             DashboardSortFavorites: DashboardSort.Resolve(all.GetValueOrDefault(DashboardSort.KeyFavorites), favorites: true),
             DashboardSortAll: DashboardSort.Resolve(all.GetValueOrDefault(DashboardSort.KeyAll), favorites: false),
             SteamRoot: steamRoot,
-            SteamLocal: steamLocal is null ? null : SteamLocalInfo.Settings(steamLocal)
+            SteamLocal: steamLocal is null ? null : SteamLocalInfo.Settings(steamLocal),
+            PinsAfterUnlock: pinsAfterUnlock,
+            PopupSeconds: popupSeconds
         );
     }
 
@@ -383,6 +442,22 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
                           ?? throw new SettingsValidationException(ServerTexts.Settings.PopupTargetInvalid(request.PopupTarget));
         }
 
+        // How long a trophy popup stays: whole seconds from 2 to 10 (null = keep what is stored)
+        int? popupSeconds = null;
+        if (request.PopupSeconds is { } requestedSeconds)
+        {
+            popupSeconds = NormalizePopupSeconds(requestedSeconds)
+                           ?? throw new SettingsValidationException(ServerTexts.Settings.PopupSecondsInvalid(requestedSeconds));
+        }
+
+        // What happens to a pinned achievement on unlock: "keep" or "remove" (null = keep what is stored)
+        string? pinsAfterUnlock = null;
+        if (request.PinsAfterUnlock is not null)
+        {
+            pinsAfterUnlock = NormalizePinsAfterUnlock(request.PinsAfterUnlock)
+                              ?? throw new SettingsValidationException(ServerTexts.Settings.PinsAfterUnlockInvalid(request.PinsAfterUnlock));
+        }
+
         // The update check interval must be one of the known ids (null = keep what is stored)
         string? updateInterval = null;
         if (request.UpdateCheckInterval is not null)
@@ -468,6 +543,10 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
             await UpsertSettingAsync(KeyPopupPosition, popupPosition, ct);
         if (popupTarget is not null)
             await UpsertSettingAsync(KeyPopupTarget, popupTarget, ct);
+        if (popupSeconds is { } seconds)
+            await UpsertSettingAsync(KeyPopupSeconds, seconds.ToString(CultureInfo.InvariantCulture), ct);
+        if (pinsAfterUnlock is not null)
+            await UpsertSettingAsync(KeyPinsAfterUnlock, pinsAfterUnlock, ct);
         var languageChanged = false;
         if (uiLanguage is not null)
         {

@@ -47,9 +47,22 @@ internal sealed partial class InstallEngine(InstallLayout layout, Payload payloa
     /// <summary>Test aid: replaces the real process start (a test has no real PlatinVault.exe to run). Null = start the program.</summary>
     internal ToolRunner? Tool { get; init; }
 
+    /// <summary>Pauses between the attempts to swap the program folder while a file is locked. Null = <see cref="FileLockRetry.DefaultDelays"/> (about 30 s); tests pass short ones.</summary>
+    internal IReadOnlyList<TimeSpan>? RetryDelays { get; init; }
+
+    /// <summary>How long the setup waits for the previous program (and its WebView2 helpers) to disappear before it swaps the folder.</summary>
+    internal TimeSpan ReleaseWaitTimeout { get; init; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>Test aid: replaces the scan of <see cref="ProcessWatch.FindBlockers"/> (image check + Restart Manager).</summary>
+    internal Func<IReadOnlyList<RunningProcess>>? ProcessProbe { get; init; }
+
     public async Task RunAsync(InstallRequest request, IProgress<InstallProgress> progress, CancellationToken ct)
     {
         var target = Path.GetFullPath(request.InstallDir);
+        // This process (and the tools it starts, which inherit its current directory) must not hold the folder itself: started from the
+        // program's update button it inherited the program folder as its current directory, and a folder that is any process's current
+        // directory cannot be renamed.
+        LeaveFolder(target);
 
         // 1 - requirements
         progress.Report(new InstallProgress(0.01f, InstallTask.Prepare, SetupTexts.TaskPrepare));
@@ -71,31 +84,52 @@ internal sealed partial class InstallEngine(InstallLayout layout, Payload payloa
         var backupWithNewProgram = hasDatabase && !File.Exists(oldExe);
         if (hasDatabase && !backupWithNewProgram) await BackupAsync(oldExe, ct);
 
+        // The program has said "I am quitting", but the process and its WebView2 helpers can still keep the folder open for a moment (and
+        // renaming a folder fails while anything inside is open). Wait - bounded - until they are really gone; whatever is left after the
+        // timeout is not an error by itself, the swap below retries and names the holders if it still fails.
+        var waitingText = new InstallProgress(0.07f, InstallTask.Stop, SetupTexts.WaitingForRelease);
+        await ProcessWatch.WaitUntilGoneAsync(
+            ProcessProbe ?? (() => ProcessWatch.FindBlockers(target, Environment.ProcessId)),
+            ReleaseWaitTimeout, TimeSpan.FromMilliseconds(250), _ => progress.Report(waitingText), ct);
+
         // 3 - files: staging folder on the same drive, then swap
         progress.Report(new InstallProgress(0.1f, InstallTask.Files, SetupTexts.TaskFiles));
         var parent = Path.GetDirectoryName(target)!;
         var staging = Path.Combine(parent, $".platinvault-new-{Guid.NewGuid():N}");
         var backup = Path.Combine(parent, $".platinvault-old-{Guid.NewGuid():N}");
+        var delays = RetryDelays ?? FileLockRetry.DefaultDelays;
+        var waiting = new InstallProgress(0.12f, InstallTask.Files, SetupTexts.WaitingForRelease);
+        void ReportWaiting() => progress.Report(waiting);
         try
         {
             Directory.CreateDirectory(staging);
             await Task.Run(() => payload.ExtractTo(staging, new Progress<float>(p =>
                 progress.Report(new InstallProgress(0.1f + p * 0.45f, InstallTask.Files, SetupTexts.TaskFiles))), ct), ct);
-            if (Directory.Exists(target)) Directory.Move(target, backup);
+            if (Directory.Exists(target)) await FileLockRetry.RunAsync(() => Directory.Move(target, backup), delays, ReportWaiting, ct);
             try
             {
-                Directory.Move(staging, target);
+                await FileLockRetry.RunAsync(() => Directory.Move(staging, target), delays, ReportWaiting, ct);
             }
             catch (Exception) when (Directory.Exists(backup))
             {
-                Directory.Move(backup, target);
+                // Putting the previous version back must not be cancelled half-way
+                await FileLockRetry.RunAsync(() => Directory.Move(backup, target), delays, ReportWaiting, CancellationToken.None);
                 throw;
             }
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+        catch (OperationCanceledException)
         {
             TryDelete(staging);
-            throw new InstallException(SetupTexts.CopyFailed(target, ex.Message), ex);
+            throw;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            // Ask for the holders BEFORE the staging folder is removed: a scanner may be sitting on the freshly extracted files
+            var message = FileLockRetry.IsLockError(ex)
+                ? SetupTexts.CopyFailedLocked(target, ex.Message, DescribeHolders([target, staging]))
+                : SetupTexts.CopyFailed(target, ex.Message);
+            TryDelete(staging);
+            throw new InstallException(message, ex);
         }
         // The previous version stays next to it until the new one has set up its database successfully (step 5)
         var hadOld = Directory.Exists(backup);
@@ -106,27 +140,52 @@ internal sealed partial class InstallEngine(InstallLayout layout, Payload payloa
         catch (Exception ex) when (ex is InstallException or IOException or UnauthorizedAccessException or InvalidOperationException)
         {
             var reason = ex is InstallException install ? install.Text : new Msg(ex.Message, ex.Message);
-            throw new InstallException(RollBack(target, backup, hadOld, reason, layout.DataDir), ex);
+            throw new InstallException(await RollBackAsync(target, backup, hadOld, reason, layout.DataDir, RetryDelays ?? FileLockRetry.DefaultDelays), ex);
         }
         TryDelete(backup);
     }
 
     /// <summary>
     /// Puts the previous program back after a failed update (the "Apps" entry was not touched yet, so it still names that version), or
-    /// removes the unfinished program of a first installation. Returns the complete message for the window.
+    /// removes the unfinished program of a first installation. Returns the complete message for the window. A file that is still locked
+    /// (the new program has just run, a scanner is looking at it) is retried like the swap; every step can be repeated safely.
     /// </summary>
-    private static Msg RollBack(string target, string backup, bool hadOld, Msg reason, string dataDir)
+    private static async Task<Msg> RollBackAsync(string target, string backup, bool hadOld, Msg reason, string dataDir, IReadOnlyList<TimeSpan> delays)
     {
         try
         {
-            if (Directory.Exists(target)) Uninstaller.DeleteTree(target);
-            if (hadOld) Directory.Move(backup, target);
+            await FileLockRetry.RunAsync(() =>
+            {
+                if (Directory.Exists(target)) Uninstaller.DeleteTree(target);
+                if (hadOld) Directory.Move(backup, target);
+            }, delays, null, CancellationToken.None);
             return hadOld ? SetupTexts.UpdateRolledBack(reason) : reason;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return SetupTexts.RollBackFailed(reason, backup, ex.Message, dataDir);
         }
+    }
+
+    /// <summary>"name.exe (PID n)" for every process that holds files of the folders; empty when none could be identified.</summary>
+    private static IReadOnlyList<string> DescribeHolders(IEnumerable<string> folders)
+    {
+        try
+        {
+            return [.. FileLocks.FindHolders(folders).Select(holder => holder.Display)];
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>Moves this process's current directory out of <paramref name="target"/> (to its parent folder) when it is inside it.</summary>
+    internal static void LeaveFolder(string target)
+    {
+        if (!ProcessWatch.HoldsAsCurrentDirectory(Environment.CurrentDirectory, target)) return;
+        var parent = Path.GetDirectoryName(Path.GetFullPath(target).TrimEnd('\\', '/'));
+        Environment.CurrentDirectory = !string.IsNullOrEmpty(parent) && Directory.Exists(parent) ? parent : Environment.SystemDirectory;
     }
 
     /// <summary>The SQLite file of the Windows program; the same relative place the program itself uses (DatabaseHost.DatabaseFile).</summary>

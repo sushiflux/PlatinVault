@@ -3,18 +3,25 @@ import { motion, useReducedMotion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import type { CardPosition, LiveAchievementItemDto, RarityTier } from '../api/types'
 import { useFormat } from '../i18n/format'
+import { ACHIEVEMENT_VISIBLE_MS } from '../utils/animationQueue'
 import { TierTrophy, tierGlow } from './platinum/TierTrophy'
 
 interface TrophyNotificationProps {
   achievement: LiveAchievementItemDto | null
   // The full-screen way is a different component (FullscreenAchievement); this card only knows the nine spots
   position?: CardPosition
+  // How long the popup stays in total (the queue removes it then); the card slides out CARD_EXIT_MS before that. Default: 5 s.
+  visibleMs?: number
 }
+
+// The slide-out takes about this long and must be finished when the queue removes the card
+const CARD_EXIT_MS = 500
 
 // Trophy slide-in overlay supporting all 9 screen positions.
 export function TrophyNotification({
   achievement,
   position = 'top-right',
+  visibleMs = ACHIEVEMENT_VISIBLE_MS,
 }: TrophyNotificationProps) {
   const [visible, setVisible] = useState(false)
   const reduce = useReducedMotion() ?? false
@@ -22,7 +29,7 @@ export function TrophyNotification({
   useEffect(() => {
     if (achievement) {
       const enterTimer = setTimeout(() => setVisible(true), 40)
-      const exitTimer = setTimeout(() => setVisible(false), 4500)
+      const exitTimer = setTimeout(() => setVisible(false), Math.max(visibleMs - CARD_EXIT_MS, 0))
       return () => {
         clearTimeout(enterTimer)
         clearTimeout(exitTimer)
@@ -30,7 +37,7 @@ export function TrophyNotification({
     } else {
       setVisible(false)
     }
-  }, [achievement])
+  }, [achievement, visibleMs])
 
   if (!achievement) return null
 

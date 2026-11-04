@@ -138,6 +138,50 @@ const live = {
     },
     unknownGame: 'a game',
   },
+  pins: {
+    title: 'In View',
+    region: 'In View: pinned achievements',
+    list: 'Pinned achievements',
+    countLabel: '{{n}} of {{max}} achievements in view',
+    expand: 'Expand “In View”',
+    collapse: 'Collapse “In View”',
+    clearDone: {
+      label: 'Remove completed',
+      description: 'Takes every unlocked achievement out of “In View”. The achievements themselves stay as they are.',
+    },
+    button: {
+      pin: 'Keep “{{name}}” in view',
+      unpin: 'Stop keeping “{{name}}” in view',
+      full: '{{max}} achievements are in view already – take one out first.',
+    },
+    card: {
+      done: 'Done',
+      open: 'Still open',
+      progress: 'Progress',
+      remove: 'Stop keeping “{{name}}” in view',
+      labelOpen: '{{name}}, {{tier}}, still open. Click for details',
+      labelCounter: '{{name}}, {{tier}}, {{current}} of {{max}}. Click for details',
+      labelDone: '{{name}}, {{tier}}, done. Click for details',
+      labelUnknown: '{{name}}. This achievement is not (or no longer) in the game data. Click for details',
+    },
+    failed: {
+      pin: 'Could not add the achievement to “In View”',
+      unpin: 'Could not remove the achievement from “In View”',
+      remove: 'Could not remove the completed achievements from “In View”',
+      fallback: 'The server gave no reason.',
+    },
+  },
+  rarity: {
+    stale: {
+      title: 'Rarity values are out of date',
+      fallback: 'The rarity values could not be reloaded; the last known state is shown.',
+    },
+    unavailable: {
+      title: 'Rarity values not available',
+      fallback: 'The rarity values could not be loaded, so the tiers and shares of the achievements are missing.',
+    },
+    updatedAt: 'As of: {{date}}',
+  },
   soundBlocked: {
     title: 'Sound blocked by the browser',
     message:

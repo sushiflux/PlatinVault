@@ -21,6 +21,7 @@ public sealed partial class SteamLiveTrackerService(
     IServiceScopeFactory scopeFactory,
     SecretStore secretStore,
     IgdbService igdbService,
+    AchievementPercentageService percentages,
     ILogger<SteamLiveTrackerService> logger)
 {
     // Remote achievement lists (Community XML / Web API) are cached briefly: the realtime part comes from the local
@@ -45,7 +46,6 @@ public sealed partial class SteamLiveTrackerService(
     private readonly UnlockLedgers _ledgers = new();
     private uint _announcedAppId;
     private readonly Dictionary<(uint AppId, string Language), (LiveGameInfoDto Info, DateTime CachedAt)> _gameInfoCache = [];
-    private readonly Dictionary<uint, (Dictionary<string, double> Map, DateTime CachedAt)> _globalPercentCache = [];
     // Keyed by language too: the cached items carry the achievement texts and the rarity label of that language
     private readonly Dictionary<(uint AppId, string SteamId, string Language), (List<LiveAchievementItemDto> Items, DateTime CachedAt)> _remoteCache = [];
     private readonly Lock _stateLock = new();
@@ -218,7 +218,7 @@ public sealed partial class SteamLiveTrackerService(
                     Achieved: a.Achieved,
                     UnlockTime: a.UnlockTime,
                     GlobalPercent: Math.Round(pct, 1),
-                    RarityTier: CalculateRarityTier(pct),
+                    RarityTier: CalculateRarityTier(pct, a.ApiName, null),
                     RarityLabel: CalculateRarityLabel(pct, hasPct, uiLanguage),
                     IsHidden: false,
                     UserNote: notes.GetValueOrDefault(a.ApiName, string.Empty))
@@ -354,7 +354,10 @@ public sealed partial class SteamLiveTrackerService(
         var linkedGuideSlug = linkedGame?.Slug;
 
         var gameInfo = await GetGameInfoAsync(targetAppId, settings.SteamUserId, linkedGuideSlug, ct, uiLanguage);
-        var globalPercentages = await GetGlobalPercentagesAsync(targetAppId, ct);
+        // Refreshed when due; a failure keeps the stored values (state "stale") and only without any values the tiers fall back to a guess
+        // Only games of the collection are written to the cache file; any other lookup stays briefly in memory
+        var rarity = await percentages.GetAsync(targetAppId, inCollection: linkedGame is not null, ct);
+        var globalPercentages = rarity.Values;
         var notes = await settingsStore.GetNotesForAppAsync(targetAppId, ct);
         // Steam delivers the texts in this language; English = Steam original texts, no translation step
         var preferredLang = Lang.SteamName(uiLanguage);
@@ -423,6 +426,10 @@ public sealed partial class SteamLiveTrackerService(
         // AI translations only for games in the vault - a lookup of any other app must not use up the AI quota
         achievements = await LocalizeAchievementsAsync(targetAppId, gameInfo.Name, preferredLang, settings.AutoTranslate, linkedGame is not null, localData, achievements, ct);
 
+        // Merging and translating changed texts after the tier was first set (a description from the local file, a translated name):
+        // the chapter rule looks at the final list too
+        achievements = ApplyChapterRule(achievements, localData?.Achievements);
+
         // Check off unlocked achievements in the game's 100% guide
         var syncedGuideCount = linkedGame is not null
             ? await SyncUnlockedAchievementsToGuideAsync(db, targetAppId, achievements, originalNames, ct)
@@ -461,9 +468,58 @@ public sealed partial class SteamLiveTrackerService(
             Silver: new LiveTrophyTierSummaryDto(silverList.Count(a => a.Achieved), silverList.Count),
             Bronze: new LiveTrophyTierSummaryDto(bronzeList.Count(a => a.Achieved), bronzeList.Count),
             LatestAchievement: latest,
-            SyncedGuideItemsCount: syncedGuideCount
+            SyncedGuideItemsCount: syncedGuideCount,
+            Rarity: BuildRarityStatus(rarity, uiLanguage)
         );
     }
+
+    /// <summary>
+    /// Sets the tier of chapter-completion achievements to Bronze using all texts the final list has (name, description, original
+    /// description, and the English name of the local stats file). Never changes anything else and never raises a tier.
+    /// </summary>
+    internal static List<LiveAchievementItemDto> ApplyChapterRule(List<LiveAchievementItemDto> items, IEnumerable<SteamLocalStatsService.LocalAchievementStat>? local)
+    {
+        var english = local?
+            .GroupBy(l => l.ApiName, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().EnglishName, StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < items.Count; i++)
+        {
+            var item = items[i];
+            if (item.RarityTier == "Bronze") continue;
+            if (ChapterCompletion.IsChapterCompletion(item.DisplayName, item.Description, item.OriginalDescription, english?.GetValueOrDefault(item.ApiName)))
+            {
+                items[i] = item with { RarityTier = "Bronze" };
+            }
+        }
+        return items;
+    }
+
+    /// <summary>The status the UI shows for the worldwide unlock shares: state and age plus a complete sentence in the request language (nothing to say when "ok").</summary>
+    internal static LiveRarityStatusDto BuildRarityStatus(PercentageSnapshot snapshot, string uiLanguage) => snapshot.State switch
+    {
+        AchievementPercentageService.StateStale => new LiveRarityStatusDto(snapshot.State, snapshot.FetchedAt, ServerTexts.Live.RarityStale.Resolve(uiLanguage), snapshot.Detail),
+        AchievementPercentageService.StateUnavailable => new LiveRarityStatusDto(snapshot.State, null, ServerTexts.Live.RarityUnavailable.Resolve(uiLanguage), snapshot.Detail),
+        _ => new LiveRarityStatusDto(AchievementPercentageService.StateOk, snapshot.FetchedAt, null, null),
+    };
+
+    /// <summary>
+    /// Sets share, tier, band and label of already built items from the current worldwide shares. The cached remote list (up to a minute old)
+    /// was built with the shares of that moment - possibly none - and must show a refresh within one request.
+    /// </summary>
+    internal static List<LiveAchievementItemDto> ApplyPercentages(IEnumerable<LiveAchievementItemDto> items, IReadOnlyDictionary<string, double> shares, string uiLanguage) =>
+        items.Select(item =>
+        {
+            var hasPct = shares.TryGetValue(item.ApiName, out var p);
+            var pct = hasPct ? p : 25.0;
+            return item with
+            {
+                GlobalPercent = Math.Round(pct, 1),
+                RarityTier = CalculateRarityTier(pct, item.DisplayName, item.Description, null, item.OriginalDescription),
+                RarityLabel = CalculateRarityLabel(pct, hasPct, uiLanguage),
+                HasGlobalPercent = hasPct,
+                RarityBand = CalculateRarityBand(pct, hasPct),
+            };
+        }).ToList();
 
     /// <summary>
     /// Merges the local stats file of this PC into the remote list (Community XML / Web API, cached up to
@@ -498,7 +554,7 @@ public sealed partial class SteamLiveTrackerService(
                     Achieved: loc.Achieved,
                     UnlockTime: loc.UnlockTime,
                     GlobalPercent: Math.Round(pct, 1),
-                    RarityTier: CalculateRarityTier(pct),
+                    RarityTier: CalculateRarityTier(pct, loc.DisplayName, loc.Description, loc.EnglishName),
                     RarityLabel: CalculateRarityLabel(pct, hasPct, uiLanguage),
                     IsHidden: loc.IsHidden,
                     UserNote: notes.GetValueOrDefault(loc.ApiName, string.Empty)
@@ -551,7 +607,8 @@ public sealed partial class SteamLiveTrackerService(
         {
             if (_remoteCache.TryGetValue(cacheKey, out var cached) && DateTime.UtcNow - cached.CachedAt < RemoteCacheDuration)
             {
-                return cached.Items
+                // The shares are applied again: a refresh (or the end of an outage) must not wait for this cache to expire
+                return ApplyPercentages(cached.Items, globalPercentages, UiOfSteam(lang))
                     .Select(a => a with { UserNote = notes.GetValueOrDefault(a.ApiName, string.Empty) })
                     .ToList();
             }
@@ -592,7 +649,9 @@ public sealed partial class SteamLiveTrackerService(
             Silver: empty,
             Bronze: empty,
             LatestAchievement: null,
-            SyncedGuideItemsCount: 0);
+            SyncedGuideItemsCount: 0,
+            // No game, so no shares are needed: nothing to warn about
+            Rarity: new LiveRarityStatusDto(AchievementPercentageService.StateOk, null, null, null));
     }
 
     /// <summary>
@@ -1270,7 +1329,7 @@ public sealed partial class SteamLiveTrackerService(
                     Achieved: achieved,
                     UnlockTime: unlockTime,
                     GlobalPercent: Math.Round(globalPct, 1),
-                    RarityTier: CalculateRarityTier(globalPct),
+                    RarityTier: CalculateRarityTier(globalPct, name, desc),
                     RarityLabel: CalculateRarityLabel(globalPct, hasPct, UiOfSteam(lang)),
                     IsHidden: isHidden,
                     UserNote: notes.GetValueOrDefault(apiName, string.Empty)
@@ -1359,7 +1418,7 @@ public sealed partial class SteamLiveTrackerService(
                         Achieved: pState.Achieved,
                         UnlockTime: pState.UnlockTime,
                         GlobalPercent: Math.Round(globalPct, 1),
-                        RarityTier: CalculateRarityTier(globalPct),
+                        RarityTier: CalculateRarityTier(globalPct, displayName, desc),
                         RarityLabel: CalculateRarityLabel(globalPct, hasPct, UiOfSteam(lang)),
                         IsHidden: hidden,
                         UserNote: notes.GetValueOrDefault(apiName, string.Empty)
@@ -1447,7 +1506,7 @@ public sealed partial class SteamLiveTrackerService(
                                 Achieved: isChecked,
                                 UnlockTime: isChecked ? DateTime.Now : null,
                                 GlobalPercent: Math.Round(pct, 1),
-                                RarityTier: CalculateRarityTier(pct),
+                                RarityTier: CalculateRarityTier(pct, title, desc),
                                 RarityLabel: CalculateRarityLabel(pct, hasPct, uiLanguage),
                                 IsHidden: false,
                                 UserNote: notes.GetValueOrDefault(itemId, string.Empty)
@@ -1471,65 +1530,14 @@ public sealed partial class SteamLiveTrackerService(
         return list;
     }
 
-    private async Task<Dictionary<string, double>> GetGlobalPercentagesAsync(uint appId, CancellationToken ct)
-    {
-        lock (_stateLock)
-        {
-            if (_globalPercentCache.TryGetValue(appId, out var cached) && (DateTime.UtcNow - cached.CachedAt).TotalMinutes < 30)
-            {
-                return cached.Map;
-            }
-        }
-
-        var map = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        try
-        {
-            var client = httpClientFactory.CreateClient("steam");
-            var url = $"https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v0002/?gameid={appId}&format=json";
-            using var resp = await client.GetAsync(url, ct);
-            if (resp.IsSuccessStatusCode)
-            {
-                using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync(ct));
-                if (doc.RootElement.TryGetProperty("achievementpercentages", out var ap) &&
-                    ap.TryGetProperty("achievements", out var arr) &&
-                    arr.ValueKind == JsonValueKind.Array)
-                {
-                    foreach (var item in arr.EnumerateArray())
-                    {
-                        var name = item.GetProperty("name").GetString();
-                        double pct = 0;
-                        if (item.TryGetProperty("percent", out var pVal))
-                        {
-                            if (pVal.ValueKind == JsonValueKind.Number)
-                                pct = pVal.GetDouble();
-                            else if (pVal.ValueKind == JsonValueKind.String)
-                                _ = double.TryParse(pVal.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out pct);
-                        }
-
-                        if (!string.IsNullOrEmpty(name))
-                        {
-                            map[name] = pct;
-                        }
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogDebug(ex, "Globale Seltenheitswerte für App {AppId} nicht verfügbar.", appId);
-        }
-
-        lock (_stateLock)
-        {
-            _globalPercentCache[appId] = (map, DateTime.UtcNow);
-        }
-        return map;
-    }
-
     // Trophy tier from Steam's worldwide share (user decision 2026-11-04: gold up to and including 10 %, silver up to and including 50 %; was 5 % / 25 %).
     // The texts in stats.ts (tiers.ruleGold/ruleSilver/ruleBronze) and the handbook name the same limits.
-    public static string CalculateRarityTier(double globalPercent)
+    // Exception (user decision 2026-11-04): an achievement for completing a numbered story chapter ("Schließe Kapitel 5 ab.",
+    // "Complete Chapter 3") is always Bronze, whatever its share - decided by every text the caller has (see ChapterCompletion).
+    // Only the tier changes; the rarity band/label and GlobalPercent stay share-based.
+    public static string CalculateRarityTier(double globalPercent, string? name = null, string? description = null, string? englishName = null, string? originalDescription = null)
     {
+        if (ChapterCompletion.IsChapterCompletion(name, description, englishName, originalDescription)) return "Bronze";
         if (globalPercent <= 10.0) return "Gold";
         if (globalPercent <= 50.0) return "Silver";
         return "Bronze";

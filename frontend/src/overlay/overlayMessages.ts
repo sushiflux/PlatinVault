@@ -1,9 +1,10 @@
 import type { CardPosition, LiveAchievementItemDto, NotificationPosition } from '../api/types'
 import { parseUiLanguage } from '../i18n'
 import type { UiLanguage } from '../i18n'
+import { normalizePopupSeconds } from '../utils/popupSeconds'
 
 // What the Windows program sends to its overlay page (src/PlatinVault.Desktop/Ui/WebOverlay.cs, OverlayMessages):
-//   { pvOverlay: { kind: 'achievement', achievement, gameName, position, language } }
+//   { pvOverlay: { kind: 'achievement', achievement, gameName, position, seconds, language } }   (seconds = setting live.popup_seconds)
 //   { pvOverlay: { kind: 'platinum', gameName, total, language } }
 // and what the page answers: { pvOverlayState: 'ready' | 'busy' | 'idle', received } (the program shows its window only while
 // 'busy'; "received" = how many events the page had at that moment).
@@ -14,6 +15,8 @@ export type OverlayEvent =
       achievement: LiveAchievementItemDto
       gameName: string | null
       position: NotificationPosition
+      // How long the popup stays, whole seconds 2..10; the program reads the setting at every unlock. Missing = 5.
+      seconds: number
       language: UiLanguage | null
     }
   | { kind: 'platinum'; gameName: string; total: number; language: UiLanguage | null }
@@ -54,7 +57,7 @@ export function readOverlayEvent(data: unknown): OverlayEvent | null {
   if (p.kind === 'achievement') {
     const achievement = readAchievement(p.achievement)
     if (!achievement) return null
-    return { kind: 'achievement', achievement, gameName, position: readPosition(p.position), language }
+    return { kind: 'achievement', achievement, gameName, position: readPosition(p.position), seconds: normalizePopupSeconds(p.seconds), language }
   }
   if (p.kind === 'platinum' && gameName) {
     const total = typeof p.total === 'number' && Number.isFinite(p.total) ? p.total : 0
