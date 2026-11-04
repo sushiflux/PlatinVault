@@ -19,8 +19,13 @@ import type {
   GuidePlanDto,
   LibrarySummaryDto,
   AiCompleteGuideResponse,
+  AiRedoChapterResponse,
   AiRetryChaptersResponse,
   ManualBlueprintCheckDto,
+  ManualBatchAnswerDto,
+  ManualBatchChapterItem,
+  ManualBatchCheckDto,
+  ManualBatchPromptDto,
   ManualChapterCheckDto,
   ManualChapterSeed,
   ManualPromptDto,
@@ -435,6 +440,11 @@ export function retryChapters(
   return runAiJob(() => startAiJob(`/api/games/${encodeURIComponent(slug)}/ai-retry-chapters`, { tabIds, providerOverride }), fetchAiJob, onProgress)
 }
 
+// "Kapitel neu recherchieren": one normal chapter is researched again and replaced as soon as the new version is finished (a job like the others)
+export function redoChapter(slug: string, tabId: string, providerOverride?: string, onProgress?: AiJobProgressHandler): Promise<AiRedoChapterResponse> {
+  return runAiJob(() => startAiJob(`/api/games/${encodeURIComponent(slug)}/chapters/${encodeURIComponent(tabId)}/redo`, { providerOverride }), fetchAiJob, onProgress)
+}
+
 // ---- The guide via the player's own AI subscription: everything local, nothing goes to an AI provider ----
 
 const manualPath = (slug: string, tail: string) => `/api/games/${encodeURIComponent(slug)}/manual/${tail}`
@@ -449,13 +459,24 @@ export const manualBlueprintPrompt = (slug: string) => postManual<ManualPromptDt
 export const checkManualBlueprint = (slug: string, text: string) => postManual<ManualBlueprintCheckDto>(slug, 'blueprint-answer', { text })
 
 export const manualChapterPrompt = (slug: string, seed: ManualChapterSeed) =>
-  postManual<ManualPromptDto>(slug, 'chapter-prompt', { title: seed.title, icon: seed.icon, focus: seed.focus, topicId: seed.topicId, sourceSituation: seed.sourceSituation })
+  postManual<ManualPromptDto>(slug, 'chapter-prompt', { title: seed.title, icon: seed.icon, focus: seed.focus, topicId: seed.topicId, sourceSituation: seed.sourceSituation, tabId: seed.tabId, replace: seed.replace })
 
 export const checkManualChapter = (slug: string, text: string, seed: ManualChapterSeed) =>
-  postManual<ManualChapterCheckDto>(slug, 'chapter-check', { text, title: seed.title, icon: seed.icon, focus: seed.focus, topicId: seed.topicId, tabId: seed.tabId })
+  postManual<ManualChapterCheckDto>(slug, 'chapter-check', { text, title: seed.title, icon: seed.icon, focus: seed.focus, topicId: seed.topicId, tabId: seed.tabId, replace: seed.replace })
 
 export const saveManualChapter = (slug: string, text: string, seed: ManualChapterSeed) =>
-  postManual<ManualSavedDto>(slug, 'chapter-answer', { text, title: seed.title, icon: seed.icon, focus: seed.focus, topicId: seed.topicId, tabId: seed.tabId })
+  postManual<ManualSavedDto>(slug, 'chapter-answer', { text, title: seed.title, icon: seed.icon, focus: seed.focus, topicId: seed.topicId, tabId: seed.tabId, replace: seed.replace })
+
+// Batch mode: one prompt for many chapters; the pasted chat answers are read (check) and saved together (answer)
+export const manualBatchPrompt = (slug: string, chapters: ManualBatchChapterItem[]) =>
+  postManual<ManualBatchPromptDto>(slug, 'batch-prompt', { chapters })
+
+export const checkManualBatch = (slug: string, text: string, chapters: ManualBatchChapterItem[]) =>
+  postManual<ManualBatchCheckDto>(slug, 'batch-check', { text, chapters })
+
+// keys = only these chapters are saved (default: every readable one)
+export const saveManualBatch = (slug: string, text: string, chapters: ManualBatchChapterItem[], keys?: string[]) =>
+  postManual<ManualBatchAnswerDto>(slug, 'batch-answer', { text, chapters, keys })
 
 // "Kapitel entfernen": removes any chapter of the guide (not the Steam achievement list, not Story & Lore) with its translation and its
 // own tick marks; answers with the guide as it is now

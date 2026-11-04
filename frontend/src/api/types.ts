@@ -186,6 +186,25 @@ export interface GameSummaryDto {
   updatedAt: string
 }
 
+export interface RefTargetDto {
+  tabId: string
+  tabSlug: string
+  tabTitle: string
+  sectionIndex: number
+  name: string
+}
+
+export interface ItemLinkDto {
+  kind: 'row' | 'quest'
+  tabId: string
+  tabSlug: string
+  tabTitle: string
+  sectionIndex: number
+  rowItemId: string | null
+  // "<part> · <area>" of the referring place (may be empty)
+  path: string
+}
+
 export interface GameDetailDto {
   id: string
   slug: string
@@ -206,6 +225,10 @@ export interface GameDetailDto {
   progressPercent: number
   tabs: GuideTabDto[]
   checkedItemKeys: string[]
+  // Forward: item id of a defining row (the value of a `ref`) -> the chapter and section that hold it
+  refTargets?: Record<string, RefTargetDto> | null
+  // Back: item id of a defining row -> the places (rows with `ref`, side quest entries) that point at it, in guide order
+  itemLinks?: Record<string, ItemLinkDto[]> | null
   // Language of the texts in this answer: the requested one once its translation is complete, else the guide's own (contentLanguage)
   language: string
   translation: GuideTranslationDto
@@ -230,6 +253,8 @@ export interface GuideTranslationDto {
 export interface GuideTabDto {
   id: string
   slug: string
+  // The standard topic the chapter was researched for (e.g. "quests"); missing for older chapters
+  topicId?: string | null
   title: string
   icon: string
   sortOrder: number
@@ -244,8 +269,9 @@ export interface GuideTabDto {
 
 export interface GuideSectionDto {
   // 'story' = readable prose (paragraphs; with variant 'steps' the numbered steps of a walkthrough part), used by the optional Story & Lore tab
-  // 'puzzle' = a riddle with its location and a hidden solution (see GuidePuzzleDto), 'heading' = a sub-heading of the walkthrough
-  type: 'alert' | 'cards_grid' | 'checklist_table' | 'story' | 'puzzle' | 'heading' | string
+  // 'puzzle' = a riddle with its location and a hidden solution (see GuidePuzzleDto), 'heading' = a heading of the walkthrough (see `level`)
+  // 'boss' = the stat card of an enemy, 'overview' = "At a glance" at the start of a walkthrough part, 'sources' = the links at the end of a chapter
+  type: 'alert' | 'cards_grid' | 'checklist_table' | 'story' | 'puzzle' | 'heading' | 'boss' | 'overview' | 'sources' | string
   title?: string | null
   variant?: string | null
   icon?: string | null
@@ -262,10 +288,77 @@ export interface GuideSectionDto {
   puzzle?: GuidePuzzleDto | null
   // Type 'alert' only: a typed hint of the walkthrough (own label and symbol)
   kind?: GuideAlertKind | string | null
+  // Type 'alert' with kind 'achievement': the Steam API name of the achievement (its title and icon come from the game's achievement list)
+  apiName?: string | null
+  // Type 'alert' with kind 'side_quests': the side quests that become available at this point (the full solution is in the side quest chapter)
+  quests?: GuideSideQuestDto[] | null
+  // Type 'alert' with kind 'point_of_no_return': what to do before ("Do this first")
+  items?: string[] | null
+  // Type 'heading' only: 1 = part of the game (story chapter), 2 = area inside it; missing = 1
+  level?: number | null
+  // Type 'boss' only (the fields sit directly on the section; the title is the enemy's name)
+  bossId?: string | null
+  location?: string | null
+  recommendedLevel?: string | number | null
+  hp?: GuideBossHpDto[] | null
+  weaknesses?: string[] | null
+  resistances?: string[] | null
+  immunities?: string[] | null
+  attacks?: GuideBossAttackDto[] | null
+  phases?: string[] | null
+  party?: string | null
+  tactics?: string[] | null
+  rewards?: string[] | null
+  missable?: boolean | null
+  // Steam API names of the achievements this fight is about (type 'boss' and 'overview')
+  achievements?: string[] | null
+  source?: string | null
+  // Type 'overview' only ("At a glance"; title, recommendedLevel and achievements are shared with the boss fields above)
+  counts?: GuideOverviewCountDto[] | null
+  keyItems?: string[] | null
+  missables?: string[] | null
+  endsAtPointOfNoReturn?: boolean | null
+  // Type 'sources' only
+  sources?: GuideSourceDto[] | null
 }
 
-// The typed hints of a walkthrough: important item, missable from here, optional content available, tip
-export type GuideAlertKind = 'must_have' | 'missable' | 'optional' | 'tip'
+// The typed hints of a walkthrough: important item, missable from here, optional content available, tip, an achievement that can be earned here,
+// the point after which earlier content is locked
+export type GuideAlertKind = 'must_have' | 'missable' | 'optional' | 'tip' | 'achievement' | 'point_of_no_return' | 'side_quests'
+
+// A side quest named in the walkthrough: availableFrom = from when it can be started, missable = true (can be missed) or the text until when, reward = one line,
+// ref = the item id of its row in the guide's side quest chapter (empty = no known row)
+export interface GuideSideQuestDto {
+  title: string
+  availableFrom?: string | null
+  missable?: boolean | string | null
+  reward?: string | null
+  ref?: string | null
+}
+
+// HP of an enemy: one entry per difficulty / phase (appliesTo says which), source = where the number comes from
+export interface GuideBossHpDto {
+  value: string | number
+  appliesTo?: string | null
+  source?: string | null
+}
+
+export interface GuideBossAttackDto {
+  name: string
+  note?: string | null
+}
+
+export interface GuideOverviewCountDto {
+  label: string
+  count?: number | string | null
+}
+
+// origin: 'cited' = the page was quoted, 'ai' = named by the AI from memory; anything else is shown as "unknown"
+export interface GuideSourceDto {
+  title?: string | null
+  url: string
+  origin?: 'cited' | 'ai' | string | null
+}
 
 // A puzzle: location, requirements and the missable flag are always shown; hints and steps (the complete solution) are revealed on request.
 // documented = false (no steps): the UI says "solution not documented" instead of offering the solution button.
@@ -330,6 +423,8 @@ export interface GuideTableRowDto {
   filterCategory?: string | null
   filterSecondary?: string | null
   cells: Record<string, string>
+  // The item id of the row in another chapter that this row is the same check as (ticking either ticks both); a missing target falls back to itemId
+  ref?: string | null
 }
 
 export interface SteamSearchItemDto {
@@ -565,7 +660,7 @@ export interface AiResultDto<T> {
 
 // A background AI action (POST ai-generate / ai-plan / ai-complete / ai-expand-tab / ai-lore start one, GET /api/ai/jobs/{id} reads it).
 // The long-running requests are jobs: the answer comes back through polling, so no single HTTP request has to survive minutes.
-export type AiJobKind = 'generate' | 'plan' | 'complete' | 'expand' | 'lore' | 'retry'
+export type AiJobKind = 'generate' | 'plan' | 'complete' | 'expand' | 'lore' | 'retry' | 'redo'
 
 // "chapters" = Done of Total chapters finished, Title = the latest one started; "loreParts" the same for Story & Lore; "chapter" = one chapter (Title)
 export type AiJobStage = 'starting' | 'facts' | 'blueprint' | 'chapters' | 'chapter' | 'loreParts' | 'saving'
@@ -752,6 +847,8 @@ export interface ManualIssueDto {
   code: string
   message: string
   details: string | null
+  // Up to three quoted examples (the foreign-language sentences of that warning); the message may name them as well
+  examples?: string[] | null
 }
 
 export interface ManualChapterPreviewDto {
@@ -774,9 +871,82 @@ export interface ManualChapterCheckDto {
   ok: boolean
   errors: ManualIssueDto[]
   warnings: ManualIssueDto[]
+  // A prompt to paste into the chat so it corrects the findings (foreign-language sentences); empty / missing = nothing to correct
+  fixPrompt?: string | null
   preview: ManualChapterPreviewDto | null
   // The answer says the topic does not exist in this game: the sentence to show (saving then creates no chapter / removes the placeholder), else null
   notApplicable?: string | null
+}
+
+// ---- Batch mode: one prompt for many chapters, all chat answers pasted into one text, saved at once ----
+
+// One chapter as the batch endpoints take it; key = the stable id ("K01", ...) the prompt asks the chat to answer with
+export interface ManualBatchChapterItem {
+  key?: string
+  title: string
+  focus: string
+  topicId?: string | null
+  sourceSituation?: string
+  icon?: string
+  // The chapter whose content the answer replaces (a failed chapter's placeholder, or with replace a normal chapter)
+  tabId?: string
+  // The chapter is a normal one that is researched again: the answer replaces it (the server keeps ticks whose entries survive)
+  replace?: boolean
+}
+
+export interface ManualBatchPromptDto {
+  kind: 'batch'
+  prompt: string
+  fileName: string
+  language: string
+  steamAppId: number | null
+  gameTitle: string
+  chapters: { key: string; title: string; topicId: string | null }[]
+}
+
+export type ManualBatchItemState = 'ok' | 'warning' | 'error' | 'notApplicable' | 'missing'
+
+export interface ManualBatchItemCheckDto {
+  key: string
+  title: string
+  state: ManualBatchItemState
+  errors: ManualIssueDto[]
+  warnings: ManualIssueDto[]
+  fixPrompt?: string | null
+  preview: ManualChapterPreviewDto | null
+  // "The game does not have this topic": the sentence to show (saving then creates no chapter / removes the placeholder)
+  notApplicable: string | null
+}
+
+// An answer object in the pasted text that no chapter of the batch claims
+export interface ManualBatchUnmatchedDto {
+  index: number
+  title: string | null
+  errors: ManualIssueDto[]
+}
+
+export interface ManualBatchCheckDto {
+  found: number
+  items: ManualBatchItemCheckDto[]
+  unmatched: ManualBatchUnmatchedDto[]
+}
+
+export interface ManualBatchSavedItemDto {
+  key: string
+  tabId: string | null
+  replaced: boolean
+  dropped: boolean
+}
+
+export interface ManualBatchSkippedDto {
+  key: string
+  reason: string
+}
+
+export interface ManualBatchAnswerDto {
+  detail: GameDetailDto
+  saved: ManualBatchSavedItemDto[]
+  skipped: ManualBatchSkippedDto[]
 }
 
 // What the prompt (and the answer) of one chapter is about; tabId = the failed chapter whose placeholder the answer replaces
@@ -786,6 +956,8 @@ export interface ManualChapterSeed {
   focus: string
   topicId: string | null
   tabId?: string
+  // A normal chapter that is researched again (see ManualBatchChapterItem.replace)
+  replace?: boolean
   sourceSituation?: string
 }
 
@@ -805,6 +977,13 @@ export interface AiRetryChaptersResponse {
   succeeded: number
   failedTitles: string[]
   droppedTitles?: string[]
+  game: GameDetailDto
+  ai: AiUsageDto
+}
+
+// POST /api/games/{slug}/chapters/{tabId}/redo (a job): the chapter researched again and replaced. When the research says the game
+// does not have the topic, the job fails with a message and the chapter stays as it is.
+export interface AiRedoChapterResponse {
   game: GameDetailDto
   ai: AiUsageDto
 }

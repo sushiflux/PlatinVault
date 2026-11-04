@@ -34,7 +34,42 @@ public sealed partial class SteamStatsService(
         List<string> Developers,
         List<string> Publishers,
         int? MetacriticScore,
-        int? AchievementsTotal);
+        int? AchievementsTotal,
+        // The languages the store lists (in the language of the request, e.g. "Deutsch" with l=german) and those with full audio
+        List<string>? Languages = null,
+        List<string>? AudioLanguages = null);
+
+    /// <summary>
+    /// Reads appdetails' "supported_languages": an HTML string in the language of the request, e.g. (app 359870, l=german, read 2026-11-03)
+    /// <c>Englisch&lt;strong&gt;*&lt;/strong&gt;, Französisch, …, Deutsch, …&lt;br&gt;&lt;strong&gt;*&lt;/strong&gt;Sprachen mit voller Audiounterstützung</c>.
+    /// The footnote after &lt;br&gt; is dropped, tags are removed, a "*" marks a language with full audio.
+    /// </summary>
+    internal static (List<string> Languages, List<string> Audio) ParseSupportedLanguages(string? html)
+    {
+        var languages = new List<string>();
+        var audio = new List<string>();
+        if (string.IsNullOrWhiteSpace(html))
+        {
+            return (languages, audio);
+        }
+        var list = Regex.Split(html, @"<br\s*/?>", RegexOptions.IgnoreCase)[0];
+        foreach (var raw in list.Split(','))
+        {
+            var text = System.Net.WebUtility.HtmlDecode(Regex.Replace(raw, "<[^>]*>", string.Empty)).Trim();
+            var withAudio = text.Contains('*');
+            text = text.Replace("*", string.Empty).Trim();
+            if (text.Length == 0 || text.Length > 60)
+            {
+                continue;
+            }
+            languages.Add(text);
+            if (withAudio)
+            {
+                audio.Add(text);
+            }
+        }
+        return (languages, audio);
+    }
 
     /// <summary>Store facts in the language of the current request ("de" when there is none).</summary>
     public Task<StoreFacts?> GetStoreFactsAsync(int appId, CancellationToken ct) => GetStoreFactsAsync(appId, Lang.Current, ct);
@@ -56,6 +91,7 @@ public sealed partial class SteamStatsService(
             }
 
             var release = data.TryGetProperty("release_date", out var rd) ? rd : default;
+            var languages = ParseSupportedLanguages(Str(data, "supported_languages"));
             return new StoreFacts(
                 Name: Str(data, "name"),
                 ShortDescription: Str(data, "short_description"),
@@ -66,7 +102,9 @@ public sealed partial class SteamStatsService(
                 Developers: Strings(data, "developers"),
                 Publishers: Strings(data, "publishers"),
                 MetacriticScore: data.TryGetProperty("metacritic", out var mc) && mc.TryGetProperty("score", out var score) && score.TryGetInt32(out var s) ? s : null,
-                AchievementsTotal: data.TryGetProperty("achievements", out var ach) && ach.TryGetProperty("total", out var total) && total.TryGetInt32(out var t) ? t : null);
+                AchievementsTotal: data.TryGetProperty("achievements", out var ach) && ach.TryGetProperty("total", out var total) && total.TryGetInt32(out var t) ? t : null,
+                Languages: languages.Languages,
+                AudioLanguages: languages.Audio);
         });
 
 /// <summary>

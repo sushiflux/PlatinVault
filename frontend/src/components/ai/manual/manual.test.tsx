@@ -5,6 +5,7 @@ import type { GameDetailDto, GuidePlanDto, ManualBlueprintCheckDto, ManualChapte
 import { AnswerBox } from './AnswerBox'
 import { ManualGuideDialog } from './ManualGuideDialog'
 import { PromptBox } from './PromptBox'
+import { ConfirmProvider } from '../../ui/ConfirmDialog'
 
 const client = vi.hoisted(() => ({
   checkManualBlueprint: vi.fn(),
@@ -46,13 +47,19 @@ const okChapter = (title = 'Beste Waffen'): ManualChapterCheckDto => ({
 })
 
 function wrap(node: React.ReactNode) {
-  return render(<QueryClientProvider client={new QueryClient()}>{node}</QueryClientProvider>)
+  return render(
+    <QueryClientProvider client={new QueryClient()}>
+      <ConfirmProvider>{node}</ConfirmProvider>
+    </QueryClientProvider>
+  )
 }
 
 const settle = () => act(async () => { await vi.advanceTimersByTimeAsync(600) })
 
 beforeEach(() => {
   vi.useFakeTimers()
+  // The dialog keeps the work of a guide in the browser tab; every test starts clean
+  window.sessionStorage.clear()
   Object.values(client).forEach((fn) => fn.mockReset())
   Object.defineProperty(window, 'isSecureContext', { value: true, configurable: true })
   Object.defineProperty(navigator, 'clipboard', { value: { writeText: vi.fn(async () => undefined) }, configurable: true })
@@ -243,6 +250,14 @@ describe('ManualGuideDialog', () => {
 
     expect(client.saveManualChapter).toHaveBeenCalledWith('suncraft', expect.any(String), expect.objectContaining({ tabId: 'tab-1', focus: 'Alle Ausbaustufen' }))
     expect(screen.getByText('Gespeichert')).toBeTruthy()
+  })
+
+  it('sends tabId, replace and topicId in the chapter prompt of a redo seed', async () => {
+    client.manualChapterPrompt.mockResolvedValue(prompt())
+    const seed = { title: 'Waffen', icon: 'mdi:sword', focus: 'Waffen', topicId: 'weapons', tabId: 'tab-9', replace: true }
+    wrap(<ManualGuideDialog slug="suncraft" gameTitle="Suncraft" language="de" chapter={seed} onClose={vi.fn()} onSaved={vi.fn()} />)
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Prompt kopieren' })) })
+    expect(client.manualChapterPrompt).toHaveBeenCalledWith('suncraft', expect.objectContaining({ tabId: 'tab-9', replace: true, topicId: 'weapons' }))
   })
 
   it('accepts the answer "this topic does not exist in the game": shows the reason, saves nothing and marks the chapter as left out', async () => {

@@ -189,8 +189,82 @@ const game = {
     missable: 'Verpassbar ab hier',
     optional: 'Optional hier verfügbar',
     tip: 'Tipp',
+    achievement: 'Erfolg hier möglich',
+    point_of_no_return: 'Point of no Return',
+    side_quests: 'Nebenaufgaben hier verfügbar',
   },
   stepsList: 'Schritte',
+
+  // Karten und Blöcke der Komplettlösung im Stil eines gedruckten Strategieführers (nur Text, keine Bilder)
+  boss: {
+    badge: 'Gegner',
+    level: 'Empfohlene Stufe',
+    hp: 'Lebenspunkte',
+    hpUnknown: 'nicht dokumentiert',
+    hpSource: 'Quelle: {{source}}',
+    weaknesses: 'Schwächen',
+    resistances: 'Resistenzen',
+    immunities: 'Immunitäten',
+    attacks: 'Gefährliche Angriffe',
+    phases: 'Phasen',
+    party: 'Empfohlene Gruppe und Ausrüstung',
+    tactics: 'Taktik',
+    rewards: 'Belohnungen',
+    achievements: 'Erfolge',
+    missable: 'Verpassbar',
+    source: 'Quelle: {{source}}',
+    location: 'Ort',
+    nameless: 'Gegner',
+  },
+  overview: {
+    title: 'Auf einen Blick',
+    level: 'Empfohlene Stufe',
+    counts: 'Das gibt es hier',
+    achievements: 'Erfolge in diesem Teil',
+    keyItems: 'Schlüsselgegenstände',
+    missables: 'Verpassbar in diesem Teil',
+    pointOfNoReturn: 'Dieser Teil endet an einem Point of no Return',
+  },
+  achievementRef: {
+    unknown: 'Steam-Erfolg {{name}}',
+    done: 'freigeschaltet',
+  },
+  pointOfNoReturn: { doFirst: 'Erledige das vorher' },
+  // Kurzer Hinweis auf Nebenaufgaben mitten in der Route; die ganze Lösung steht im Nebenaufgaben-Kapitel
+  itemLinks: {
+    goToRow: 'Zu diesem Eintrag im Kapitel „{{chapter}}“ springen (derselbe Haken)',
+    goToPlace: 'Fundort im Spiel: {{path}} – dorthin springen',
+  },
+  sideQuests: {
+    doneFor: '{{quest}} erledigt',
+    goTo: 'Alle im Kapitel „{{title}}“',
+    open: '{{quest}} im Kapitel „{{chapter}}“ öffnen',
+    from: 'ab {{from}}',
+    missable: 'verpassbar',
+    missableUntil: 'verpassbar bis {{until}}',
+    reward: 'Belohnung: {{reward}}',
+  },
+  walkthrough: {
+    part: 'Teil {{n}}',
+    area: 'Gebiet {{label}}',
+    toc: {
+      label: 'Inhalt',
+      nav: 'Inhalt der Komplettlösung',
+      show: 'Inhalt anzeigen',
+      hide: 'Inhalt ausblenden',
+      count_one: '{{count}} Abschnitt',
+      count_other: '{{count}} Abschnitte',
+    },
+  },
+  sources: {
+    title: 'Quellen',
+    cited: 'zitiert',
+    ai: 'von der KI genannt',
+    search: 'aus der Suche',
+    unknown: 'Herkunft unbekannt',
+    external: 'öffnet im Browser',
+  },
+
 
   // The frame the app puts around a guide table (the table's own texts are data and win when present)
   table: {

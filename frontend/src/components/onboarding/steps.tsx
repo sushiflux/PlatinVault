@@ -86,7 +86,7 @@ function FakeButton({ className, children }: { className: string; children: Reac
 // ---------------------------------------------------------------------------------------------------------------
 
 const DEMO_ACHIEVEMENTS: { id: 'bronze' | 'silver' | 'gold'; tier: RarityTier; percent: number }[] = [
-  { id: 'bronze', tier: 'Bronze', percent: 42.5 },
+  { id: 'bronze', tier: 'Bronze', percent: 64.2 },
   { id: 'silver', tier: 'Silver', percent: 14.8 },
   { id: 'gold', tier: 'Gold', percent: 2.4 },
 ]

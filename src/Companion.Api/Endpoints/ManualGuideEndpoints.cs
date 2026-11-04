@@ -9,7 +9,7 @@ namespace Companion.Api.Endpoints;
 /// The guide via the user's own AI subscription ("copy the prompt, paste the answer"). Everything here is local: prompts are built, pasted answers
 /// are read and saved - nothing is ever sent to an AI provider. The browser keeps the plan between the steps, the server stores nothing of it.
 /// </summary>
-public static class ManualGuideEndpoints
+public static partial class ManualGuideEndpoints
 {
     private const int MaxTitle = 240;
     private const int MaxFocus = 4000;
@@ -38,18 +38,33 @@ public static class ManualGuideEndpoints
         // Step 2: the prompt for one chapter
         api.MapPost("/games/{slug}/manual/chapter-prompt", async (string slug, ManualChapterPromptRequest request, CompanionDbContext db, AiGuideGeneratorService ai, CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Focus))
+            // The assignment may be left out when an existing chapter is replaced: the server builds it from the stored chapter (like "redo")
+            var replacesStored = request.TabId is not null && request.Replace == true;
+            if (string.IsNullOrWhiteSpace(request.Title) || (string.IsNullOrWhiteSpace(request.Focus) && !replacesStored))
             {
                 return Problems.BadRequest(ServerTexts.Games.InputIncompleteTitle, ServerTexts.Manual.PromptTitleMissing);
             }
-            if (request.Title.Length > MaxTitle || request.Focus.Length > MaxFocus)
+            var focusLength = request.Focus?.Length ?? 0;
+            if (request.Title.Length > MaxTitle || focusLength > MaxFocus)
             {
-                return Problems.BadRequest(ServerTexts.Games.InputIncompleteTitle, ServerTexts.Import.FieldTooLong("title/focus", Math.Max(request.Title.Length, request.Focus.Length), MaxFocus));
+                return Problems.BadRequest(ServerTexts.Games.InputIncompleteTitle, ServerTexts.Import.FieldTooLong("title/focus", Math.Max(request.Title.Length, focusLength), MaxFocus));
             }
             var game = await LoadAsync(db, slug, ct);
             if (game is null)
             {
                 return Problems.GameNotFound(slug);
+            }
+            if (request.TabId is { } tabId)
+            {
+                var existing = game.Tabs.FirstOrDefault(t => t.Id == tabId);
+                if (existing is null)
+                {
+                    return Problems.NotFound(ServerTexts.Games.InputIncompleteTitle, ServerTexts.Manual.ChapterNotFound);
+                }
+                if (ChapterRemoval.Check(existing) != ChapterRemovalVerdict.Removable)
+                {
+                    return Problems.BadRequest(ServerTexts.Games.InputIncompleteTitle, ServerTexts.Manual.ChapterNotReplaceable);
+                }
             }
             await AdoptLanguageAsync(db, game, ct);
             return Results.Ok(await ai.BuildManualChapterPromptAsync(game, request, ct));
@@ -59,7 +74,7 @@ public static class ManualGuideEndpoints
         api.MapPost("/games/{slug}/manual/chapter-check", async (string slug, ManualChapterAnswerRequest request, CompanionDbContext db, AiGuideGeneratorService ai, CancellationToken ct) =>
         {
             var game = await LoadAsync(db, slug, ct);
-            return game is null ? Problems.GameNotFound(slug) : Results.Ok(ai.CheckManualChapter(game, request.Text, request.Title ?? string.Empty, request.TopicId, request.TabId is not null).Dto);
+            return game is null ? Problems.GameNotFound(slug) : Results.Ok(ai.CheckManualChapter(game, request.Text, request.Title ?? string.Empty, request.TopicId, request.TabId is not null && request.Replace != true).Dto);
         });
 
         // Saves the answer: a new chapter at the end of the guide (before the lore tab), or in place of a failed chapter's placeholder (TabId)
@@ -76,7 +91,7 @@ public static class ManualGuideEndpoints
             }
             await AdoptLanguageAsync(db, game, ct);
 
-            var checkedAnswer = ai.CheckManualChapter(game, request.Text, request.Title, request.TopicId, request.TabId is not null);
+            var checkedAnswer = ai.CheckManualChapter(game, request.Text, request.Title, request.TopicId, request.TabId is not null && request.Replace != true);
             if (checkedAnswer.CanonicalJson is null)
             {
                 return Problems.BadRequest(ServerTexts.Manual.NotSavedTitle, ServerTexts.Manual.NotSaved(string.Join(" ", checkedAnswer.Dto.Errors.Select(e => e.Message))));
@@ -95,7 +110,9 @@ public static class ManualGuideEndpoints
                     }
                     if (placeholder.Slug == LoreTab.Slug || FailedChapters.Read(placeholder.SectionsJson) is null)
                     {
-                        return Problems.BadRequest(ServerTexts.Manual.NotSavedTitle, ServerTexts.Manual.ChapterNotAPlaceholder);
+                        // A chapter with content is never deleted by an answer (also not with "replace")
+                        return Problems.BadRequest(ServerTexts.Manual.NotSavedTitle,
+                            request.Replace == true && placeholder.Slug != LoreTab.Slug ? ServerTexts.Manual.BatchReplaceNotApplicable : ServerTexts.Manual.ChapterNotAPlaceholder);
                     }
                     db.GuideTabs.Remove(placeholder);
                     game.Tabs.Remove(placeholder);
@@ -122,17 +139,18 @@ public static class ManualGuideEndpoints
                 {
                     return Problems.NotFound(ServerTexts.Manual.NotSavedTitle, ServerTexts.Manual.ChapterNotFound);
                 }
-                if (FailedChapters.Read(placeholder.SectionsJson) is null)
+                if (ChapterRemoval.Check(placeholder) != ChapterRemovalVerdict.Removable)
+                {
+                    return Problems.BadRequest(ServerTexts.Manual.NotSavedTitle, ServerTexts.Manual.ChapterNotReplaceable);
+                }
+                // A chapter with content is only replaced when the request says so explicitly ("Kapitel neu schreiben")
+                if (FailedChapters.Read(placeholder.SectionsJson) is null && request.Replace != true)
                 {
                     return Problems.BadRequest(ServerTexts.Manual.NotSavedTitle, ServerTexts.Manual.ChapterNotAPlaceholder);
                 }
                 var fresh = ai.BuildManualChapterTab(game, placeholder.SortOrder, request, checkedAnswer.CanonicalJson);
-                ApiEndpoints.MakeItemIdsUnique([fresh], ApiEndpoints.CollectItemIds(game.Tabs.Where(t => t.Id != placeholder.Id)));
-                // Same tab, same place, same address; a group that was chosen before stays (the same rule as a repeated AI research)
-                placeholder.Title = fresh.Title;
-                placeholder.Icon = fresh.Icon;
-                placeholder.SectionsJson = fresh.SectionsJson;
-                placeholder.GroupKey ??= fresh.GroupKey;
+                // Same tab, same place, same address; a chosen group stays; ticks of item ids that still exist stay (the same rules as "redo")
+                AiActionEndpoints.ReplaceChapterInPlace(db, game, placeholder, fresh);
                 saved = placeholder;
                 replaced = true;
             }
@@ -146,23 +164,26 @@ public static class ManualGuideEndpoints
                 var oldWalkthrough = saved.Slug == WalkthroughTab.Slug ? game.Tabs.FirstOrDefault(WalkthroughTab.Is) : null;
                 if (oldWalkthrough is not null)
                 {
-                    ApiEndpoints.MakeItemIdsUnique([saved], ApiEndpoints.CollectItemIds(game.Tabs.Where(t => t.Id != oldWalkthrough.Id)));
-                    oldWalkthrough.Title = saved.Title;
-                    oldWalkthrough.Icon = saved.Icon;
-                    oldWalkthrough.SectionsJson = saved.SectionsJson;
-                    oldWalkthrough.GroupKey ??= saved.GroupKey;
+                    // The same replace as "redo": ticks of entries that only got a new id move along, ticks of entries that are gone go
+                    AiActionEndpoints.ReplaceChapterInPlace(db, game, oldWalkthrough, saved);
                     saved = oldWalkthrough;
                     replaced = true;
                 }
                 else
                 {
-                    ApiEndpoints.MakeItemIdsUnique([saved], ApiEndpoints.CollectItemIds(game.Tabs));
+                    ApiEndpoints.MakeItemIdsUnique([saved], ApiEndpoints.CollectTakenItemIds(game.Tabs));
                     db.GuideTabs.Add(saved);
+                    if (!game.Tabs.Contains(saved))
+                    {
+                        game.Tabs.Add(saved);
+                    }
                 }
             }
 
+            // Link the saved chapter to the rows of the other chapters (and the other way round), then save everything together
+            GuideLinkMaintenance.Apply(db, game);
             game.UpdatedAt = DateTimeOffset.UtcNow;
-            await db.SaveChangesAsync(ct);
+            await GuideLinkMaintenance.SaveAsync(db, ct);
 
             db.ChangeTracker.Clear();
             var reloaded = await db.Games
@@ -172,6 +193,9 @@ public static class ManualGuideEndpoints
                 .FirstAsync(g => g.Slug == slug, ct);
             return Results.Ok(new ManualSavedDto(await ApiEndpoints.BuildDetailAsync(db, translations, reloaded, null, ct), saved.Id, replaced));
         });
+
+        // Batch mode: one prompt for many chapters, one field for all collected answers
+        MapManualBatch(api);
     }
 
     private static Task<GameEntity?> LoadAsync(CompanionDbContext db, string slug, CancellationToken ct) =>

@@ -59,7 +59,7 @@ public sealed class ManualGuideTests
         Assert.Contains("spoilerfrei", prompt);
         Assert.Contains("Tabellen bevorzugen", prompt);
         Assert.Contains("```json", prompt);                                    // one JSON object in one code block
-        Assert.Contains("Schreibe ALLE Texte auf Deutsch", prompt);            // the guide language
+        Assert.Contains("Der ganze Guide ist auf Deutsch", prompt);             // the guide language (LanguageRules)
         Assert.DoesNotContain("Begriffe zweisprachig", prompt);
     }
 

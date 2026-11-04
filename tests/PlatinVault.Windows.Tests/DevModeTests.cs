@@ -153,7 +153,11 @@ public sealed class DevLayoutTests
         // A mutex is recursive per thread: ask from another thread, like a second process would
         Assert.True(OnOtherThread(() => AppInstance.IsRunning(layout)));
         Assert.Null(OnOtherThread(() => AppInstance.TryAcquire(layout)));
-        Assert.False(AppInstance.IsRunning(InstallLayout.Create(null)));
+        // Another (test-root) installation layout is not affected. Never ask the real installation (InstallLayout.Create(null)): it is running whenever
+        // PlatinVault is open on this PC, so the result would depend on the machine. Different names are what keeps the two apart.
+        var installation = InstallLayout.Create(temp.Sub("installation"));
+        Assert.NotEqual(installation.MutexName, layout.MutexName);
+        Assert.False(OnOtherThread(() => AppInstance.IsRunning(installation)));
     }
 }
 

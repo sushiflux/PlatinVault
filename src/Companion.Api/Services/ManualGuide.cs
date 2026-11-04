@@ -13,27 +13,72 @@ namespace Companion.Api.Services;
 /// <summary>A prompt for the chat of the user's subscription. Kind = "blueprint" or "chapter".</summary>
 public sealed record ManualPromptDto(string Kind, string Prompt, string FileName, string Language, int? SteamAppId, string Title);
 
-/// <summary>One finding about a pasted answer: what is wrong (or worth knowing) in the language of the UI, with the technical text apart.</summary>
-public sealed record ManualIssueDto(string Code, string Message, string? Details = null);
+/// <summary>One finding about a pasted answer: what is wrong (or worth knowing) in the language of the UI, with the technical text apart and up to 3 examples (e.g. the sentences in the wrong language).</summary>
+public sealed record ManualIssueDto(string Code, string Message, string? Details = null, List<string>? Examples = null);
 
 /// <summary>What a chapter answer contains once read: shown before saving.</summary>
 public sealed record ManualChapterPreviewDto(string Title, string Icon, int SectionCount, int TableRows, int Cards, List<string> SectionTitles);
 
 public sealed record ManualBlueprintCheckDto(bool Ok, List<ManualIssueDto> Errors, List<ManualIssueDto> Warnings, GuidePlanDto? Plan);
 
-/// <summary>NotApplicable = the answer says the topic does not exist in the game (the sentence to show; saving then creates no chapter / removes the placeholder).</summary>
-public sealed record ManualChapterCheckDto(bool Ok, List<ManualIssueDto> Errors, List<ManualIssueDto> Warnings, ManualChapterPreviewDto? Preview, string? NotApplicable = null);
+/// <summary>
+/// NotApplicable = the answer says the topic does not exist in the game (the sentence to show; saving then creates no chapter / removes the placeholder).
+/// FixPrompt = a ready prompt for the chat that asks it to rewrite the sentences in the wrong language and to output the same JSON again (null = nothing to fix).
+/// </summary>
+public sealed record ManualChapterCheckDto(bool Ok, List<ManualIssueDto> Errors, List<ManualIssueDto> Warnings, ManualChapterPreviewDto? Preview, string? NotApplicable = null, string? FixPrompt = null);
 
 public sealed record ManualAnswerRequest(string? Text);
 
-/// <summary>Everything the prompt of one chapter needs; the browser keeps the plan between the steps, the server stores nothing.</summary>
-public sealed record ManualChapterPromptRequest(string Title, string? Icon, string Focus, string? TopicId, string? SourceSituation);
+/// <summary>
+/// Everything the prompt of one chapter needs; the browser keeps the plan between the steps, the server stores nothing. TabId = the existing chapter the answer
+/// will replace (a failed placeholder, or with Replace = true any chapter): the server then takes the topic of the stored chapter (the walkthrough gets the
+/// walkthrough prompt), leaves that chapter out of the link candidates and - with Replace - builds the assignment itself like "redo" (Focus is optional then)
+/// and lists the chapter's current item ids so the new version keeps them.
+/// </summary>
+public sealed record ManualChapterPromptRequest(string Title, string? Icon, string? Focus, string? TopicId, string? SourceSituation, Guid? TabId = null, bool? Replace = null);
 
-/// <summary>Saves an answer: as a new chapter, or (TabId) in place of a failed chapter's placeholder.</summary>
-public sealed record ManualChapterAnswerRequest(string? Text, string Title, string? Icon, string? Focus, string? TopicId, Guid? TabId);
+/// <summary>Saves an answer: as a new chapter, or (TabId) in place of a failed chapter's placeholder - or, with Replace = true, in place of ANY chapter (not the achievement list or Story &amp; Lore).</summary>
+public sealed record ManualChapterAnswerRequest(string? Text, string Title, string? Icon, string? Focus, string? TopicId, Guid? TabId, bool? Replace = null);
 
 /// <summary>TabId = the saved chapter; with Dropped (the answer said the topic does not exist: no chapter was created) the removed placeholder, or null.</summary>
 public sealed record ManualSavedDto(GameDetailDto Game, Guid? TabId, bool Replaced, bool Dropped = false);
+
+// ---- Batch mode: ONE prompt for many chapters, ONE field for all collected answers --------------------------------------------------------
+
+/// <summary>
+/// One chapter of a batch. Key = the short id that ties an answer to the chapter ("K07"; missing, invalid or duplicate keys are assigned in list order).
+/// The same item shape goes into the prompt, the check and the save call, so the browser just sends its list back. TabId = the failed chapter whose
+/// placeholder this answer replaces (or removes, when the answer says the topic does not exist).
+/// </summary>
+/// Replace = true: TabId may also be a chapter WITH content, which the answer then replaces in place (same rules as "redo": not the achievement list or
+/// Story &amp; Lore; an answer "does not exist" never deletes such a chapter).
+public sealed record ManualBatchChapter(string? Key, string? Title, string? Focus, string? TopicId, string? SourceSituation, string? Icon, Guid? TabId, bool? Replace = null);
+
+public sealed record ManualBatchPromptRequest(List<ManualBatchChapter>? Chapters);
+
+public sealed record ManualBatchCheckRequest(string? Text, List<ManualBatchChapter>? Chapters);
+
+/// <summary>Keys = which chapters to save (default: every item that is ok, a warning or notApplicable).</summary>
+public sealed record ManualBatchAnswerRequest(string? Text, List<ManualBatchChapter>? Chapters, List<string>? Keys);
+
+public sealed record ManualBatchChapterInfo(string Key, string Title, string? TopicId);
+
+public sealed record ManualBatchPromptDto(string Kind, string Prompt, string FileName, string Language, int? SteamAppId, string GameTitle, List<ManualBatchChapterInfo> Chapters);
+
+/// <summary>State = ok | warning | error | notApplicable | missing. FixPrompt = the ready prompt to fix sentences in the wrong language (see ManualChapterCheckDto).</summary>
+public sealed record ManualBatchItemDto(string Key, string Title, string State, List<ManualIssueDto> Errors, List<ManualIssueDto> Warnings, ManualChapterPreviewDto? Preview, string? NotApplicable, string? FixPrompt = null);
+
+/// <summary>A JSON object of the pasted text that could not be assigned to a chapter (Index = its position among the objects found, from 1).</summary>
+public sealed record ManualBatchUnmatchedDto(int Index, string? Title, List<ManualIssueDto> Errors);
+
+public sealed record ManualBatchCheckDto(int Found, List<ManualBatchItemDto> Items, List<ManualBatchUnmatchedDto> Unmatched);
+
+/// <summary>TabId = the saved chapter; for a dropped one (notApplicable) the removed placeholder, or null.</summary>
+public sealed record ManualBatchSavedItemDto(string Key, Guid? TabId, bool Replaced, bool Dropped);
+
+public sealed record ManualBatchSkippedDto(string Key, string Reason);
+
+public sealed record ManualBatchSavedDto(GameDetailDto Detail, List<ManualBatchSavedItemDto> Saved, List<ManualBatchSkippedDto> Skipped);
 
 /// <summary>
 /// Reads and checks what a user pasted from a chat: the answer may come with a sentence before or after it or inside a ```json fence; broken or
@@ -44,7 +89,7 @@ public static partial class ManualAnswers
 {
     public const int MaxAnswerKilobytes = 2000;
 
-    private static readonly JsonDocumentOptions Lenient = new() { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
+    internal static readonly JsonDocumentOptions Lenient = new() { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
 
     private static readonly string[] KnownSectionTypes = [.. GuideSectionNormalizer.KnownTypes];
 
@@ -154,8 +199,22 @@ public static partial class ManualAnswers
     /// Reports, section by section, what the normalizer will drop or repair (it does so silently), and what looks wrong inside the sections.
     /// Returns nothing but warnings: whether the chapter is usable at all is decided after normalizing.
     /// </summary>
-    public static void ScanSections(JsonArray sections, List<ManualIssueDto> warnings)
+    public static void ScanSections(JsonArray sections, List<ManualIssueDto> warnings, IReadOnlySet<string>? knownApiNames = null)
     {
+        var unknownApiNames = new List<string>();
+        var invalidUrls = 0;
+        void CheckApiName(JsonNode? value)
+        {
+            var name = value?.ToString().Trim();
+            if (string.IsNullOrEmpty(name) || knownApiNames is not { Count: > 0 } known)
+            {
+                return;
+            }
+            if (!known.Contains(name) && !known.Any(k => string.Equals(k, name, StringComparison.OrdinalIgnoreCase)) && !unknownApiNames.Contains(name))
+            {
+                unknownApiNames.Add(name);
+            }
+        }
         var itemIds = new HashSet<string>(StringComparer.Ordinal);
         var duplicates = 0;
         var withoutId = 0;
@@ -191,8 +250,31 @@ public static partial class ManualAnswers
                 case "puzzle":
                     ScanPuzzle(section, number, warnings);
                     break;
-                case "alert" when section["kind"] is JsonValue kindValue && kindValue.TryGetValue<string>(out var kind) && !GuideAlertKinds.All.Contains(kind.Trim().ToLowerInvariant().Replace('-', '_')):
-                    warnings.Add(Issue("alertKind", ServerTexts.Manual.AlertKindUnknown(number, kind)));
+                case "boss":
+                    ScanBoss(section, number, warnings);
+                    foreach (var name in section["achievements"] as JsonArray ?? []) CheckApiName(name);
+                    break;
+                case "overview":
+                    foreach (var name in section["achievements"] as JsonArray ?? []) CheckApiName(name);
+                    break;
+                case "sources":
+                    foreach (var source in section["sources"] as JsonArray ?? [])
+                    {
+                        var valid = source switch
+                        {
+                            JsonObject obj => GuideSources.SanitizeUrl(obj["url"]?.ToString()) is not null,
+                            JsonValue value => GuideSources.FromText(value.ToString()) is not null,
+                            _ => false
+                        };
+                        if (!valid) invalidUrls++;
+                    }
+                    break;
+                case "alert":
+                    if (section["kind"] is JsonValue kindValue && kindValue.TryGetValue<string>(out var kind) && !GuideAlertKinds.All.Contains(kind.Trim().ToLowerInvariant().Replace('-', '_').Replace(' ', '_')))
+                    {
+                        warnings.Add(Issue("alertKind", ServerTexts.Manual.AlertKindUnknown(number, kind)));
+                    }
+                    CheckApiName(section["apiName"]);
                     break;
                 case "cards_grid" when section["cards"] is not JsonArray { Count: > 0 }:
                     warnings.Add(Issue("noCards", ServerTexts.Manual.CardsWithoutCards(number)));
@@ -230,6 +312,8 @@ public static partial class ManualAnswers
             }
         }
 
+        if (unknownApiNames.Count > 0) warnings.Add(Issue("unknownApiName", ServerTexts.Manual.UnknownApiNames(unknownApiNames.Count, string.Join(", ", unknownApiNames.Take(5))), examples: unknownApiNames.Take(3).ToList()));
+        if (invalidUrls > 0) warnings.Add(Issue("invalidSourceUrl", ServerTexts.Manual.InvalidSourceUrls(invalidUrls)));
         if (withoutId > 0) warnings.Add(Issue("rowsWithoutId", ServerTexts.Manual.RowsWithoutItemId(withoutId)));
         if (duplicates > 0) warnings.Add(Issue("duplicateIds", ServerTexts.Manual.DuplicateItemIds(duplicates)));
         if (notListed > 0) warnings.Add(Issue("categoryNotListed", ServerTexts.Manual.CategoryNotListed(notListed)));
@@ -266,6 +350,43 @@ public static partial class ManualAnswers
         {
             warnings.Add(Issue("puzzleWithoutLocation", ServerTexts.Manual.PuzzleWithoutLocation(number, name)));
         }
+    }
+
+    /// <summary>
+    /// What is wrong with a boss card before the normalizer repairs it: no name (skipped), no location, HP entries the normalizer drops (no value, or no
+    /// source without being "not documented") and kept HP entries that do not say what they apply to. Fields may sit beside "type" or, tolerated, in "boss".
+    /// </summary>
+    private static void ScanBoss(JsonObject section, int number, List<ManualIssueDto> warnings)
+    {
+        var boss = section["boss"] as JsonObject;
+        JsonNode? Field(string key) => section[key] ?? boss?[key];
+        var name = (Field("title") ?? Field("name"))?.ToString().Trim();
+        if (string.IsNullOrEmpty(name))
+        {
+            warnings.Add(Issue("sectionSkipped", ServerTexts.Manual.BossWithoutName(number)));
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(Field("location")?.ToString()))
+        {
+            warnings.Add(Issue("bossWithoutLocation", ServerTexts.Manual.BossWithoutLocation(number, name)));
+        }
+        var dropped = 0;
+        var withoutAppliesTo = 0;
+        foreach (var entry in (Field("hp") as JsonArray ?? []).OfType<JsonObject>())
+        {
+            var value = entry["value"]?.ToString().Trim();
+            var source = entry["source"]?.ToString().Trim();
+            if (string.IsNullOrEmpty(value) || (string.IsNullOrEmpty(source) && !GuideSectionNormalizer.IsNotDocumented(value)))
+            {
+                dropped++;
+            }
+            else if (string.IsNullOrWhiteSpace(entry["appliesTo"]?.ToString()))
+            {
+                withoutAppliesTo++;
+            }
+        }
+        if (dropped > 0) warnings.Add(Issue("bossHpDropped", ServerTexts.Manual.BossHpDropped(number, name, dropped)));
+        if (withoutAppliesTo > 0) warnings.Add(Issue("bossHpWithoutAppliesTo", ServerTexts.Manual.BossHpWithoutAppliesTo(number, name, withoutAppliesTo)));
     }
 
     /// <summary>"de" / "en" when the words of the texts clearly belong to one language, else null (too little text or mixed).</summary>
@@ -378,5 +499,5 @@ public static partial class ManualAnswers
         return ServerTexts.Manual.HintGeneric.ToString();
     }
 
-    public static ManualIssueDto Issue(string code, Msg message, string? details = null) => new(code, message.ToString(), details);
+    public static ManualIssueDto Issue(string code, Msg message, string? details = null, List<string>? examples = null) => new(code, message.ToString(), details, examples);
 }

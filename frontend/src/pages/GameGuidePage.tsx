@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CopyErrorButton } from '../components/ui/CopyErrorButton'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -36,11 +36,12 @@ import {
   fetchLiveAchievements,
   researchLore,
   resetGameProgress,
+  redoChapter,
   retryChapters,
   toggleProgressItem,
 } from '../api/client'
 import { followAiJob } from '../api/aiJobs'
-import type { ManualChapterSeed, AiCompleteGuideResponse, AiJobDto, AiJobKind, AiProviderId, AiResultDto, AiRetryChaptersResponse, GameDetailDto, GuideSectionDto, GuideTableDto, GuideTabDto } from '../api/types'
+import type { ManualChapterSeed, AiCompleteGuideResponse, AiJobDto, AiJobKind, AiProviderId, AiRedoChapterResponse, AiResultDto, AiRetryChaptersResponse, GameDetailDto, GuideSectionDto, GuideTableDto, GuideTabDto } from '../api/types'
 import { useFormat } from '../i18n/format'
 import { useGuideTranslation } from '../utils/useGuideTranslation'
 import type { UiLanguage } from '../i18n'
@@ -49,7 +50,7 @@ import { ScrollTopButton } from '../components/ScrollTopButton'
 import { useAiPicker } from '../components/ai/AiChoice'
 import { AiProgressNotice, AiProgressOverlay } from '../components/ai/AiProgress'
 import { AiRunButton, useAiWhoText } from '../components/ai/AiRunButton'
-import { FailedChapterBlock, failedChapterTabs, RetryAllBanner } from '../components/ai/FailedChapter'
+import { FailedChapterBlock, failedChapterSeeds, failedChapterTabs, RetryAllBanner } from '../components/ai/FailedChapter'
 import { providersWithKey, retryCandidates } from '../components/ai/aiProviders'
 import { ManualGuideDialog } from '../components/ai/manual/ManualGuideDialog'
 import { useAiSwitchNotice } from '../components/ai/useAiSwitchNotice'
@@ -77,9 +78,21 @@ import { Switch } from '../components/ui/Switch'
 import { Tooltip } from '../components/ui/Tooltip'
 import { UiScaleControl } from '../components/ui/UiScaleControl'
 import { PlayButton } from '../components/launch/PlayButton'
+import { AchievementLookupProvider } from '../components/guide/achievements'
+import { BossCard } from '../components/guide/BossCard'
+import { ChapterBody } from '../components/guide/ChapterBody'
 import { GuideHeading, HintAlert, StepsStory, isGuideAlertKind } from '../components/guide/GuideBlocks'
+import { OverviewBlock } from '../components/guide/OverviewBlock'
+import { ItemLinkContext, RowLinks, useItemLinks } from '../components/guide/ItemLinks'
+import type { ItemLinkApi } from '../components/guide/ItemLinks'
+import { buildItemLinkIndex } from '../components/guide/linkIndex'
+import { SideQuestTargetContext } from '../components/guide/SideQuestsAlert'
+import type { SideQuestTarget } from '../components/guide/SideQuestsAlert'
+import { SourcesBlock } from '../components/guide/SourcesBlock'
+import { findSideQuestChapter } from '../components/guide/sideQuestChapter'
 import { PuzzleBlock } from '../components/guide/PuzzleBlock'
 import { RemoveChapterBar } from '../components/guide/RemoveChapterBar'
+import { useConfirmRedoChapter } from '../components/guide/useRedoChapter'
 import { useRemoveChapter } from '../components/guide/useRemoveChapter'
 import { PuzzleScopeContext } from '../components/guide/puzzleState'
 import { OnboardingTour } from '../components/onboarding/OnboardingTour'
@@ -137,7 +150,14 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
   const queryClient = useQueryClient()
   const confirm = useConfirm()
   const confirmRemoveChapter = useRemoveChapter(slug)
+  const confirmRedoChapter = useConfirmRedoChapter()
   const [removingChapter, setRemovingChapter] = useState(false)
+  // "Kapitel neu recherchieren" (API key path) is running
+  const [redoing, setRedoing] = useState(false)
+  // A side quest callout asked for a row of the side quest chapter: once that chapter is shown, the row is scrolled into view and flashes briefly
+  const [pendingRowRef, setPendingRowRef] = useState<string | null>(null)
+  // A link asked for a heading of a chapter ("where do I get this"): same handling as the row, with the heading's element id
+  const [pendingAnchorId, setPendingAnchorId] = useState<string | null>(null)
   // Which AI does an action: the chooser of the "ask" mode, the state of the providers and the notice about a change of provider
   const pickAi = useAiPicker()
   const { data: aiStatus } = useAiStatus()
@@ -162,6 +182,31 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
       { replace: true }
     )
   }
+  useEffect(() => {
+    if (!pendingRowRef) return
+    const row = document.querySelector<HTMLElement>(`[data-item-id="${CSS.escape(pendingRowRef)}"]`)
+    if (!row) return
+    setPendingRowRef(null)
+    const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    row.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'center' })
+    // Keyboard users continue from the row they were sent to
+    row.setAttribute('tabindex', '-1')
+    row.focus({ preventScroll: true })
+    row.classList.add('pv-row-flash')
+    // No cleanup on purpose: the pending reference is cleared above, which would cancel the timer that takes the highlight away again
+    window.setTimeout(() => row.classList.remove('pv-row-flash'), 2400)
+  }, [pendingRowRef, activeTabSlug])
+  useEffect(() => {
+    if (!pendingAnchorId) return
+    const heading = document.getElementById(pendingAnchorId)
+    if (!heading) return
+    setPendingAnchorId(null)
+    const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    heading.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' })
+    heading.focus({ preventScroll: true })
+    heading.classList.add('pv-anchor-flash')
+    window.setTimeout(() => heading.classList.remove('pv-anchor-flash'), 2400)
+  }, [pendingAnchorId, activeTabSlug])
   const headerRef = useStickyHeaderHeight<HTMLElement>()
   const [coverFailed, setCoverFailed] = useState(false)
   const [navCollapsed, setNavCollapsed] = useState(() => {
@@ -205,7 +250,7 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
   const [steamLinkOpen, setSteamLinkOpen] = useState(false)
   const [builderOpen, setBuilderOpen] = useState(false)
   // The guide (or one failed chapter) with the player's own AI subscription: prompts to copy, answers to paste
-  const [manual, setManual] = useState<{ chapter?: ManualChapterSeed } | null>(null)
+  const [manual, setManual] = useState<{ chapter?: ManualChapterSeed; chapters?: ManualChapterSeed[] } | null>(null)
   // The AI chosen when the builder was opened (mode "ask"); undefined = the settings decide
   const [builderProvider, setBuilderProvider] = useState<string | undefined>(undefined)
   // Onboarding tour ("?" button in the header); its last step can open the settings right here
@@ -230,6 +275,8 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
     queryFn: () => fetchGameDetail(slug),
     enabled: Boolean(slug),
   })
+  // Who points at whom across the chapters (linked checkboxes and back-references)
+  const itemLinkIndex = useMemo(() => (game ? buildItemLinkIndex(game.tabs, game) : null), [game])
 
   // The standard topics are picked as chapter titles of THIS guide: in the guide's own language
   const topicLanguage = game?.contentLanguage
@@ -365,7 +412,7 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
     let cancelled = false
     void fetchAiJobsForGame(slug)
       .then((jobs) => {
-        const running = jobs.find((job) => job.running && (job.kind === 'complete' || job.kind === 'lore' || job.kind === 'expand' || job.kind === 'retry'))
+        const running = jobs.find((job) => job.running && (job.kind === 'complete' || job.kind === 'lore' || job.kind === 'expand' || job.kind === 'retry' || job.kind === 'redo'))
         if (!running || cancelled || resumedJob.current === running.id) return
         resumedJob.current = running.id
         void resumeAiJob(running)
@@ -384,6 +431,7 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
     pageProgress.onProgress(job)
     if (job.kind === 'lore') setLoreBusy(true)
     else if (job.kind === 'retry') setRetrying(true)
+    else if (job.kind === 'redo') setRedoing(true)
     else setCompleting(true)
     try {
       const result = await followAiJob<AiCompleteGuideResponse | AiRetryChaptersResponse | AiResultDto<GameDetailDto>>(job, fetchAiJob, pageProgress.onProgress)
@@ -398,11 +446,12 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
         if (job.kind === 'lore') selectTab(LORE_TAB_SLUG)
       }
     } catch (err: unknown) {
-      showAiFailure(err, job.kind === 'lore' ? t('fail.lore') : job.kind === 'retry' ? t('ai:retryChapters.failTitle') : t('fail.complete'), undefined, () => {}, job.kind !== 'lore')
+      showAiFailure(err, job.kind === 'lore' ? t('fail.lore') : job.kind === 'retry' ? t('ai:retryChapters.failTitle') : job.kind === 'redo' ? t('ai:redoChapter.failed') : t('fail.complete'), undefined, () => {}, job.kind !== 'lore')
     } finally {
       setLoreBusy(false)
       setCompleting(false)
       setRetrying(false)
+      setRedoing(false)
       pageProgress.reset()
       aiNotice.refresh()
     }
@@ -412,10 +461,19 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
     if (!game) return
     setActionError(null)
     // Guide checklists are extras: ticking them never starts the platinum moment (that belongs to Steam's trophies)
+    // Optimistic: the key is the one check shared by a row and the rows that refer to it, so every place on the page and in other chapters flips at once
+    const previous = queryClient.getQueryData<GameDetailDto>(['game', slug])
+    if (previous) {
+      const keys = new Set(previous.checkedItemKeys)
+      if (checked) keys.add(itemKey)
+      else keys.delete(itemKey)
+      queryClient.setQueryData<GameDetailDto>(['game', slug], { ...previous, checkedItemKeys: [...keys] })
+    }
     try {
       await toggleProgressItem(game.slug, itemKey, checked)
       await queryClient.invalidateQueries({ queryKey: ['game', slug] })
     } catch (err: unknown) {
+      if (previous) queryClient.setQueryData<GameDetailDto>(['game', slug], previous)
       setActionError({ title: t('fail.check'), ...describeError(err, t('common:unknownError')) })
     }
   }
@@ -517,6 +575,41 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
     } finally {
       setRemovingChapter(false)
     }
+  }
+
+  // "Kapitel neu recherchieren" for the chapter that is shown: our own question first (the old version stays until the new one is finished), then the AI
+  // chooser in the mode "ask", then the job; the chapter is replaced in the guide when it is done
+  const handleRedoChapter = async (tab: GuideTabDto, oneOff?: string, chosen = false) => {
+    if (!game || redoing) return
+    if (!chosen && !(await confirmRedoChapter(tab.title, false))) return
+    const provider = chosen ? oneOff : await pickAi(oneOff)
+    if (provider === null) return
+    setRedoing(true)
+    setPageJobKind('redo')
+    setActionError(null)
+    setActionInfo(null)
+    try {
+      handleChapterRedone(await redoChapter(game.slug, tab.id, provider, pageProgress.onProgress), tab)
+    } catch (err: unknown) {
+      showAiFailure(err, t('ai:redoChapter.failed'), provider, (next) => void handleRedoChapter(tab, next, true), true)
+    } finally {
+      setRedoing(false)
+      pageProgress.reset()
+      aiNotice.refresh()
+    }
+  }
+
+  // The same with the player's own AI subscription: after the question the dialog opens with this chapter as its one seed (the answer replaces the chapter)
+  const handleRedoChapterManual = async (tab: GuideTabDto) => {
+    if (!(await confirmRedoChapter(tab.title, true))) return
+    setManual({ chapter: { title: tab.title, icon: tab.icon, focus: tab.title, topicId: tab.topicId ?? null, tabId: tab.id, replace: true } })
+  }
+
+  const handleChapterRedone = (result: AiRedoChapterResponse, tab: GuideTabDto) => {
+    aiNotice.report(result.ai)
+    queryClient.setQueryData(['game', slug], result.game)
+    void queryClient.invalidateQueries({ queryKey: ['games'] })
+    setActionInfo({ title: t('ai:redoChapter.doneTitle'), message: t('ai:redoChapter.done', { title: tab.title }) })
   }
 
   const handleChaptersRetried = (result: AiRetryChaptersResponse) => {
@@ -632,6 +725,36 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
     ? (guideTabs.find((tab) => tab.slug === activeTabSlug) ?? guideTabs[0])
     : undefined
   // The guide and lore texts are data in the language they were written in; say so when that is not the language of the interface
+  // The side quest chapter of this guide (callouts in the walkthrough link to it, and to a row of its list when the callout names one)
+  const questChapter = findSideQuestChapter(guideTabs, activeTab?.id)
+  const sideQuestTarget: SideQuestTarget | null = questChapter
+    ? {
+        slug: questChapter.slug,
+        title: questChapter.title,
+        hasRow: (ref) => questChapter.sections.some((section) => section.table?.rows.some((row) => row.itemId === ref)),
+        open: (ref) => {
+          setPendingRowRef(ref ?? null)
+          selectTab(questChapter.slug)
+        },
+      }
+    : null
+  const itemLinkApi: ItemLinkApi | null = itemLinkIndex
+    ? {
+        index: itemLinkIndex,
+        isChecked: (key) => checkedSet.has(key),
+        toggle: handleToggleCheck,
+        openRow: (itemId) => {
+          const location = itemLinkIndex.target(itemId)
+          if (!location) return
+          setPendingRowRef(itemId)
+          selectTab(location.tabSlug)
+        },
+        openAnchor: (tabSlug, anchorId) => {
+          setPendingAnchorId(anchorId)
+          selectTab(tabSlug)
+        },
+      }
+    : null
   const guideContentLanguage = contentLanguageOf(game)
   // The answer holds the translated guide (its texts are in the UI language, not in the language it was written in)
   const isTranslatedView = guideContentLanguage !== null && game.language === language && game.language !== guideContentLanguage
@@ -837,6 +960,9 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
         {/* Content next to the navigation */}
         <div className="content-column flex min-w-0 flex-1 flex-col self-stretch">
         {/* Active Tab Content */}
+        <AchievementLookupProvider achievements={liveTrophies?.achievements}>
+        <ItemLinkContext.Provider value={itemLinkApi}>
+        <SideQuestTargetContext.Provider value={sideQuestTarget}>
         <PuzzleScopeContext.Provider value={game.slug}>
         <main
           id="pv-game-panel"
@@ -899,7 +1025,7 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
           ) : (
             <>
               {/* Several chapters whose research failed: research them all again, once at the top of the guide */}
-              {failedChapters.length >= 2 && <RetryAllBanner count={failedChapters.length} busy={retrying} onRetryAll={(oneOff) => void handleRetryChapters(null, oneOff)} />}
+              {failedChapters.length >= 2 && <RetryAllBanner count={failedChapters.length} busy={retrying} onRetryAll={(oneOff) => void handleRetryChapters(null, oneOff)} onManual={() => setManual({ chapters: failedChapterSeeds(game) })} />}
 
               {/* Hero Card on Tab 1 (Exact 100% Guide Look) */}
               {activeTab && activeTab.id === guideTabs[0]?.id && (
@@ -970,39 +1096,55 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
               {/* The chapter's own action row. A failed-research placeholder has its own button inside its block (same question, same flow) */}
               {activeTab && !activeTab.sections.some((section) => section.failedChapter) && (
                 <RemoveChapterBar
-                  disabled={removingChapter || completing || retrying || loreBusy}
+                  disabled={removingChapter || completing || retrying || loreBusy || redoing}
                   onRemove={() => void handleRemoveChapter(activeTab, false)}
+                  onRedo={(oneOff) => void handleRedoChapter(activeTab, oneOff)}
+                  onRedoManual={() => void handleRedoChapterManual(activeTab)}
+                  redoBusy={redoing}
                 />
               )}
 
-              {/* Render all Sections of the active Tab */}
-              {activeTab?.sections.map((section, idx) =>
-                section.failedChapter ? (
-                  <FailedChapterBlock
-                    key={`${activeTab.id}-sec-${idx}`}
-                    section={section}
-                    busy={retrying}
-                    onRetry={(oneOff) => void handleRetryChapters([activeTab.id], oneOff)}
-                    onRemove={() => void handleRemoveChapter(activeTab, true)}
-                    onManual={() =>
-                      setManual({
-                        chapter: {
-                          title: activeTab.title,
-                          icon: activeTab.icon,
-                          focus: section.failedChapter?.focus ?? activeTab.title,
-                          topicId: section.failedChapter?.topicId ?? null,
-                          tabId: activeTab.id,
-                        },
-                      })
-                    }
-                  />
-                ) : (
-                  <SectionRenderer
-                    key={`${activeTab.id}-sec-${idx}`}
-                    position={`${activeTab.id}:${idx}`}
-                    section={section}
-                    checkedSet={checkedSet}
-                    onToggleCheck={handleToggleCheck}
+              {/* Render all Sections of the active Tab: a chapter with a failed-research placeholder keeps the plain list, every other chapter gets its
+                  structure (parts, areas, table of contents) from ChapterBody */}
+              {activeTab && activeTab.sections.some((section) => section.failedChapter) ? (
+                activeTab.sections.map((section, idx) =>
+                  section.failedChapter ? (
+                    <FailedChapterBlock
+                      key={`${activeTab.id}-sec-${idx}`}
+                      section={section}
+                      busy={retrying}
+                      onRetry={(oneOff) => void handleRetryChapters([activeTab.id], oneOff)}
+                      onRemove={() => void handleRemoveChapter(activeTab, true)}
+                      onManual={() =>
+                        setManual({
+                          chapter: {
+                            title: activeTab.title,
+                            icon: activeTab.icon,
+                            focus: section.failedChapter?.focus ?? activeTab.title,
+                            topicId: section.failedChapter?.topicId ?? null,
+                            tabId: activeTab.id,
+                          },
+                        })
+                      }
+                    />
+                  ) : (
+                    <SectionRenderer
+                      key={`${activeTab.id}-sec-${idx}`}
+                      position={`${activeTab.id}:${idx}`}
+                      section={section}
+                      checkedSet={checkedSet}
+                      onToggleCheck={handleToggleCheck}
+                    />
+                  )
+                )
+              ) : (
+                activeTab && (
+                  <ChapterBody
+                    tabId={activeTab.id}
+                    sections={activeTab.sections}
+                    renderSection={(section, idx) => (
+                      <SectionRenderer position={`${activeTab.id}:${idx}`} section={section} checkedSet={checkedSet} onToggleCheck={handleToggleCheck} />
+                    )}
                   />
                 )
               )}
@@ -1010,6 +1152,9 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
           )}
         </main>
         </PuzzleScopeContext.Provider>
+        </SideQuestTargetContext.Provider>
+        </ItemLinkContext.Provider>
+        </AchievementLookupProvider>
         </div>
         </div>
       </div>
@@ -1020,7 +1165,7 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
 
       {/* Overlays over the page (never part of the layout): a running job, a result, a failure */}
       <FloatingNoticeStack>
-        {(completing || loreBusy || retrying) && <AiProgressNotice key="ai-progress" kind={pageJobKind} view={pageProgress.view} />}
+        {(completing || loreBusy || retrying || redoing) && <AiProgressNotice key="ai-progress" kind={pageJobKind} view={pageProgress.view} />}
         {translation.phase === 'running' && (
           <FloatingNotice
             key="translating"
@@ -1163,6 +1308,7 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
           gameTitle={game.title}
           language={game.contentLanguage ?? language}
           chapter={manual.chapter}
+          chapters={manual.chapters}
           onClose={() => setManual(null)}
           onSaved={(updated) => {
             queryClient.setQueryData(['game', slug], updated)
@@ -1457,6 +1603,18 @@ function SectionContent({ section, checkedSet, onToggleCheck, position }: Sectio
     return <PuzzleBlock section={section} checkedSet={checkedSet} onToggleCheck={onToggleCheck} stateKey={position} />
   }
 
+  if (section.type === 'boss') {
+    return <BossCard section={section} />
+  }
+
+  if (section.type === 'overview') {
+    return <OverviewBlock section={section} />
+  }
+
+  if (section.type === 'sources') {
+    return <SourcesBlock section={section} />
+  }
+
   if (section.type === 'heading' && section.title) {
     return <GuideHeading section={section} />
   }
@@ -1621,7 +1779,7 @@ function SectionContent({ section, checkedSet, onToggleCheck, position }: Sectio
   return null
 }
 
-function ChecklistTableSection({
+export function ChecklistTableSection({
   table,
   checkedSet,
   onToggleCheck,
@@ -1631,6 +1789,7 @@ function ChecklistTableSection({
   onToggleCheck: (itemKey: string, checked: boolean) => Promise<void>
 }) {
   const { t } = useTranslation('game')
+  const itemLinks = useItemLinks()
   const [search, setSearch] = useState('')
   const [catFilter, setCatFilter] = useState('ALL')
   const [secFilter, setSecFilter] = useState('ALL')
@@ -1729,11 +1888,14 @@ function ChecklistTableSection({
           </thead>
           <tbody>
             {filteredRows.map((row) => {
-              const isChecked = checkedSet.has(row.itemId)
+              // A row that refers to a row of another chapter is the same check as that row
+              const checkKey = itemLinks ? itemLinks.index.resolveKey(row.itemId, row.ref) : row.itemId
+              const isChecked = checkedSet.has(checkKey)
               return (
                 <tr
                   key={row.itemId}
                   className={isChecked ? 'row-checked' : ''}
+                  data-item-id={row.itemId}
                 >
                   {table.checkable && (
                     <td className="w-12 text-center" data-label={t('table.done')}>
@@ -1742,19 +1904,22 @@ function ChecklistTableSection({
                         aria-label={t('table.doneFor', { name: Object.values(row.cells)[0] ?? row.itemId })}
                         checked={isChecked}
                         onChange={(e) =>
-                          void onToggleCheck(row.itemId, e.target.checked)
+                          void onToggleCheck(checkKey, e.target.checked)
                         }
                         className="h-5 w-5 rounded cursor-pointer"
                         style={{ accentColor: 'var(--accent-emerald)' }}
                       />
                     </td>
                   )}
-                  {table.columns.map((col) => {
+                  {table.columns.map((col, colIndex) => {
                     const cellVal = row.cells[col.key] ?? ''
+                    // The links sit in the first (name) column
+                    const rowLinks = colIndex === 0 ? <RowLinks itemId={row.itemId} refId={row.ref} /> : null
                     if (col.isRowHeader) {
                       return (
                         <th key={col.key} scope="row">
                           {cellVal}
+                          {rowLinks}
                         </th>
                       )
                     }
@@ -1775,6 +1940,7 @@ function ChecklistTableSection({
                         ) : (
                           cellVal
                         )}
+                        {rowLinks}
                       </td>
                     )
                   })}

@@ -1,13 +1,17 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { IconCheck, IconCircle, IconClipboardText, IconLoader2, IconX } from '@tabler/icons-react'
+import { IconCheck, IconCircle, IconClipboardText, IconListNumbers, IconLoader2, IconStack2, IconX } from '@tabler/icons-react'
 import { checkManualBlueprint, checkManualChapter, fetchGuideTopics, manualBlueprintPrompt, manualChapterPrompt, saveManualChapter } from '../../../api/client'
 import type { GameDetailDto, GuidePlanDto, GuidePlanTopicDto, ManualBlueprintCheckDto, ManualChapterCheckDto, ManualChapterSeed } from '../../../api/types'
 import { describeError } from '../../../utils/apiErrorText'
 import { ErrorDetails } from '../../ui/ErrorDetails'
 import { keyOf, TopicGroup, usePlanSelection } from '../PlanTopics'
 import { AnswerBox } from './AnswerBox'
+import { BatchChapters } from './BatchChapters'
 import { PromptBox } from './PromptBox'
+import { assignBatchKeys, BATCH_DEFAULT_MIN, clearStoredBatch, readStoredBatch, readStoredText, rowsSignature, writeStoredBatch } from './batch'
+import type { BatchRow, BatchScope, ManualMode } from './batch'
 
 interface ManualGuideDialogProps {
   slug: string
@@ -16,14 +20,49 @@ interface ManualGuideDialogProps {
   language: string
   // One chapter (a failed one, researched again) instead of the whole guide
   chapter?: ManualChapterSeed
+  // Several given chapters (the failed ones of the guide, each with its tabId) instead of the whole guide: no blueprint step
+  chapters?: ManualChapterSeed[]
   onClose: () => void
   // Called after every saved chapter with the guide as it is now
   onSaved: (game: GameDetailDto) => void
 }
 
-interface ChapterRowState {
-  key: string
-  seed: ManualChapterSeed
+type ChapterRowState = BatchRow
+
+const FOCUSABLE = 'button:not(:disabled):not([tabindex="-1"]), a[href], textarea:not(:disabled), input:not(:disabled):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])'
+
+const defaultMode = (count: number): ManualMode => (count >= BATCH_DEFAULT_MIN ? 'batch' : 'single')
+
+interface Start {
+  step: 'plan' | 'chapters'
+  rows: ChapterRowState[]
+  keys: Record<string, string>
+  saved: Set<string>
+  mode: ManualMode
+}
+
+/** The state the dialog opens with: a given list of chapters, what the player left behind in this browser tab, or the empty first step. */
+function startState(slug: string, scope: BatchScope, seeds: ManualChapterSeed[] | undefined): Start {
+  const stored = readStoredBatch(slug, scope)
+  if (seeds && seeds.length > 0) {
+    const defs = seeds.map((seed, index) => ({ key: seed.tabId ?? `seed-${index}`, seed }))
+    const same = stored !== null && rowsSignature(stored.rows) === rowsSignature(defs)
+    if (!same) clearStoredBatch(slug, scope)
+    const keys = assignBatchKeys(defs.map((def) => def.key), same ? stored.keys : {})
+    return { step: 'chapters', rows: defs.map((def) => ({ ...def, batchKey: keys[def.key] ?? '' })), keys, saved: new Set(same ? stored.saved : []), mode: same ? stored.mode : defaultMode(defs.length) }
+  }
+  // Only work that is worth coming back to is restored (pasted answers or saved chapters), not a chapter list that was merely looked at
+  if (stored && stored.rows.length > 0 && (stored.saved.length > 0 || readStoredText(slug, scope).length > 0)) {
+    return {
+      step: 'chapters',
+      rows: stored.rows.map((row) => ({ ...row, batchKey: stored.keys[row.key] ?? '' })),
+      keys: stored.keys,
+      saved: new Set(stored.saved),
+      mode: stored.mode,
+    }
+  }
+  clearStoredBatch(slug, scope)
+  return { step: 'plan', rows: [], keys: {}, saved: new Set(), mode: 'single' }
 }
 
 /**
@@ -31,14 +70,23 @@ interface ChapterRowState {
  * chapter list (a blueprint prompt, or the player ticks the standard topics himself), step 2 one prompt and one pasted answer per chapter; every
  * answer is checked while it is pasted and saved like an AI result. Nothing in here ever talks to an AI provider.
  */
-export function ManualGuideDialog({ slug, gameTitle, language, chapter, onClose, onSaved }: ManualGuideDialogProps) {
+export function ManualGuideDialog({ slug, gameTitle, language, chapter, chapters, onClose, onSaved }: ManualGuideDialogProps) {
   const { t } = useTranslation(['ai', 'common', 'game'])
+  // A given list (one failed chapter or several) has no blueprint step; its stored state is kept apart from the one of a whole guide
+  const given = chapter ? [chapter] : chapters && chapters.length > 0 ? chapters : undefined
+  const fixed = given !== undefined
   const single = chapter !== undefined
-  const [step, setStep] = useState<'plan' | 'chapters'>(single ? 'chapters' : 'plan')
+  const scope: BatchScope = !fixed ? 'plan' : chapter?.tabId ? `chapter:${chapter.tabId}` : 'failed'
+  const [start] = useState(() => startState(slug, scope, given))
+  const [step, setStep] = useState<'plan' | 'chapters'>(start.step)
   const [plan, setPlan] = useState<GuidePlanDto | null>(null)
   const { groups, selectable, chosen, selected, setSelected, toggle, tickRecommended } = usePlanSelection(plan)
-  const [rows, setRows] = useState<ChapterRowState[]>(single ? [{ key: 'single', seed: chapter }] : [])
-  const [saved, setSaved] = useState<Set<string>>(new Set())
+  const [rows, setRows] = useState<ChapterRowState[]>(start.rows)
+  const [keyMap, setKeyMap] = useState<Record<string, string>>(start.keys)
+  const [mode, setMode] = useState<ManualMode>(start.mode)
+  const [saved, setSaved] = useState<Set<string>>(start.saved)
+  const [footerEl, setFooterEl] = useState<HTMLElement | null>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const [topicsFailure, setTopicsFailure] = useState<{ message: string; details: string | null } | null>(null)
   const [loadingTopics, setLoadingTopics] = useState(false)
   // The plan the player ticked in is kept when the answer is edited later: the newest valid answer replaces it
@@ -79,12 +127,15 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, onClose,
 
   const toChapters = () => {
     if (!plan) return
-    setRows(
-      chosen.map((topic) => ({
-        key: keyOf(topic),
-        seed: { title: topic.title, icon: topic.icon, focus: topic.focus, topicId: topic.id, sourceSituation: plan.sourceSituation || undefined },
-      }))
-    )
+    const defs = chosen.map((topic) => ({
+      key: keyOf(topic),
+      seed: { title: topic.title, icon: topic.icon, focus: topic.focus, topicId: topic.id, sourceSituation: plan.sourceSituation || undefined },
+    }))
+    // A chapter keeps its id ("K01") when the player comes back and changes the selection, so pasted answers stay valid
+    const keys = assignBatchKeys(defs.map((def) => def.key), keyMap)
+    setKeyMap(keys)
+    setRows(defs.map((def) => ({ ...def, batchKey: keys[def.key] ?? '' })))
+    setMode(defaultMode(defs.filter((def) => !saved.has(def.key)).length))
     setStep('chapters')
   }
 
@@ -93,9 +144,53 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, onClose,
     onSaved(game)
   }
 
+  const markAllSaved = (keys: string[], game: GameDetailDto) => {
+    setSaved((prev) => new Set([...prev, ...keys]))
+    onSaved(game)
+  }
+
+  // What survives closing the dialog (pasted answers are kept by the batch view itself)
+  useEffect(() => {
+    if (step !== 'chapters' || rows.length === 0) return
+    if (rows.every((row) => saved.has(row.key))) {
+      clearStoredBatch(slug, scope)
+      return
+    }
+    writeStoredBatch(slug, scope, { rows: rows.map(({ key, seed }) => ({ key, seed })), keys: keyMap, saved: [...saved], mode })
+  }, [slug, scope, step, rows, keyMap, saved, mode])
+
+  // Focus: into the dialog when it opens, back to where it was when it closes; Tab stays inside, Esc closes
+  useEffect(() => {
+    const before = document.activeElement as HTMLElement | null
+    panelRef.current?.focus()
+    return () => before?.focus?.()
+  }, [])
+
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation()
+      onClose()
+      return
+    }
+    if (e.key !== 'Tab' || !panelRef.current) return
+    const items = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE))
+    if (items.length === 0) return
+    const first = items[0]!
+    const last = items[items.length - 1]!
+    if (e.shiftKey && (document.activeElement === first || document.activeElement === panelRef.current)) {
+      e.preventDefault()
+      last.focus()
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault()
+      first.focus()
+    }
+  }
+
+  const batch = step === 'chapters' && mode === 'batch'
+
   return (
-    <div className="pv-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="manual-guide-title">
-      <div className="pv-modal relative flex h-[min(90dvh,820px)] w-full max-w-3xl flex-col overflow-hidden">
+    <div className="pv-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="manual-guide-title" onKeyDown={onKeyDown}>
+      <div ref={panelRef} tabIndex={-1} className="pv-modal relative flex h-[min(90dvh,820px)] w-full max-w-3xl flex-col overflow-hidden outline-none">
         <div className="flex items-center justify-between gap-3 px-4 py-4 sm:px-6" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border-subtle)' }}>
           <div className="min-w-0">
             <h2 id="manual-guide-title" className="flex items-center gap-2 text-base font-extrabold" style={{ color: 'var(--text-primary)' }}>
@@ -103,7 +198,7 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, onClose,
               <span className="truncate">{single ? t('ai:manual.chapterTitle') : t('ai:manual.title')} · {gameTitle}</span>
             </h2>
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              {single ? t('ai:manual.step.single') : step === 'plan' ? t('ai:manual.step.plan') : t('ai:manual.step.chapters')}
+              {single ? t('ai:manual.step.single') : fixed ? t('ai:manual.step.list') : step === 'plan' ? t('ai:manual.step.plan') : t('ai:manual.step.chapters')}
             </p>
           </div>
           <button type="button" onClick={onClose} className="pv-btn !p-1.5" aria-label={t('common:close')}>
@@ -160,22 +255,53 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, onClose,
 
           {step === 'chapters' && (
             <>
-              {!single && (
-                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  {t('ai:manual.chapters.intro')}
-                </p>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                <div className="pv-segmented" role="group" aria-label={t('ai:manual.mode.label')} data-testid="manual-mode">
+                  <button type="button" aria-pressed={mode === 'batch'} onClick={() => setMode('batch')}>
+                    <IconStack2 size={14} aria-hidden="true" />
+                    <span>{t('ai:manual.mode.batch')}</span>
+                  </button>
+                  <button type="button" aria-pressed={mode === 'single'} onClick={() => setMode('single')}>
+                    <IconListNumbers size={14} aria-hidden="true" />
+                    <span>{t('ai:manual.mode.single')}</span>
+                  </button>
+                </div>
+              </div>
+              {mode === 'batch' ? (
+                <BatchChapters
+                  slug={slug}
+                  scope={scope}
+                  rows={rows}
+                  saved={saved}
+                  footerEl={footerEl}
+                  fixed={fixed}
+                  onSaved={markAllSaved}
+                  onBack={() => setStep('plan')}
+                  onClose={onClose}
+                />
+              ) : (
+                <>
+                  {rows.length > 1 && (
+                    <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                      {t('ai:manual.chapters.intro')}
+                    </p>
+                  )}
+                  <ul className="space-y-3">
+                    {rows.map((row) => (
+                      <ChapterRow key={row.key} slug={slug} row={row} done={saved.has(row.key)} startOpen={rows.length === 1} onSaved={(game) => markSaved(row.key, game)} />
+                    ))}
+                  </ul>
+                </>
               )}
-              <ul className="space-y-3">
-                {rows.map((row) => (
-                  <ChapterRow key={row.key} slug={slug} row={row} done={saved.has(row.key)} startOpen={single} onSaved={(game) => markSaved(row.key, game)} />
-                ))}
-              </ul>
             </>
           )}
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6" style={{ background: 'var(--bg-elevated)', borderTop: '1px solid var(--border-subtle)' }}>
-          {step === 'plan' ? (
+          {batch ? (
+            // The batch view draws its own controls into this slot (it owns the state they depend on)
+            <div ref={setFooterEl} className="w-full" data-testid="manual-footer-slot" />
+          ) : step === 'plan' ? (
             <>
               <div className="min-w-0">
                 {!plan && (
@@ -209,12 +335,12 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, onClose,
           ) : (
             <>
               <div className="flex min-w-0 items-center gap-3">
-                {!single && (
+                {!fixed && (
                   <button type="button" className="pv-btn" onClick={() => setStep('plan')}>
                     <span>{t('ai:manual.chapters.back')}</span>
                   </button>
                 )}
-                {!single && (
+                {rows.length > 1 && (
                   <span className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }} data-testid="manual-progress">
                     {t('ai:manual.chapters.progress', { done: saved.size, total: rows.length })}
                   </span>

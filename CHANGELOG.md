@@ -7,6 +7,49 @@
 <a name="english"></a>
 ## English
 
+## v2026.11.17 (24.19071)
+
+### ✨ New
+
+- **Linux (experimental):** a native package for Linux gaming PCs – installs without admin rights in your home folder,
+  runs as a background service, reads Steam itself and opens in the browser. For players whose PlatinVault runs on Unraid or
+  a NAS there is now also a **PlatinVault Bridge for Linux** (Steam Deck included), downloadable ready to run from the app.
+  Not yet tested on a real Linux Steam installation – feedback is welcome.
+- **Steam folder (optional):** if Steam is installed in an unusual place, set the folder in Settings → Steam. The check shows
+  every place PlatinVault looked at.
+- **Own AI subscription – all at once:** instead of copying one prompt per chapter, you now get one prompt for all chapters
+  and one field for all answers. PlatinVault checks every chapter, shows its status, saves them together and gives you a
+  prompt for the chapters still missing. Text you pasted is kept when you close the window.
+- **Research any chapter again:** with your AI or your own subscription. The old version stays until the new one is
+  finished; check marks stay on every entry the new version still has.
+- **Linked check marks:** an entry that appears in two chapters – for example an item in the walkthrough and its row in a
+  collection list – shares one check mark. Tick it in one place and it is done in the other; links jump between them.
+- **Guides like a printed strategy guide:** every walkthrough part starts with "At a glance" (recommended level, findings,
+  achievements, missables), followed by the areas in order. A contents list jumps straight to a part or area. Every boss has
+  its own card: location, recommended level, hit points (only with a source), weaknesses, resistances, immunities, dangerous
+  attacks, phases, tactics and rewards. A "Point of no return" box lists what to do first, side quests appear compactly with a
+  link to their own chapter, and every chapter ends with its sources.
+
+### 🔄 Changed
+
+- **Trophy tiers:** gold now means at most 10 % of players have the achievement (was 5 %), silver at most 50 % (was 25 %),
+  bronze more than 50 %. More rare achievements now count as gold.
+- **Research sources:** the AI first looks for a wiki made for that game, then for further sources (sources in your
+  language first, English ones in addition); numbers are checked against a second source where possible.
+- **Guide language:** a guide is written completely in its language and in its own words; original names appear at most
+  once per chapter. With your own subscription PlatinVault warns about sentences in another language and offers a ready
+  correction prompt.
+- **Error messages can always be copied:** in the app, the Windows program, the installer and the Bridge every error message
+  can be selected and has a "Copy" button that copies the message with its details, error code, version and time.
+- **Code signing:** the Windows files are still unsigned, so the code signing policy has been removed from the README and the
+  release pages for now.
+
+### 🔧 Fix
+
+- An AI answer with a single faulty field no longer discards the whole chapter – the readable parts are kept.
+- When the database file cannot be opened (for example because an antivirus blocks it), PlatinVault says so in plain words
+  instead of showing a technical database error.
+
 ## v2026.11.15 (27.4718)
 
 ### ✨ New
@@ -90,6 +133,52 @@ free and open source.
 
 <a name="deutsch"></a>
 ## Deutsch
+
+## v2026.11.17 (24.19071)
+
+### ✨ Neu
+
+- **Linux (experimentell):** ein eigenes Paket für Linux-Gaming-PCs – installiert sich ohne Administratorrechte in deinem
+  Benutzerordner, läuft als Hintergrunddienst, liest Steam selbst und öffnet sich im Browser. Wer PlatinVault auf Unraid oder
+  einem NAS betreibt, bekommt jetzt auch die **PlatinVault Bridge für Linux** (auch Steam Deck), fertig eingerichtet zum
+  Herunterladen in der App. Noch nicht mit einem echten Linux-Steam geprüft – Rückmeldungen sind willkommen.
+- **Steam-Ordner (optional):** Ist Steam an einem ungewöhnlichen Ort installiert, trägst du den Ordner unter Einstellungen →
+  Steam ein. Die Prüfung zeigt jeden Ort, an dem PlatinVault gesucht hat.
+- **Eigenes KI-Abo – alle auf einmal:** Statt für jedes Kapitel einen Prompt zu kopieren, bekommst du jetzt einen Prompt für
+  alle Kapitel und ein Feld für alle Antworten. PlatinVault prüft jedes Kapitel, zeigt den Stand, speichert alle zusammen und
+  gibt dir einen Prompt für die Kapitel, die noch fehlen. Eingefügter Text bleibt erhalten, wenn du das Fenster schließt.
+- **Jedes Kapitel neu recherchieren:** mit deiner KI oder deinem eigenen Abo. Die alte Fassung bleibt stehen, bis die neue
+  fertig ist; Häkchen bleiben bei allen Einträgen, die es in der neuen Fassung weiter gibt.
+- **Verknüpfte Häkchen:** Ein Eintrag, der in zwei Kapiteln vorkommt – zum Beispiel ein Gegenstand in der Komplettlösung und
+  seine Zeile in einer Sammelliste –, hat ein gemeinsames Häkchen. Hakst du ihn an einer Stelle ab, ist er an der anderen
+  auch erledigt; Sprunglinks führen hin und her.
+- **Guides wie ein gedrucktes Lösungsbuch:** Jeder Teil der Komplettlösung beginnt mit „Auf einen Blick“ (empfohlenes Level,
+  Fundstücke, Erfolge, Verpassbares), danach kommen die Gebiete in Reihenfolge. Ein Inhaltsverzeichnis springt direkt zu
+  Teil oder Gebiet. Jeder Boss hat eine eigene Karte: Ort, empfohlenes Level, Lebenspunkte (nur mit Quelle), Schwächen,
+  Resistenzen, Immunitäten, gefährliche Angriffe, Phasen, Taktik und Belohnungen. Ein Kasten „Kein Zurück“ nennt, was du
+  vorher erledigen solltest, Nebenaufträge stehen kompakt mit Link zu ihrem eigenen Kapitel, und jedes Kapitel endet mit
+  seinen Quellen.
+
+### 🔄 Geändert
+
+- **Trophäen-Stufen:** Gold heißt jetzt, höchstens 10 % der Spieler haben den Erfolg (vorher 5 %), Silber höchstens 50 %
+  (vorher 25 %), Bronze mehr als 50 %. Mehr seltene Erfolge zählen damit als Gold.
+- **Quellen der Recherche:** Die KI sucht zuerst nach einem Wiki, das eigens für dieses Spiel gemacht ist, danach nach
+  weiteren Quellen (zuerst in deiner Sprache, englische ergänzend); Zahlen werden möglichst mit einer zweiten Quelle
+  abgeglichen.
+- **Sprache der Guides:** Ein Guide ist ganz in seiner Sprache und in eigenen Worten geschrieben; Originalnamen stehen
+  höchstens einmal je Kapitel. Mit dem eigenen Abo warnt PlatinVault vor Sätzen in einer anderen Sprache und bietet einen
+  fertigen Korrektur-Prompt an.
+- **Fehlermeldungen sind immer kopierbar:** In der App, im Windows-Programm, im Installer und in der Bridge lässt sich jede
+  Fehlermeldung markieren und hat einen Knopf „Kopieren“, der Meldung, Details, Fehlercode, Version und Zeit kopiert.
+- **Code-Signatur:** Die Windows-Dateien sind weiterhin nicht signiert; die Richtlinie zur Code-Signatur ist deshalb vorerst
+  aus der README und den Release-Seiten entfernt.
+
+### 🔧 Behoben
+
+- Eine KI-Antwort mit einem einzelnen fehlerhaften Feld verwirft nicht mehr das ganze Kapitel – die lesbaren Teile bleiben.
+- Lässt sich die Datenbankdatei nicht öffnen (zum Beispiel weil ein Virenschutz sie sperrt), sagt PlatinVault das in klaren
+  Worten statt einer technischen Datenbank-Fehlermeldung.
 
 ## v2026.11.15 (27.4718)
 

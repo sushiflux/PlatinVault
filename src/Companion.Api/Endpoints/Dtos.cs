@@ -78,8 +78,20 @@ public sealed record GameDetailDto(
     // Language of the texts in this answer: the requested one when its translation is complete, else the guide's own (ContentLanguage)
     string Language,
     // State of the translation into the requested language (see GuideTranslationDto)
-    GuideTranslationDto Translation
+    GuideTranslationDto Translation,
+    // Cross-chapter links (see GuideLinker): where a defining row is referenced from, and where a referenced row lives. Always present, empty when nothing is linked.
+    Dictionary<string, List<GuideItemLinkDto>> ItemLinks,
+    Dictionary<string, GuideRefTargetDto> RefTargets
 );
+
+/// <summary>
+/// A place that references a defining row: Kind "row" (a checklist row with Ref) or "quest" (a side_quests entry with Ref). Path = "part · area" from the
+/// nearest headings before it in the same chapter (may be empty), SectionIndex = index in that chapter's sections, RowItemId = the ref row's own item id (null for a quest).
+/// </summary>
+public sealed record GuideItemLinkDto(string Kind, Guid TabId, string TabSlug, string TabTitle, int SectionIndex, string? RowItemId, string Path);
+
+/// <summary>Where the defining row behind a Ref lives: its chapter, the section (checklist table or puzzle) in that chapter and the row's name.</summary>
+public sealed record GuideRefTargetDto(Guid TabId, string TabSlug, string TabTitle, int SectionIndex, string Name);
 
 /// <summary>
 /// Translation of a guide into one language. State: "original" = the language is the guide's own; "complete" = every chapter and the
@@ -111,7 +123,9 @@ public sealed record GuideTabDto(
     List<GuideSectionDto> Sections,
     bool IsAchievementList,
     // Group in the chapter navigation (one of the keys of GET /api/guide/groups): the stored value, else decided from the original title
-    string GroupKey
+    string GroupKey,
+    // The standard topic of the chapter ("walkthrough", "quests", ...) when known, else null (older chapters, extra chapters, chapters added by hand)
+    string? TopicId = null
 );
 
 /// <summary>
@@ -135,7 +149,40 @@ public sealed record GuideSectionDto(
     bool? Spoiler = null,
     GuideFailedChapterDto? FailedChapter = null,
     GuidePuzzleDto? Puzzle = null,
-    string? Kind = null
+    string? Kind = null,
+    // "heading": 1 = part/chapter heading (default, also for older data without the field), 2 = area/sub-heading below it
+    int? Level = null,
+    // "alert" with kind "achievement": the exact Steam API name of the achievement (dropped when the game's official list does not know it)
+    string? ApiName = null,
+    // "alert" (mostly kind "point_of_no_return"): what to do before you continue ("before you continue" list)
+    List<string>? Items = null,
+    // "alert" with kind "side_quests": the side quests that become available here, compact (the full solution is in the side quest chapter)
+    List<GuideSideQuestDto>? Quests = null,
+    // ---- "boss": a boss card exactly where the fight happens (text only). Title = the boss name. ----
+    string? BossId = null,
+    string? Location = null,
+    // "boss" and "overview": recommended level as the source writes it
+    string? RecommendedLevel = null,
+    List<GuideBossHpDto>? Hp = null,
+    List<string>? Weaknesses = null,
+    List<string>? Resistances = null,
+    List<string>? Immunities = null,
+    List<GuideBossAttackDto>? Attacks = null,
+    List<string>? Phases = null,
+    string? Party = null,
+    List<string>? Tactics = null,
+    List<string>? Rewards = null,
+    bool? Missable = null,
+    // "boss" and "overview": Steam API names of the achievements tied to it (only names from the official list survive)
+    List<string>? Achievements = null,
+    string? Source = null,
+    // ---- "overview": "at a glance" at the start of a walkthrough part ----
+    List<GuideOverviewCountDto>? Counts = null,
+    List<string>? KeyItems = null,
+    List<string>? Missables = null,
+    bool? EndsAtPointOfNoReturn = null,
+    // ---- "sources": the pages a chapter was researched from (last section of a chapter) ----
+    List<GuideSourceDto>? Sources = null
 );
 
 /// <summary>The typed hints of a walkthrough: an "alert" section with one of these kinds gets its own label and symbol in the UI.</summary>
@@ -145,18 +192,54 @@ public static class GuideAlertKinds
     public const string Missable = "missable";
     public const string Optional = "optional";
     public const string Tip = "tip";
+    // An achievement that unlocks exactly here (ApiName = its Steam API name, text = what to do)
+    public const string Achievement = "achievement";
+    // The point of no return is right ahead; Items = what to do before you continue
+    public const string PointOfNoReturn = "point_of_no_return";
+    // The side quests that become available here, as a compact list (Quests); their solution belongs only in the side quest chapter
+    public const string SideQuests = "side_quests";
 
-    public static readonly IReadOnlyList<string> All = [MustHave, Missable, Optional, Tip];
+    public static readonly IReadOnlyList<string> All = [MustHave, Missable, Optional, Tip, Achievement, PointOfNoReturn, SideQuests];
 
     /// <summary>The colour variant a kind uses when the section names none.</summary>
     public static string DefaultVariant(string kind) => kind switch
     {
         MustHave => "gold",
         Missable => "danger",
+        PointOfNoReturn => "danger",
         Optional => "emerald",
+        Achievement => "emerald",
+        SideQuests => "emerald",
         _ => "crystal"
     };
 }
+
+/// <summary>
+/// One HP value of a boss, exactly as a source states it: the value, what it applies to (difficulty, phase, version, NG+) and the source. Entries without
+/// a value AND a source are dropped by the normalizer - numbers are never invented; "Not documented" as the value is allowed.
+/// </summary>
+public sealed record GuideBossHpDto(string Value, string? AppliesTo = null, string? Source = null);
+
+/// <summary>
+/// One side quest in the compact callout of the walkthrough: name, from when it is available, its missable window ("until the end of chapter 3"), a short
+/// reward - nothing more. Ref = the itemId of the quest's row in the side quest chapter (set by the model or by GuideLinker; only kept when that row exists).
+/// </summary>
+public sealed record GuideSideQuestDto(string Title, string? AvailableFrom = null, string? Missable = null, string? Reward = null,
+    // Never written as "ref": null - a chapter without links contains no "ref" at all, so its translation hash stays exactly as before (GuideTranslations.HashTab)
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? Ref = null);
+
+/// <summary>One attack of a boss with a short note (what it does, how to avoid it).</summary>
+public sealed record GuideBossAttackDto(string Name, string? Note = null);
+
+/// <summary>A collectible type of a walkthrough part with how many there are (Count null = the source names no number).</summary>
+public sealed record GuideOverviewCountDto(string Label, int? Count = null);
+
+/// <summary>
+/// One page a chapter was researched from. Origin: "cited" = cited by the AI provider for this answer (Claude web search), "search" = a result of the
+/// provider's web search for this answer, "ai" = named by the AI in its answer (not verified - models invent URLs). Only http(s) URLs are kept; the server
+/// never fetches them.
+/// </summary>
+public sealed record GuideSourceDto(string Title, string Url, string Origin);
 
 /// <summary>
 /// A puzzle, riddle, sequence or hidden mechanism. Location, Requirements and Missable are always visible; the solution is not:
@@ -217,11 +300,17 @@ public sealed record GuideTableColumnDto(
     string? BadgeVariant = null
 );
 
+/// <summary>
+/// One checklist row. Ref (optional) = the itemId of the DEFINING row in another chapter of the same game: such a row has no check of its own, its
+/// checkbox shows and toggles the check of Ref (see GuideLinker). ItemId stays the row's own identity.
+/// </summary>
 public sealed record GuideTableRowDto(
     string ItemId,
     string? FilterCategory,
     string? FilterSecondary,
-    Dictionary<string, string> Cells
+    Dictionary<string, string> Cells,
+    // Never written as "ref": null (see GuideSideQuestDto.Ref)
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? Ref = null
 );
 
 public sealed record ToggleProgressRequest(string ItemKey, bool Checked);
@@ -709,11 +798,16 @@ public sealed record GuideExportTab(
     int SortOrder,
     List<GuideSectionDto> Sections,
     // Only an explicit choice is exported (null = decided from the title when the file is read)
-    string? GroupKey = null
+    string? GroupKey = null,
+    // The standard topic of the chapter when known (kept on import when it names a known topic)
+    string? TopicId = null
 );
 
 /// <summary>Body of POST /api/games/{slug}/ai-lore (optional; empty body = use the configured provider).</summary>
 public sealed record AiLoreRequest(string? ProviderOverride);
+
+/// <summary>"Kapitel neu recherchieren" for any chapter: the AI to use for this one action (null = the normal selection).</summary>
+public sealed record AiRedoChapterRequest(string? ProviderOverride);
 
 public sealed record GuideTopicDto(string Id, string Title, string Icon, string Brief, string GroupKey);
 

@@ -59,6 +59,7 @@ public sealed class CompanionDbContext(DbContextOptions<CompanionDbContext> opti
             entity.Property(x => x.Title).HasMaxLength(240).IsRequired();
             entity.Property(x => x.Icon).HasMaxLength(120);
             entity.Property(x => x.GroupKey).HasMaxLength(16);
+            entity.Property(x => x.TopicId).HasMaxLength(80);
             entity.HasOne(x => x.Game)
                 .WithMany(g => g.Tabs)
                 .HasForeignKey(x => x.GameId)

@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Companion.Api.Data;
 using Companion.Api.Endpoints;
@@ -371,7 +372,71 @@ internal static class GuideTranslations
 {
     public static string HashText(string text) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
 
-    public static string HashTab(GuideTabEntity tab) => HashText(tab.Title + "\n" + tab.SectionsJson);
+    /// <summary>
+    /// The hash a translation is compared with: title + sections WITHOUT the cross-chapter links ("ref" of rows and side quest entries). A ref is an id, not
+    /// text - the linker setting or clearing one must not make the translation stale (a whole new AI translation); the served translation takes the refs of
+    /// the original (<see cref="ApplyOriginalRefs"/>). A chapter without any ref hashes exactly as before, so older translations stay current.
+    /// </summary>
+    public static string HashTab(GuideTabEntity tab) => HashText(tab.Title + "\n" + WithoutRefs(tab.SectionsJson));
+
+    private static string WithoutRefs(string json)
+    {
+        if (string.IsNullOrEmpty(json) || !json.Contains("\"ref\"", StringComparison.Ordinal))
+        {
+            return json;
+        }
+        JsonArray? sections;
+        try
+        {
+            sections = JsonNode.Parse(json) as JsonArray;
+        }
+        catch (JsonException)
+        {
+            return json;
+        }
+        if (sections is null)
+        {
+            return json;
+        }
+        var removed = false;
+        foreach (var holder in RefHolders(sections))
+        {
+            removed |= holder.Remove("ref");
+        }
+        return removed ? sections.ToJsonString() : json;
+    }
+
+    private static IEnumerable<JsonObject> RefHolders(JsonArray sections) => sections.OfType<JsonObject>().SelectMany(section =>
+        (section["table"]?["rows"] as JsonArray ?? []).OfType<JsonObject>().Concat((section["quests"] as JsonArray ?? []).OfType<JsonObject>()));
+
+    /// <summary>
+    /// The translated sections with the refs of the ORIGINAL (same structure, see the skeleton check of a translation): rows and side quest entries are matched
+    /// by position. A section whose shape differs keeps what the translation has.
+    /// </summary>
+    public static List<GuideSectionDto> ApplyOriginalRefs(List<GuideSectionDto> translated, List<GuideSectionDto> original)
+    {
+        if (translated.Count != original.Count)
+        {
+            return translated;
+        }
+        var result = new List<GuideSectionDto>(translated.Count);
+        for (var i = 0; i < translated.Count; i++)
+        {
+            var section = translated[i];
+            var source = original[i];
+            if (section.Table is { } table && source.Table is { } sourceTable && table.Rows.Count == sourceTable.Rows.Count)
+            {
+                var rows = table.Rows.Select((row, r) => row.Ref == sourceTable.Rows[r].Ref ? row : row with { Ref = sourceTable.Rows[r].Ref }).ToList();
+                section = section with { Table = table with { Rows = rows } };
+            }
+            if (section.Quests is { } quests && source.Quests is { } sourceQuests && quests.Count == sourceQuests.Count)
+            {
+                section = section with { Quests = quests.Select((quest, q) => quest.Ref == sourceQuests[q].Ref ? quest : quest with { Ref = sourceQuests[q].Ref }).ToList() };
+            }
+            result.Add(section);
+        }
+        return result;
+    }
 
     public static string HashGame(GameEntity game) =>
         HashText(string.Join('\u001f', game.Subtitle, game.EstimatedHours, game.MissablesInfo, game.DifficultyInfo, game.GenreTags));

@@ -60,7 +60,7 @@ public static class GuideTransferEndpoints
                     GenreTags: game.GenreTags,
                     ContentLanguage: AiGuideGeneratorService.GuideLanguage(game)),
                 Tabs: WalkthroughTab.InGuideOrder(game.Tabs)
-                    .Select(t => new GuideExportTab(t.Slug, t.Title, t.Icon, t.SortOrder, ApiEndpoints.DeserializeSections(t.SectionsJson), t.GroupKey))
+                    .Select(t => new GuideExportTab(t.Slug, t.Title, t.Icon, t.SortOrder, ApiEndpoints.DeserializeSections(t.SectionsJson), t.GroupKey, t.TopicId))
                     .ToList());
 
             return Results.File(
@@ -178,7 +178,8 @@ public static class GuideTransferEndpoints
                         Icon = tab.Icon,
                         SortOrder = tab.IsLore ? LoreTab.SortOrder : number,
                         SectionsJson = tab.SectionsJson,
-                        GroupKey = tab.IsWalkthrough ? tab.GroupKey ?? GuideGroups.Start : tab.GroupKey
+                        GroupKey = tab.IsWalkthrough ? tab.GroupKey ?? GuideGroups.Start : tab.GroupKey,
+                        TopicId = tab.IsWalkthrough ? WalkthroughTab.TopicId : tab.TopicId
                     };
                 })
                 .ToList();
@@ -190,7 +191,9 @@ public static class GuideTransferEndpoints
 
             // Progress is stored per item id and game, so an id may occur only once per game
             ApiEndpoints.MakeItemIdsUnique(tabs, []);
-            var overlong = ApiEndpoints.CollectItemIds(tabs).FirstOrDefault(id => id.Length > MaxItemKeyLength);
+            // Links in the file: refs that point at nothing are dropped, walkthrough rows / side quests get linked by name (a new game has no ticks to merge)
+            GuideLinkMaintenance.ApplyToTabs(tabs);
+            var overlong = ApiEndpoints.CollectTakenItemIds(tabs).FirstOrDefault(id => id.Length > MaxItemKeyLength);
             if (overlong is not null)
             {
                 return Problems.Create(

@@ -1,6 +1,8 @@
 /* Guide blocks beyond the basic ones: the puzzle (hidden hints and solution), the typed hints of the walkthrough, its sub-headings and numbered
    steps. Colours come from the shared tokens (light and dark), corners from the shared radius scale. */
 
+@import './walkthrough.css';
+
 /* ---------- Numbered steps (walkthrough route, puzzle solution) ---------- */
 .pv-steps {
   list-style: none;
@@ -355,12 +357,24 @@
 /* ---------- Action row of a chapter ("Kapitel entfernen") ---------- */
 .pv-chapter-actions {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   justify-content: flex-end;
+  gap: 0.5rem 0.75rem;
   /* A fixed height: the row exists for every chapter, nothing below it moves */
   min-block-size: 2rem;
 }
 
+.pv-chapter-redo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-inline-end: auto;
+}
+
 .pv-chapter-remove {
+  margin-inline-start: auto;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;

@@ -49,12 +49,14 @@ public sealed class AiJob
     private DateTimeOffset? _finishedAt;
     private object? _result;
 
-    internal AiJob(string kind, string key, string? slug, TimeProvider clock)
+    internal AiJob(string kind, string key, string? slug, TimeProvider clock, string? target = null, string? targetLabel = null)
     {
         Id = Guid.NewGuid();
         Kind = kind;
         Key = key;
         Slug = slug;
+        Target = target;
+        TargetLabel = targetLabel;
         Clock = clock;
         StartedAt = clock.GetUtcNow();
         _stepChangedAt = StartedAt;
@@ -68,6 +70,15 @@ public sealed class AiJob
     public string Key { get; }
 
     public string? Slug { get; }
+
+    /// <summary>
+    /// What exactly the job works on when its kind can target different things of one game (the chapter of a "redo", the topic of an "expand", the
+    /// chapters of a "retry"); null = the whole game. A second start with the same kind but another target must not attach to this job.
+    /// </summary>
+    public string? Target { get; }
+
+    /// <summary>The name of the target for a message (e.g. the chapter title), in the language of the guide.</summary>
+    public string? TargetLabel { get; }
 
     public DateTimeOffset StartedAt { get; }
 
@@ -175,9 +186,10 @@ public sealed class AiJobService(IServiceScopeFactory scopeFactory, ILogger<AiJo
 
     /// <summary>
     /// Starts <paramref name="work"/> in the background in its own scope (own database context), in the language of the caller. A job with the same
-    /// key that is still running is returned instead (a double click or a second tab never starts the action twice).
+    /// key that is still running is returned instead (a double click or a second tab never starts the action twice) - the caller compares its kind and
+    /// <see cref="AiJob.Target"/> with what it asked for and refuses when they differ.
     /// </summary>
-    public AiJob Start(string kind, string key, string? slug, Func<IServiceProvider, AiJobProgress, CancellationToken, Task<object>> work)
+    public AiJob Start(string kind, string key, string? slug, Func<IServiceProvider, AiJobProgress, CancellationToken, Task<object>> work, string? target = null, string? targetLabel = null)
     {
         var language = Lang.Current;
         AiJob job;
@@ -189,7 +201,7 @@ public sealed class AiJobService(IServiceScopeFactory scopeFactory, ILogger<AiJo
             {
                 return running;
             }
-            job = new AiJob(kind, key, slug, _clock);
+            job = new AiJob(kind, key, slug, _clock, target, targetLabel);
             _jobs[job.Id] = job;
         }
 

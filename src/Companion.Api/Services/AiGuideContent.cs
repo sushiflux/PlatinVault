@@ -307,7 +307,7 @@ public sealed partial class AiGuideGeneratorService
             """
             Erstelle ein "cards_grid" (columns 2) mit einer Karte pro wichtiger Figur (Hauptfiguren, wichtige Nebenfiguren,
             Gegenspieler; typisch 6–14 Karten):
-            - title = Name (DE / EN), badgeText = Rolle (z. B. Protagonist, Gegenspieler), badgeVariant: s = Hauptfigur,
+            - title = Name der Figur (wie in der deutschen Fassung; Originalname höchstens hier einmal in Klammern), badgeText = Rolle (z. B. Protagonist, Gegenspieler), badgeVariant: s = Hauptfigur,
               a = wichtige Nebenfigur, b = Randfigur.
             - introText = Rolle, Hintergrund und Motive in 2–4 Sätzen.
             - bullets = Beziehungen zu anderen Figuren: pro Bullet icon (z. B. "mdi:account-heart"), title „Beziehung zu <Figur>“

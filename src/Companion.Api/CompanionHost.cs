@@ -210,6 +210,7 @@ public static class CompanionHost
     public static async Task<WebApplication> BuildAsync(WebApplicationBuilder builder, CancellationToken ct = default)
     {
         var app = builder.Build();
+        GuideSectionReader.Logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Companion.Api.GuideSections");
 
         // Before anything uses DataProtection: move key files from before DPAPI onto a protected key (Windows, once)
         var keyRing = app.Services.GetRequiredService<KeyRingFolder>();

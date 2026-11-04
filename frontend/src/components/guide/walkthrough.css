@@ -1,0 +1,1095 @@
+/* The print-guide look of the walkthrough: enemy card, "at a glance", sources, parts and areas, the table of contents, and the extra hint kinds. Colours come
+   from the shared tokens (light and dark), corners from the shared radius scale. */
+
+/* ---------- Purple alert (achievement hint) ---------- */
+.pv-alert-purple {
+  background: var(--accent-purple-bg);
+  border-color: var(--accent-purple-border);
+}
+.pv-alert-purple .pv-hint-icon,
+.pv-alert-purple .pv-hint-label {
+  color: var(--accent-purple);
+}
+
+/* Point of no return: the strongest hint of the walkthrough - heavier frame, and the list of what to do first */
+.pv-hint-point_of_no_return {
+  border-width: 2px;
+  border-color: var(--accent-crimson);
+}
+
+.pv-hint-todo {
+  display: grid;
+  gap: 0.35rem;
+  margin-block-start: 0.35rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg-surface) 70%, transparent);
+  border: 1px solid var(--accent-crimson-border);
+}
+
+.pv-hint-todo-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent-crimson);
+}
+
+.pv-hint-todo ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.pv-hint-todo li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: start;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.pv-hint-todo li > svg {
+  margin-block-start: 0.15rem;
+  color: var(--accent-crimson);
+}
+
+/* ---------- Achievement reference (icon + title from the game's Steam list) ---------- */
+.pv-ach-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  gap: 0.5rem;
+}
+
+.pv-ach-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  max-inline-size: 100%;
+}
+
+.pv-ach-list .pv-ach-ref {
+  display: flex;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+}
+
+.pv-ach-icon {
+  flex: none;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
+.pv-ach-glyph {
+  flex: none;
+  color: var(--accent-purple);
+}
+
+.pv-ach-text {
+  display: grid;
+  min-width: 0;
+}
+
+.pv-ach-title {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.pv-ach-desc {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.pv-ach-done {
+  flex: none;
+  margin-inline-start: auto;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--accent-emerald);
+}
+
+/* ---------- Boss card (enemy stat card, text only) ---------- */
+.pv-boss {
+  padding: 0;
+  overflow: hidden;
+  border-block-start: 3px solid var(--accent-crimson);
+}
+
+.pv-boss-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem 0.9rem;
+  padding: 0.9rem 1.25rem;
+  background: var(--bg-elevated);
+  border-block-end: 1px solid var(--border-subtle);
+}
+
+.pv-boss-glyph {
+  flex: none;
+  display: grid;
+  place-items: center;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  border-radius: var(--radius-md);
+  background: var(--accent-crimson-bg);
+  border: 1px solid var(--accent-crimson-border);
+  color: var(--accent-crimson);
+}
+
+.pv-boss-titles {
+  flex: 1 1 12rem;
+  min-width: 0;
+  display: grid;
+}
+
+.pv-boss-kicker {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-crimson);
+}
+
+.pv-boss-name {
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.pv-boss-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.9rem;
+  min-width: 0;
+}
+
+.pv-boss-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.pv-boss-meta-item strong {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-boss-meta-key {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pv-boss-missable {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: var(--accent-crimson-bg);
+  border: 1px solid var(--accent-crimson);
+  color: var(--accent-crimson);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.pv-boss-body {
+  display: grid;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem 1.25rem;
+}
+
+.pv-boss-block {
+  display: grid;
+  align-content: start;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.pv-boss-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.pv-boss-label > svg {
+  color: var(--text-muted);
+}
+
+.pv-boss-hp {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.pv-boss-hp-item {
+  display: grid;
+  gap: 0.1rem;
+  align-content: start;
+  min-inline-size: 8rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+}
+
+.pv-boss-hp-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.pv-boss-hp-for {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.pv-boss-hp-missing {
+  justify-self: start;
+  padding: 0.45rem 0.8rem;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-strong);
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.pv-boss-foot {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.pv-boss-source {
+  padding-block-start: 0.2rem;
+}
+
+/* Weaknesses / resistances / immunities: side by side while there is room */
+.pv-boss-affinities {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 1rem 1.25rem;
+}
+
+.pv-boss-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: 1rem 1.5rem;
+}
+
+.pv-boss-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* Chip colours are the shared accent tokens (text on its own tint, border in the text colour): weakness = green, resistance = amber, immunity /
+   missable = red. Every chip also has a symbol and sits under a labelled group, so the meaning never depends on colour alone. */
+.pv-boss-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid currentColor;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.pv-boss-chip-icon {
+  display: inline-flex;
+  flex: none;
+}
+
+.pv-boss-chip-weak {
+  background: var(--accent-emerald-bg);
+  color: var(--accent-emerald);
+}
+.pv-boss-chip-resist {
+  background: var(--accent-gold-bg);
+  color: var(--accent-gold-text);
+}
+.pv-boss-chip-immune {
+  background: var(--accent-crimson-bg);
+  color: var(--accent-crimson);
+}
+.pv-boss-chip-reward {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.pv-boss-attacks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.pv-boss-attacks li {
+  position: relative;
+  padding-inline-start: 1rem;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.pv-boss-attacks li::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0.1rem;
+  inset-block-start: 0.6em;
+  inline-size: 0.4rem;
+  block-size: 0.4rem;
+  border-radius: 50%;
+  background: var(--accent-crimson);
+}
+
+.pv-boss-attacks strong {
+  color: var(--text-primary);
+}
+
+.pv-boss-text {
+  max-inline-size: 75ch;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.pv-boss-tactics > li {
+  max-inline-size: 80ch;
+  color: var(--text-primary);
+}
+
+/* ---------- "At a glance" (overview of a part) ---------- */
+.pv-overview {
+  display: grid;
+  gap: 0.9rem;
+  border-inline-start: 4px solid var(--accent-crystal);
+}
+
+.pv-overview-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.pv-overview-glyph {
+  display: grid;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: var(--radius-md);
+  background: var(--accent-crystal-bg);
+  border: 1px solid var(--accent-crystal-border);
+  color: var(--accent-crystal);
+}
+
+.pv-overview-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.pv-overview-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.pv-overview-tile {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+}
+
+.pv-overview-tile dt {
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.pv-overview-tile dd {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.pv-overview-ponr {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: var(--radius-md);
+  background: var(--accent-crimson-bg);
+  border: 1px solid var(--accent-crimson);
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: var(--accent-crimson);
+}
+
+.pv-overview-ponr > svg {
+  flex: none;
+}
+
+/* ---------- Sources ---------- */
+.pv-sources {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem 1.25rem;
+}
+
+.pv-sources-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.pv-sources-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.pv-sources-item {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.7rem;
+  font-size: 0.88rem;
+}
+
+.pv-sources-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 700;
+  color: var(--accent-crystal);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+
+.pv-sources-link:hover {
+  text-decoration-thickness: 2px;
+}
+
+.pv-sources-link:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.pv-sources-plain {
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.pv-sources-host,
+.pv-sources-origin {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.pv-sources-origin {
+  font-style: italic;
+}
+
+/* ---------- Walkthrough structure: parts, areas, table of contents ---------- */
+.pv-wt {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.pv-wt-content {
+  display: grid;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.pv-wt[data-wide] {
+  grid-template-columns: minmax(0, 1fr) 15.5rem;
+  gap: 2rem;
+}
+
+.pv-wt[data-wide] > .pv-wt-content {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.pv-wt[data-wide] > .pv-toc {
+  grid-column: 2;
+  grid-row: 1;
+  position: sticky;
+  inset-block-start: calc(var(--pv-gbar-bottom, 8rem) + 1rem);
+  max-block-size: calc(100dvh - var(--pv-gbar-bottom, 8rem) - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* A part: a band with its number, then its own content; parts are separated by clear air */
+.pv-part {
+  display: grid;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.pv-part + .pv-part,
+.pv-part-intro + .pv-part {
+  margin-block-start: 1.5rem;
+}
+
+.pv-part-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0 1.1rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(100deg, var(--accent-crystal-bg), transparent 75%), var(--bg-surface);
+  border: 1px solid var(--accent-crystal-border);
+  scroll-margin-block-start: calc(var(--pv-gbar-bottom, 8rem) + 1rem);
+}
+
+.pv-part-no {
+  min-inline-size: 3rem;
+  padding-inline-end: 1.1rem;
+  border-inline-end: 1px solid var(--accent-crystal-border);
+  font-size: 2.1rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-crystal);
+}
+
+.pv-part-titles {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.pv-part-kicker {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--accent-crystal);
+}
+
+.pv-part-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.pv-wt-lead {
+  margin-block-start: 0.2rem;
+  max-inline-size: 75ch;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+/* An area inside a part: its own section with a rule on the side and a numbered sub-heading */
+.pv-area {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+  padding-inline-start: 1rem;
+  border-inline-start: 2px solid var(--border-subtle);
+}
+
+.pv-area-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.2rem 0.75rem;
+  padding-block-end: 0.6rem;
+  border-block-end: 1px solid var(--border-subtle);
+  scroll-margin-block-start: calc(var(--pv-gbar-bottom, 8rem) + 1rem);
+}
+
+.pv-area-no {
+  display: inline-grid;
+  place-items: center;
+  min-inline-size: 2.4rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: var(--radius-sm);
+  background: var(--accent-crystal-bg);
+  border: 1px solid var(--accent-crystal-border);
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-crystal);
+}
+
+.pv-area-title {
+  font-size: 1.12rem;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.pv-area-titles {
+  min-width: 0;
+}
+
+.pv-wt-heading {
+  scroll-margin-block-start: calc(var(--pv-gbar-bottom, 8rem) + 1rem);
+}
+
+@media (max-width: 767px) {
+  .pv-part-head {
+    padding: 0.85rem 1rem;
+    gap: 0 0.8rem;
+  }
+  .pv-part-no {
+    min-inline-size: 2.2rem;
+    padding-inline-end: 0.8rem;
+    font-size: 1.6rem;
+  }
+  .pv-part-title {
+    font-size: 1.2rem;
+  }
+  .pv-area {
+    padding-inline-start: 0.7rem;
+  }
+  .pv-boss-head,
+  .pv-boss-body {
+    padding-inline: 1rem;
+  }
+}
+
+/* The table of contents: sticky column (wide) or collapsible list on top (narrow); the same element */
+.pv-toc {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  min-width: 0;
+}
+
+.pv-toc-title {
+  display: none;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.pv-wt[data-wide] .pv-toc-title {
+  display: flex;
+}
+
+.pv-toc-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  inline-size: 100%;
+  min-block-size: 2.75rem;
+  padding: 0.3rem 0.6rem;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-align: start;
+  cursor: pointer;
+}
+
+.pv-toc-toggle:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 1px;
+}
+
+.pv-toc-toggle-text {
+  flex: 1;
+}
+
+.pv-toc-toggle-count {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.pv-toc-chevron {
+  flex: none;
+  transition: transform 0.15s ease;
+}
+
+.pv-toc-chevron.is-open {
+  transform: rotate(180deg);
+}
+
+.pv-wt[data-wide] .pv-toc-toggle {
+  display: none;
+}
+
+.pv-wt:not([data-wide]) .pv-toc:not([data-open]) .pv-toc-list {
+  display: none;
+}
+
+.pv-toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.pv-toc-link {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-block-size: 2rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border-inline-start: 2px solid transparent;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.35;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.pv-toc-link:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.pv-toc-link:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: -2px;
+}
+
+.pv-toc-link[aria-current='location'] {
+  background: var(--accent-crystal-bg);
+  border-inline-start-color: var(--accent-crystal);
+  color: var(--accent-crystal);
+  font-weight: 800;
+}
+
+.pv-toc-l1 > .pv-toc-link {
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.pv-toc-l1 > .pv-toc-link[aria-current='location'] {
+  color: var(--accent-crystal);
+}
+
+.pv-toc-l1:not(:first-child) {
+  margin-block-start: 0.35rem;
+}
+
+.pv-toc-l2 > .pv-toc-link {
+  padding-inline-start: 1.4rem;
+}
+
+.pv-toc-no {
+  flex: none;
+  min-inline-size: 1.7rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.pv-toc-link[aria-current='location'] .pv-toc-no {
+  color: inherit;
+}
+
+.pv-toc-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media print {
+  .pv-toc {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-toc-chevron,
+  .pv-toc-link {
+    transition: none;
+  }
+}
+
+/* ---------- Side quests callout: small and quiet, secondary to the route ---------- */
+.pv-quests {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-inline-start: 3px solid var(--border-strong);
+  font-size: 0.84rem;
+}
+
+.pv-quests-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  color: var(--text-secondary);
+}
+
+.pv-quests-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pv-quests-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-inline-start: auto;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent-crystal);
+  text-decoration: none;
+}
+
+.pv-quests-all:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pv-quest-link:hover {
+  text-decoration-thickness: 2px;
+}
+
+.pv-quests-all:focus-visible,
+.pv-quest-link:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.pv-quests-text {
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.pv-quests-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.pv-quest {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.1rem 0.7rem;
+}
+
+.pv-quest-title {
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.pv-quest-link {
+  color: var(--accent-crystal);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.pv-quest-meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.pv-quest-meta > span + span::before {
+  content: '·';
+  margin-inline-end: 0.5rem;
+  color: var(--text-muted);
+}
+
+.pv-quest-meta > .pv-quest-missable {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 700;
+  color: var(--accent-crimson);
+}
+
+/* A row that a link scrolled to flashes once (no animation with reduced motion: a steady highlight instead) */
+tr.pv-row-flash > td {
+  background: var(--accent-gold-bg);
+  box-shadow: inset 0 0 0 9999px transparent;
+  animation: pv-row-flash 2.4s ease-out;
+}
+
+@keyframes pv-row-flash {
+  0%,
+  60% {
+    background: var(--accent-gold-bg);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  tr.pv-row-flash > td {
+    animation: none;
+  }
+}
+
+/* Cross-chapter links under a row's name: small, secondary, wrapping (they live in the name cell, so no column moves) */
+.pv-rowlinks {
+  /* inline-flex + full width: its own line, but an atomic inline box, so a checked row's strike-through does not run through the links */
+  display: inline-flex;
+  inline-size: 100%;
+  flex-wrap: wrap;
+  gap: 0.1rem 0.6rem;
+  margin-block-start: 0.2rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.pv-rowlink {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.2rem;
+  max-inline-size: 100%;
+  color: var(--accent-crystal);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.pv-rowlink > svg {
+  flex: none;
+  align-self: center;
+}
+
+.pv-rowlink-back {
+  color: var(--text-secondary);
+}
+
+.pv-rowlink:hover > span {
+  text-decoration: underline;
+}
+
+.pv-rowlink:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* A heading or row a link scrolled to */
+.pv-anchor-flash {
+  animation: pv-anchor-flash 2.4s ease-out;
+}
+
+@keyframes pv-anchor-flash {
+  0%,
+  60% {
+    background: var(--accent-gold-bg);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-anchor-flash {
+    animation: none;
+    background: var(--accent-gold-bg);
+  }
+}
+
+/* Side quest tick box (bound to the row of the quest chapter) */
+.pv-quest-check {
+  align-self: center;
+  inline-size: 1.05rem;
+  block-size: 1.05rem;
+  cursor: pointer;
+  flex: none;
+}

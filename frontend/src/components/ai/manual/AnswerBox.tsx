@@ -5,6 +5,7 @@ import { IconAlertTriangle, IconCheck, IconFileImport, IconLoader2, IconTrash } 
 import type { ManualIssueDto } from '../../../api/types'
 import { describeError } from '../../../utils/apiErrorText'
 import { ErrorDetails } from '../../ui/ErrorDetails'
+import { FixPromptBar } from './FixPrompt'
 
 // The answer of a chat is a few kilobytes; a file bigger than this is not one
 const MAX_FILE_BYTES = 2_100_000
@@ -14,6 +15,8 @@ interface Checked {
   ok: boolean
   errors: ManualIssueDto[]
   warnings: ManualIssueDto[]
+  // A prompt that makes the chat correct what the check found (foreign-language sentences); empty = nothing to correct
+  fixPrompt?: string | null
 }
 
 interface AnswerBoxProps<T extends Checked> {
@@ -170,12 +173,14 @@ export function AnswerBox<T extends Checked>({ check, onResult, renderOk, disabl
         {!empty && !checking && result && result.warnings.length > 0 && (
           <IssueList tone="warning" heading={t('manual.answer.warnings')} issues={result.warnings} />
         )}
+        {!empty && !checking && result && result.fixPrompt && <FixPromptBar prompt={result.fixPrompt} />}
       </div>
     </div>
   )
 }
 
-function IssueList({ tone, heading, issues }: { tone: 'error' | 'warning'; heading: string; issues: ManualIssueDto[] }) {
+export function IssueList({ tone, heading, issues, copyable = tone === 'error' }: { tone: 'error' | 'warning'; heading: string; issues: ManualIssueDto[]; copyable?: boolean }) {
+  const { t } = useTranslation('ai')
   const color = tone === 'error' ? 'var(--accent-crimson)' : 'var(--accent-gold-text)'
   return (
     <section className="space-y-1">
@@ -187,7 +192,21 @@ function IssueList({ tone, heading, issues }: { tone: 'error' | 'warning'; headi
         {issues.map((issue, index) => (
           <li key={`${issue.code}-${index}`} className="whitespace-pre-line break-words font-semibold" style={{ color: 'var(--text-primary)' }} data-issue={issue.code}>
             {issue.message}
-            <ErrorDetails message={tone === 'error' ? issue.message : undefined} details={issue.details} />
+            {issue.examples && issue.examples.length > 0 && (
+              <div className="mt-1 space-y-0.5" data-testid="issue-examples">
+                <div className="text-[11px] font-extrabold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                  {t('manual.answer.examples')}
+                </div>
+                <ul className="space-y-0.5 font-normal italic" style={{ color: 'var(--text-secondary)' }}>
+                  {issue.examples.slice(0, 3).map((example, i) => (
+                    <li key={i} className="break-words">
+                      „{example}“
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <ErrorDetails message={copyable ? issue.message : undefined} details={issue.details} />
           </li>
         ))}
       </ul>

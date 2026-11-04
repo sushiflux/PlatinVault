@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IconAlertTriangle, IconClipboardText, IconRefresh, IconTrash } from '@tabler/icons-react'
-import type { AiProviderId, GameDetailDto, GuideSectionDto } from '../../api/types'
+import type { AiProviderId, GameDetailDto, GuideSectionDto, ManualChapterSeed } from '../../api/types'
 import { ErrorDetails } from '../ui/ErrorDetails'
 import { AiRunButton } from './AiRunButton'
 
@@ -9,6 +9,20 @@ import { AiRunButton } from './AiRunButton'
 export function failedChapterTabs(game: GameDetailDto | undefined): { id: string; title: string }[] {
   if (!game) return []
   return game.tabs.filter((tab) => tab.sections.length === 1 && tab.sections[0]?.failedChapter).map((tab) => ({ id: tab.id, title: tab.title }))
+}
+
+/** The failed chapters as seeds for the subscription flow: each carries its tabId, so the saved answer replaces its placeholder. */
+export function failedChapterSeeds(game: GameDetailDto | undefined): ManualChapterSeed[] {
+  if (!game) return []
+  return game.tabs
+    .filter((tab) => tab.sections.length === 1 && tab.sections[0]?.failedChapter)
+    .map((tab) => ({
+      title: tab.title,
+      icon: tab.icon,
+      focus: tab.sections[0]?.failedChapter?.focus ?? tab.title,
+      topicId: tab.sections[0]?.failedChapter?.topicId ?? null,
+      tabId: tab.id,
+    }))
 }
 
 interface FailedChapterBlockProps {
@@ -78,10 +92,12 @@ interface RetryAllBannerProps {
   count: number
   busy: boolean
   onRetryAll: (oneOff: AiProviderId | undefined) => void
+  // Research all of them with the player's own AI subscription instead (one prompt, one pasted text; no API key)
+  onManual?: () => void
 }
 
 /** Once at the top of a guide with several failed chapters: research all of them again. */
-export function RetryAllBanner({ count, busy, onRetryAll }: RetryAllBannerProps) {
+export function RetryAllBanner({ count, busy, onRetryAll, onManual }: RetryAllBannerProps) {
   const { t } = useTranslation('ai')
   const [oneOff, setOneOff] = useState<AiProviderId | undefined>(undefined)
   return (
@@ -96,7 +112,7 @@ export function RetryAllBanner({ count, busy, onRetryAll }: RetryAllBannerProps)
         <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
           {t('failedChapter.allHint')}
         </p>
-        <div className="pt-1">
+        <div className="flex flex-wrap items-center gap-2 pt-1">
           <AiRunButton
             tone="pv-btn-emerald"
             busy={busy}
@@ -107,6 +123,12 @@ export function RetryAllBanner({ count, busy, onRetryAll }: RetryAllBannerProps)
             icon={<IconRefresh size={15} className="shrink-0" />}
             label={<span>{t('failedChapter.retryAll')}</span>}
           />
+          {onManual && (
+            <button type="button" className="pv-btn" disabled={busy} onClick={onManual} data-testid="retry-all-manual">
+              <IconClipboardText size={15} className="shrink-0" aria-hidden="true" />
+              <span>{t('manual.entry.all')}</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

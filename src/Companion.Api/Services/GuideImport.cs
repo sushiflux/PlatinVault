@@ -29,7 +29,7 @@ public sealed record ParsedGuide(
     List<ParsedGuideTab> Tabs);
 
 /// <summary>IsLore = the optional "story-lore" tab (the only slug an import keeps; every other tab slug is generated).</summary>
-public sealed record ParsedGuideTab(string Title, string Icon, string SectionsJson, bool IsLore = false, string? GroupKey = null, bool IsWalkthrough = false);
+public sealed record ParsedGuideTab(string Title, string Icon, string SectionsJson, bool IsLore = false, string? GroupKey = null, bool IsWalkthrough = false, string? TopicId = null);
 
 /// <summary>
 /// Reads and validates a "platinvault-guide" document (see GuideExportDocument). The file may come from anyone, so every
@@ -185,7 +185,10 @@ public static class GuideImport
 
             // An explicit "groupKey" of the file is kept when it names a known group; anything else = decided from the title later
             var groupKey = OptionalText(tabEl, "groupKey", $"{path}.groupKey", 32).ToLowerInvariant();
-            parsed.Add((isLore ? int.MaxValue : isWalkthrough ? int.MinValue : order, index, new ParsedGuideTab(title, icon, NormalizeSections(tabEl, path, title), isLore, GuideGroups.IsValid(groupKey) ? groupKey : null, isWalkthrough)));
+            // An explicit "topicId" is kept when it names a known standard topic (unknown values are dropped, not guessed)
+            var topicId = OptionalText(tabEl, "topicId", $"{path}.topicId", 80).ToLowerInvariant();
+            parsed.Add((isLore ? int.MaxValue : isWalkthrough ? int.MinValue : order, index, new ParsedGuideTab(title, icon, NormalizeSections(tabEl, path, title), isLore, GuideGroups.IsValid(groupKey) ? groupKey : null, isWalkthrough,
+                AiGuideGeneratorService.IsStandardTopic(topicId) ? topicId : null)));
             index++;
         }
 
@@ -203,7 +206,9 @@ public static class GuideImport
             throw new GuideImportException(ServerTexts.Import.SectionsNotList(path, Shorten(tabTitle)));
         }
 
-        var normalized = GuideSectionNormalizer.Normalize(sectionsEl);
+        // A guide file comes from outside (another installation, a chat, a hand-edited file): its sources can never claim to be "cited" by an AI provider
+        // for an answer of THIS app, so every imported source is "ai" (named, not verified)
+        var normalized = GuideSectionNormalizer.Normalize(sectionsEl, NormalizeOptions.Default);
         if (normalized.Count == 0 && sectionsEl.GetArrayLength() > 0)
         {
             throw new GuideImportException(ServerTexts.Import.NoReadableSections(Shorten(tabTitle), path, sectionsEl.GetArrayLength()));

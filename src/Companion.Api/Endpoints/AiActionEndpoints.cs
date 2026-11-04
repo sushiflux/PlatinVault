@@ -66,8 +66,10 @@ public static class AiActionEndpoints
             {
                 return Problems.Create(StatusCodes.Status400BadRequest, ServerTexts.Games.InputIncompleteTitle, ServerTexts.Games.InputIncompleteDetail);
             }
-            var job = jobs.Start("expand", "game:" + slug, slug, (sp, progress, token) => RunExpandAsync(sp, slug, req, progress, token));
-            return Accepted(job, "expand");
+            // Another chapter title = another action: it must not attach to the running one (the page would announce the wrong chapter)
+            var expandTarget = req.TabTitle.Trim().ToLowerInvariant();
+            var job = jobs.Start("expand", "game:" + slug, slug, (sp, progress, token) => RunExpandAsync(sp, slug, req, progress, token), expandTarget, req.TabTitle.Trim());
+            return Accepted(job, "expand", expandTarget);
         });
 
         // "Kapitel erneut recherchieren": chapters whose research failed (placeholder with the remembered topic) are researched again exactly as planned
@@ -82,8 +84,36 @@ public static class AiActionEndpoints
             {
                 return Problems.Create(StatusCodes.Status400BadRequest, ServerTexts.Ai.NoFailedChaptersTitle, ServerTexts.Ai.NoFailedChapters);
             }
-            var job = jobs.Start("retry", "game:" + slug, slug, (sp, progress, token) => RunRetryAsync(sp, slug, req?.TabIds, req?.ProviderOverride, progress, token));
-            return Accepted(job, "retry");
+            // null = every failed chapter; a list = exactly those (sorted, so the same selection in another order is the same action)
+            var retryTarget = req?.TabIds is { Count: > 0 } ids ? string.Join(",", ids.Distinct().Order()) : null;
+            var job = jobs.Start("retry", "game:" + slug, slug, (sp, progress, token) => RunRetryAsync(sp, slug, req?.TabIds, req?.ProviderOverride, progress, token), retryTarget);
+            return Accepted(job, "retry", retryTarget);
+        });
+
+        // "Kapitel neu recherchieren": researches ANY chapter again (content, walkthrough, placeholder) and replaces it in place - only when the research
+        // succeeded; the tick marks of item ids that still exist stay. Not the hidden Steam achievement list and not Story & Lore (same rule as removing).
+        api.MapPost("/games/{slug}/chapters/{tabId:guid}/redo", async (string slug, Guid tabId, AiRedoChapterRequest? req, CompanionDbContext db, AiJobService jobs, CancellationToken ct) =>
+        {
+            var game = await db.Games.AsNoTracking().Include(g => g.Tabs).FirstOrDefaultAsync(g => g.Slug == slug, ct);
+            if (game is null)
+            {
+                return Problems.GameNotFound(slug);
+            }
+            var tab = game.Tabs.FirstOrDefault(t => t.Id == tabId);
+            if (tab is null)
+            {
+                return Problems.NotFound(ServerTexts.Ai.ChapterNotFoundTitle, ServerTexts.Ai.ChapterNotFound);
+            }
+            switch (ChapterRemoval.Check(tab))
+            {
+                case ChapterRemovalVerdict.AchievementList:
+                    return Problems.Create(StatusCodes.Status409Conflict, ServerTexts.Ai.ChapterNotRedoableTitle, ServerTexts.Ai.ChapterRedoAchievementList);
+                case ChapterRemovalVerdict.StoryLore:
+                    return Problems.Create(StatusCodes.Status409Conflict, ServerTexts.Ai.ChapterNotRedoableTitle, ServerTexts.Ai.ChapterIsLore);
+            }
+            // A redo of ANOTHER chapter must not attach to the running one (the page would say that chapter B was researched again with A's result)
+            var job = jobs.Start("redo", "game:" + slug, slug, (sp, progress, token) => RunRedoAsync(sp, slug, tabId, req?.ProviderOverride, progress, token), tabId.ToString(), tab.Title);
+            return Accepted(job, "redo", tabId.ToString());
         });
 
         // "Kapitel entfernen": takes any chapter out of the guide (researched content, walkthrough, failed placeholder). Not the hidden Steam
@@ -113,9 +143,22 @@ public static class AiActionEndpoints
     /// 202 with the job - or 409 when another kind of AI action of the same game is still running (the job service hands back the running job
     /// for the same key; answering with it would make the page treat e.g. a "complete guide" result as the result of "Story &amp; Lore").
     /// </summary>
-    private static IResult Accepted(AiJob job, string kind) => job.Kind == kind
-        ? Results.Json(job.Snapshot().ToDto(), statusCode: StatusCodes.Status202Accepted)
-        : Problems.Create(StatusCodes.Status409Conflict, ServerTexts.Ai.JobBusyTitle, ServerTexts.Ai.JobBusy(job.Kind));
+    /// <summary>
+    /// 202 with the job when it is the one that was asked for (also a double click attaching to it); 409 when the running job of this game is another
+    /// action - another kind, or the same kind for another target (another chapter) - so the page never reports the result of a job it did not start.
+    /// </summary>
+    private static IResult Accepted(AiJob job, string kind, string? target = null)
+    {
+        if (job.Kind != kind)
+        {
+            return Problems.Create(StatusCodes.Status409Conflict, ServerTexts.Ai.JobBusyTitle, ServerTexts.Ai.JobBusy(job.Kind));
+        }
+        if (!string.Equals(job.Target, target, StringComparison.Ordinal))
+        {
+            return Problems.Create(StatusCodes.Status409Conflict, ServerTexts.Ai.JobBusyTitle, ServerTexts.Ai.JobBusyOtherTarget(job.Kind, job.TargetLabel));
+        }
+        return Results.Json(job.Snapshot().ToDto(), statusCode: StatusCodes.Status202Accepted);
+    }
 
     /// <summary>
     /// Removes one chapter with everything that only belonged to it: its translations (rows of <c>guide_tab_translations</c> go with the tab by
@@ -147,7 +190,11 @@ public static class AiActionEndpoints
             return Problems.Create(StatusCodes.Status400BadRequest, ServerTexts.Ai.ChapterHasContentTitle, ServerTexts.Ai.ChapterHasContent);
         }
 
-        var orphaned = ChapterRemoval.OrphanedCheckKeys(tab, game.Tabs.Where(t => t.Id != tab.Id));
+        db.GuideTabs.Remove(tab);
+        game.Tabs.Remove(tab);
+        // Rows elsewhere that pointed at a row of this chapter become normal rows again and take over its tick - BEFORE the tick marks of this chapter go
+        GuideLinkMaintenance.Apply(db, game);
+        var orphaned = ChapterRemoval.OrphanedCheckKeys(tab, game.Tabs);
         var orphanedChecks = game.ProgressChecks.Where(p => orphaned.Contains(p.ItemKey)).ToList();
         if (orphanedChecks.Count > 0)
         {
@@ -157,10 +204,8 @@ public static class AiActionEndpoints
                 game.ProgressChecks.Remove(check);
             }
         }
-        db.GuideTabs.Remove(tab);
-        game.Tabs.Remove(tab);
         game.UpdatedAt = DateTimeOffset.UtcNow;
-        await db.SaveChangesAsync(ct);
+        await GuideLinkMaintenance.SaveAsync(db, ct);
 
         game.Tabs = game.Tabs.OrderBy(t => t.SortOrder).ToList();
         return Results.Ok(await ApiEndpoints.BuildDetailAsync(db, translations, game, null, ct));
@@ -179,6 +224,15 @@ public static class AiActionEndpoints
         var (game, tabs, usage) = await ai.ResearchAndBuildGameAsync(req, maxSort + 1, language, progress, sink, ct);
 
         game.Tabs = tabs;
+        // All chapters are saved now: link the walkthrough rows and side quests to the rows of the other chapters, then answer from what is stored
+        if (await GuideLinkMaintenance.RelinkAsync(db, game.Id, ct))
+        {
+            var stored = await db.Games.AsNoTracking().Include(g => g.Tabs).Include(g => g.ProgressChecks).FirstOrDefaultAsync(g => g.Id == game.Id, ct);
+            if (stored is not null)
+            {
+                game = stored;
+            }
+        }
         return new AiResultDto<GameSummaryDto>(ApiEndpoints.MapToSummaryDto(game), usage.ToDto());
     }
 
@@ -218,7 +272,7 @@ public static class AiActionEndpoints
         var nextSort = (regularTabs.Count > 0 ? regularTabs.Max(t => t.SortOrder) : 0) + 1;
         // Every chapter is saved the moment it is done (slugs come from the sort order, item ids are kept unique one by one): after an
         // interruption the next "complete guide" finds those chapters as covered and researches only the rest
-        var sink = new ChapterSink(sp.GetRequiredService<IServiceScopeFactory>(), ApiEndpoints.CollectItemIds(game.Tabs));
+        var sink = new ChapterSink(sp.GetRequiredService<IServiceScopeFactory>(), ApiEndpoints.CollectTakenItemIds(game.Tabs));
         var (newTabs, droppedTitles, usage) = await ai.CompleteGuideAsync(game, req?.ProviderOverride, nextSort, req?.Chapters, progress, sink, ct);
 
         if (newTabs.Count > 0)
@@ -228,8 +282,8 @@ public static class AiActionEndpoints
             await db.SaveChangesAsync(ct);
         }
 
-        // Reload so the answer is built from what is stored (the chapters were saved through other contexts)
-        db.ChangeTracker.Clear();
+        // Reload so the answer is built from what is stored (the chapters were saved through other contexts); link the new chapters to the old ones first
+        await GuideLinkMaintenance.RelinkAsync(db, game.Id, ct);
         var fresh = await db.Games
             .AsNoTracking()
             .Include(g => g.Tabs.OrderBy(t => t.SortOrder))
@@ -250,7 +304,11 @@ public static class AiActionEndpoints
             .FirstOrDefaultAsync(g => g.Slug == slug, ct)
             ?? throw new LocalizedException(ServerTexts.GameNotFound(slug));
 
-        ApiEndpoints.AdoptRequestLanguageIfEmpty(game);
+        // Stored right away: the state loaded here is not used for saving after the research (see below)
+        if (ApiEndpoints.AdoptRequestLanguageIfEmpty(game))
+        {
+            await db.SaveChangesAsync(ct);
+        }
 
         // New tabs go before the optional lore tab, which always stays last
         var regularTabs = game.Tabs.Where(t => t.Slug != LoreTab.Slug).ToList();
@@ -258,19 +316,23 @@ public static class AiActionEndpoints
         var (newTab, usage) = await ai.ResearchAndBuildSingleTabAsync(game, req, nextSort, progress, ct);
 
         progress.Step("saving");
-        ApiEndpoints.MakeItemIdsUnique([newTab], ApiEndpoints.CollectItemIds(game.Tabs));
-        game.UpdatedAt = DateTimeOffset.UtcNow;
-
+        // The research took a while: chapters and ticks may have changed meanwhile (the other server, a manual save). Save ONLY the new chapter against
+        // the fresh state, then link on what is stored (like "complete" and "retry") - nothing loaded before the research is written back
+        db.ChangeTracker.Clear();
+        var current = await db.Games.Include(g => g.Tabs).FirstOrDefaultAsync(g => g.Id == game.Id, ct)
+            ?? throw new LocalizedException(ServerTexts.GameNotFound(slug));
+        ApiEndpoints.MakeItemIdsUnique([newTab], ApiEndpoints.CollectTakenItemIds(current.Tabs));
+        current.UpdatedAt = DateTimeOffset.UtcNow;
         db.GuideTabs.Add(newTab);
         await db.SaveChangesAsync(ct);
+        await GuideLinkMaintenance.RelinkAsync(db, game.Id, ct);
 
-        // EF relationship fixup already added the tracked tab to game.Tabs on db.GuideTabs.Add
-        if (!game.Tabs.Contains(newTab))
-        {
-            game.Tabs.Add(newTab);
-        }
-        game.Tabs = game.Tabs.OrderBy(t => t.SortOrder).ToList();
-        return new AiResultDto<GameDetailDto>(await ApiEndpoints.BuildDetailAsync(db, translations, game, null, ct), usage.ToDto());
+        var stored = await db.Games
+            .AsNoTracking()
+            .Include(g => g.Tabs.OrderBy(t => t.SortOrder))
+            .Include(g => g.ProgressChecks)
+            .FirstAsync(g => g.Id == game.Id, ct);
+        return new AiResultDto<GameDetailDto>(await ApiEndpoints.BuildDetailAsync(db, translations, stored, null, ct), usage.ToDto());
     }
 
     private static async Task<object> RunRetryAsync(IServiceProvider sp, string slug, IReadOnlyCollection<Guid>? tabIds, string? providerOverride, AiJobProgress progress, CancellationToken ct)
@@ -292,16 +354,142 @@ public static class AiActionEndpoints
         }
 
         // Every chapter replaces its placeholder the moment it is done: an interruption keeps what was finished, the rest stays a placeholder
-        var replacer = new ChapterReplacer(sp.GetRequiredService<IServiceScopeFactory>(), ApiEndpoints.CollectItemIds(game.Tabs));
+        var replacer = new ChapterReplacer(sp.GetRequiredService<IServiceScopeFactory>(), ApiEndpoints.CollectTakenItemIds(game.Tabs));
         var (succeeded, failedTitles, droppedTitles, usage) = await ai.RetryChaptersAsync(game, failed, providerOverride, progress, replacer.ReplaceAsync, ct, replacer.RemoveAsync);
 
-        db.ChangeTracker.Clear();
+        await GuideLinkMaintenance.RelinkAsync(db, game.Id, ct);
         var fresh = await db.Games
             .AsNoTracking()
             .Include(g => g.Tabs.OrderBy(t => t.SortOrder))
             .Include(g => g.ProgressChecks)
             .FirstAsync(g => g.Slug == slug, ct);
         return new AiRetryChaptersResponse(failed.Count, succeeded, failedTitles, await ApiEndpoints.BuildDetailAsync(db, translations, fresh, null, ct), usage.ToDto(), droppedTitles);
+    }
+
+    private static async Task<object> RunRedoAsync(IServiceProvider sp, string slug, Guid tabId, string? providerOverride, AiJobProgress progress, CancellationToken ct)
+    {
+        var db = sp.GetRequiredService<CompanionDbContext>();
+        var ai = sp.GetRequiredService<AiGuideGeneratorService>();
+        var translations = sp.GetRequiredService<GuideTranslationService>();
+
+        var game = await db.Games
+            .Include(g => g.Tabs)
+            .Include(g => g.ProgressChecks)
+            .FirstOrDefaultAsync(g => g.Slug == slug, ct)
+            ?? throw new LocalizedException(ServerTexts.GameNotFound(slug));
+        var tab = game.Tabs.FirstOrDefault(t => t.Id == tabId) ?? throw new LocalizedException(ServerTexts.Ai.ChapterNotFound);
+        switch (ChapterRemoval.Check(tab))
+        {
+            case ChapterRemovalVerdict.AchievementList:
+                throw new LocalizedException(ServerTexts.Ai.ChapterRedoAchievementList);
+            case ChapterRemovalVerdict.StoryLore:
+                throw new LocalizedException(ServerTexts.Ai.ChapterIsLore);
+        }
+
+        // Nothing is changed before the research succeeded: a failure throws and the chapter stays as it is
+        var (fresh, usage) = await ai.RedoChapterAsync(game, tab, providerOverride, progress, ct);
+
+        progress.Step("saving");
+        // The research took minutes: the other server on the same database or a manual save may have changed chapters and ticks meanwhile. Everything
+        // loaded before is stale - replace and link on a fresh copy, so nothing old is written back
+        db.ChangeTracker.Clear();
+        var current = await db.Games
+            .Include(g => g.Tabs)
+            .Include(g => g.ProgressChecks)
+            .FirstOrDefaultAsync(g => g.Id == game.Id, ct)
+            ?? throw new LocalizedException(ServerTexts.GameNotFound(slug));
+        var target = current.Tabs.FirstOrDefault(t => t.Id == tabId)
+            ?? throw new LocalizedException(ServerTexts.Ai.RedoChapterGone(tab.Title));
+        if (ChapterRemoval.Check(target) != ChapterRemovalVerdict.Removable)
+        {
+            throw new LocalizedException(ServerTexts.Ai.RedoChapterGone(tab.Title));
+        }
+        ReplaceChapterInPlace(db, current, target, fresh);
+        current.UpdatedAt = DateTimeOffset.UtcNow;
+        await GuideLinkMaintenance.SaveAsync(db, ct);
+
+        db.ChangeTracker.Clear();
+        var reloaded = await db.Games
+            .AsNoTracking()
+            .Include(g => g.Tabs.OrderBy(t => t.SortOrder))
+            .Include(g => g.ProgressChecks)
+            .FirstAsync(g => g.Slug == slug, ct);
+        return new AiResultDto<GameDetailDto>(await ApiEndpoints.BuildDetailAsync(db, translations, reloaded, null, ct), usage.ToDto());
+    }
+
+    /// <summary>
+    /// Puts a newly researched (or pasted) chapter into an existing tab: same tab, same place, same address; a chosen group stays. Item ids are made unique
+    /// against the OTHER tabs (so an id the new version shares with the old one keeps its tick). When the new version gave an entry another id, its tick
+    /// and the refs of other chapters pointing at it move to the new row - only on a strict one-to-one name match (<see cref="GuideLinker.PlanIdTransfer"/>,
+    /// the linker's rules). Only then the tick marks of item ids that existed only in the old version and nowhere else any more are removed (the same rule
+    /// as removing a chapter). Shared by "redo", the manual replace (single and batch) and a replaced walkthrough.
+    /// </summary>
+    internal static void ReplaceChapterInPlace(CompanionDbContext db, GameEntity game, GuideTabEntity existing, GuideTabEntity fresh, HashSet<string>? taken = null)
+    {
+        var others = game.Tabs.Where(t => t.Id != existing.Id).ToList();
+        // The ids the old version defined; what is not defined by anything any more afterwards loses its tick
+        var oldIds = ApiEndpoints.CollectItemIds([existing]);
+        // A batch passes its own running set (the ids of everything else on the page, growing with every saved chapter)
+        ApiEndpoints.MakeItemIdsUnique([fresh], taken ?? ApiEndpoints.CollectTakenItemIds(others));
+
+        // Same entry, new id - or the entry came back as a row that points at another chapter ("ref"): hand the tick and the incoming refs over to
+        // where the item lives now (the new row, or the ref's final target; ticked if either was) before anything is deleted
+        var counterparts = GuideLinker.PlanIdTransfer(existing.SectionsJson, fresh.SectionsJson);
+        var transfer = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (counterparts.Count > 0)
+        {
+            var after = others.Append(new GuideTabEntity { Id = existing.Id, Slug = existing.Slug, Title = fresh.Title, SectionsJson = fresh.SectionsJson }).ToList();
+            foreach (var (oldId, counterpart) in counterparts)
+            {
+                // A ref that ends nowhere is cleared by the linker: the row then defines the item under its own (new) id
+                var destination = counterpart.Ref is { } reference ? GuideLinker.FinalTarget(after, reference, existing.Id) ?? counterpart.NewId : counterpart.NewId;
+                if (destination != oldId)
+                {
+                    transfer[oldId] = destination;
+                }
+            }
+        }
+        if (transfer.Count > 0)
+        {
+            var ticked = game.ProgressChecks.Select(p => p.ItemKey).ToHashSet(StringComparer.Ordinal);
+            foreach (var (oldId, newId) in transfer)
+            {
+                if (ticked.Contains(oldId) && ticked.Add(newId))
+                {
+                    var check = new ProgressCheckEntity { Id = Guid.NewGuid(), GameId = game.Id, ItemKey = newId, CheckedAt = DateTimeOffset.UtcNow };
+                    db.ProgressChecks.Add(check);
+                    if (!game.ProgressChecks.Contains(check))
+                    {
+                        game.ProgressChecks.Add(check);
+                    }
+                }
+            }
+            foreach (var other in others)
+            {
+                if (GuideLinker.RemapRefs(other.SectionsJson, transfer) is { } remapped)
+                {
+                    other.SectionsJson = remapped;
+                }
+            }
+        }
+
+        existing.Title = fresh.Title;
+        existing.Icon = fresh.Icon;
+        existing.SectionsJson = fresh.SectionsJson;
+        existing.GroupKey ??= fresh.GroupKey;
+        existing.TopicId ??= fresh.TopicId;
+        // Links first (they may need the ticks of ids that vanished: a row that pointed at one becomes a normal row and keeps the tick), deletions after
+        GuideLinkMaintenance.Apply(db, game);
+        oldIds.ExceptWith(ApiEndpoints.CollectItemIds(game.Tabs));
+        var orphanedChecks = game.ProgressChecks.Where(p => oldIds.Contains(p.ItemKey)).ToList();
+        if (orphanedChecks.Count > 0)
+        {
+            db.ProgressChecks.RemoveRange(orphanedChecks);
+            foreach (var check in orphanedChecks)
+            {
+                game.ProgressChecks.Remove(check);
+            }
+        }
     }
 
     private static async Task<object> RunLoreAsync(IServiceProvider sp, string slug, string? providerOverride, AiJobProgress progress, CancellationToken ct)
@@ -322,7 +510,7 @@ public static class AiActionEndpoints
 
         progress.Step("saving");
         // Item ids must be unique per game (checklist rows of the other tabs count); the old lore tab's ids are replaced
-        ApiEndpoints.MakeItemIdsUnique([researched], ApiEndpoints.CollectItemIds(game.Tabs.Where(t => t.Slug != LoreTab.Slug)));
+        ApiEndpoints.MakeItemIdsUnique([researched], ApiEndpoints.CollectTakenItemIds(game.Tabs.Where(t => t.Slug != LoreTab.Slug)));
 
         var existing = game.Tabs.FirstOrDefault(t => t.Slug == LoreTab.Slug);
         if (existing is null)
@@ -418,6 +606,7 @@ internal sealed class ChapterReplacer(IServiceScopeFactory scopes, HashSet<strin
             existing.SectionsJson = result.SectionsJson;
             // A group the user (or an earlier research) chose stays; a chapter without one gets the group of its topic
             existing.GroupKey ??= result.GroupKey;
+            existing.TopicId ??= result.TopicId;
             var game = await db.Games.FirstOrDefaultAsync(g => g.Id == existing.GameId);
             if (game is not null)
             {

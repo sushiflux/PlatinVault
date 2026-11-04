@@ -31,6 +31,8 @@ internal sealed class TestServer : IAsyncDisposable
 
     public HttpClient Client { get; }
 
+    public IServiceProvider Services => _app.Services;
+
     public static async Task<TestServer> StartAsync(IDesktopHost? desktop, Action<WebApplicationBuilder>? configure = null)
     {
         var folder = Path.Combine(Path.GetTempPath(), "pv-apitest-" + Guid.NewGuid().ToString("N")[..10]);

@@ -2,7 +2,7 @@
 title: PlatinVault
 subtitle: Handbuch
 tagline: Live-Trophäen für deine Steam-Spiele und 100-%-Guides an einem Ort – so richtest du PlatinVault ein und nutzt es im Alltag.
-version: v2026.11.16
+version: v2026.11.17
 date: 2026-11-03
 status: Release
 copyright: © 2026 SushiFlux
@@ -361,11 +361,33 @@ Verbindung). Starten kannst du nur Spiele aus deiner Sammlung und deiner Steam-B
   - *Schritt 1, Kapitelliste:* **Prompt kopieren**, im Chat einfügen (am besten mit eingeschalteter Websuche) und die Antwort in das Feld
     darunter einfügen – auch mit Text davor oder in einem json-Codeblock, oder als Datei laden. Du siehst die vorgeschlagenen Kapitel wie im
     Baukasten und hakst an, was du willst. Wer keinen Bauplan-Prompt möchte, wählt die Themen selbst.
-  - *Schritt 2, Kapitel für Kapitel:* Jedes Kapitel hat einen eigenen Prompt (**Prompt kopieren** oder **Als Datei exportieren**) und ein Feld für
+  - *Schritt 2, Vorgehen:* Oben wählst du unter **Vorgehen** zwischen **Alle auf einmal** und **Einzeln**. Bei vielen Kapiteln ist
+    **Alle auf einmal** der bequemere Weg (siehe unten).
+  - *Schritt 2, Einzeln, Kapitel für Kapitel:* Jedes Kapitel hat einen eigenen Prompt (**Prompt kopieren** oder **Als Datei exportieren**) und ein Feld für
     die Antwort. Die Antwort wird **beim Einfügen** geprüft: Gehört sie zum richtigen Spiel (Steam-AppID steht in jedem Prompt und in der
     Antwort)? Ist das JSON vollständig (nicht abgeschnitten)? Stimmen Abschnitte, Tabellenzeilen und Sprache? Fehler stehen vollständig
     darunter, dazu eine Vorschau (Titel, Abschnitte, Tabellenzeilen). **Kapitel speichern** legt das Kapitel genau wie ein KI-Ergebnis an; ein
     Haken zeigt, was schon gespeichert ist. Bei einem nicht recherchierten Kapitel ersetzt die Antwort den Hinweis.
+  - *Alle auf einmal:* PlatinVault macht **einen** Prompt für alle gewählten Kapitel (darüber steht, wie viele Kapitel es sind und wie groß der
+    Prompt ist). So gehst du vor:
+    1. Prompt kopieren und im Chat deines Abos einfügen, am besten mit eingeschalteter Websuche.
+    2. Der Chat antwortet Kapitel für Kapitel. Füge jede Antwort in das Feld **Antworten des Chats** ein – sie wird an das bisher Eingefügte
+       angehängt – oder ziehe die Datei hinein, die dein Chat erstellt hat (`.json`, `.md` oder `.txt`, oder **Datei wählen**). Schreibe im Chat
+       „weiter“, bis er als letzte Zeile **ALLE KAPITEL FERTIG** meldet.
+    3. Unter **Kapitel** steht für jedes Kapitel sein Zustand: **Ausstehend**, **Erkannt**, **Mit Hinweisen**, **Fehler**, **Gibt es im Spiel
+       nicht** oder **Gespeichert**. Ein Klick auf ein Kapitel zeigt die Einzelheiten. Antworten, die keinem Kapitel zugeordnet werden können
+       (der Chat hat die vorgegebene Kapitel-ID K01, K02 … nicht benutzt), stehen gesondert und werden nicht gespeichert.
+    4. **N Kapitel speichern** legt alle erkannten Kapitel auf einmal an, genau wie KI-Ergebnisse. Ist der Chat nicht fertig geworden oder
+       ist ein Kapitel fehlerhaft, kopierst du **Prompt für die restlichen X Kapitel kopieren**, fügst ihn im Chat ein und machst damit weiter.
+    5. Sind alle Kapitel gespeichert, sagt PlatinVault, dass du das Fenster schließen kannst.
+
+    Was du eingefügt hast, bleibt erhalten, wenn du das Fenster zwischendurch schließt (solange du den Browser-Tab offen lässt). **Eingefügtes
+    leeren** verwirft es nach einer Rückfrage; bereits gespeicherte Kapitel bleiben gespeichert. Sind mehrere Kapitel fehlgeschlagen, startet
+    **Alle mit meinem KI-Abo** am Hinweis den Weg für genau diese Kapitel.
+  - **Warnung bei Sätzen in einer anderen Sprache:** Steht in einer eingefügten Antwort etwas in einer anderen Sprache als der des Guides,
+    zeigt PlatinVault eine Warnung mit bis zu drei Beispielsätzen. **Korrektur-Prompt kopieren** kopiert einen Prompt, mit dem der Chat genau
+    diese Sätze übersetzt und die Antwort noch einmal ausgibt. Füge ihn im selben Chat ein und ersetze die Antwort hier durch die neue. Du kannst
+    die Antwort auch so speichern – die Warnung hindert dich nicht.
   - Lässt dein Browser das Kopieren nicht zu (zum Beispiel bei einer Adresse mit http im Heimnetz), wird der Prompt angezeigt und markiert –
     dann Strg+C (am Mac Cmd+C).
 - **Fortschritt einer KI-Aktion:** Solange die KI arbeitet (neuer Guide, Guide vervollständigen, Tab ergänzen, Story & Lore, Kapitel
@@ -382,6 +404,12 @@ Verbindung). Starten kannst du nur Spiele aus deiner Sammlung und deiner Steam-B
   den Hinweis, sobald es klappt. Klappt es wieder nicht, nennt der Hinweis den neuen Grund. Sind mehrere Kapitel betroffen, steht oben im
   Guide **Alle fehlgeschlagenen Kapitel erneut recherchieren**. Braucht das Spiel das Thema gar nicht, entfernt **Kapitel entfernen**
   (nach einer Rückfrage) das Kapitel, hier direkt im Hinweis (den Knopf gibt es auch bei jedem anderen Kapitel, s. u.).
+- **Kapitel neu recherchieren (jedes Kapitel):** Ist dir ein Kapitel zu dünn oder veraltet, ersetzt **Kapitel neu recherchieren** (oben rechts
+  über dem Inhalt, neben **Kapitel entfernen**) es durch eine frisch recherchierte Fassung. Die alte Fassung bleibt stehen, bis die neue fertig
+  ist. Deine Häkchen bleiben, wo die Einträge erhalten bleiben; Steam-Erfolge und alle anderen Kapitel bleiben unberührt. Die KI verbraucht dafür
+  dein Kontingent. Ohne Key oder mit einem Abo nimmst du **Mit meinem KI-Abo neu recherchieren**: Du bekommst einen Prompt für den Chat, das
+  Kapitel wird erst ersetzt, wenn du die Antwort einfügst und speicherst. Gibt es das Thema im Spiel gar nicht, bricht PlatinVault mit einer
+  Meldung ab und das Kapitel bleibt so, wie es war. Bei Einträgen, die es weiterhin gibt, bleiben deine Häkchen auch dann, wenn die KI sie umbenennt.
 - **Kapitel entfernen (jedes Kapitel):** Ein Kapitel, das du nicht brauchst – zum Beispiel ein Thema, das zu deinem Spiel gar nicht passt –,
   entfernst du mit **Kapitel entfernen** oben rechts über dem Inhalt des Kapitels. Eine Rückfrage nennt, was gelöscht wird: das Kapitel, seine
   Übersetzung und die Häkchen, die du in seinen Listen gesetzt hast. Deine Steam-Erfolge und alle anderen Kapitel bleiben unberührt; rückgängig
@@ -389,10 +417,17 @@ Verbindung). Starten kannst du nur Spiele aus deiner Sammlung und deiner Steam-B
   öffnet sich das nächste Kapitel. Nicht entfernen lassen sich die Steam-Erfolgsliste des Guides (die Live-Trophäen lesen ihre Tipps daraus) und
   **Story & Lore** (ein eigener Bereich; er wird dort neu recherchiert).
 - **Komplettlösung (immer ganz oben):** Gibt es für ein Spiel eine belastbare, vollständige Quelle, hat der Guide als erstes Kapitel die
-  **Komplettlösung**: der Spielverlauf Schritt für Schritt in der Reihenfolge des Spiels, gegliedert nach Story-Kapiteln und Gebieten. An genau
-  der Stelle, an der etwas wichtig wird, steht ein farbiger Hinweis mit eigenem Symbol: **Wichtig – unbedingt mitnehmen** (mit Fundort),
-  **Verpassbar ab hier**, **Optional hier verfügbar** (Nebenquests und Co.) und **Tipp**. Rätsel erscheinen als eigener Block (siehe unten).
-  Geschrieben ist sie in eigenen Worten, die Quellen stehen im Einleitungs-Kasten. Gibt es keine belastbare Quelle, legt PlatinVault das
+  **Komplettlösung**: der Spielverlauf in der Reihenfolge des Spiels, aufgebaut wie ein gedrucktes Lösungsbuch. Neben der Komplettlösung steht ein
+  **Inhalt**, über den du direkt zu einem Teil oder Gebiet springst (ein- und ausblendbar). Jeder **Teil** (Story-Kapitel oder Mission) beginnt
+  mit einem kurzen Orientierungssatz und dem Kasten **Auf einen Blick**: empfohlene Stufe, was es hier zu finden gibt, welche Steam-Erfolge in
+  diesem Teil möglich sind, Schlüsselgegenstände, Verpassbares und ob der Teil an einem Point of no Return endet. Darunter folgen die
+  **Gebiete** in der Reihenfolge, in der man hindurchkommt: die Route in nummerierten Schritten (jeder Schritt ein bis zwei ganze Sätze),
+  die **Funde** des Gebiets als abhakbare Tabelle (mit einer Spalte **Verpassbar**), Nebenaufgaben und Bosse. Farbige Hinweise mit eigenem
+  Symbol stehen genau dort, wo etwas wichtig wird: **Wichtig – unbedingt mitnehmen** (mit Fundort), **Verpassbar ab hier**, **Optional hier
+  verfügbar**, **Erfolg hier möglich**, **Tipp** und – kurz vor dem Punkt, ab dem es kein Zurück gibt – **Point of no Return** mit der Liste
+  **Erledige das vorher**. Rätsel erscheinen als eigener Block (siehe unten).
+  Geschrieben ist sie in eigenen Worten; die Quellen stehen am Ende des Kapitels unter **Quellen** (Links öffnen im Browser) und im
+  Einleitungs-Kasten. Gibt es keine belastbare Quelle, legt PlatinVault das
   Kapitel nicht an – es wird nichts erfunden. Die Komplettlösung zählt nicht zur Kapitelzahl deines Umfangs; sie wird in mehreren Teilen
   recherchiert (die Meldung nennt den Teil, an dem gerade gearbeitet wird). Ein bestehender Guide bekommt sie über **Guide vervollständigen**
   und steht danach trotzdem ganz oben.
@@ -406,7 +441,23 @@ Verbindung). Starten kannst du nur Spiele aus deiner Sammlung und deiner Steam-B
   Neue Kapitel enthalten Rätsel so; ältere Kapitel behalten ihren Text. Wer die strukturierten Lösungen für ein bestehendes Spiel möchte, wählt
   in **Guide vervollständigen** das Thema **Rätsel & versteckte Mechaniken** (es wird nur vorgeschlagen, wenn das Spiel solche Rätsel hat)
   oder ergänzt mit **Tab ergänzen** ein Kapitel zu einem bestimmten Rätsel.
-- **Titel:** Kapitel-Titel stehen nur in der Sprache des Guides, ohne Übersetzung in Klammern.
+- **Nebenaufgaben:** In der Komplettlösung stehen Nebenaufgaben nur kompakt in einem Hinweis **Nebenaufgaben hier verfügbar** (Name, ab wann,
+  verpassbar bis wann, kurze Belohnung). Die vollständige Lösung steht im eigenen Nebenaufgaben-Kapitel; **Alle im Kapitel „…“** und der Name
+  der Aufgabe führen dorthin.
+- **Bosse:** Jeder Bosskampf hat eine eigene Karte **Gegner** mit Ort, empfohlener Stufe, **Lebenspunkten** (nur mit Quelle – sonst steht
+  „nicht dokumentiert“, PlatinVault erfindet keine Zahlen), **Schwächen**, **Resistenzen**, **Immunitäten**, **Gefährlichen Angriffen**,
+  **Phasen**, empfohlener Gruppe und Ausrüstung, **Taktik** und **Belohnungen**. Ist der Kampf verpassbar oder schaltet er einen Erfolg frei,
+  steht das auch dort.
+- **Verknüpfte Häkchen:** Taucht ein Eintrag in zwei Kapiteln auf – zum Beispiel ein Gegenstand, den die Komplettlösung erwähnt und der in
+  einer Sammelliste eine eigene Zeile hat –, teilen sich beide **dasselbe Häkchen**: Hakst du den Eintrag an einer Stelle ab, ist er an der
+  anderen auch erledigt. Der Eintrag in der Komplettlösung trägt den Sprunglink **→ Name des Kapitels** zur ursprünglichen Zeile, und die
+  ursprüngliche Zeile zeigt, wo er sonst noch vorkommt (**Komplettlösung · Teil · Gebiet**). Verknüpft wird nur, wenn der Name zu genau einem
+  Eintrag eines anderen Kapitels passt; im Zweifel bleibt es getrennt, es wird nichts geraten. Entfernst du das Kapitel mit der ursprünglichen
+  Zeile, behält der andere Eintrag sein Häkchen und wird wieder ein normaler Eintrag.
+- **Quellen der Recherche:** Die KI sucht zuerst nach einem Wiki, das eigens für dieses Spiel gemacht ist, und nimmt danach weitere Quellen dazu; Zahlen werden möglichst mit einer zweiten Quelle abgeglichen.
+- **Sprache und Titel:** Ein Guide ist ganz in seiner Sprache geschrieben – jeder Satz in eigenen Worten, nicht aus fremdsprachigen Quellen
+  übernommen. Namen stehen so, wie sie in der Fassung des Spiels in dieser Sprache heißen; der englische Originalname steht höchstens einmal je
+  Kapitel beim ersten Vorkommen in Klammern. Kapitel-Titel stehen nur in der Sprache des Guides, ohne Übersetzung in Klammern.
 - **Tab ergänzen:** Ein einzelnes Kapitel zu einem Thema recherchieren lassen – Thema anklicken oder selbst beschreiben. Welche KI das
   übernimmt, steht am Knopf (siehe 4.3).
 - **Exportieren / Als PDF:** Guide als Datei teilen (ohne deinen Fortschritt) oder ausdrucken.
@@ -456,7 +507,7 @@ Trophäen-Popup trägt – gilt dieselbe Skala mit fünf Stufen:
 - **Häufig:** ab 50 %
 
 Die **Farbe** einer Trophäe (Gold, Silber, Bronze) richtet sich nach demselben Anteil, aber mit eigenen Grenzen: **Gold**
-haben höchstens 5 % der Spieler, **Silber** höchstens 25 %, **Bronze** mehr als 25 %. **Platin** bekommst du, wenn du alle
+haben höchstens 10 % der Spieler, **Silber** höchstens 50 %, **Bronze** mehr als 50 %. **Platin** bekommst du, wenn du alle
 Trophäen eines Spiels hast. Liefert Steam für eine Trophäe keinen Anteil, nennt PlatinVault dafür keine Seltenheitsstufe und
 rechnet sie in den Statistiken nicht mit.
 
@@ -689,6 +740,9 @@ der Linux-Bridge. Hilft `status` nicht weiter, melde uns bitte, was es und das P
 | Unter Linux: „Port 5233 ist belegt“ bei der Installation | Ein anderes Programm benutzt den Port. Installiere mit `./install.sh --port 5300` (oder einer anderen freien Nummer). |
 | Popup kommt, aber ohne Ton | Steht der Hinweis **„Ton vom Browser gesperrt“** da, hat der Browser den Ton zurückgehalten: Browser spielen Töne erst nach einem Klick oder Tastendruck auf der Seite, zum Beispiel nach dem Neuladen. Ein Klick gibt den Ton frei, **Verpassten Ton abspielen** spielt ihn nach. Ohne diesen Hinweis: Lautstärke unter Einstellungen → **Live & Sound** erhöhen (neben lautem Spielsound gehen leise Töne unter) und prüfen, ob der Browser-Tab stumm geschaltet ist. |
 | Die KI meldet ein Limit | Unter Einstellungen → KI-Recherche zeigt die Liste **Deine KIs**, welche KI wann ein Problem bekam. Mit eingeschaltetem automatischem Wechsel macht PlatinVault mit der nächsten KI weiter und sagt es dir; sonst wählst du selbst eine andere KI („Mit … erneut versuchen“). „Verbindung echt testen“ zeigt bei Gemini zusätzlich den Grund: Tageslimit (später erneut versuchen), Modell überlastet (kurz warten) oder keine Websuche im Gratis-Tarif (Google-Projekt mit Abrechnung nötig). |
+| Im KI-Abo-Fenster erscheint eine Warnung mit fremdsprachigen Sätzen | Die Antwort des Chats enthält Sätze in einer anderen Sprache als der Guide. **Korrektur-Prompt kopieren**, im selben Chat einfügen und die neue Antwort einsetzen (Abschnitt 6.2). |
+| Bei „Alle auf einmal“ bleibt ein Kapitel **Ausstehend** oder steht bei **Nicht zuordenbare Antworten** | Der Chat hat die Kapitel-ID (K01, K02 …) nicht benutzt oder ist nicht fertig geworden. Schreibe im Chat „weiter“, bis er **ALLE KAPITEL FERTIG** meldet, oder kopiere **Prompt für die restlichen X Kapitel kopieren** und mach damit weiter. |
+| Ein Kapitel ist zu dünn oder veraltet | **Kapitel neu recherchieren** bzw. **Mit meinem KI-Abo neu recherchieren** über dem Kapitelinhalt (Abschnitt 6.2). |
 | Ein Kapitel zeigt „konnte nicht recherchiert werden“ | Auf **Kapitel erneut recherchieren** klicken (Details siehe 6.2). Der Grund steht im Hinweis; bei einem Quoten- oder Key-Problem zuerst unter Einstellungen → **KI-Recherche** nachsehen oder über den Pfeil am Knopf eine andere KI wählen. |
 | „Der Server wurde neu gestartet, die Recherche wurde unterbrochen“ | Der Server war während der Recherche kurz weg (Update, Neustart). Fertige Kapitel sind gespeichert; starte dieselbe Aktion noch einmal, sie macht dort weiter. |
 | Erfolge auf Englisch | Das Spiel hat bei Steam keine deutschen Texte; mit KI-Key übersetzt PlatinVault sie automatisch. |

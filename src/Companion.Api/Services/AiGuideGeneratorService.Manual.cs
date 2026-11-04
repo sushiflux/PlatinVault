@@ -55,11 +55,38 @@ public sealed partial class AiGuideGeneratorService
     {
         var language = GuideLanguage(game);
         using var languageScope = Lang.Use(language);
-        var context = await ManualContextAsync(game, language, ct);
+        // The chapter the answer will replace is no link target of itself; with "replace" it is researched again like "redo"
+        var existing = request.TabId is { } tabId ? game.Tabs.FirstOrDefault(t => t.Id == tabId) : null;
+        var context = WithLinkCandidates(await ManualContextAsync(game, language, ct), game.Tabs, existing is null ? null : new HashSet<Guid> { existing.Id });
         var title = ChapterTitles.Clean(request.Title.Trim(), language);
         var source = string.IsNullOrWhiteSpace(request.SourceSituation) ? UnknownSource(language) : request.SourceSituation.Trim();
-        var prompt = ComposeManualChapterPrompt(context, game, language, title, request.Focus.Trim(), source, request.TopicId);
+        var (focus, topicId) = ManualChapterAssignment(existing, request, language);
+        if (existing is not null && request.Replace == true)
+        {
+            context = WithKeepItems(context, existing);
+        }
+        var prompt = ComposeManualChapterPrompt(context, game, language, title, focus, source, topicId);
         return new ManualPromptDto("chapter", prompt, ManualFileName(game, (language == Lang.English ? "chapter-" : "kapitel-") + Slugify(title)), language, game.SteamAppId, game.Title);
+    }
+
+    /// <summary>
+    /// The assignment and topic of a manual chapter prompt. For a chapter that is replaced (Replace) they come from the stored chapter exactly like "redo"
+    /// (<see cref="RedoPlan"/>; the walkthrough is recognised by its address); the stored topic also wins for a failed placeholder. Without a stored chapter
+    /// the client's values count (a planned chapter).
+    /// </summary>
+    internal static (string Focus, string? TopicId) ManualChapterAssignment(GuideTabEntity? existing, ManualChapterPromptRequest request, string language)
+    {
+        var clientFocus = string.IsNullOrWhiteSpace(request.Focus) ? null : request.Focus.Trim();
+        var clientTopic = string.IsNullOrWhiteSpace(request.TopicId) ? null : request.TopicId.Trim();
+        if (existing is null)
+        {
+            return (clientFocus ?? request.Title.Trim(), clientTopic);
+        }
+        var plan = RedoPlan(existing, language);
+        var storedTopic = WalkthroughTab.Is(existing) ? WalkthroughTab.TopicId : existing.TopicId ?? FailedChapters.Read(existing.SectionsJson)?.TopicId;
+        var topic = storedTopic ?? clientTopic ?? plan.TopicId;
+        var focus = request.Replace == true ? plan.Focus : clientFocus ?? plan.Focus;
+        return (focus, topic);
     }
 
     /// <summary>The blueprint prompt of the real AI path plus the output contract for a chat.</summary>
@@ -102,7 +129,7 @@ public sealed partial class AiGuideGeneratorService
               - Output the result as ONE JSON object in exactly one code block (```json … ```), without any text before or after it.
               - The JSON object starts with the two identifying fields "game" and "steamAppId", like this (shortened, write the real content): {skeleton}
               - Write real content, no placeholders like "..." – the structure description above is only the pattern. What you cannot back up: "Not documented yet (as of <today's date>)" – invent nothing.
-              - Use the web search of your chat if it has one; without web search mark the source situation as thin.
+              - Use the web search of your chat if it has one - first for a wiki dedicated to this game (step 1 of the research rules; skip it silently when there is none); without web search mark the source situation as thin.
               """
             : $"""
               Ausgabe in diesem Chat (das gilt zusätzlich und hat bei der Ausgabe Vorrang vor dem Satz „ohne Markdown-Codeblock“ oben):
@@ -110,7 +137,7 @@ public sealed partial class AiGuideGeneratorService
               - Gib das Ergebnis als EIN JSON-Objekt aus, in genau einem Codeblock (```json … ```), ohne Text davor oder danach.
               - Das JSON-Objekt beginnt mit den zwei Feldern „game“ und „steamAppId“, so (verkürzt, schreibe die echten Inhalte): {skeleton}
               - Schreibe echte Inhalte, keine Platzhalter wie "..." – die Strukturbeschreibung oben ist nur das Muster. Was du nicht belegen kannst: „Noch nicht dokumentiert (Stand <heutiges Datum>)“ – erfinde nichts.
-              - Nutze die Websuche deines Chats, falls es eine gibt; ohne Websuche kennzeichne die Quellenlage als dünn.
+              - Nutze die Websuche deines Chats, falls es eine gibt – zuerst nach einem Wiki speziell zu diesem Spiel (Schritt 1 der Recherche-Regeln; gibt es keins, überspring ihn ohne Erwähnung); ohne Websuche kennzeichne die Quellenlage als dünn.
               """;
     }
 
@@ -206,7 +233,7 @@ public sealed partial class AiGuideGeneratorService
     /// game" (top-level "notApplicable": true, same contract as the AI path, <see cref="ChapterApplicability"/>) is a valid answer for a topic that may be
     /// dropped: Ok, no preview, <c>NotApplicable</c> = the sentence for the UI. For walkthrough, roadmap and tips it is an error unless real sections come with it.
     /// </summary>
-    public ManualChapterChecked CheckManualChapter(GameEntity game, string? text, string expectedTitle, string? topicId = null, bool replacesPlaceholder = false)
+    public ManualChapterChecked CheckManualChapter(GameEntity game, string? text, string expectedTitle, string? topicId = null, bool replacesPlaceholder = false, string? batchKey = null)
     {
         var errors = new List<ManualIssueDto>();
         var warnings = new List<ManualIssueDto>();
@@ -259,13 +286,14 @@ public sealed partial class AiGuideGeneratorService
             return Failed();
         }
 
-        ManualAnswers.ScanSections(sections, warnings);
+        var knownApiNames = AchievementApiNames(game);
+        ManualAnswers.ScanSections(sections, warnings, knownApiNames);
         var language = GuideLanguage(game);
         JsonArray normalized;
         using (Lang.Use(language))
         {
             using var doc = JsonDocument.Parse(sections.ToJsonString());
-            normalized = GuideSectionNormalizer.Normalize(doc.RootElement);
+            normalized = GuideSectionNormalizer.Normalize(doc.RootElement, new NormalizeOptions(knownApiNames));
         }
         if (normalized.Count == 0)
         {
@@ -286,6 +314,16 @@ public sealed partial class AiGuideGeneratorService
             warnings.Add(ManualAnswers.Issue("otherLanguage", ServerTexts.Manual.OtherLanguage(language)));
         }
 
+        // Single sentences in the other language (e.g. objectives copied from an English source): a warning with examples and a ready prompt to fix them
+        string? fixPrompt = null;
+        var foreign = ForeignLanguageCheck.FindSentences(normalized, language);
+        if (foreign.Count > 0)
+        {
+            var examples = string.Join(" · ", foreign.Take(3).Select(f => "„" + (f.Length > 120 ? f[..117].TrimEnd() + "..." : f) + "“"));
+            warnings.Add(ManualAnswers.Issue("foreignSentences", ServerTexts.Manual.ForeignSentences(language, foreign.Count, examples), string.Join("\n", foreign), foreign.Take(3).ToList()));
+            fixPrompt = ManualFixPrompt(game, language, title, batchKey, foreign);
+        }
+
         var rows = 0;
         var cards = 0;
         foreach (var section in normalized.OfType<JsonObject>())
@@ -296,7 +334,60 @@ public sealed partial class AiGuideGeneratorService
         var icon = root["icon"]?.ToString() is { Length: > 0 } stated ? stated : "mdi:star-four-points";
         var sectionTitles = normalized.OfType<JsonObject>().Select(s => s["title"]?.ToString()).Where(t => !string.IsNullOrWhiteSpace(t)).Select(t => t!).Take(8).ToList();
         var preview = new ManualChapterPreviewDto(title, icon, normalized.Count, rows, cards, sectionTitles);
-        return new ManualChapterChecked(new ManualChapterCheckDto(true, [], warnings, preview), root.ToJsonString());
+        return new ManualChapterChecked(new ManualChapterCheckDto(true, [], warnings, preview, FixPrompt: fixPrompt), root.ToJsonString());
+    }
+
+    /// <summary>The Steam API names of the game's achievement list (its row ids), or null when the guide has no such list (then only the syntax is checked).</summary>
+    internal static IReadOnlySet<string>? AchievementApiNames(GameEntity game)
+    {
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var tab in game.Tabs)
+        {
+            var sections = ApiEndpoints.DeserializeSections(tab.SectionsJson);
+            if (!ApiEndpoints.IsAchievementList(tab, sections))
+            {
+                continue;
+            }
+            foreach (var row in sections.SelectMany(s => s.Table?.Rows ?? []))
+            {
+                names.Add(row.ItemId);
+            }
+        }
+        return names.Count > 0 ? names : null;
+    }
+
+    /// <summary>
+    /// The prompt that asks the chat to rewrite the sentences that are not in the guide language - exactly those (and any further one), by the language
+    /// rule, without changing anything else - and to output the same JSON object again. Batch answers keep their chapter key.
+    /// </summary>
+    internal static string ManualFixPrompt(GameEntity game, string language, string chapterTitle, string? batchKey, IReadOnlyList<string> sentences)
+    {
+        var english = language == Lang.English;
+        var appId = game.SteamAppId is > 0 ? game.SteamAppId.Value.ToString() : "null";
+        var list = string.Join("\n", sentences.Take(15).Select(x => "- " + x));
+        var more = sentences.Count > 15 ? (english ? $"\n(+{sentences.Count - 15} more)" : $"\n(+{sentences.Count - 15} weitere)") : string.Empty;
+        var fields = batchKey is null
+            ? english ? $"\"game\", \"steamAppId\" ({appId}) and \"title\"" : $"„game“, „steamAppId“ ({appId}) und „title“"
+            : english ? $"\"game\", \"steamAppId\" ({appId}), \"chapter\" (\"{batchKey}\") and \"title\"" : $"„game“, „steamAppId“ ({appId}), „chapter“ („{batchKey}“) und „title“";
+        return english
+            ? $"""
+              Your answer for the chapter "{chapterTitle}" of "{game.Title}" contains sentences that are not in English, for example:
+              {list}{more}
+
+              Rewrite EXACTLY these passages – and every other sentence that is not in English – in your own words in English. This rule applies:
+              {LanguageRules(language)}
+              Change nothing else: the same sections in the same order, the same itemIds, apiNames, numbers and URLs.
+              Then output the same JSON object again, complete, in exactly one code block (```json … ```), starting with the fields {fields}.
+              """
+            : $"""
+              Deine Antwort für das Kapitel „{chapterTitle}“ von „{game.Title}“ enthält Sätze, die nicht auf Deutsch sind, zum Beispiel:
+              {list}{more}
+
+              Schreibe GENAU diese Stellen – und jeden weiteren Satz, der nicht auf Deutsch ist – in eigenen Worten auf Deutsch neu. Dabei gilt:
+              {LanguageRules(language)}
+              Ändere sonst nichts: dieselben Abschnitte in derselben Reihenfolge, dieselben itemIds, apiNames, Zahlen und URLs.
+              Gib danach dasselbe JSON-Objekt vollständig noch einmal aus, in genau einem Codeblock (```json … ```), beginnend mit den Feldern {fields}.
+              """;
     }
 
     /// <summary>Builds the tab of a checked answer exactly like an AI result (title cleanup, normalizer, group), at the given sort order.</summary>
@@ -305,6 +396,6 @@ public sealed partial class AiGuideGeneratorService
         var language = GuideLanguage(game);
         using var languageScope = Lang.Use(language);
         var plan = new ChapterPlan(request.Title.Trim(), string.IsNullOrWhiteSpace(request.Icon) ? "mdi:star-four-points" : request.Icon.Trim(), (request.Focus ?? request.Title).Trim(), string.IsNullOrWhiteSpace(request.TopicId) ? "extra" : request.TopicId.Trim());
-        return BuildTabFromChapterJson(game.Id, sortOrder, plan, canonicalJson);
+        return BuildTabFromChapterJson(game.Id, sortOrder, plan, canonicalJson, new NormalizeOptions(AchievementApiNames(game)));
     }
 }

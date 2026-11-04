@@ -2,7 +2,7 @@
 title: PlatinVault
 subtitle: Handbook
 tagline: Live trophies for your Steam games and 100 % guides in one place – how to set up PlatinVault and use it every day.
-version: v2026.11.16
+version: v2026.11.17
 date: 2026-11-03
 status: Release
 copyright: © 2026 SushiFlux
@@ -347,11 +347,33 @@ from your collection and your Steam library.
   - *Step 1, chapter list:* **Copy prompt**, paste it into the chat (ideally with web search switched on) and paste the answer into the field
     below – also with text before it or inside a json code block, or load it as a file. You see the suggested chapters as in the builder and
     tick what you want. If you do not want a blueprint prompt, choose the topics yourself.
-  - *Step 2, chapter by chapter:* every chapter has a prompt of its own (**Copy prompt** or **Export as file**) and a field for the answer. The
+  - *Step 2, approach:* at the top, **Approach** lets you choose between **All at once** and **One by one**. With many chapters, **All at once**
+    is the more convenient way (see below).
+  - *Step 2, one by one, chapter by chapter:* every chapter has a prompt of its own (**Copy prompt** or **Export as file**) and a field for the answer. The
     answer is checked **while you paste it**: does it belong to the right game (the Steam AppID is in every prompt and in the answer)? Is the
     JSON complete (not cut off)? Do sections, table rows and language fit? Errors are shown completely below it, together with a preview
     (title, sections, table rows). **Save chapter** creates the chapter exactly like an AI result; a tick shows what is saved already. For a
     chapter that could not be researched, the answer replaces the note.
+  - *All at once:* PlatinVault makes **one** prompt for all chosen chapters (above it you see how many chapters there are and how big the prompt
+    is). Proceed like this:
+    1. Copy the prompt and paste it into the chat of your subscription, ideally with web search switched on.
+    2. The chat answers chapter by chapter. Paste every answer into the field **Answers of the chat** – it is appended to what is already
+       there – or drop the file your chat created (`.json`, `.md` or `.txt`, or **Choose file**). Write “continue” in the chat until its last line
+       says **ALL CHAPTERS DONE**.
+    3. Under **Chapters** every chapter shows its state: **Pending**, **Recognised**, **With notes**, **Error**, **Not in this game** or **Saved**.
+       Click a chapter for the details. Answers that cannot be assigned to a chapter (the chat did not use the given chapter ID K01, K02 …) are
+       listed separately and are not saved.
+    4. **Save N chapters** creates all recognised chapters at once, exactly like AI results. If the chat did not finish or a chapter is faulty,
+       copy **Copy prompt for the remaining X chapters**, paste it into the chat and carry on with it.
+    5. When all chapters are saved, PlatinVault tells you that you can close the window.
+
+    What you pasted is kept when you close the window in between (as long as you leave the browser tab open). **Clear pasted text** discards it after
+    a confirmation; chapters that are already saved stay saved. If several chapters failed, **All with my AI subscription** in the notice starts
+    this way for exactly those chapters.
+  - **Warning for sentences in another language:** if a pasted answer contains something in a language other than the guide's, PlatinVault shows
+    a warning with up to three example sentences. **Copy correction prompt** copies a prompt that makes the chat translate exactly those sentences and
+    output the answer again. Paste it into the same chat and replace the answer here with the new one. You can also save the answer as it is – the
+    warning does not stop you.
   - If your browser does not allow copying (for example on an http address in your home network), the prompt is shown and selected – then press
     Ctrl+C (Cmd+C on a Mac).
 - **Progress of an AI action:** while the AI works (new guide, complete the guide, add a tab, Story & Lore, research chapters again), a
@@ -368,16 +390,26 @@ from your collection and your Steam library.
   the note names the new reason. If several chapters are affected, **Research all failed chapters again** appears at the top of the
   guide. If the game does not need the topic at all, **Remove chapter** removes it (after a confirmation), right in the note (every other
   chapter has the button too, see below).
+- **Research chapter again (any chapter):** if a chapter is too thin or outdated, **Research chapter again** (top right above the content, next
+  to **Remove chapter**) replaces it with a freshly researched version. The old version stays until the new one is ready. Your ticks stay where
+  the entries are kept; Steam achievements and all other chapters are not affected. The AI uses your quota for this. Without a key, or with a
+  subscription, use **Research again with my AI subscription**: you get a prompt for the chat, and the chapter is only replaced once you paste the
+  answer and save. If the game does not have the topic at all, PlatinVault stops with a message and the chapter stays as it was. For entries that still exist, your ticks stay even if the AI renames them.
 - **Remove chapter (any chapter):** a chapter you do not need – for example a topic that does not fit your game at all – is removed with
   **Remove chapter** at the top right above the chapter's content. A confirmation says what is deleted: the chapter, its translation and the
   check marks you set in its lists. Your Steam achievements and all other chapters are not affected; removing cannot be undone, but with
   **Complete the guide** the AI can research missing topics again later. Afterwards the next chapter opens. The guide's Steam achievement list
   (the live trophies read their tips from it) and **Story & Lore** (an area of its own; it is researched anew there) cannot be removed.
 - **Walkthrough (always on top):** if a game has a reliable, complete source, the guide starts with the **walkthrough** chapter: the course of the
-  game step by step in the order of the game, split by story chapters and areas. Exactly where something becomes important there is a coloured
-  hint with its own symbol: **Important – take it along** (with its location), **Missable from here**, **Optional content available here** (side
-  quests and the like) and **Tip**. Puzzles appear as a block of their own (see below). It is written in its own words, the sources are named in the
-  opening box. If there is no reliable source PlatinVault does not create the chapter – nothing is invented. The walkthrough does not count towards
+  game in the order of the game, built like a printed strategy guide. Next to the walkthrough there is a **Contents** you use to jump straight to a
+  part or area (it can be shown and hidden). Every **part** (story chapter or mission) starts with a short orientation sentence and the box **At a
+  glance**: recommended level, what there is to find, which Steam achievements are possible in this part, key items, missables and whether the part
+  ends at a point of no return. Below follow the **areas** in the order you pass through them: the route in numbered steps (each step one or two
+  full sentences), the area's **finds** as a tickable table (with a **Missable** column), side quests and bosses. Coloured hints with their own
+  symbol appear exactly where something becomes important: **Important – take it along** (with its location), **Missable from here**, **Optional
+  content available here**, **Achievement available here**, **Tip** and – shortly before the point of no return – **Point of no return** with the
+  list **Do this first**. Puzzles appear as a block of their own (see below). It is written in its own words; the sources are listed at the end of
+  the chapter under **Sources** (links open in the browser) and in the opening box. If there is no reliable source PlatinVault does not create the chapter – nothing is invented. The walkthrough does not count towards
   the chapter number of your scope; it is researched in several parts (the message names the part being worked on). An existing guide gets it
   through **Complete the guide** and it still sits on top afterwards.
 - **Puzzles and “Show solution”:** every puzzle, code and sequence (“in the right order”) is a block of its own. It says openly **what** to do,
@@ -389,7 +421,20 @@ from your collection and your Steam library.
   codes or orders. New chapters contain puzzles this way; older chapters keep their text. To get the structured solutions for an existing game,
   pick the topic **Puzzles & hidden mechanisms** in **Complete the guide** (suggested only if the game has such puzzles) or add a chapter about
   a specific puzzle with **Add chapter**.
-- **Titles:** chapter titles are in the language of the guide only, without a translation in brackets.
+- **Side quests:** in the walkthrough, side quests appear only compactly in a hint **Side quests available here** (name, from when, missable until
+  when, short reward). The complete solution is in the chapter of its own; **All in the chapter “…”** and the quest name lead there.
+- **Bosses:** every boss fight has a card of its own, **Enemy**, with location, recommended level, **hit points** (only with a source – otherwise it
+  says “not documented”, PlatinVault does not invent numbers), **weaknesses**, **resistances**, **immunities**, **dangerous attacks**, **phases**,
+  recommended party and equipment, **tactics** and **rewards**. If the fight is missable or unlocks an achievement, that is shown there too.
+- **Linked ticks:** if an entry appears in two chapters – for example an item the walkthrough mentions and that has a row of its own in a
+  collection list – both share **the same tick**: tick the entry in one place and it is done in the other as well. The entry in the walkthrough
+  carries the jump link **→ chapter name** to the original row, and the original row shows where else it appears (**Walkthrough · Part · Area**).
+  Entries are linked only when the name matches exactly one entry of another chapter; when in doubt they stay separate – nothing is guessed. If
+  you remove the chapter with the original row, the other entry keeps its tick and becomes a normal entry again.
+- **Sources of the research:** the AI first looks for a wiki made for this very game and then adds other sources; numbers are checked against a second source where possible.
+- **Language and titles:** a guide is written entirely in its own language – every sentence in its own words, not taken over from foreign-language
+  sources. Names appear as they are called in that language's version of the game; the English original name appears at most once per chapter,
+  in brackets at the first occurrence. Chapter titles are in the language of the guide only, without a translation in brackets.
 - **Add a tab:** let the AI research a single chapter on a topic – pick a topic or describe it yourself. Which AI does it is shown on the button (see 4.3).
 - **Export / PDF:** share the guide as a file (without your progress) or print it.
 - **Reset progress:** removes all ticks of this game.
@@ -439,7 +484,7 @@ scale with five steps applies:
 (The app shows these names in the language you chose.)
 
 The **colour** of a trophy (gold, silver, bronze) follows the same share, but with its own limits: **gold** is held by at
-most 5 % of players, **silver** by at most 25 %, **bronze** by more than 25 %. **Platinum** is what you get when you own
+most 10 % of players, **silver** by at most 50 %, **bronze** by more than 50 %. **Platinum** is what you get when you own
 every trophy of a game. If Steam provides no share for a trophy, PlatinVault names no rarity step for it and leaves it out of
 the statistics.
 
@@ -665,6 +710,9 @@ bridge. If `status` does not help, please tell us what it and the log show.
 | On Linux: "port 5233 is taken" during installation | Another program uses the port. Install with `./install.sh --port 5300` (or another free number). |
 | The popup shows, but without sound | If the notice **"Sound blocked by the browser"** is shown, the browser held the sound back: browsers only play sounds after a click or key press on the page, for example after a reload. One click allows sound again, **Play the missed sound** plays it afterwards. Without that notice: raise the volume under Settings → **Live & sound** (quiet sounds get lost next to loud game audio) and check that the browser tab is not muted. |
 | The AI reports a limit | In Settings → AI research the **Your AIs** list shows which AI had a problem and since when. With the automatic switch on, PlatinVault carries on with the next AI and tells you; otherwise you pick another AI yourself ("Try again with …"). For Gemini, "Test connection for real" also shows the reason: daily limit (try again later), model overloaded (wait a moment) or no web search on the free tier (a Google project with billing is needed). |
+| A warning with foreign-language sentences appears in the AI subscription window | The chat's answer contains sentences in a language other than the guide's. **Copy correction prompt**, paste it into the same chat and insert the new answer (section 6.2). |
+| With "All at once" a chapter stays **Pending** or appears under **Answers without a chapter** | The chat did not use the chapter ID (K01, K02 …) or did not finish. Write "continue" in the chat until it says **ALL CHAPTERS DONE**, or copy **Copy prompt for the remaining X chapters** and carry on with it. |
+| A chapter is too thin or outdated | **Research chapter again** or **Research again with my AI subscription** above the chapter content (section 6.2). |
 | A chapter says "could not be researched" | Click **Research this chapter again** (details in 6.2). The reason is in the note; for a quota or key problem first look in Settings → **AI research** or pick another AI with the arrow on the button. |
 | "The server was restarted and the research was interrupted" | The server was briefly gone during the research (update, restart). Finished chapters are saved; start the same action again, it carries on from there. |
 | Achievements in English | The game has no texts in your language on Steam; with an AI key PlatinVault translates them automatically. |

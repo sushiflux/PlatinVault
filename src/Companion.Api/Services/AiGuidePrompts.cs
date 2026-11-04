@@ -15,14 +15,19 @@ public sealed partial class AiGuideGeneratorService
         var completeness = ResearchBlocks.CompletenessRule(blocks ?? ResearchBlocks.Selection.Empty, language);
         // Steam/PC only: part of every research prompt, so no prompt can forget it (see AiGuidePlatform.cs)
         var platform = PlatformRules(language);
+        // Everything in the guide language, in own words (see AiGuideLanguage.cs)
+        var languageRule = LanguageRules(language);
+        var sideQuests = SideQuestRule(language);
+        // Where to start researching, per guide language (hints only - the AI keeps searching on its own)
+        var sourceHints = SourceHints(language);
         return language == Lang.English
         ? $"""
           {platform}
 
+          {languageRule}
+
           Research rules:
-          - Research live on the internet (wikis, Fandom, PowerPyx, IGN, Reddit, Steam community guides, official patch notes).
-          - Write ALL texts in English. Use the official English names of the game for terms, items, places and characters.
-          - Chapter titles, headings and tab names are in English ONLY: no translation into another language and no bracketed addition in another language.
+          {sourceHints}
           - Invent NOTHING. If there is (as yet) no reliable source for a point – e.g. because the game has just been released –
             write explicitly "Not documented yet (as of <today's date>)" instead of guessing locations, values or names.
           - Take the current patch state into account; mark content that has changed through updates.
@@ -30,15 +35,16 @@ public sealed partial class AiGuideGeneratorService
           - For every entry state FROM WHEN it is available (chapter, area, level or story progress) and whether it is
             MISSABLE – the player wants to see: "I can already get this in this chapter, I have to watch out for this now."
           - Write like an experienced player: concrete practical tips, time savers, typical mistakes, orders.
+          {sideQuests}
           - Answer EXCLUSIVELY with a valid JSON object, without a Markdown code block and without text before or after it.
           """
         : $"""
           {platform}
 
+          {languageRule}
+
           Recherche-Regeln:
-          - Recherchiere live im Internet (Wikis, Fandom, PowerPyx, IGN, Reddit, Steam-Community-Guides, offizielle Patch-Notes).
-          - Schreibe ALLE Texte auf Deutsch. Spielbegriffe (Gegenstände, Orte, Figuren) im Fließtext und in Tabellen: deutscher Name mit englischem Originalbegriff in Klammern.
-          - Ausnahme: Kapitel-Titel, Überschriften und Tab-Namen stehen NUR auf Deutsch – ohne englische Übersetzung und ohne Klammerzusatz in einer anderen Sprache.
+          {sourceHints}
           - Erfinde NICHTS. Wenn es zu einem Punkt (noch) keine verlässliche Quelle gibt – z. B. weil das Spiel gerade erst erschienen ist –,
             schreibe ausdrücklich „Noch nicht dokumentiert (Stand <heutiges Datum>)“ statt Orte, Werte oder Namen zu raten.
           - Berücksichtige den aktuellen Patch-Stand; markiere Inhalte, die sich durch Updates geändert haben.
@@ -46,6 +52,7 @@ public sealed partial class AiGuideGeneratorService
           - Gib bei jedem Eintrag an, AB WANN er erreichbar ist (Kapitel, Gebiet, Level oder Story-Fortschritt) und ob er
             VERPASSBAR ist – der Spieler will sehen: „Das kann ich in diesem Kapitel schon holen, darauf muss ich jetzt achten.“
           - Schreibe wie ein erfahrener Spieler: konkrete Praxis-Tipps, Zeitsparer, typische Fehler, Reihenfolgen.
+          {sideQuests}
           - Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt, ohne Markdown-Codeblock und ohne Text davor oder danach.
           """;
     }
@@ -121,6 +128,7 @@ public sealed partial class AiGuideGeneratorService
                 - No (the game does not have it, or only marginally – e.g. enemies or bosses in a building or factory game without combat): "applicable": false and a
                   short "reason". Never plan a chapter that would only explain that something is missing, and never take a topic only because it is typical for the genre.
                 - Titles are in English only, without a translation in brackets.
+                Side quests: if the game has side quests, the topic "quests" is applicable – their complete solutions belong there (the walkthrough only names them).
                 Then at most 3 "extraChapters" for particularities of the game that are not part of any topic.
                 {{budgetNote}}
                 {{steamListNote}}
@@ -181,6 +189,7 @@ public sealed partial class AiGuideGeneratorService
             - Nein (gibt es im Spiel nicht oder nur am Rande – z. B. Gegner oder Bosse in einem Aufbau- oder Fabrikspiel ohne Kampf): "applicable": false und in
               "reason" kurz warum. Plane nie ein Kapitel, das nur erklären würde, dass es etwas nicht gibt, und nimm kein Thema nur, weil es zur Spielart typisch ist.
             - Titel stehen nur auf Deutsch, ohne Übersetzung in Klammern.
+            Nebenquests: Hat das Spiel Nebenquests, ist das Thema "quests" zutreffend – ihre vollständigen Lösungen gehören dorthin (die Komplettlösung nennt sie nur).
             Danach höchstens 3 "extraChapters" für Besonderheiten des Spiels, die in keinem Thema stecken.
             {{budgetNote}}
             {{steamListNote}}
@@ -220,10 +229,9 @@ public sealed partial class AiGuideGeneratorService
     internal static string BuildChapterPrompt(GameContext context, string chapterTitle, string focus, string sourceSituation, string? topicId = null)
     {
         var wishesBlock = ResearchBlocks.BuildWishesBlock(context.Blocks, context.ResearchBase, ResearchBlocks.Scope.Chapter, context.Language);
-        var rules = ResearchRules(context.Language, context.Blocks);
-        var contentLine = ResearchBlocks.ChapterContentLine(context.Blocks, context.Language);
-        var tableLine = ResearchBlocks.ChapterTableLine(context.Blocks, context.Language);
-        var puzzleBlock = PuzzleBlock(context.Language);
+        var rules = WithLinkRules(ResearchRules(context.Language, context.Blocks), context, chapterTitle + " " + focus, GuideLinker.ChapterPromptCap);
+        var structure = ChapterStructureText(context);
+        var sectionsJson = ChapterSectionsJson(context.Language);
         var puzzleRules = PuzzleRules(context.Language);
         // Second line of defence: a chapter whose topic the game does not have is answered with "notApplicable" and dropped (not for roadmap/tips/walkthrough)
         var notApplicableRule = ChapterApplicability.CanBeDropped(topicId) ? ChapterApplicability.PromptRule(context.Title, context.Language) : string.Empty;
@@ -244,19 +252,7 @@ public sealed partial class AiGuideGeneratorService
 
                 {{notApplicableRule}}
 
-                {{contentLine}}
-                Structure (mandatory, in this order):
-                1. An "alert" (variant "gold") "Key points first": the 3–5 things you absolutely have to know about this topic.
-                2. An "alert" (variant "danger") with everything that is MISSABLE – or explicitly "Nothing missable".
-                3. "cards_grid" with strategies/recommendations from practice (e.g. early / middle / endgame, best build, best order).
-                {{tableLine}}
-                Use the fitting building blocks:
-                - "alert": important warnings (variant "danger" for missables, "gold" for expert tips, "crystal" for info, "emerald" for achievements)
-                - "cards_grid": strategies, builds, tactics (columns 2 or 3; every card with bullets)
-                - "checklist_table": everything tickable (collectibles, quests, weapons, bosses ...), choose columns to fit the topic.
-                  Every row needs a unique, descriptive "itemId" in kebab-case (e.g. "weapon-mantis-blades"), "filterCategory"
-                  must appear in "categories"; "checkable" is true if the player can do/collect something.
-                {{puzzleBlock}}
+                {{structure}}
 
                 {{puzzleRules}}
 
@@ -266,19 +262,7 @@ public sealed partial class AiGuideGeneratorService
                 {
                   "title": "{{chapterTitle}}",
                   "icon": "mdi:...",
-                  "sections": [
-                    { "type": "alert", "variant": "danger", "title": "...", "htmlContent": "plain text" },
-                    { "type": "cards_grid", "columns": 2, "cards": [
-                      { "title": "...", "badgeText": "...", "badgeVariant": "s | a | b | ok", "introText": "...",
-                        "bullets": [ { "icon": "mdi:check", "title": "...", "body": "..." } ] } ] },
-                    { "type": "checklist_table", "table": {
-                      "tableId": "short-id", "caption": "...", "checkable": true,
-                      "searchPlaceholder": "Search...", "categoryFilterLabel": "All categories", "categories": ["..."],
-                      "columns": [ { "key": "name", "label": "Name", "isRowHeader": true }, { "key": "location", "label": "Location" } ],
-                      "rows": [ { "itemId": "unique-id", "filterCategory": "...", "cells": { "name": "...", "location": "..." } } ] } },
-                    { "type": "puzzle", "title": "...", "htmlContent": "...", "puzzle": { "itemId": "unique-id", "location": "...", "requirements": "...",
-                      "missable": false, "hints": ["..."], "steps": ["..."], "source": "..." } }
-                  ]
+                {{sectionsJson}}
                 }
                 """;
         }
@@ -297,6 +281,61 @@ public sealed partial class AiGuideGeneratorService
 
             {{notApplicableRule}}
 
+            {{structure}}
+
+            {{puzzleRules}}
+
+            {{rules}}
+
+            JSON-Struktur:
+            {
+              "title": "{{chapterTitle}}",
+              "icon": "mdi:...",
+            {{sectionsJson}}
+            }
+            """;
+    }
+
+    /// <summary>
+    /// The part of a chapter prompt that is the same for every chapter: content line, the mandatory structure, the table requirement and the allowed
+    /// building blocks (incl. the puzzle block). Shared by the single-chapter prompt and the batch prompt.
+    /// </summary>
+    internal static string ChapterStructureText(GameContext context)
+    {
+        var contentLine = ResearchBlocks.ChapterContentLine(context.Blocks, context.Language);
+        var tableLine = ResearchBlocks.ChapterTableLine(context.Blocks, context.Language);
+        var puzzleBlock = PuzzleBlock(context.Language);
+        var bossBlock = BossBlock(context.Language);
+        var sourcesBlock = SourcesBlock(context.Language);
+        var acquisition = AcquisitionRules(context.Language);
+        var bossRules = BossRules(context.Language);
+
+        if (context.Language == Lang.English)
+        {
+            return $$"""
+                {{contentLine}}
+                Structure (mandatory, in this order):
+                1. An "alert" (variant "gold") "Key points first": the 3–5 things you absolutely have to know about this topic.
+                2. An "alert" (variant "danger") with everything that is MISSABLE – or explicitly "Nothing missable".
+                3. "cards_grid" with strategies/recommendations from practice (e.g. early / middle / endgame, best build, best order).
+                {{tableLine}}
+                Use the fitting building blocks:
+                - "alert": important warnings (variant "danger" for missables, "gold" for expert tips, "crystal" for info, "emerald" for achievements)
+                - "cards_grid": strategies, builds, tactics (columns 2 or 3; every card with bullets)
+                - "checklist_table": everything tickable (collectibles, quests, weapons, bosses ...), choose columns to fit the topic.
+                  Every row needs a unique, descriptive "itemId" in kebab-case (e.g. "weapon-mantis-blades"), "filterCategory"
+                  must appear in "categories"; "checkable" is true if the player can do/collect something.
+                {{puzzleBlock}}
+                {{bossBlock}}
+                {{sourcesBlock}}
+
+                {{acquisition}}
+
+                {{bossRules}}
+                """;
+        }
+
+        return $$"""
             {{contentLine}}
             Aufbau (Pflicht, in dieser Reihenfolge):
             1. Ein "alert" (variant "gold") „Das Wichtigste vorab“: die 3–5 Dinge, die man zu diesem Thema unbedingt wissen muss.
@@ -310,31 +349,49 @@ public sealed partial class AiGuideGeneratorService
               Jede Zeile braucht eine eindeutige, sprechende "itemId" in kebab-case (z. B. "waffe-mantis-blades"), "filterCategory"
               muss in "categories" vorkommen; "checkable" ist true, wenn der Spieler etwas erledigen/sammeln kann.
             {{puzzleBlock}}
+            {{bossBlock}}
+            {{sourcesBlock}}
 
-            {{puzzleRules}}
+            {{acquisition}}
 
-            {{rules}}
-
-            JSON-Struktur:
-            {
-              "title": "{{chapterTitle}}",
-              "icon": "mdi:...",
-              "sections": [
-                { "type": "alert", "variant": "danger", "title": "...", "htmlContent": "reiner Text" },
-                { "type": "cards_grid", "columns": 2, "cards": [
-                  { "title": "...", "badgeText": "...", "badgeVariant": "s | a | b | ok", "introText": "...",
-                    "bullets": [ { "icon": "mdi:check", "title": "...", "body": "..." } ] } ] },
-                { "type": "checklist_table", "table": {
-                  "tableId": "kurze-id", "caption": "...", "checkable": true,
-                  "searchPlaceholder": "Suchen...", "categoryFilterLabel": "Alle Kategorien", "categories": ["..."],
-                  "columns": [ { "key": "name", "label": "Name (DE / EN)", "isRowHeader": true }, { "key": "ort", "label": "Fundort" } ],
-                  "rows": [ { "itemId": "eindeutige-id", "filterCategory": "...", "cells": { "name": "...", "ort": "..." } } ] } },
-                { "type": "puzzle", "title": "...", "htmlContent": "...", "puzzle": { "itemId": "eindeutige-id", "location": "...", "requirements": "...",
-                  "missable": false, "hints": ["..."], "steps": ["..."], "source": "..." } }
-              ]
-            }
+            {{bossRules}}
             """;
     }
+
+    /// <summary>The "sections" part of the chapter JSON pattern (two spaces indented, to sit inside the object); shared by the single-chapter and batch prompts.</summary>
+    internal static string ChapterSectionsJson(string language) => language == Lang.English
+        ? """
+            "sections": [
+              { "type": "alert", "variant": "danger", "title": "...", "htmlContent": "plain text" },
+              { "type": "cards_grid", "columns": 2, "cards": [
+                { "title": "...", "badgeText": "...", "badgeVariant": "s | a | b | ok", "introText": "...",
+                  "bullets": [ { "icon": "mdi:check", "title": "...", "body": "..." } ] } ] },
+              { "type": "checklist_table", "table": {
+                "tableId": "short-id", "caption": "...", "checkable": true,
+                "searchPlaceholder": "Search...", "categoryFilterLabel": "All categories", "categories": ["..."],
+                "columns": [ { "key": "name", "label": "Name", "isRowHeader": true }, { "key": "location", "label": "Location" } ],
+                "rows": [ { "itemId": "unique-id", "filterCategory": "...", "cells": { "name": "...", "location": "..." } } ] } },
+              { "type": "puzzle", "title": "...", "htmlContent": "...", "puzzle": { "itemId": "unique-id", "location": "...", "requirements": "...",
+                "missable": false, "hints": ["..."], "steps": ["..."], "source": "..." } },
+              { "type": "sources", "sources": [ { "title": "...", "url": "https://..." } ] }
+            ]
+          """
+        : """
+            "sections": [
+              { "type": "alert", "variant": "danger", "title": "...", "htmlContent": "reiner Text" },
+              { "type": "cards_grid", "columns": 2, "cards": [
+                { "title": "...", "badgeText": "...", "badgeVariant": "s | a | b | ok", "introText": "...",
+                  "bullets": [ { "icon": "mdi:check", "title": "...", "body": "..." } ] } ] },
+              { "type": "checklist_table", "table": {
+                "tableId": "kurze-id", "caption": "...", "checkable": true,
+                "searchPlaceholder": "Suchen...", "categoryFilterLabel": "Alle Kategorien", "categories": ["..."],
+                "columns": [ { "key": "name", "label": "Name", "isRowHeader": true }, { "key": "ort", "label": "Fundort" } ],
+                "rows": [ { "itemId": "eindeutige-id", "filterCategory": "...", "cells": { "name": "...", "ort": "..." } } ] } },
+              { "type": "puzzle", "title": "...", "htmlContent": "...", "puzzle": { "itemId": "eindeutige-id", "location": "...", "requirements": "...",
+                "missable": false, "hints": ["..."], "steps": ["..."], "source": "..." } },
+              { "type": "sources", "sources": [ { "title": "...", "url": "https://..." } ] }
+            ]
+          """;
 
     internal static string BuildLorePrompt(GameContext context, LorePart part)
     {
@@ -354,7 +411,7 @@ public sealed partial class AiGuideGeneratorService
                 {{part.Brief}}
 
                 Writing style: English, simple and clear language, paragraphs of 2–5 sentences, no keyword lists inside running text.
-                Names and terms are the official English ones.
+                Names and terms follow the language rule below.
 
                 Allowed building blocks (only these types):
                 - "story": running text – { "type": "story", "title": "...", "paragraphs": ["Paragraph 1", "Paragraph 2"] }
@@ -386,7 +443,7 @@ public sealed partial class AiGuideGeneratorService
             {{part.Brief}}
 
             Schreibstil: Deutsch, einfache und klare Sprache, Absätze mit 2–5 Sätzen, keine Stichwortlisten im Fließtext.
-            Eigennamen und Begriffe beim ersten Auftreten mit englischem Original in Klammern.
+            Namen und Begriffe nach der Sprachregel unten.
 
             Erlaubte Bausteine (nur diese Typen):
             - "story": Fließtext – { "type": "story", "title": "...", "paragraphs": ["Absatz 1", "Absatz 2"] }
@@ -421,6 +478,7 @@ public sealed partial class AiGuideGeneratorService
                 whether it is missable, and a concrete tip (where/when/how, from which chapter on, 1–3 sentences). Write the tips in English.
                 Achievements without a condition in the list are SECRET: for them give the exact condition in "condition" (what has to be done).
                 {{PuzzleTipRule(context.Language)}}
+                {{AcquisitionTipRule(context.Language)}}
 
                 {{rules}}
 
@@ -437,6 +495,7 @@ public sealed partial class AiGuideGeneratorService
             ob er verpassbar ist, und einen konkreten Tipp (wo/wann/wie, ab welchem Kapitel, 1–3 Sätze).
             Erfolge ohne Bedingung in der Liste sind GEHEIM: gib für sie in "condition" die genaue Bedingung an (was man tun muss).
             {{PuzzleTipRule(context.Language)}}
+            {{AcquisitionTipRule(context.Language)}}
 
             {{rules}}
 

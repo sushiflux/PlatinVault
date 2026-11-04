@@ -105,7 +105,13 @@ public sealed partial class AiGuideGeneratorService(
         ResearchBlocks.Selection Blocks,
         string ResearchBase,
         // "de" / "en": the language of the guide being written
-        string Language);
+        string Language,
+        // The tickable items of the chapters that already exist (compact list, see GuideLinker.BuildCandidateList); empty = nothing to point at.
+        // Used as it is when LinkGroups is null (tests, hand-made contexts); otherwise every prompt renders LinkGroups with its own cap and relevance.
+        string LinkCandidates = "",
+        IReadOnlyList<GuideLinker.CandidateGroup>? LinkGroups = null,
+        // The items the chapter that is being researched again has today ("keep these itemIds for the same entries"); null = a new chapter
+        IReadOnlyList<GuideLinker.CandidateGroup>? KeepGroups = null);
 
     internal sealed record ChapterPlan(string Title, string Icon, string Focus, string TopicId = "extra");
 
@@ -245,6 +251,8 @@ public sealed partial class AiGuideGeneratorService(
         CancellationToken ct)
     {
         var language = context.Language;
+        // New chapters may point at the rows of the chapters that already exist ("ref", see GuideLinker)
+        context = WithLinkCandidates(context, game.Tabs);
 
         // Guide builder: the player ticked the chapters in the plan – research exactly those
         if (selection is { Count: > 0 })
@@ -309,7 +317,7 @@ public sealed partial class AiGuideGeneratorService(
         var settings = await settingsStore.GetAsync(ct);
         var run = await router.BeginAsync(research: true, providerOverride, background: false, ct);
         progress?.Step("facts");
-        var context = await BuildGameContextAsync(game.Title, game.SteamAppId, language, ct);
+        var context = WithLinkCandidates(await BuildGameContextAsync(game.Title, game.SteamAppId, language, ct), game.Tabs, chapters.Select(c => c.TabId).ToHashSet());
 
         var plans = chapters.Select(c => new ChapterPlan(c.Title, c.Icon, c.Failure.Focus, c.Failure.TopicId ?? "extra")).ToList();
         var failures = new ConcurrentBag<Exception>();
@@ -435,8 +443,8 @@ public sealed partial class AiGuideGeneratorService(
                 }
                 else
                 {
-                    var raw = await CallContentAsync(run, run.SpreadFor(index), BuildChapterPrompt(context, plan.Title, plan.Focus, sourceSituation, plan.TopicId), settings, context.Language, plan.Title, ct);
-                    tab = BuildTabFromChapterJson(gameId, sortOrder, plan, raw);
+                    var answer = await CallContentAnswerAsync(run, run.SpreadFor(index), BuildChapterPrompt(context, plan.Title, plan.Focus, sourceSituation, plan.TopicId), settings, context.Language, plan.Title, ct);
+                    tab = BuildTabFromChapterJson(gameId, sortOrder, plan, answer.Text, OptionsFor(context), answer.Sources);
                 }
             }
             catch (ChapterNotApplicableException dropped)
@@ -608,13 +616,13 @@ public sealed partial class AiGuideGeneratorService(
         var settings = await settingsStore.GetAsync(ct);
         var run = await router.BeginAsync(research: true, request.ProviderOverride, background: false, ct);
         progress?.Step("facts");
-        var context = await BuildGameContextAsync(game.Title, game.SteamAppId, language, ct);
+        var context = WithLinkCandidates(await BuildGameContextAsync(game.Title, game.SteamAppId, language, ct), game.Tabs);
         var plan = new ChapterPlan(request.TabTitle.Trim(), "mdi:sparkles", request.TopicPrompt.Trim());
         progress?.Step("chapter", 0, 1, plan.Title);
-        var raw = await CallContentAsync(run, run.Primary, BuildChapterPrompt(context, plan.Title, plan.Focus, UnknownSource(language), plan.TopicId), settings, language, plan.Title, ct);
+        var answer = await CallContentAnswerAsync(run, run.Primary, BuildChapterPrompt(context, plan.Title, plan.Focus, UnknownSource(language), plan.TopicId), settings, language, plan.Title, ct);
         try
         {
-            return (BuildTabFromChapterJson(game.Id, nextSortOrder, plan, raw), run.Usage());
+            return (BuildTabFromChapterJson(game.Id, nextSortOrder, plan, answer.Text, OptionsFor(context), answer.Sources), run.Usage());
         }
         catch (ChapterNotApplicableException dropped)
         {
@@ -813,8 +821,12 @@ public sealed partial class AiGuideGeneratorService(
     public Task<AiRun> BeginTranslationRunAsync(CancellationToken ct) => router.BeginAsync(research: false, providerOverride: null, background: true, ct);
 
     /// <summary>One request of an action: the preferred provider of the run, and with the fallback on the next ones when it cannot be used.</summary>
-    internal Task<string> CallAsync(AiRun run, string preferred, string prompt, SettingsResponseDto settings, CancellationToken ct, bool research = true) =>
-        run.ExecuteAsync(preferred, provider => CallProviderAsync(provider, prompt, settings, ct, research), ct);
+    internal async Task<string> CallAsync(AiRun run, string preferred, string prompt, SettingsResponseDto settings, CancellationToken ct, bool research = true) =>
+        (await CallAnswerAsync(run, preferred, prompt, settings, ct, research)).Text;
+
+    /// <summary>Like <see cref="CallAsync"/>, with the sources the provider's search metadata names for the answer.</summary>
+    internal Task<AiAnswer> CallAnswerAsync(AiRun run, string preferred, string prompt, SettingsResponseDto settings, CancellationToken ct, bool research = true) =>
+        run.ExecuteAsync(preferred, provider => CallProviderAnswerAsync(provider, prompt, settings, ct, research), ct);
 
     /// <summary>
     /// A call whose answer is guide content (blueprint, chapter, walkthrough part, lore part, achievement tips). When the provider stops at its output
@@ -822,11 +834,15 @@ public sealed partial class AiGuideGeneratorService(
     /// max_tokens 16000 cut 9 of 14 chapters of an "Ausführlich" guide, which asks for complete tables). Then the SAME provider is asked once more with
     /// the instruction to answer more compactly; a second cut-off ends with a clear message. Any other failure behaves exactly like <see cref="CallAsync"/>.
     /// </summary>
-    internal async Task<string> CallContentAsync(AiRun run, string preferred, string prompt, SettingsResponseDto settings, string language, string what, CancellationToken ct)
+    internal async Task<string> CallContentAsync(AiRun run, string preferred, string prompt, SettingsResponseDto settings, string language, string what, CancellationToken ct) =>
+        (await CallContentAnswerAsync(run, preferred, prompt, settings, language, what, ct)).Text;
+
+    /// <summary><see cref="CallContentAsync"/> with the provider's sources of the answer (chapters, walkthrough parts, lore, achievement tips keep them).</summary>
+    internal async Task<AiAnswer> CallContentAnswerAsync(AiRun run, string preferred, string prompt, SettingsResponseDto settings, string language, string what, CancellationToken ct)
     {
         try
         {
-            return await CallAsync(run, preferred, prompt, settings, ct);
+            return await CallAnswerAsync(run, preferred, prompt, settings, ct);
         }
         catch (AiProviderException first) when (first.IsTruncated)
         {
@@ -835,7 +851,7 @@ public sealed partial class AiGuideGeneratorService(
                 what, provider, first.ProviderMessage);
             try
             {
-                return await CallAsync(run, provider, prompt + "\n\n" + CompactRetryNote(language), settings, ct);
+                return await CallAnswerAsync(run, provider, prompt + "\n\n" + CompactRetryNote(language), settings, ct);
             }
             catch (AiProviderException second) when (second.IsTruncated)
             {
@@ -866,11 +882,18 @@ public sealed partial class AiGuideGeneratorService(
         new(ServerTexts.Ai.AnswerTruncated(provider), detail, 0, null, provider, kind: AiFailureKind.Other, truncated: true);
 
     /// <summary>One AI call. <paramref name="research"/> = with live web search (guide research); false = plain generation (translation).</summary>
-    private Task<string> CallProviderAsync(string provider, string prompt, SettingsResponseDto settings, CancellationToken ct, bool research = true) => provider switch
+    private async Task<string> CallProviderAsync(string provider, string prompt, SettingsResponseDto settings, CancellationToken ct, bool research = true) =>
+        (await CallProviderAnswerAsync(provider, prompt, settings, ct, research)).Text;
+
+    /// <summary>
+    /// One AI call with the sources of its answer. Only Claude's web search delivers sources that may be kept (see <see cref="GuideSources"/>); Gemini's
+    /// grounding links are not stored (Gemini API terms, ai.google.dev/gemini-api/terms) and OpenAI researches without web search here.
+    /// </summary>
+    private async Task<AiAnswer> CallProviderAnswerAsync(string provider, string prompt, SettingsResponseDto settings, CancellationToken ct, bool research = true) => provider switch
     {
-        "claude" => CallClaudeWithWebSearchAsync(prompt, settings.ClaudeModel, ct, research),
-        "openai" => CallOpenAiAsync(prompt, settings.OpenAiModel, ct),
-        _ => CallGeminiWithSearchGroundingAsync(prompt, settings.GeminiModel, ct, research)
+        "claude" => await CallClaudeWithWebSearchAsync(prompt, settings.ClaudeModel, ct, research),
+        "openai" => new AiAnswer(await CallOpenAiAsync(prompt, settings.OpenAiModel, ct), AiSourceMeta.Empty),
+        _ => new AiAnswer(await CallGeminiWithSearchGroundingAsync(prompt, settings.GeminiModel, ct, research), AiSourceMeta.Empty)
     };
 
     /// <summary>Steam facts that steer the research: genres, release date (new releases are researched differently), achievements.</summary>
@@ -905,6 +928,8 @@ public sealed partial class AiGuideGeneratorService(
                     : $"Release: {facts.ReleaseDate}");
                 if (facts.Developers.Count > 0) lines.Add(english ? $"Developers: {string.Join(", ", facts.Developers)}" : $"Entwickler: {string.Join(", ", facts.Developers)}");
                 if (!string.IsNullOrWhiteSpace(facts.ShortDescription)) lines.Add(english ? $"Short description: {facts.ShortDescription}" : $"Kurzbeschreibung: {facts.ShortDescription}");
+                // Whether the game exists in the guide language decides which names the guide uses (see LanguageRules)
+                lines.AddRange(LanguageFactLines(facts.Languages ?? [], facts.AudioLanguages ?? [], language));
             }
 
             tags = await steamStats.GetSteamTagsAsync(steamAppId.Value, ct);
@@ -998,7 +1023,7 @@ public sealed partial class AiGuideGeneratorService(
     /// <see cref="ChapterNotApplicableException"/> - the caller drops the chapter. For the chapters every guide has (walkthrough, roadmap, tips) such an
     /// answer is never a reason to drop: with real sections the flag is ignored, without them the answer is unusable (the chapter becomes a placeholder).
     /// </summary>
-    internal static GuideTabEntity BuildTabFromChapterJson(Guid gameId, int sortOrder, ChapterPlan plan, string raw)
+    internal static GuideTabEntity BuildTabFromChapterJson(Guid gameId, int sortOrder, ChapterPlan plan, string raw, NormalizeOptions? options = null, AiSourceMeta? provider = null)
     {
         using var doc = JsonDocument.Parse(ExtractJsonObject(raw));
         var root = doc.RootElement;
@@ -1016,8 +1041,10 @@ public sealed partial class AiGuideGeneratorService(
         // The title is in the language of the guide only (an AI that adds a translation in brackets is cleaned up)
         var title = ChapterTitles.Clean(Text(root, "title", plan.Title), Lang.Current);
         var sections = root.TryGetProperty("sections", out var sectionsEl) && sectionsEl.ValueKind == JsonValueKind.Array
-            ? GuideSectionNormalizer.Normalize(sectionsEl)
+            ? GuideSectionNormalizer.Normalize(sectionsEl, options)
             : new JsonArray();
+        // One "sources" section at the end: the provider's citations first, then the pages the answer names (AI-written ones are never "cited")
+        sections = ConsolidateSources(sections, provider, GuideSources.MaxPerBlock);
 
         return new GuideTabEntity
         {
@@ -1030,9 +1057,48 @@ public sealed partial class AiGuideGeneratorService(
             SortOrder = sortOrder,
             // The group in the side navigation: the topic's own group, else the group of the planned title
             GroupKey = GuideGroups.KeyFor(plan.TopicId, plan.Title, Lang.Current),
+            TopicId = StoredTopicId(plan.TopicId),
             SectionsJson = sections.ToJsonString()
         };
     }
+
+    /// <summary>
+    /// Moves every "sources" section of a chapter into ONE at the end, merged with the sources the provider's own metadata names for the answer (cited
+    /// first, then the AI-named ones, then a few further search results). Chapters without any source get no section.
+    /// </summary>
+    internal static JsonArray ConsolidateSources(JsonArray sections, AiSourceMeta? provider, int max)
+    {
+        var named = new List<GuideSourceDto>();
+        var result = new JsonArray();
+        foreach (var section in sections.OfType<JsonObject>())
+        {
+            if (section["type"]?.ToString() == "sources")
+            {
+                // Already normalized: the origin is what the normalizer allowed
+                named.AddRange(GuideSources.FromStored(section["sources"], trustOrigin: true));
+                continue;
+            }
+            result.Add(section.DeepClone());
+        }
+        var sources = GuideSources.Combine(provider, GuideSources.Distinct(named), max);
+        if (sources.Count > 0)
+        {
+            var list = new JsonArray();
+            foreach (var source in sources)
+            {
+                list.Add(new JsonObject { ["title"] = source.Title, ["url"] = source.Url, ["origin"] = source.Origin });
+            }
+            result.Add(new JsonObject { ["type"] = "sources", ["sources"] = list });
+        }
+        return result;
+    }
+
+    /// <summary>True for an id of the standard topic list (both languages share the ids).</summary>
+    internal static bool IsStandardTopic(string? topicId) =>
+        !string.IsNullOrWhiteSpace(topicId) && Topics(Lang.German).Any(t => string.Equals(t.Id, topicId, StringComparison.Ordinal));
+
+    /// <summary>The topic id a tab stores: a standard topic, else null ("extra" and unknown ids say nothing about the chapter).</summary>
+    internal static string? StoredTopicId(string? topicId) => IsStandardTopic(topicId) ? topicId : null;
 
     private static GuideTabEntity BuildFailedTab(Guid gameId, int sortOrder, ChapterPlan plan, Exception error, string language)
     {
@@ -1050,6 +1116,7 @@ public sealed partial class AiGuideGeneratorService(
             Icon = plan.Icon,
             SortOrder = sortOrder,
             GroupKey = GuideGroups.KeyFor(plan.TopicId, plan.Title, language),
+            TopicId = StoredTopicId(plan.TopicId),
             SectionsJson = JsonSerializer.Serialize(sections, JsonOptions)
         };
     }
@@ -1349,7 +1416,7 @@ public sealed partial class AiGuideGeneratorService(
     /// (<see cref="ClaudeWebSearchTool"/>); a translation sends no tool. A search that the server pauses (stop reason `pause_turn`) is
     /// continued by sending the answer so far back, as the API documents.
     /// </summary>
-    private async Task<string> CallClaudeWithWebSearchAsync(string prompt, string model, CancellationToken ct, bool research = true)
+    private async Task<AiAnswer> CallClaudeWithWebSearchAsync(string prompt, string model, CancellationToken ct, bool research = true)
     {
         var apiKey = secretStore.GetSecret(SettingsStore.SecretClaude);
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -1360,6 +1427,9 @@ public sealed partial class AiGuideGeneratorService(
         var client = httpClientFactory.CreateClient("ai");
         var modelName = string.IsNullOrWhiteSpace(model) ? "claude-sonnet-4-5" : model.Trim();
         var messages = new JsonArray { new JsonObject { ["role"] = "user", ["content"] = prompt } };
+        // Sources of the whole answer: a search turn paused by the server (pause_turn) has its results in the earlier turns
+        var cited = new List<GuideSourceDto>();
+        var searched = new List<GuideSourceDto>();
 
         for (var turn = 0; ; turn++)
         {
@@ -1398,6 +1468,7 @@ public sealed partial class AiGuideGeneratorService(
                 throw new LocalizedException(ServerTexts.Ai.NoUsableAnswer("claude"));
             }
 
+            GuideSources.ReadClaude(contentArr, cited, searched);
             var stopReason = root.TryGetProperty("stop_reason", out var stop) && stop.ValueKind == JsonValueKind.String ? stop.GetString() : null;
             if (stopReason == "pause_turn" && turn < MaxClaudePauseContinuations)
             {
@@ -1425,7 +1496,7 @@ public sealed partial class AiGuideGeneratorService(
                     sb.Append(textProp.GetString());
                 }
             }
-            return sb.ToString();
+            return new AiAnswer(sb.ToString(), new AiSourceMeta(GuideSources.Distinct(cited), GuideSources.Distinct(searched)));
         }
     }
 

@@ -2,16 +2,21 @@ import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IconChevronDown, IconClipboardCopy, IconDownload, IconLoader2 } from '@tabler/icons-react'
-import type { ManualPromptDto } from '../../../api/types'
 import { describeError } from '../../../utils/apiErrorText'
 import { ReservedText } from '../../ui/ReservedText'
 import { Tooltip } from '../../ui/Tooltip'
 import { ErrorDetails } from '../../ui/ErrorDetails'
 import { downloadText, useCopyPrompt } from './useCopyPrompt'
 
+// What a prompt box needs of a prompt (single chapter, blueprint and batch prompts all fit)
+interface PromptSource {
+  prompt: string
+  fileName: string
+}
+
 interface PromptBoxProps {
   // Makes the prompt (once: it is kept until the box goes away)
-  load: () => Promise<ManualPromptDto>
+  load: () => Promise<PromptSource>
   // More buttons in the same row (e.g. "Paste answer")
   extraActions?: ReactNode
 }
@@ -22,7 +27,7 @@ interface PromptBoxProps {
  */
 export function PromptBox({ load, extraActions }: PromptBoxProps) {
   const { t } = useTranslation(['ai', 'common'])
-  const [prompt, setPrompt] = useState<ManualPromptDto | null>(null)
+  const [prompt, setPrompt] = useState<PromptSource | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<{ message: string; details: string | null } | null>(null)
   const [shown, setShown] = useState(false)
@@ -37,7 +42,7 @@ export function PromptBox({ load, extraActions }: PromptBoxProps) {
     }
   }, [state, shown])
 
-  const ensure = async (): Promise<ManualPromptDto | null> => {
+  const ensure = async (): Promise<PromptSource | null> => {
     if (prompt) return prompt
     setLoading(true)
     setError(null)

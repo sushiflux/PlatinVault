@@ -318,8 +318,44 @@ public static partial class ServerTexts
             $"Section {number}: the puzzle “{name}” has no “puzzle.location” – the player is not told where to find it.");
 
         public static Msg AlertKindUnknown(int number, string kind) => new(
-            $"Abschnitt {number}: Die Hinweisart „{kind}“ ist unbekannt (erlaubt: must_have, missable, optional, tip) – der Hinweis wird als normaler Hinweis angezeigt.",
-            $"Section {number}: the hint kind “{kind}” is unknown (allowed: must_have, missable, optional, tip) – the hint is shown as a normal alert.");
+            $"Abschnitt {number}: Die Hinweisart „{kind}“ ist unbekannt (erlaubt: must_have, missable, optional, tip, achievement, point_of_no_return) – der Hinweis wird als normaler Hinweis angezeigt.",
+            $"Section {number}: the hint kind “{kind}” is unknown (allowed: must_have, missable, optional, tip, achievement, point_of_no_return) – the hint is shown as a normal alert.");
+
+        public static Msg BossWithoutName(int number) => new(
+            $"Abschnitt {number}: Die Boss-Karte hat keinen Namen („title“) und wird übersprungen.",
+            $"Section {number}: the boss card has no name (“title”) and is skipped.");
+
+        public static Msg BossWithoutLocation(int number, string name) => new(
+            $"Abschnitt {number}: Bei der Boss-Karte „{name}“ fehlt „location“ – der Spieler erfährt nicht, wo der Kampf stattfindet.",
+            $"Section {number}: the boss card “{name}” has no “location” – the player is not told where the fight takes place.");
+
+        public static Msg BossHpDropped(int number, string name, int count) => new(
+            $"Abschnitt {number}: {count} HP-Angabe(n) der Boss-Karte „{name}“ haben keinen Wert oder keine Quelle („source“) und werden weggelassen – Zahlen nur mit Beleg.",
+            $"Section {number}: {count} HP entr(y/ies) of the boss card “{name}” have no value or no source (“source”) and are left out – numbers only with evidence.");
+
+        public static Msg BossHpWithoutAppliesTo(int number, string name, int count) => new(
+            $"Abschnitt {number}: {count} HP-Angabe(n) der Boss-Karte „{name}“ sagen nicht, wofür sie gelten („appliesTo“: Schwierigkeit, Phase, Version).",
+            $"Section {number}: {count} HP entr(y/ies) of the boss card “{name}” do not say what they apply to (“appliesTo”: difficulty, phase, version).");
+
+        public static Msg UnknownApiNames(int count, string examples) => new(
+            $"{count} Steam-API-Name(n) gibt es in der Erfolgsliste dieses Spiels nicht und werden weggelassen: {examples}",
+            $"{count} Steam API name(s) are not in this game's achievement list and are left out: {examples}");
+
+        public static Msg InvalidSourceUrls(int count) => new(
+            $"{count} Quelle(n) haben keine gültige http(s)-Adresse und werden weggelassen.",
+            $"{count} source(s) have no valid http(s) address and are left out.");
+
+        public static Msg ForeignSentences(string guideLanguage, int count, string examples) => new(
+            $"{count} Satz/Sätze scheinen {(guideLanguage == Lang.English ? "auf Deutsch" : "auf Englisch")} zu sein, der Guide ist aber {(guideLanguage == Lang.English ? "englisch" : "deutsch")}, z. B.: {examples} – den fertigen Korrektur-Prompt unten in den Chat kopieren und die neue Antwort hier einfügen.",
+            $"{count} sentence(s) seem to be in {(guideLanguage == Lang.English ? "German" : "English")}, but the guide is {(guideLanguage == Lang.English ? "English" : "German")}, e.g.: {examples} – copy the ready fix prompt below into the chat and paste the new answer here.");
+
+        public static readonly Msg BatchReplaceNotApplicable = M(
+            "Die Antwort sagt, dass es das Thema in diesem Spiel nicht gibt – ein Kapitel mit Inhalt wird dadurch nicht gelöscht. Entferne es bei Bedarf selbst über „Kapitel entfernen“.",
+            "The answer says the topic does not exist in this game – a chapter with content is not deleted by that. Remove it yourself with “Remove chapter” if you want.");
+
+        public static readonly Msg ChapterNotReplaceable = M(
+            "Die Steam-Erfolgsliste und „Story & Lore“ lassen sich nicht durch ein Kapitel ersetzen.",
+            "The Steam achievement list and “Story & Lore” cannot be replaced by a chapter.");
 
         public static Msg RowsWithoutItemId(int count) => new(
             $"{count} Tabellenzeile(n) haben keine „itemId“; PlatinVault vergibt sie beim Speichern selbst (dann lässt sich der Eintrag trotzdem abhaken).",
@@ -350,8 +386,8 @@ public static partial class ServerTexts
             "The blueprint yields no chapter at all: the AI marked every topic as “not applicable” or every topic as already covered. You can still tick topics yourself below.");
 
         public static readonly Msg ChapterNotAPlaceholder = M(
-            "Dieses Kapitel hat schon Inhalt – ersetzt werden nur Kapitel, die als „nicht recherchiert“ markiert sind.",
-            "This chapter already has content – only chapters marked “could not be researched” are replaced.");
+            "Dieses Kapitel hat schon Inhalt – ersetzt werden nur Kapitel, die als „nicht recherchiert“ markiert sind, oder ein Kapitel, das ausdrücklich neu geschrieben werden soll („replace“).",
+            "This chapter already has content – only chapters marked “could not be researched” are replaced, or a chapter that is explicitly to be rewritten (“replace”).");
 
         public static readonly Msg ChapterNotFound = M("Dieses Kapitel gibt es in diesem Guide nicht (mehr).", "This chapter does not exist (any more) in this guide.");
 
@@ -361,6 +397,60 @@ public static partial class ServerTexts
 
         public static readonly Msg NotSavedTitle = M("Antwort nicht gespeichert", "Answer not saved");
         public static readonly Msg PromptTitleMissing = M("Für den Kapitel-Prompt fehlen Titel und Rechercheauftrag.", "The chapter prompt needs a title and a research assignment.");
+
+        // ---- Batch mode: one prompt for many chapters, one field for all collected answers -------------------------------
+
+        public static Msg BatchChaptersInvalid(int max) => new(
+            $"Die Kapitelliste ist ungültig: Sie braucht 1 bis {max} Kapitel, jedes mit einem Titel (höchstens {MaxTitleLength} Zeichen) und – für den Prompt – einem Rechercheauftrag.",
+            $"The chapter list is invalid: it needs 1 to {max} chapters, each with a title (at most {MaxTitleLength} characters) and – for the prompt – a research assignment.");
+
+        public static Msg BatchFieldTooLong(int number, string field, int max) => new(
+            $"Kapitel {number}: Das Feld „{field}“ ist zu lang (höchstens {max} Zeichen).",
+            $"Chapter {number}: the field “{field}” is too long (at most {max} characters).");
+
+        public static Msg BatchTooLarge(int kilobytes, int maxKilobytes) => new(
+            $"Der eingefügte Text ist mit {kilobytes} KB zu groß (höchstens {maxKilobytes} KB). Füge nur die Antworten der KI ein, nicht den ganzen Chat-Verlauf mit Bildern oder Anhängen.",
+            $"The pasted text is too large at {kilobytes} KB (at most {maxKilobytes} KB). Paste only the answers of the AI, not the whole chat history with images or attachments.");
+
+        public static Msg BatchTooManyObjects(int max) => new(
+            $"Im eingefügten Text stehen mehr als {max} JSON-Blöcke. Das sind zu viele für eine Kapitelliste – wurde etwas anderes als die Kapitel-Antworten eingefügt?",
+            $"The pasted text contains more than {max} JSON blocks. That is too many for a chapter list – did you paste something other than the chapter answers?");
+
+        public static Msg BatchCutOff(int missing) => new(
+            $"Dieses Kapitel ist abgeschnitten: Das JSON-Objekt wird nicht geschlossen (es fehlen {missing} schließende Klammer(n)). Bitte die KI, genau dieses Kapitel noch einmal vollständig auszugeben – am besten allein in einer Antwort – und füge es hinzu; die neuere Fassung ersetzt die abgeschnittene.",
+            $"This chapter is cut off: the JSON object is never closed ({missing} closing bracket(s) are missing). Ask the AI to output exactly this chapter again in full – ideally alone in one answer – and add it; the newer version replaces the cut-off one.");
+
+        public static Msg BatchUnmatched(string? key, string? title) => new(
+            $"Dieser Block gehört zu keinem Kapitel der Liste: {(string.IsNullOrWhiteSpace(key) ? "Er hat kein Feld „chapter“" : $"Der Schlüssel „{key}“ ist unbekannt")}{(string.IsNullOrWhiteSpace(title) ? "" : $" und der Titel „{title}“ passt zu keinem Kapitel")}. Er wird nicht gespeichert.",
+            $"This block does not belong to any chapter of the list: {(string.IsNullOrWhiteSpace(key) ? "it has no “chapter” field" : $"the key “{key}” is unknown")}{(string.IsNullOrWhiteSpace(title) ? "" : $" and the title “{title}” matches no chapter")}. It is not saved.");
+
+        public static Msg BatchDuplicateInText(int count) => new(
+            $"Dieses Kapitel steht {count}-mal im eingefügten Text; die letzte vollständige Fassung wird verwendet.",
+            $"This chapter appears {count} times in the pasted text; the last complete version is used.");
+
+        public static readonly Msg BatchLaterCopyBroken = M(
+            "Eine spätere Fassung dieses Kapitels ist abgeschnitten oder ungültig und wird ignoriert; die vorherige vollständige Fassung wird verwendet.",
+            "A later version of this chapter is cut off or invalid and is ignored; the earlier complete version is used.");
+
+        public static Msg BatchSkipUnknownKey(string key) => new(
+            $"Der Schlüssel „{key}“ gehört zu keinem Kapitel der Liste.",
+            $"The key “{key}” does not belong to any chapter of the list.");
+
+        public static readonly Msg BatchSkipMissing = M("Zu diesem Kapitel steht keine Antwort im eingefügten Text.", "There is no answer for this chapter in the pasted text.");
+
+        public static Msg BatchSkipErrors(string reasons) => new(
+            $"Die Antwort hat noch Fehler und wird nicht gespeichert: {reasons}",
+            $"The answer still has errors and is not saved: {reasons}");
+
+        public static readonly Msg BatchSkipTabUsedTwice = M(
+            "Das fehlgeschlagene Kapitel, das ersetzt werden soll, ist in dieser Liste schon einem anderen Eintrag zugeordnet.",
+            "The failed chapter that is to be replaced is already assigned to another entry of this list.");
+
+        public static readonly Msg BatchSkipSecondWalkthrough = M(
+            "Die Komplettlösung gibt es nur einmal je Guide; ein zweiter Eintrag dafür in derselben Liste wird nicht gespeichert.",
+            "The walkthrough exists only once per guide; a second entry for it in the same list is not saved.");
+
+        private const int MaxTitleLength = 240;
     }
 
     // ---- Steam ---------------------------------------------------------------------------------------------------------
@@ -749,6 +839,25 @@ public static partial class ServerTexts
             "This guide does not have this chapter (any more). It may have been removed already – reload the page.");
 
         public static readonly Msg ChapterNotRemovableTitle = M("Kapitel kann nicht entfernt werden", "Chapter cannot be removed");
+        public static readonly Msg ChapterNotRedoableTitle = M("Kapitel kann nicht neu recherchiert werden", "Chapter cannot be researched again");
+        public static readonly Msg ChapterRedoAchievementList = M(
+            "Das ist die Steam-Erfolgsliste des Guides, kein Kapitel. Sie kommt von Steam und wird nicht neu recherchiert.",
+            "This is the guide's Steam achievement list, not a chapter. It comes from Steam and is not researched again.");
+
+        /// <summary>A repeated research of a chapter says the topic does not exist: the chapter stays as it was.</summary>
+        public static Msg RedoNotApplicable(string title, string reason) => new(
+            $"Das Kapitel „{title}“ bleibt unverändert: Laut der neuen Recherche gibt es dieses Thema in diesem Spiel nicht. {(string.IsNullOrWhiteSpace(reason) ? string.Empty : "Begründung: " + reason.Trim() + " ")}Entferne das Kapitel bei Bedarf über „Kapitel entfernen“.",
+            $"The chapter “{title}” stays as it was: according to the new research this topic does not exist in this game. {(string.IsNullOrWhiteSpace(reason) ? string.Empty : "Reason: " + reason.Trim() + " ")}Remove the chapter with “Remove chapter” if you want.");
+
+        /// <summary>While a chapter was researched again it was removed (or replaced by something that cannot be researched again) - nothing is saved.</summary>
+        public static Msg RedoChapterGone(string title) => new(
+            $"Die neue Recherche für „{title}“ wird nicht gespeichert: Das Kapitel wurde in der Zwischenzeit entfernt oder ersetzt (z. B. in einem zweiten Fenster). Lade die Seite neu und starte die Recherche bei Bedarf erneut.",
+            $"The new research for “{title}” is not saved: the chapter was removed or replaced in the meantime (e.g. in a second window). Reload the page and start the research again if you want.");
+
+        /// <summary>A repeated research of the walkthrough lost parts: the old walkthrough is kept whole.</summary>
+        public static Msg RedoWalkthroughPartsFailed(int failed, int total, Msg first) => new(
+            $"Die Komplettlösung bleibt unverändert: {failed} von {total} Teilen konnten nicht recherchiert werden. Erster Fehler: {first.De}",
+            $"The walkthrough stays as it was: {failed} of {total} parts could not be researched. First error: {first.En}");
         public static readonly Msg ChapterIsAchievementList = M(
             "Das ist die Steam-Erfolgsliste des Guides, kein Kapitel. Sie bleibt, weil die Live-Trophäen ihre Tipps daraus lesen.",
             "This is the guide's Steam achievement list, not a chapter. It stays because the live trophies read their tips from it.");
@@ -777,12 +886,23 @@ public static partial class ServerTexts
                 "complete" => ("„Guide vervollständigen“", "“Complete guide”"),
                 "expand" => ("„Kapitel ergänzen“", "“Add chapter”"),
                 "retry" => ("„Kapitel erneut recherchieren“", "“Research chapter again”"),
+                "redo" => ("„Kapitel neu recherchieren“", "“Redo chapter”"),
                 "lore" => ("die Recherche für „Story & Lore“", "the research for “Story & Lore”"),
                 _ => ("eine andere KI-Aktion", "another AI action")
             };
             return M(
                 $"Für dieses Spiel läuft gerade {de}. Warte, bis sie fertig ist, und starte die neue Aktion dann noch einmal – zwei KI-Aktionen gleichzeitig würden denselben Guide ändern.",
                 $"{char.ToUpperInvariant(en[0])}{en[1..]} is running for this game right now. Wait until it has finished, then start the new action again – two AI actions at the same time would change the same guide.");
+        }
+
+        /// <summary>The same AI action is running for this game, but for something else (another chapter): the new one is not attached to it.</summary>
+        public static Msg JobBusyOtherTarget(string runningKind, string? targetLabel)
+        {
+            var running = JobBusy(runningKind);
+            var (de, en) = string.IsNullOrWhiteSpace(targetLabel)
+                ? ("Sie arbeitet gerade an anderen Kapiteln als den gewählten.", "It is working on other chapters than the ones you chose.")
+                : ($"Sie arbeitet gerade am Kapitel „{targetLabel}“, nicht an dem gewählten.", $"It is working on the chapter “{targetLabel}”, not on the one you chose.");
+            return M($"{running.De} {de}", $"{running.En} {en}");
         }
 
         /// <summary>Short name for a sentence ("Gemini quota used up – continuing with Claude."), without the company.</summary>

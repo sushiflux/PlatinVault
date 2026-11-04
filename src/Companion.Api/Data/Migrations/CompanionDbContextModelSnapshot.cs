@@ -255,6 +255,10 @@ namespace Companion.Api.Data.Migrations
                         .HasMaxLength(240)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("TopicId")
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.HasIndex("GameId", "Slug")

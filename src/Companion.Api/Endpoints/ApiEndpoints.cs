@@ -444,7 +444,7 @@ public static class ApiEndpoints
             };
             var pct = tier switch
             {
-                "Bronze" => 42.5,
+                "Bronze" => 64.2,
                 "Silver" => 14.8,
                 _ => 2.4
             };
@@ -765,26 +765,36 @@ public static class ApiEndpoints
                 return Results.NotFound();
             }
 
-            var key = req.ItemKey.Trim();
+            // The own id of a row that points at another chapter's row ("ref") has no tick: the tick belongs to the row it points at
+            var key = GuideLinker.TickKeyFor(
+                await db.GuideTabs.AsNoTracking().Where(t => t.GameId == game.Id).Select(t => t.SectionsJson).ToListAsync(ct), req.ItemKey.Trim());
             var existing = await db.ProgressChecks.FirstOrDefaultAsync(p => p.GameId == game.Id && p.ItemKey == key, ct);
 
-            if (req.Checked && existing is null)
+            try
             {
-                db.ProgressChecks.Add(new ProgressCheckEntity
+                if (req.Checked && existing is null)
                 {
-                    Id = Guid.NewGuid(),
-                    GameId = game.Id,
-                    ItemKey = key,
-                    CheckedAt = DateTimeOffset.UtcNow
-                });
-                game.UpdatedAt = DateTimeOffset.UtcNow;
-                await db.SaveChangesAsync(ct);
+                    db.ProgressChecks.Add(new ProgressCheckEntity
+                    {
+                        Id = Guid.NewGuid(),
+                        GameId = game.Id,
+                        ItemKey = key,
+                        CheckedAt = DateTimeOffset.UtcNow
+                    });
+                    game.UpdatedAt = DateTimeOffset.UtcNow;
+                    await db.SaveChangesAsync(ct);
+                }
+                else if (!req.Checked && existing is not null)
+                {
+                    db.ProgressChecks.Remove(existing);
+                    game.UpdatedAt = DateTimeOffset.UtcNow;
+                    await db.SaveChangesAsync(ct);
+                }
             }
-            else if (!req.Checked && existing is not null)
+            catch (DbUpdateException)
             {
-                db.ProgressChecks.Remove(existing);
-                game.UpdatedAt = DateTimeOffset.UtcNow;
-                await db.SaveChangesAsync(ct);
+                // Another request (a second window, the linker) set or removed exactly this tick in the meantime: the wanted state is there already
+                db.ChangeTracker.Clear();
             }
 
             var checkedKeys = await db.ProgressChecks
@@ -1073,7 +1083,10 @@ public static class ApiEndpoints
         };
     }
 
-    /// <summary>The ids of everything a reader can tick in these sections: checklist rows of checkable tables and puzzles that have an itemId.</summary>
+    /// <summary>
+    /// The ids of everything a reader can tick in these sections: checklist rows of checkable tables and puzzles that have an itemId. A row with a Ref
+    /// has no check of its own (it shows the check of the defining row in another chapter), so it is not counted here.
+    /// </summary>
     internal static IEnumerable<string> CheckableItemIds(IEnumerable<GuideSectionDto> sections)
     {
         foreach (var sec in sections)
@@ -1082,7 +1095,10 @@ public static class ApiEndpoints
             {
                 foreach (var row in sec.Table.Rows)
                 {
-                    yield return row.ItemId;
+                    if (string.IsNullOrEmpty(row.Ref))
+                    {
+                        yield return row.ItemId;
+                    }
                 }
             }
             if (!string.IsNullOrWhiteSpace(sec.Puzzle?.ItemId))
@@ -1092,7 +1108,16 @@ public static class ApiEndpoints
         }
     }
 
-    internal static HashSet<string> CollectItemIds(IEnumerable<GuideTabEntity> tabs)
+    /// <summary>
+    /// The item ids that DEFINE a tick (rows without a Ref, tickable puzzles): the keys of <c>progress_checks</c> that belong to these tabs. A row with a Ref
+    /// is not a definer - it shows the check of the row it points to. Use <see cref="CollectTakenItemIds"/> when ids have to stay unique.
+    /// </summary>
+    internal static HashSet<string> CollectItemIds(IEnumerable<GuideTabEntity> tabs) => CollectIds(tabs, includeRefRows: false);
+
+    /// <summary>Every item id in use, ref rows included (their own ids are identities too): the "taken" set for <see cref="MakeItemIdsUnique"/>.</summary>
+    internal static HashSet<string> CollectTakenItemIds(IEnumerable<GuideTabEntity> tabs) => CollectIds(tabs, includeRefRows: true);
+
+    private static HashSet<string> CollectIds(IEnumerable<GuideTabEntity> tabs, bool includeRefRows)
     {
         var ids = new HashSet<string>(StringComparer.Ordinal);
         foreach (var tab in tabs)
@@ -1101,7 +1126,10 @@ public static class ApiEndpoints
             {
                 foreach (var row in section.Table?.Rows ?? [])
                 {
-                    ids.Add(row.ItemId);
+                    if (includeRefRows || string.IsNullOrEmpty(row.Ref))
+                    {
+                        ids.Add(row.ItemId);
+                    }
                 }
                 if (!string.IsNullOrWhiteSpace(section.Puzzle?.ItemId))
                 {
@@ -1360,6 +1388,11 @@ public static class ApiEndpoints
             {
                 sections = DeserializeSections(tab.SectionsJson);
             }
+            else if (translatedTab is not null)
+            {
+                // Links are ids, not text: the translation stays current when the linker changes a ref, and shows the refs of the original
+                sections = GuideTranslations.ApplyOriginalRefs(sections, DeserializeSections(tab.SectionsJson));
+            }
             if (FailedChapters.Read(sections) is { } failedChapter && sections.Count == 1 && sections[0].FailedChapter is null)
             {
                 sections = [sections[0] with { FailedChapter = failedChapter }];
@@ -1394,9 +1427,14 @@ public static class ApiEndpoints
                 Sections: sections,
                 IsAchievementList: isAchievementList,
                 // The ORIGINAL title decides, so a chapter stays in its group whatever language the shown texts are in
-                GroupKey: GuideGroups.Resolve(tab.GroupKey, tab.Title, AiGuideGeneratorService.GuideLanguage(game))
+                GroupKey: GuideGroups.Resolve(tab.GroupKey, tab.Title, AiGuideGeneratorService.GuideLanguage(game)),
+                // The walkthrough is known by its fixed address also when it was saved before the column existed
+                TopicId: tab.TopicId ?? (WalkthroughTab.Is(tab) ? WalkthroughTab.TopicId : null)
             ));
         }
+
+        // Links are read from the chapters as shown (a translation keeps the structure, so the ids and refs are the same)
+        var (itemLinks, refTargets) = GuideLinker.BuildMaps(tabDtos);
 
         var pct = totalCheckable > 0 ? (int)Math.Round(checkedCount * 100.0 / totalCheckable) : 0;
 
@@ -1421,23 +1459,15 @@ public static class ApiEndpoints
             Tabs: tabDtos,
             CheckedItemKeys: checkedSet.ToList(),
             Language: view.UseTranslation ? view.Language : view.SourceLanguage,
-            Translation: view.ToDto()
+            Translation: view.ToDto(),
+            ItemLinks: itemLinks,
+            RefTargets: refTargets
         );
     }
 
-    internal static List<GuideSectionDto> DeserializeSections(string json)
-    {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return [];
-        }
-        try
-        {
-            return JsonSerializer.Deserialize<List<GuideSectionDto>>(json, JsonOptions) ?? [];
-        }
-        catch
-        {
-            return [];
-        }
-    }
+    /// <summary>
+    /// Stored chapter JSON -> sections. Valid data reads exactly as before; a section with a wrongly typed field is repaired or skipped on its own
+    /// (<see cref="GuideSectionReader"/>) instead of emptying the whole chapter.
+    /// </summary>
+    internal static List<GuideSectionDto> DeserializeSections(string json) => GuideSectionReader.ReadStored(json);
 }

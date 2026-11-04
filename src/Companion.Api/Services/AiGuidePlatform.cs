@@ -19,9 +19,9 @@ public sealed partial class AiGuideGeneratorService
             PC version itself shows them.
           - Leave out console-only content: console exclusives, console patch states, PSN/Xbox-only DLC, bonuses or events, cross-save, console
             performance modes. If the PC version differs (patch state, DLC, content), the PC version counts.
-          - Console sources (PSNProfiles, PlayStation trophy guides, TrueAchievements, Xbox guides …) may only be used for facts that are the same on PC,
-            and are then not named as "PS4/PS5/PlayStation/Xbox guide" in the text – name the fact, not the console. Prefer PC sources (Steam community guides,
-            Steam achievement stats, PC wikis).
+          - Console sites (PSNProfiles, PlayStationTrophies.org, PowerPyx trophy guides, TrueAchievements, Xbox guides …) may be used for everything that is
+            identical on PC (story, route, missables, boss tactics, order) and are then not named as "PS4/PS5/PlayStation/Xbox guide" in the text – name the fact,
+            not the console. The achievement list, the names and the conditions come ONLY from Steam: if a console trophy differs, Steam wins.
           - Time estimates ("hours to 100%") are for all Steam achievements on PC – never "hours to the platinum trophy".
           """
         : """
@@ -32,9 +32,9 @@ public sealed partial class AiGuideGeneratorService
             PC-Version zeigt sie selbst an.
           - Lass reine Konsolen-Inhalte weg: Konsolen-Exklusives, Konsolen-Patchstände, PSN-/Xbox-exklusive DLCs, Boni oder Events, Cross-Save,
             Konsolen-Leistungsmodi. Unterscheidet sich die PC-Version (Patchstand, DLC, Inhalt), gilt die PC-Version.
-          - Konsolen-Quellen (PSNProfiles, PlayStation-Trophäen-Guides, TrueAchievements, Xbox-Guides …) nur für Fakten nutzen, die am PC genauso gelten,
-            und im Text dann nicht als „PS4-/PS5-/PlayStation-/Xbox-Guide“ nennen – nenne den Fakt, nicht die Konsole. Bevorzuge PC-Quellen
-            (Steam-Community-Guides, Steam-Erfolgsstatistiken, PC-Wikis).
+          - Konsolen-Seiten (PSNProfiles, PlayStationTrophies.org, PowerPyx-Trophäen-Guides, TrueAchievements, Xbox-Guides …) darfst du für alles nutzen, was am PC
+            genauso ist (Story, Route, Verpassbares, Boss-Taktiken, Reihenfolge), nennst sie im Text aber nicht als „PS4-/PS5-/PlayStation-/Xbox-Guide“ – nenne den
+            Fakt, nicht die Konsole. Die Erfolgsliste, die Namen und die Bedingungen kommen NUR von Steam: weicht eine Konsolen-Trophäe ab, gilt Steam.
           - Zeitangaben („Stunden bis 100 %“) gelten für alle Steam-Erfolge am PC – nie „Stunden bis zur Platin-Trophäe“.
           """;
 }

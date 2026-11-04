@@ -38,7 +38,9 @@ public static class ChapterRemoval
     /// tickable puzzles minus every item id that still exists in another tab. Item ids are unique per game (<c>MakeItemIdsUnique</c>), so the
     /// subtraction only matters for hand-edited or imported data - but it guarantees that a tick that still shows up somewhere else (e.g. on
     /// the hidden achievement list, whose ids are Steam's achievement api names, which the live sync ticks) is never taken away.
-    /// Marks whose id is in no tab at all are not ours to judge and are left alone.
+    /// Marks whose id is in no tab at all are not ours to judge and are left alone. Rows with a <c>ref</c> own no tick (they show the tick of the row they point to),
+    /// so they are neither orphaned nor do they keep a tick alive; rows elsewhere that pointed at a removed row are freed first (<see cref="GuideLinker"/>), the caller
+    /// runs <c>GuideLinkMaintenance.Apply</c> BEFORE it deletes these marks so the freed rows can take the tick over.
     /// </summary>
     public static HashSet<string> OrphanedCheckKeys(GuideTabEntity removed, IEnumerable<GuideTabEntity> remaining)
     {

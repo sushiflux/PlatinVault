@@ -1401,9 +1401,11 @@ public sealed partial class SteamLiveTrackerService(
                 .Select(p => p.ItemKey)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
+            // Only the guide's achievement list (the Steam table, also the German "Steam-Erfolge", or the "achievements" tab of older guides) - never a
+            // content chapter, whose rows are no achievements
             var achTab = game.Tabs
-                .OrderByDescending(t => t.Title.Contains("Achievement", StringComparison.OrdinalIgnoreCase) || t.Title.Contains("Troph", StringComparison.OrdinalIgnoreCase))
-                .ThenByDescending(t => t.SortOrder)
+                .Where(t => ApiEndpoints.IsAchievementList(t, ApiEndpoints.DeserializeSections(t.SectionsJson)))
+                .OrderByDescending(t => t.Slug != "achievements")
                 .FirstOrDefault();
 
             if (achTab is not null && !string.IsNullOrWhiteSpace(achTab.SectionsJson))
@@ -1524,10 +1526,12 @@ public sealed partial class SteamLiveTrackerService(
         return map;
     }
 
+    // Trophy tier from Steam's worldwide share (user decision 2026-11-04: gold up to and including 10 %, silver up to and including 50 %; was 5 % / 25 %).
+    // The texts in stats.ts (tiers.ruleGold/ruleSilver/ruleBronze) and the handbook name the same limits.
     public static string CalculateRarityTier(double globalPercent)
     {
-        if (globalPercent <= 5.0) return "Gold";
-        if (globalPercent <= 25.0) return "Silver";
+        if (globalPercent <= 10.0) return "Gold";
+        if (globalPercent <= 50.0) return "Silver";
         return "Bronze";
     }
 

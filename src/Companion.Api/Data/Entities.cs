@@ -76,6 +76,12 @@ public sealed class GuideTabEntity
     /// </summary>
     public string? GroupKey { get; set; }
 
+    /// <summary>
+    /// The standard topic the chapter was researched for ("walkthrough", "quests", "weapons" ...; see the topic list), or null = unknown (chapters from
+    /// before the column existed, extra chapters of the AI, chapters added by hand). The UI finds e.g. the side quest chapter by it.
+    /// </summary>
+    public string? TopicId { get; set; }
+
     /// <summary>Serialized list of GuideSectionDto blocks (alerts, strategy card grids, and custom checklist/bestiary tables).</summary>
     public string SectionsJson { get; set; } = "[]";
 
