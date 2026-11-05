@@ -46,6 +46,7 @@ param(
     [ValidateSet('all', 'app', 'setup', 'checksum')]
     [string]$Stage = 'all',
     [switch]$Beta,
+    [switch]$Nightly,
     [switch]$Dev,
     [string]$BridgeVersion,
     [string]$ProductVersion,
@@ -74,12 +75,12 @@ $versionLines = @(Get-Content -LiteralPath (Join-Path $root 'version.txt') | For
 if ($versionLines.Count -eq 0) { throw 'version.txt ist leer.' }
 $short = $versionLines[0]
 $detail = if ($versionLines.Count -gt 1) { $versionLines[1] } else { $short }
-if ($Beta -and $Dev) { throw '-Beta und -Dev schliessen sich aus.' }
-$channel = if ($Beta) { 'beta' } elseif ($Dev) { 'dev' } else { 'release' }
-# Technical form (git tag, installer file name): release = line 1, beta/dev = the five-segment build id + "-beta" / "-dev". Same rule as
-# VersionFormat.Tag and scripts/version-display.sh. A beta or dev build needs the counters of line 2, otherwise its tag could not be told apart.
-if (($Beta -or $Dev) -and $detail -notmatch ('^' + [regex]::Escape($short) + '\.\d+\.\d+$')) { throw 'version.txt hat keine Build-ID mit Zaehlern (Zeile 2) - ein Beta-/Dev-Tag braucht sie.' }
-$tagVersion = if ($Beta) { "$detail-beta" } elseif ($Dev) { "$detail-dev" } else { $short }
+if (([int]$Beta.IsPresent + [int]$Nightly.IsPresent + [int]$Dev.IsPresent) -gt 1) { throw '-Beta, -Nightly und -Dev schliessen sich gegenseitig aus.' }
+$channel = if ($Beta) { 'beta' } elseif ($Nightly) { 'nightly' } elseif ($Dev) { 'dev' } else { 'release' }
+# Technical form (git tag, installer file name): release = line 1, beta/nightly/dev = the five-segment build id + "-beta" / "-nightly" / "-dev". Same rule as
+# VersionFormat.Tag and scripts/version-display.sh. A beta, nightly or dev build needs the counters of line 2, otherwise its tag could not be told apart.
+if (($Beta -or $Nightly -or $Dev) -and $detail -notmatch ('^' + [regex]::Escape($short) + '\.\d+\.\d+$')) { throw 'version.txt hat keine Build-ID mit Zaehlern (Zeile 2) - ein Beta-/Nightly-/Dev-Tag braucht sie.' }
+$tagVersion = if ($Beta) { "$detail-beta" } elseif ($Nightly) { "$detail-nightly" } elseif ($Dev) { "$detail-dev" } else { $short }
 $final = Join-Path $out "PlatinVault-Setup-$tagVersion.exe"
 
 # File version: version.txt line 1 as four numbers (Windows allows at most 65535 per part)
@@ -256,8 +257,10 @@ if ($Stage -in @('all', 'app')) {
     $utf8 = New-Object System.Text.UTF8Encoding($false)
     Copy-Item -LiteralPath (Join-Path $root 'LICENSE') -Destination (Join-Path $app 'docs\LICENSE')
     Copy-Item -LiteralPath (Join-Path $root 'THIRD-PARTY-NOTICES.md') -Destination (Join-Path $app 'docs\THIRD-PARTY-NOTICES.md')
-    # The customer changelog: the "What's new" window after an update reads the entry of the running version from it (works offline)
+    # The customer changelogs: the "What's new" window after an update reads the entry of the running version from them (works offline)
     Copy-Item -LiteralPath (Join-Path $root 'CHANGELOG.md') -Destination (Join-Path $app 'docs\CHANGELOG.md')
+    Copy-Item -LiteralPath (Join-Path $root 'CHANGELOG.beta.md') -Destination (Join-Path $app 'docs\CHANGELOG.beta.md')
+    Copy-Item -LiteralPath (Join-Path $root 'CHANGELOG.nightly.md') -Destination (Join-Path $app 'docs\CHANGELOG.nightly.md')
     # version.txt keeps the two plain lines (version, build id); the program turns them into the readable form with the channel
     [IO.File]::WriteAllText((Join-Path $app 'version.txt'), "$short`n$detail", $utf8)
     [IO.File]::WriteAllText((Join-Path $app 'release-channel.txt'), $channel, $utf8)

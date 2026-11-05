@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type FocusEvent as ReactFocusEvent } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type FocusEvent as ReactFocusEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { IconInfoCircle } from '@tabler/icons-react'
@@ -68,11 +68,29 @@ interface InfoCardProps {
   onKeyDown: (event: ReactKeyboardEvent<HTMLDivElement>) => void
   onBlur: (event: ReactFocusEvent<HTMLDivElement>) => void
   onOpenLicenses: () => void
+  // The version popover and the "what's new" window open from inside the card (they live in <body>, outside of it)
+  onVersionPanelChange: (open: boolean) => void
+  onVersionNotesChange: (open: boolean) => void
+  // The "what's new" window is up: the card stays mounted (it owns that window) but steps out of sight and reach
+  suspended: boolean
 }
 
 // The card itself: lives in <body> (never inside the layout, the nav clips its own content), measured once and then placed
 // next to the symbol; it follows the symbol when the window is resized or scrolled.
-function InfoCard({ id, anchorRef, cardRef, preferred, onPointerEnter, onPointerLeave, onKeyDown, onBlur, onOpenLicenses }: InfoCardProps) {
+function InfoCard({
+  id,
+  anchorRef,
+  cardRef,
+  preferred,
+  onPointerEnter,
+  onPointerLeave,
+  onKeyDown,
+  onBlur,
+  onOpenLicenses,
+  onVersionPanelChange,
+  onVersionNotesChange,
+  suspended,
+}: InfoCardProps) {
   const { t } = useTranslation('shell')
   const reduce = useReducedMotion() ?? false
   const { data: branding } = useBranding()
@@ -121,6 +139,7 @@ function InfoCard({ id, anchorRef, cardRef, preferred, onPointerEnter, onPointer
           left: placement?.left ?? 0,
           top: placement?.top ?? 0,
           visibility: placement ? 'visible' : 'hidden',
+          pointerEvents: suspended ? 'none' : undefined,
           transformOrigin: side === 'right' ? 'left bottom' : 'center bottom',
           '--pv-info-bridge-w': `${placement?.bridge.width ?? 0}px`,
           '--pv-info-bridge-y': `${placement?.bridge.top ?? 0}px`,
@@ -128,7 +147,7 @@ function InfoCard({ id, anchorRef, cardRef, preferred, onPointerEnter, onPointer
         } as CSSProperties
       }
       initial={{ opacity: 0, scale: reduce ? 1 : 0.97, ...shift }}
-      animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
+      animate={{ opacity: suspended ? 0 : 1, scale: 1, x: 0, y: 0 }}
       exit={{ opacity: 0, scale: reduce ? 1 : 0.97, ...shift }}
       transition={{ duration: reduce ? 0.12 : 0.18, ease: [0.22, 1, 0.36, 1] }}
       onPointerEnter={onPointerEnter}
@@ -141,7 +160,7 @@ function InfoCard({ id, anchorRef, cardRef, preferred, onPointerEnter, onPointer
         aria-hidden="true"
         style={side === 'right' ? { top: (placement?.arrow ?? 24) - 5 } : { left: (placement?.arrow ?? 24) - 5 }}
       />
-      <InfoBody logo onOpenLicenses={onOpenLicenses} />
+      <InfoBody onOpenLicenses={onOpenLicenses} onVersionCheckChange={onVersionPanelChange} onVersionNotesChange={onVersionNotesChange} />
     </motion.div>
   )
 }
@@ -166,8 +185,13 @@ export function NavInfo({ drawer, onOpenChange }: NavInfoProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
   const [viewerOpen, setViewerOpen] = useState(false)
+  // Something opened from inside the card: the version popover and, after it, the "what's new" window. While one is up it owns Esc,
+  // the presses and the focus; the card waits underneath and is the next thing Esc closes.
+  const [panelOpen, setPanelOpen] = useState(false)
+  const [notesOpen, setNotesOpen] = useState(false)
   // The latest values for the timers and listeners
   const openRef = useRef(false)
+  const innerOpenRef = useRef(false)
   const sourceRef = useRef<Source>('hover')
   const timerRef = useRef<number | undefined>(undefined)
   const lastTabRef = useRef(0)
@@ -178,11 +202,34 @@ export function NavInfo({ drawer, onOpenChange }: NavInfoProps) {
   }, [open])
 
   useEffect(() => {
-    onOpenChange?.(open || viewerOpen)
-  }, [open, viewerOpen, onOpenChange])
+    onOpenChange?.(open || viewerOpen || panelOpen || notesOpen)
+  }, [open, viewerOpen, panelOpen, notesOpen, onOpenChange])
 
-  // Gone from the nav (the nav is expanded, a tall window): the nav is no longer told about an overlay of this symbol
+  // Gone from the nav: the nav is no longer told about an overlay of this symbol
   useEffect(() => () => onOpenChange?.(false), [onOpenChange])
+
+  // Opened from inside the card: it stays until it is closed by hand, whatever opened it (the pointer is on the popover then, not on the
+  // card). Stable functions: the version button reports through effects that depend on them.
+  const panelRef = useRef(false)
+  const notesRef = useRef(false)
+  const onVersionPanelChange = useCallback((value: boolean) => {
+    if (value) {
+      window.clearTimeout(timerRef.current)
+      sourceRef.current = 'click'
+    }
+    panelRef.current = value
+    innerOpenRef.current = value || notesRef.current
+    setPanelOpen(value)
+  }, [])
+  const onVersionNotesChange = useCallback((value: boolean) => {
+    if (value) {
+      window.clearTimeout(timerRef.current)
+      sourceRef.current = 'click'
+    }
+    notesRef.current = value
+    innerOpenRef.current = value || panelRef.current
+    setNotesOpen(value)
+  }, [])
 
   useEffect(() => () => window.clearTimeout(timerRef.current), [])
 
@@ -201,6 +248,11 @@ export function NavInfo({ drawer, onOpenChange }: NavInfoProps) {
     clearTimer()
     const run = () => {
       openRef.current = false
+      panelRef.current = false
+      notesRef.current = false
+      innerOpenRef.current = false
+      setPanelOpen(false)
+      setNotesOpen(false)
       setOpen(false)
     }
     if (delay > 0) timerRef.current = window.setTimeout(run, delay)
@@ -225,17 +277,18 @@ export function NavInfo({ drawer, onOpenChange }: NavInfoProps) {
     return () => document.removeEventListener('keydown', onKeyDown, true)
   }, [])
 
-  // Open: Esc and a press anywhere outside the symbol and the card close it
+  // Open: Esc and a press anywhere outside the symbol and the card close it (while an inner popover or dialog is open, it handles Esc and outside presses first)
   useEffect(() => {
     if (!open) return
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
+      if (event.key !== 'Escape' || innerOpenRef.current) return
       event.stopPropagation()
       const inside = cardRef.current?.contains(document.activeElement) ?? false
       hide()
       if (inside) focusTrigger()
     }
     const onPointerDown = (event: PointerEvent) => {
+      if (innerOpenRef.current) return
       const target = event.target as Node | null
       if (target && (triggerRef.current?.contains(target) || cardRef.current?.contains(target))) return
       hide()
@@ -254,7 +307,7 @@ export function NavInfo({ drawer, onOpenChange }: NavInfoProps) {
   // Focus left the symbol and the card: a real target elsewhere always closes, a click on nothing is handled by the press listener
   // (closes a card the keyboard opened, too)
   const onGroupBlur = (event: ReactFocusEvent<HTMLElement>) => {
-    if (!openRef.current) return
+    if (!openRef.current || innerOpenRef.current) return
     const next = event.relatedTarget
     const leaving = next === null ? sourceRef.current === 'focus' : !inGroup(next)
     if (leaving) hide()
@@ -268,7 +321,7 @@ export function NavInfo({ drawer, onOpenChange }: NavInfoProps) {
   const onPointerLeave = (event: React.PointerEvent) => {
     if (event.pointerType !== 'mouse') return
     clearTimer()
-    if (openRef.current && sourceRef.current === 'hover') hide(LEAVE_CLOSE_DELAY)
+    if (openRef.current && sourceRef.current === 'hover' && !innerOpenRef.current) hide(LEAVE_CLOSE_DELAY)
   }
 
   const onTriggerClick = () => {
@@ -354,11 +407,14 @@ export function NavInfo({ drawer, onOpenChange }: NavInfoProps) {
               }}
               onPointerLeave={() => {
                 clearTimer()
-                if (openRef.current && sourceRef.current === 'hover') hide(LEAVE_CLOSE_DELAY)
+                if (openRef.current && sourceRef.current === 'hover' && !innerOpenRef.current) hide(LEAVE_CLOSE_DELAY)
               }}
               onKeyDown={onCardKeyDown}
               onBlur={onGroupBlur}
               onOpenLicenses={openLicenses}
+              onVersionPanelChange={onVersionPanelChange}
+              onVersionNotesChange={onVersionNotesChange}
+              suspended={notesOpen}
             />
           )}
         </AnimatePresence>,

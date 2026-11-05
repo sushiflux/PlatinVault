@@ -182,4 +182,34 @@ describe('ReleaseNotesViewer', () => {
     render(<Harness value={{ ...release, notes: '<!-- nothing -->\n\n---\n' }} />)
     expect(screen.getByRole('status').textContent).toContain('keine Notizen')
   })
+
+  it('renders hostile notes (shipped changelog or a release body) as text only: no HTML elements, no script or data links', async () => {
+    await applyLanguage('en')
+    const hostile = [
+      '## v2026.11.19 (3.1601)',
+      '',
+      '<script>alert(1)</script>',
+      '',
+      '### ✨ New',
+      '',
+      '- <img src=x onerror=alert(1)> image',
+      '- [click](javascript:alert(1)) js link',
+      '- [data](data:text/html,<script>alert(1)</script>) data link',
+      '- [ok](https://example.com/" onmouseover="alert(1)) quote link',
+      '- javascript:alert(2) bare',
+      '- <svg onload=alert(1)> **<b>bold</b>** `<i>code</i>`',
+      '',
+      '---',
+      'Code signing policy: javascript:alert(3)',
+    ].join('\n')
+    render(<Harness value={{ ...release, notesUrl: 'javascript:alert(4)', notes: hostile }} />)
+    const dialog = screen.getByTestId('release-notes')
+    expect(dialog.querySelector('script, img, svg:not(.tabler-icon), b, i, iframe, object, embed')).toBeNull()
+    expect(dialog.querySelectorAll('[onerror], [onload], [onmouseover]')).toHaveLength(0)
+    for (const link of dialog.querySelectorAll('a')) {
+      expect(link.getAttribute('href') ?? '').toMatch(/^https?:\/\//)
+    }
+    // The payloads are still readable as plain text
+    expect(dialog.textContent).toContain('<img src=x onerror=alert(1)>')
+  })
 })

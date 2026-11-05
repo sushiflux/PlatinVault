@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
+import { parseAtxHeading } from '../utils/markdownHeading'
 
 // A small, safe Markdown renderer for the shipped Markdown documents (THIRD-PARTY-NOTICES.md). It builds React elements only -
 // no HTML string is ever injected, raw HTML in the source is never interpreted, and links are limited to http(s). Supported:
@@ -15,7 +16,6 @@ export type MarkdownBlock =
   | { kind: 'rule' }
 
 const FENCE = /^ {0,3}(`{3,}|~{3,})(.*)$/
-const HEADING = /^ {0,3}(#{1,6})\s+(.*?)\s*#*\s*$/
 const RULE = /^ {0,3}([-*_])(?:\s*\1){2,}\s*$/
 const LIST_ITEM = /^\s*(?:([-*+])|(\d+)[.)])\s+(.*)$/
 const TABLE_SEPARATOR = /^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)*\|?\s*$/
@@ -73,10 +73,10 @@ export function parseMarkdown(source: string): MarkdownBlock[] {
 
     if (HTML_ONLY_LINE.test(line)) continue
 
-    const heading = HEADING.exec(line)
+    const heading = parseAtxHeading(line)
     if (heading) {
       flushParagraph()
-      blocks.push({ kind: 'heading', level: (heading[1] ?? '#').length as 1 | 2 | 3 | 4 | 5 | 6, text: heading[2] ?? '' })
+      blocks.push({ kind: 'heading', level: heading.level as 1 | 2 | 3 | 4 | 5 | 6, text: heading.text })
       continue
     }
 
@@ -130,7 +130,8 @@ export function parseMarkdown(source: string): MarkdownBlock[] {
 }
 
 // `code`, **bold**, [text](http(s)-url) and bare http(s) URLs. Anything else stays plain text (React escapes it).
-const INLINE = /(`[^`\n]+`)|(\*\*[^*\n]+\*\*)|(\[[^\]\n]+\]\(https?:\/\/[^\s)]+\))|(https?:\/\/[^\s<>`)\]]*[^\s<>`)\].,;:!?])/g
+// Link text never contains "[": each "[" is scanned only up to the next bracket (a long "[[[[" run would otherwise take quadratic time).
+const INLINE = /(`[^`\n]+`)|(\*\*[^*\n]+\*\*)|(\[[^[\]\n]+\]\(https?:\/\/[^\s)]+\))|(https?:\/\/[^\s<>`)\]]*[^\s<>`)\].,;:!?])/g
 
 /** Inline Markdown (`code`, **bold**, links) of one line of text as React nodes. Exported for the release notes dialog. */
 export function renderInline(text: string): ReactNode[] {

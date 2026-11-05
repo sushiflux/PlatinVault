@@ -216,3 +216,49 @@ describe('footer "Code signing policy"', () => {
     expect(takePolicyFooter(`Code signing policy: ${policy}\n\n### New\n- a`).policyUrl).toBeNull()
   })
 })
+
+describe('hostile release bodies (text from outside) stay fast', () => {
+  // The former patterns: kept here only to show the new code cuts the footer exactly as before
+  const OLD_FOOTER = /(?:\n[ \t]*(?:[-*_][ \t]*){3,}[ \t]*)?\n+[ \t]*Code signing policy:[ \t]*(\S+)[ \t]*$/i
+  const policy = 'https://github.com/sushiflux/PlatinVault#code-signing-policy'
+
+  it('cuts the footer exactly like the former single pattern', () => {
+    const bodies = [
+      `### New\n- a\n\n---\n\nCode signing policy: ${policy}`,
+      `### New\n- a\n---\nCode signing policy: ${policy}`,
+      `### New\n- a\n\n * * _ \n\n\nCode signing policy: ${policy}  `,
+      `### New\n- a\n\nCode signing policy: ${policy}`,
+      `---\nCode signing policy: ${policy}`,
+      `\nCode signing policy: ${policy}`,
+      `Code signing policy: ${policy}`,
+      `### New\n- a\n\n---\ntext\n\nCode signing policy: ${policy}`,
+      `### New\n- a\n\nCode signing policy: ${policy} trailing`,
+    ]
+    for (const body of bodies) {
+      const match = OLD_FOOTER.exec(body)
+      const expected = match ? { body: body.slice(0, match.index), url: match[1] } : { body, url: undefined }
+      const result = takePolicyFooter(body)
+      expect(result.body).toBe(expected.body)
+      expect(result.policyUrl).toBe(expected.url === policy ? policy : null)
+    }
+  })
+
+  it('parses 64 KB bodies built to make backtracking patterns explode in well under a second each', () => {
+    const size = 64 * 1024
+    const bodies = [
+      // A heading with blanks inside: the former heading pattern needed about a minute for 8 KB of this
+      `## a${' '.repeat(size)}b`,
+      // Blank lines before the end (footer search), headings without a category word, a long "[" run (link search)
+      `${'\n'.repeat(size)}x`,
+      '## \n'.repeat(size / 4),
+      `## ${' '.repeat(size)}x`,
+      `- ${'['.repeat(size)}`,
+    ]
+    for (const body of bodies) {
+      const started = performance.now()
+      parseReleaseNotes(body, 'de')
+      parseReleaseNotes(body, 'en')
+      expect(performance.now() - started).toBeLessThan(1000)
+    }
+  })
+})

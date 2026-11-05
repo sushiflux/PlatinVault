@@ -17,6 +17,7 @@ export function whatsNewRelease(data: WhatsNewDto): UpdateReleaseDto {
     tag: data.version,
     display: data.version,
     isBeta: data.version.includes('β'),
+    isNightly: data.version.includes('α'),
     notesUrl: null,
     notes: data.notes,
     publishedAt: null,

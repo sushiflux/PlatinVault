@@ -42,17 +42,45 @@ export function UpdatesSection() {
   })
 
   const toggle = useMutation({
-    mutationFn: (enabled: boolean) => updateSettings({ betaUpdatesEnabled: enabled }),
+    mutationFn: (enabled: boolean) =>
+      updateSettings(!enabled && data?.nightlyUpdatesEnabled ? { betaUpdatesEnabled: false, nightlyUpdatesEnabled: false } : { betaUpdatesEnabled: enabled }),
     onMutate: (enabled) => {
       setSwitchError(null)
       // Show the new position at once; the status is read again afterwards (the offer depends on the switch)
       const previous = queryClient.getQueryData<UpdateStatusDto>(UPDATE_STATUS_KEY)
-      if (previous) queryClient.setQueryData(UPDATE_STATUS_KEY, { ...previous, betaUpdatesEnabled: enabled })
+      if (previous) {
+        queryClient.setQueryData(UPDATE_STATUS_KEY, {
+          ...previous,
+          betaUpdatesEnabled: enabled,
+          nightlyUpdatesEnabled: enabled ? previous.nightlyUpdatesEnabled : false,
+        })
+      }
       return { previous }
     },
     onError: (error, _enabled, context) => {
       if (context?.previous) queryClient.setQueryData(UPDATE_STATUS_KEY, context.previous)
       setSwitchError(t('updates.saveFailed', { reason: errorText(error) }))
+    },
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: UPDATE_STATUS_KEY }),
+  })
+
+  const nightlyToggle = useMutation({
+    mutationFn: (enabled: boolean) => updateSettings(enabled ? { betaUpdatesEnabled: true, nightlyUpdatesEnabled: true } : { nightlyUpdatesEnabled: false }),
+    onMutate: (enabled) => {
+      setSwitchError(null)
+      const previous = queryClient.getQueryData<UpdateStatusDto>(UPDATE_STATUS_KEY)
+      if (previous) {
+        queryClient.setQueryData(UPDATE_STATUS_KEY, {
+          ...previous,
+          betaUpdatesEnabled: enabled ? true : previous.betaUpdatesEnabled,
+          nightlyUpdatesEnabled: enabled,
+        })
+      }
+      return { previous }
+    },
+    onError: (error, _enabled, context) => {
+      if (context?.previous) queryClient.setQueryData(UPDATE_STATUS_KEY, context.previous)
+      setSwitchError(t('updates.nightlySaveFailed', { reason: errorText(error) }))
     },
     onSettled: () => void queryClient.invalidateQueries({ queryKey: UPDATE_STATUS_KEY }),
   })
@@ -79,7 +107,8 @@ export function UpdatesSection() {
     onError: (error) => setInstallMessage({ tone: 'error', text: t('updates.result.installFailed', { reason: errorText(error) }) }),
   })
 
-  const betaOn = data?.betaUpdatesEnabled ?? false
+  const nightlyOn = data?.nightlyUpdatesEnabled ?? false
+  const betaOn = (data?.betaUpdatesEnabled ?? false) || nightlyOn
   const available = data?.available ?? null
   const checking = check.isPending
 
@@ -93,13 +122,14 @@ export function UpdatesSection() {
   const resultCandidates = [...updateResultCandidates(t), result.text]
 
   // A dev build never takes part in the update check: switch and check are locked and the result line carries the note (same rows,
-  // nothing moves); the container how-to is left out because it explains the :latest/:beta tags a dev build does not follow
+  // nothing moves); the container how-to is left out because it explains the :latest/:beta/:nightly tags a dev build does not follow
   const devBuild = data?.state === 'devBuild'
   const desktop = data?.host === 'desktop'
   const linuxPackage = data?.host === 'linuxPackage'
   const image = data?.imageRepository ?? 'ghcr.io/sushiflux/platinvault'
   const latestTag = `${image}:latest`
   const betaTag = `${image}:beta`
+  const nightlyTag = `${image}:nightly`
 
   const onInstall = async () => {
     if (!data || !available) return
@@ -127,8 +157,8 @@ export function UpdatesSection() {
             <span
               className="rounded-sm px-1.5 py-0.5 text-[0.68rem] font-extrabold uppercase tracking-wide"
               style={{
-                color: data.currentChannel === 'beta' ? 'var(--accent-gold)' : 'var(--text-secondary)',
-                border: `1px solid ${data.currentChannel === 'beta' ? 'var(--accent-gold-border)' : 'var(--border-subtle)'}`,
+                color: data.currentChannel === 'beta' || data.currentChannel === 'nightly' ? 'var(--accent-gold)' : 'var(--text-secondary)',
+                border: `1px solid ${data.currentChannel === 'beta' || data.currentChannel === 'nightly' ? 'var(--accent-gold-border)' : 'var(--border-subtle)'}`,
               }}
             >
               {t(`updates.channel.${data.currentChannel}`)}
@@ -137,12 +167,19 @@ export function UpdatesSection() {
         </div>
       </div>
 
-      <Switch checked={betaOn} onChange={(next) => toggle.mutate(next)} className={SWITCH_ROW} disabled={!data || devBuild || toggle.isPending}>
+      <Switch checked={betaOn} onChange={(next) => toggle.mutate(next)} className={SWITCH_ROW} disabled={!data || devBuild || toggle.isPending || nightlyToggle.isPending}>
         {t('updates.betaSwitch')}
       </Switch>
-      {/* Explanation of the current position; room for the longer of both, and for a failed save under it */}
-      <ReservedText className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }} candidates={[t('updates.betaOn'), t('updates.betaOff')]}>
-        {betaOn ? t('updates.betaOn') : t('updates.betaOff')}
+      <Switch checked={nightlyOn} onChange={(next) => nightlyToggle.mutate(next)} className={SWITCH_ROW} disabled={!data || devBuild || toggle.isPending || nightlyToggle.isPending}>
+        {t('updates.nightlySwitch')}
+      </Switch>
+      {/* Explanation of the current position; room for the longest of the three, and for a failed save under it */}
+      <ReservedText
+        className="text-xs leading-relaxed"
+        style={{ color: 'var(--text-muted)' }}
+        candidates={[t('updates.nightlyOn'), t('updates.betaOn'), t('updates.betaOff')]}
+      >
+        {nightlyOn ? t('updates.nightlyOn') : betaOn ? t('updates.betaOn') : t('updates.betaOff')}
       </ReservedText>
       {switchError && (
         <p role="alert" className="text-xs font-semibold leading-relaxed" style={{ color: 'var(--accent-crimson)' }}>
@@ -270,7 +307,7 @@ export function UpdatesSection() {
       )}
 
       {data && linuxPackage && !devBuild && <LinuxHowTo data={data} />}
-      {data && !desktop && !linuxPackage && !devBuild && <DockerHowTo data={data} latestTag={latestTag} betaTag={betaTag} />}
+      {data && !desktop && !linuxPackage && !devBuild && <DockerHowTo data={data} latestTag={latestTag} betaTag={betaTag} nightlyTag={nightlyTag} />}
       <ReleaseNotesViewer release={notesOpen ? available : null} onClose={() => setNotesOpen(false)} />
     </div>
   )
@@ -313,15 +350,27 @@ cd ${folder}
   )
 }
 
-/** How a container gets betas or releases: the two tags, what to do now, and the steps for Unraid, docker compose and other NAS. */
-function DockerHowTo({ data, latestTag, betaTag }: { data: UpdateStatusDto; latestTag: string; betaTag: string }) {
+/** How a container gets nightlies, betas or releases: the three tags, what to do now, and the steps for Unraid, docker compose and other NAS. */
+function DockerHowTo({ data, latestTag, betaTag, nightlyTag }: { data: UpdateStatusDto; latestTag: string; betaTag: string; nightlyTag: string }) {
   const { t } = useTranslation('settings')
   const advice = (() => {
     switch (data.dockerAdvice) {
+      case 'useNightly':
+        return data.available?.isNightly
+          ? t('updates.docker.adviceUseNightlyNew', { version: data.available.display, nightly: nightlyTag })
+          : t('updates.docker.adviceUseNightly', { nightly: nightlyTag })
       case 'useBeta':
         return data.available?.isBeta
           ? t('updates.docker.adviceUseBetaNew', { version: data.available.display, latest: latestTag, beta: betaTag })
           : t('updates.docker.adviceUseBeta', { latest: latestTag, beta: betaTag })
+      case 'nightlyStays':
+        return t('updates.docker.adviceNightlyStays', { current: data.currentVersion, target: data.betaUpdatesEnabled ? betaTag : latestTag })
+      case 'switchToBeta':
+        return t('updates.docker.adviceSwitchToBeta', {
+          version: data.latestBeta?.display ?? data.latestRelease?.display ?? '',
+          current: data.currentVersion,
+          beta: betaTag,
+        })
       case 'betaStays':
         return t('updates.docker.adviceBetaStays', { current: data.currentVersion, latest: latestTag })
       case 'switchToLatest':
@@ -330,11 +379,15 @@ function DockerHowTo({ data, latestTag, betaTag }: { data: UpdateStatusDto; late
         return null
     }
   })()
-  const wanted = data.betaUpdatesEnabled ? betaTag : latestTag
+  const wanted = data.nightlyUpdatesEnabled ? nightlyTag : data.betaUpdatesEnabled ? betaTag : latestTag
   const sample = 'v0000.00.000 (00.0000 β)'
   const adviceCandidates = [
+    t('updates.docker.adviceUseNightly', { nightly: nightlyTag }),
+    t('updates.docker.adviceUseNightlyNew', { version: sample, nightly: nightlyTag }),
     t('updates.docker.adviceUseBeta', { latest: latestTag, beta: betaTag }),
     t('updates.docker.adviceUseBetaNew', { version: sample, latest: latestTag, beta: betaTag }),
+    t('updates.docker.adviceNightlyStays', { current: sample, target: betaTag }),
+    t('updates.docker.adviceSwitchToBeta', { version: sample, current: sample, beta: betaTag }),
     t('updates.docker.adviceBetaStays', { current: sample, latest: latestTag }),
     t('updates.docker.adviceSwitchToLatest', { version: sample, current: sample, latest: latestTag }),
   ]
@@ -354,6 +407,10 @@ function DockerHowTo({ data, latestTag, betaTag }: { data: UpdateStatusDto; late
           <code className="break-all">{betaTag}</code>
         </dt>
         <dd>{t('updates.docker.tagBeta')}</dd>
+        <dt>
+          <code className="break-all">{nightlyTag}</code>
+        </dt>
+        <dd>{t('updates.docker.tagNightly')}</dd>
       </dl>
       {/* What to do now. The box keeps the room of the longest advice, so switching or a new check result never moves the steps below */}
       <ReservedText

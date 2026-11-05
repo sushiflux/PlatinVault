@@ -201,6 +201,8 @@ public sealed class HostAndOriginGuardTests
 
         var refused = await server.Client.SendAsync(WithHost("rebind.attacker.com:5233"));
         Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+        Assert.Empty(refused.Headers.Server);
+        Assert.False(refused.Headers.Contains("Server"));
         Assert.Equal("text/plain", refused.Content.Headers.ContentType?.MediaType);
         var text = await refused.Content.ReadAsStringAsync();
         Assert.Contains("\"rebind.attacker.com\"", text);
@@ -212,7 +214,10 @@ public sealed class HostAndOriginGuardTests
 
         foreach (var host in new[] { "192.168.1.20:5233", "[::1]:5233", "localhost:5231", "tower:5233", "tower.local", "pv.home.example.net:443" })
         {
-            Assert.Equal(HttpStatusCode.OK, (await server.Client.SendAsync(WithHost(host))).StatusCode);
+            var ok = await server.Client.SendAsync(WithHost(host));
+            Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
+            Assert.Empty(ok.Headers.Server);
+            Assert.False(ok.Headers.Contains("Server"));
         }
     }
 

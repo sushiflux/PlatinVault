@@ -128,13 +128,17 @@ internal static class DesktopTexts
             $"Das Update konnte nicht geladen werden: {reason}",
             $"The update could not be downloaded: {reason}");
 
-        public static Msg UpToDate(string version, bool betas) => new(
-            betas
-                ? $"PlatinVault {version} ist aktuell – es gibt keine neuere Beta und kein neueres Release."
-                : $"PlatinVault {version} ist aktuell – es gibt kein neueres Release. (Betas bekommst du, wenn du in den Einstellungen unter System → Updates „Beta-Versionen erhalten“ einschaltest.)",
-            betas
-                ? $"PlatinVault {version} is up to date – there is no newer beta and no newer release."
-                : $"PlatinVault {version} is up to date – there is no newer release. (To get betas, switch on “Receive beta versions” in Settings under System → Updates.)");
+        public static Msg UpToDate(string version, bool betas, bool nightlies = false) => new(
+            nightlies
+                ? $"PlatinVault {version} ist aktuell – es gibt keine neuere Nightly, Beta und kein neueres Release."
+                : betas
+                    ? $"PlatinVault {version} ist aktuell – es gibt keine neuere Beta und kein neueres Release."
+                    : $"PlatinVault {version} ist aktuell – es gibt kein neueres Release. (Betas und Nightlies bekommst du, wenn du sie in den Einstellungen unter System → Updates einschaltest.)",
+            nightlies
+                ? $"PlatinVault {version} is up to date – there is no newer nightly, beta or release."
+                : betas
+                    ? $"PlatinVault {version} is up to date – there is no newer beta and no newer release."
+                    : $"PlatinVault {version} is up to date – there is no newer release. (To get betas or nightlies, switch them on in Settings under System → Updates.)");
 
         public static Msg CheckFailed(string reason) => new(
             $"Die Update-Prüfung hat nicht geklappt: {reason}",

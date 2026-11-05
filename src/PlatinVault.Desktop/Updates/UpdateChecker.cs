@@ -21,8 +21,8 @@ internal sealed record UpdateOffer(ReleaseVersion Version, string InstallerUrl, 
 internal sealed class UpdateChecker(HttpClient http)
 {
     /// <summary>The newest acceptable release with an installer and its checksum (pure, unit-tested; same rules as the server).</summary>
-    public static UpdateOffer? Pick(JsonElement releases, ReleaseVersion current, bool includeBetas) =>
-        UpdateOffer.From(ReleaseFeed.PickUpdate(ReleaseFeed.Parse(releases), current, includeBetas, requireInstaller: true));
+    public static UpdateOffer? Pick(JsonElement releases, ReleaseVersion current, bool includeBetas, bool includeNightly = false) =>
+        UpdateOffer.From(ReleaseFeed.PickUpdate(ReleaseFeed.Parse(releases), current, includeBetas, requireInstaller: true, includeNightly: includeNightly));
 
     /// <summary>In the delayed cleanup pass (a while after the start) only installers older than this are deleted: a younger one may belong to an update the user just started.</summary>
     public static readonly TimeSpan DelayedCleanupMinAge = TimeSpan.FromMinutes(10);

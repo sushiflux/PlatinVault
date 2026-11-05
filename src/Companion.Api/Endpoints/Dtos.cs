@@ -624,7 +624,9 @@ public sealed record SettingsResponseDto(
     // What happens to a pinned achievement when it is unlocked (setting "live.pins_after_unlock"): "keep" (default) / "remove"
     string PinsAfterUnlock = Settings.SettingsStore.DefaultPinsAfterUnlock,
     // How long a trophy popup stays on screen, in whole seconds (setting "live.popup_seconds", 2..10, default 5)
-    int PopupSeconds = Settings.SettingsStore.DefaultPopupSeconds
+    int PopupSeconds = Settings.SettingsStore.DefaultPopupSeconds,
+    // Switch "updates.nightly_channel" ("Nightly-Versionen (α) erhalten", off by default): the update check also offers nightlies (α) and betas (β)
+    bool NightlyUpdatesEnabled = false
 );
 
 /// <summary>
@@ -724,7 +726,9 @@ public sealed record UpdateSettingsRequest(
     string? PinsAfterUnlock = null,
     // Trophy popup duration in whole seconds, 2..10 (anything else, a fraction included, is rejected with 400): null = keep what is stored.
     // A double on purpose: "5.5" reaches the validation and gets the bilingual message instead of a generic binding error.
-    double? PopupSeconds = null
+    double? PopupSeconds = null,
+    // "Nightly-Versionen (α) erhalten": null = keep the stored switch
+    bool? NightlyUpdatesEnabled = null
 );
 
 public sealed record AiProviderModelsRequestDto(

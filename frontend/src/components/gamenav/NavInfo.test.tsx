@@ -9,7 +9,42 @@ function stubServer() {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string) => {
-      if (String(url).includes('/api/branding')) return new Response(JSON.stringify(BRANDING), { status: 200, headers: { 'Content-Type': 'application/json' } })
+      const target = String(url)
+      if (target.includes('/api/branding')) return new Response(JSON.stringify(BRANDING), { status: 200, headers: { 'Content-Type': 'application/json' } })
+      if (target.includes('/api/updates/status')) {
+        return new Response(
+          JSON.stringify({
+            currentVersion: BRANDING.version,
+            currentTag: 'v2026.10.7.12.345-beta',
+            currentChannel: 'beta',
+            betaUpdatesEnabled: true,
+            host: 'server',
+            state: 'upToDate',
+            available: null,
+            latestRelease: null,
+            latestBeta: null,
+            checkedAt: null,
+            error: null,
+            throttled: false,
+            nextManualCheckAt: null,
+            canInstall: false,
+            dockerAdvice: 'none',
+            imageRepository: 'ghcr.io/sushiflux/platinvault',
+            checkInterval: 'daily',
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+      if (target.includes('/api/whats-new')) {
+        return new Response(
+          JSON.stringify({
+            version: BRANDING.version,
+            show: false,
+            notes: `## ${BRANDING.version}\n\n### ✨ Neu\n\n- Kompaktes Info-Symbol.`,
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
       // The licence documents
       return new Response('# Lizenz', { status: 200, headers: { 'Content-Type': 'text/markdown' } })
     })
@@ -141,6 +176,48 @@ describe('NavInfo', () => {
     expect(symbol().getAttribute('aria-expanded')).toBe('false')
     // While the viewer is up the nav is told that an overlay is open
     expect(onOpenChange).toHaveBeenLastCalledWith(true)
+  })
+
+  it('the version inside the card opens "Version & Updates" and "Das ist neu", and Esc closes the inner layers first', async () => {
+    const onOpenChange = vi.fn()
+    renderInfo(false, onOpenChange)
+    fireEvent.click(symbol())
+    const card = await screen.findByRole('dialog', { name: 'Über PlatinVault' })
+    const versionBtn = within(card).getByTestId('version-check')
+    fireEvent.click(versionBtn)
+
+    // The version popover opens while the card remains mounted underneath
+    const panel = await screen.findByTestId('version-panel')
+    expect(screen.getByRole('dialog', { name: 'Über PlatinVault' })).toBeTruthy()
+    expect(onOpenChange).toHaveBeenLastCalledWith(true)
+
+    // First Esc closes the version popover; the card stays open and focus returns to the version button
+    fireEvent.keyDown(panel, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByTestId('version-panel')).toBeNull())
+    expect(screen.getByRole('dialog', { name: 'Über PlatinVault' })).toBeTruthy()
+    expect(document.activeElement).toBe(versionBtn)
+
+    // Second Esc closes the card itself and returns focus to the symbol
+    fireEvent.keyDown(document, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Über PlatinVault' })).toBeNull())
+    expect(document.activeElement).toBe(symbol())
+
+    // Opening "Das ist neu in dieser Version" from the popover keeps the card mounted (suspended) until the notes close
+    fireEvent.click(symbol())
+    const reopenedCard = await screen.findByRole('dialog', { name: 'Über PlatinVault' })
+    fireEvent.click(within(reopenedCard).getByTestId('version-check'))
+    await screen.findByTestId('version-panel')
+    const whatsNewBtn = screen.getByTestId('version-whats-new') as HTMLButtonElement
+    await waitFor(() => expect(whatsNewBtn.disabled).toBe(false))
+    fireEvent.click(whatsNewBtn)
+
+    const notesDialog = await screen.findByTestId('release-notes')
+    expect(notesDialog.textContent).toContain('Kompaktes Info-Symbol.')
+    expect(reopenedCard.style.pointerEvents).toBe('none')
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByTestId('release-notes')).toBeNull())
+    expect(screen.getByRole('dialog', { name: 'Über PlatinVault' })).toBeTruthy()
   })
 })
 

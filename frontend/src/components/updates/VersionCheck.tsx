@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { CopyErrorButton } from '../ui/CopyErrorButton'
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react'
 import { createPortal } from 'react-dom'
@@ -63,8 +63,19 @@ function VersionPanel({ anchor, panelId, onClose, hasNotes, onShowNotes }: Panel
       if (ref.current?.contains(target) || anchor.contains(target)) return
       onClose()
     }
+    const onDocumentKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopPropagation()
+      onClose()
+      anchor.focus()
+    }
     document.addEventListener('pointerdown', onPointerDown, true)
-    return () => document.removeEventListener('pointerdown', onPointerDown, true)
+    document.addEventListener('keydown', onDocumentKeyDown, true)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown, true)
+      document.removeEventListener('keydown', onDocumentKeyDown, true)
+    }
   }, [anchor, onClose])
 
   const onKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -155,7 +166,15 @@ function VersionPanel({ anchor, panelId, onClose, hasNotes, onShowNotes }: Panel
  * The version at the foot of a page as a button: it opens a small "Version & Updates" popover with the last check, the button to
  * check by hand and its result. The version keeps its look (the caller passes it as children); only hover/focus show that it can be pressed.
  */
-export function VersionCheck({ children, onOpenChange }: { children: ReactNode; onOpenChange?: (open: boolean) => void }) {
+export function VersionCheck({
+  children,
+  onOpenChange,
+  onNotesOpenChange,
+}: {
+  children: ReactNode
+  onOpenChange?: (open: boolean) => void
+  onNotesOpenChange?: (open: boolean) => void
+}) {
   const { t } = useTranslation('shell')
   const [open, setOpen] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -170,11 +189,21 @@ export function VersionCheck({ children, onOpenChange }: { children: ReactNode; 
     setOpen(false)
   }, [])
 
-  useEffect(() => {
+  // Layout effects run before VersionPanel's passive focus effect, so a parent card knows the popover is open before focus moves into it
+  useLayoutEffect(() => {
     onOpenChange?.(open)
   }, [open, onOpenChange])
+  useLayoutEffect(() => {
+    onNotesOpenChange?.(notesOpen)
+  }, [notesOpen, onNotesOpenChange])
   // Gone from the page while open: whoever listens is told that nothing is open any more
-  useEffect(() => () => onOpenChange?.(false), [onOpenChange])
+  useLayoutEffect(
+    () => () => {
+      onOpenChange?.(false)
+      onNotesOpenChange?.(false)
+    },
+    [onOpenChange, onNotesOpenChange]
+  )
 
   return (
     <>

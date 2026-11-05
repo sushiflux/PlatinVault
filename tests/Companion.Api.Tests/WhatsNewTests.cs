@@ -119,12 +119,16 @@ public sealed class WhatsNewTests
     [Fact]
     public void The_shipped_changelog_has_an_entry_for_its_newest_version_in_both_languages()
     {
-        var text = File.ReadAllText(Path.Combine(RepositoryRoot(), "CHANGELOG.md"));
-        var heading = text.Split('\n').First(l => l.StartsWith("## v", StringComparison.Ordinal)).TrimEnd('\r')[3..];
-        var version = heading.Contains(" · ", StringComparison.Ordinal) ? heading[..heading.IndexOf(" · ", StringComparison.Ordinal)] : heading;
+        foreach (var file in new[] { "CHANGELOG.md", "CHANGELOG.beta.md" })
+        {
+            var text = File.ReadAllText(Path.Combine(RepositoryRoot(), file));
+            var heading = text.Split('\n').First(l => l.StartsWith("## v", StringComparison.Ordinal)).TrimEnd('\r')[3..];
+            var version = heading.Contains(" · ", StringComparison.Ordinal) ? heading[..heading.IndexOf(" · ", StringComparison.Ordinal)] : heading;
 
-        Assert.NotNull(ChangelogEntry.Extract(text, version, "en"));
-        Assert.NotNull(ChangelogEntry.Extract(text, version, "de"));
+            Assert.NotNull(ChangelogEntry.Extract(text, version, "en"));
+            Assert.NotNull(ChangelogEntry.Extract(text, version, "de"));
+        }
+        Assert.True(File.Exists(Path.Combine(RepositoryRoot(), "CHANGELOG.nightly.md")));
     }
 
     // ---- the decision --------------------------------------------------------------------------------------------------------------
@@ -132,6 +136,7 @@ public sealed class WhatsNewTests
     [Theory]
     [InlineData(VersionKind.Release, "v2", "v1", null, true, true)]    // update: another version stored
     [InlineData(VersionKind.Beta, "v2", "v1", null, true, true)]
+    [InlineData(VersionKind.Nightly, "v2", "v1", null, true, true)]
     [InlineData(VersionKind.Release, "v2", "v2", null, true, false)]   // already shown
     [InlineData(VersionKind.Release, "v2", "v1", null, false, false)]  // no entry
     [InlineData(VersionKind.Dev, "v2", "v1", null, true, false)]       // dev build

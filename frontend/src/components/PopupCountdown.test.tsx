@@ -68,44 +68,43 @@ const bar = (root: ParentNode) => root.querySelector<HTMLElement>('[data-popup-c
 const track = (root: ParentNode) => root.querySelector<HTMLElement>('[data-popup-countdown]')
 
 describe('PopupCountdown', () => {
-  it('runs for exactly the given time, linear, and is hidden from screen readers', () => {
+  it('runs smoothly and linearly for the given time, and is hidden from screen readers', () => {
     const { container } = render(<PopupCountdown durationMs={7000} color="#fbbf24" />)
     expect(track(container)!.getAttribute('aria-hidden')).toBe('true')
     expect(track(container)!.dataset.durationMs).toBe('7000')
     expect(bar(container)!.style.getPropertyValue('--pv-countdown')).toBe('7000ms')
-    // The motion itself lives in the stylesheet class (keyframes pv-popup-countdown, linear)
+    expect(bar(container)!.style.transformOrigin).toBe('0% 50%')
+    // The smooth linear keyframe class is always active (no abrupt 1s step jumps)
     expect(bar(container)!.classList.contains('pv-countdown-bar')).toBe(true)
   })
 
-  it('reduced motion: no gliding, the bar drops in whole-second steps and is empty when the time is up', async () => {
+  it('keeps the smooth linear glide even when reduced motion is active, without whole-second jumps', () => {
     motionPrefs.reduce = true
     const { container } = render(<PopupCountdown durationMs={4000} color="#fbbf24" />)
-    expect(bar(container)!.classList.contains('pv-countdown-bar')).toBe(false)
-    expect(bar(container)!.style.transform).toBe('scaleX(1)')
-
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(999)
-    })
-    expect(bar(container)!.style.transform).toBe('scaleX(1)')
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(1)
-    })
-    expect(bar(container)!.style.transform).toBe('scaleX(0.75)')
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(3000)
-    })
-    expect(bar(container)!.style.transform).toBe('scaleX(0)')
+    expect(bar(container)!.classList.contains('pv-countdown-bar')).toBe(true)
+    expect(bar(container)!.style.getPropertyValue('--pv-countdown')).toBe('4000ms')
   })
 
-  it('reduced motion: a new duration starts the steps again from full', async () => {
-    motionPrefs.reduce = true
-    const { container, rerender } = render(<PopupCountdown durationMs={4000} color="#fbbf24" />)
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(2000)
-    })
-    expect(bar(container)!.style.transform).toBe('scaleX(0.5)')
-    rerender(<PopupCountdown durationMs={2000} color="#fbbf24" />)
-    expect(bar(container)!.style.transform).toBe('scaleX(1)')
+  it('starts a Web Animations API linear glide when element.animate is available and cancels on duration change', () => {
+    const cancel = vi.fn()
+    const animate = vi.fn(() => ({ cancel }) as unknown as Animation)
+    HTMLElement.prototype.animate = animate
+    try {
+      const { rerender } = render(<PopupCountdown durationMs={4000} color="#fbbf24" />)
+      expect(animate).toHaveBeenCalledWith(
+        [{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }],
+        { duration: 4000, easing: 'linear', fill: 'both' }
+      )
+      rerender(<PopupCountdown durationMs={2000} color="#fbbf24" />)
+      expect(cancel).toHaveBeenCalledTimes(1)
+      expect(animate).toHaveBeenLastCalledWith(
+        [{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }],
+        { duration: 2000, easing: 'linear', fill: 'both' }
+      )
+    } finally {
+      // @ts-expect-error remove test stub
+      delete HTMLElement.prototype.animate
+    }
   })
 })
 

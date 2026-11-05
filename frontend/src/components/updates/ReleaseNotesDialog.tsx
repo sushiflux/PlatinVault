@@ -220,6 +220,7 @@ function NotesDialog({ release, onClose, restoreFocusRef, intro = false }: Dialo
                   {release.display}
                 </span>
               )}
+              {release.isNightly && <span className="pv-notes-pill">{t('releaseNotes.nightlyPill')}</span>}
               {release.isBeta && <span className="pv-notes-pill">{t('releaseNotes.betaPill')}</span>}
               {published && <span>{t('releaseNotes.published', { date: published })}</span>}
               {parsed?.platforms && <span>{t('releaseNotes.platforms', { platforms: parsed.platforms })}</span>}

@@ -9,6 +9,8 @@
 // Pure functions only: no HTML is ever produced here, the dialog renders the strings itself. Unknown headings become a generic
 // section, so a hand-written release body (or GitHub's generated "What's Changed") still shows up in a readable form.
 
+import { parseAtxHeading } from '../../utils/markdownHeading'
+
 export type NotesLanguage = 'de' | 'en'
 
 export type NotesCategory = 'new' | 'change' | 'fix' | 'security' | 'removed' | 'deprecated' | 'other'
@@ -39,7 +41,6 @@ export interface ParsedReleaseNotes {
 
 const RULE = /^ {0,3}([-*_])(?:\s*\1){2,}\s*$/
 const FENCE = /^ {0,3}(`{3,}|~{3,})/
-const HEADING = /^ {0,3}(#{1,6})\s+(.*?)\s*#*\s*$/
 const LIST_ITEM = /^\s*(?:[-*+]|\d+[.)])\s+(.*)$/
 const HTML_COMMENT = /<!--[\s\S]*?-->/g
 
@@ -67,15 +68,24 @@ export function categoryOf(heading: string): NotesCategory {
 }
 
 // The footer every release body can end with: a rule, then one line "Code signing policy: <url>". Old releases have none.
-const POLICY_FOOTER = /(?:\n[ \t]*(?:[-*_][ \t]*){3,}[ \t]*)?\n+[ \t]*Code signing policy:[ \t]*(\S+)[ \t]*$/i
+// Matched line by line from the end (one pattern over the whole body took quadratic time on a long run of blank lines).
+const POLICY_LINE = /^[ \t]*Code signing policy:[ \t]*(\S+)[ \t]*$/i
+const FOOTER_RULE = /^[ \t]*(?:[-*_][ \t]*){3,}$/
 
 /** Cuts the footer off the end of the body. Only an https address counts; anything else is dropped without being shown. */
 export function takePolicyFooter(markdown: string): { body: string; policyUrl: string | null } {
   const text = markdown.replace(/\r\n?/g, '\n').trimEnd()
-  const match = POLICY_FOOTER.exec(text)
+  // The policy line is the last line, and something comes before it
+  const lineStart = text.lastIndexOf('\n') + 1
+  const match = lineStart > 0 ? POLICY_LINE.exec(text.slice(lineStart)) : null
   if (!match) return { body: text, policyUrl: null }
+  // Back over the blank lines above it, then over a rule line directly above those
+  let cut = lineStart - 1
+  while (cut > 0 && text[cut - 1] === '\n') cut--
+  const ruleStart = cut > 0 ? text.lastIndexOf('\n', cut - 1) : -1
+  if (ruleStart >= 0 && FOOTER_RULE.test(text.slice(ruleStart + 1, cut))) cut = ruleStart
   const url = match[1] ?? ''
-  return { body: text.slice(0, match.index), policyUrl: /^https:\/\/[^\s<>"]+$/.test(url) ? url : null }
+  return { body: text.slice(0, cut), policyUrl: /^https:\/\/[^\s<>"]+$/.test(url) ? url : null }
 }
 
 /** Splits the body at its top-level "---" rules (rules inside code fences stay); empty parts are dropped. */
@@ -97,8 +107,9 @@ export function splitLanguageBlocks(markdown: string): string[] {
   return parts.map((part) => part.join('\n').trim()).filter((part) => part.length > 0)
 }
 
-const GERMAN_HEADING = /^#{2,4}\s+\P{L}*(neu|ge[aä]ndert|behoben|sicherheit|entfernt|veraltet)\b/imu
-const ENGLISH_HEADING = /^#{2,4}\s+\P{L}*(new|changed|fixed|fix|security|removed|deprecated)\b/imu
+// One blank, then non-letters of the same line (emoji); "\s+\P{L}*" overlapped and ran across lines, quadratic on long blank runs
+const GERMAN_HEADING = /^#{2,4}[^\S\n][^\p{L}\n]*(neu|ge[aä]ndert|behoben|sicherheit|entfernt|veraltet)\b/imu
+const ENGLISH_HEADING = /^#{2,4}[^\S\n][^\p{L}\n]*(new|changed|fixed|fix|security|removed|deprecated)\b/imu
 const GERMAN_WORDS = /\b(und|der|die|das|nicht|eine?|mit|für|wird|werden)\b/gi
 const ENGLISH_WORDS = /\b(and|the|not|with|for|is|are|you|your|to)\b/gi
 
@@ -171,11 +182,10 @@ function parseBlock(markdown: string): ParsedReleaseNotes {
       continue
     }
 
-    const heading = HEADING.exec(line)
+    const heading = parseAtxHeading(line)
     if (heading) {
       flush()
-      const level = (heading[1] ?? '#').length
-      const text = heading[2] ?? ''
+      const { level, text } = heading
       const isFirst = result.title === null && result.sections.length === 0 && result.summary.length === 0
       if (level <= 2 && isFirst && /^v?\d/i.test(text)) {
         // "v2026.11.12 (13.557 β) · Unraid, Windows"

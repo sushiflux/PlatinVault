@@ -66,11 +66,10 @@
   scrollbar-width: thin;
 }
 
-/* ---- The foot of the nav (NavFoot.tsx): under a fine rule the info block, or in the collapsed nav one calm info symbol ----
-   Pinned under the list (the list scrolls above it, nothing is ever covered). The rule fades out to both sides. The full nav and the
-   drawer show the info block (name, version, credit, copyright, licences: NavInfoBlock.tsx); the collapsed nav has no room for text and
-   shows one symbol in the middle that opens the same content as a floating card (NavInfo.tsx). Symbol: text-muted on the surface
-   (7.6:1 light, 6.6:1 dark). */
+/* ---- The foot of the nav (NavFoot.tsx): under a fine rule one calm info symbol ----
+   Pinned under the list (the list scrolls above it, nothing is ever covered). The rule fades out to both sides. The expanded nav,
+   the collapsed nav and the phone drawer all show the same slim row with one symbol in the middle that opens the floating info card
+   (NavInfo.tsx: logo, name, version button, credit, copyright, licences). Symbol: text-muted on the surface (7.6:1 light, 6.6:1 dark). */
 .pv-gnav-foot {
   position: relative;
   display: flex;
@@ -94,32 +93,6 @@
     transparent
   );
   pointer-events: none;
-}
-
-/* The block variant: no padding of its own, the block fills the foot's width (at least 14 rem, so it never reflows while the nav
-   grows from the collapsed width: it is revealed from the left instead) */
-.pv-gnav-foot--block {
-  display: block;
-  padding: 0;
-}
-
-.pv-gnav-info-block {
-  position: relative;
-  box-sizing: border-box;
-  min-inline-size: 14rem;
-  padding: 1.2rem 1rem 1.05rem;
-  /* The same soft brand glow as the card, behind the name just under the rule */
-  background: radial-gradient(120% 60% at 50% 0, color-mix(in srgb, var(--accent-crystal) 9%, transparent), transparent 72%);
-  animation: pv-gnav-block-in 0.26s ease both;
-}
-
-@keyframes pv-gnav-block-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
 }
 
 .pv-gnav-info-btn {
@@ -249,9 +222,12 @@
   line-height: 1.2;
 }
 
+.pv-info-body > .pv-vercheck {
+  margin-block-start: 0.65rem;
+}
+
 .pv-info-version {
   display: inline-block;
-  margin-block-start: 0.65rem;
   padding: 0.18rem 0.6rem;
   color: var(--text-secondary);
   background: var(--bg-elevated);
@@ -536,12 +512,8 @@
   }
 
   /* The drawer reaches the bottom edge of the window: the foot keeps clear of a home indicator */
-  .pv-gnav-foot:not(.pv-gnav-foot--block) {
+  .pv-gnav-foot {
     padding-block-end: calc(0.6rem + env(safe-area-inset-bottom, 0px));
-  }
-
-  .pv-gnav-info-block {
-    padding-block-end: calc(1.05rem + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -928,9 +900,5 @@
   .pv-gnav-info-btn,
   .pv-gnav {
     transition: none;
-  }
-
-  .pv-gnav-info-block {
-    animation: none;
   }
 }

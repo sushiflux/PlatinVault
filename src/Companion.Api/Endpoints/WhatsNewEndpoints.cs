@@ -18,7 +18,7 @@ public static class WhatsNewEndpoints
         api.MapGet("/whats-new", async (CompanionDbContext db, AppVersion version, ChangelogFiles changelog, CancellationToken ct) =>
         {
             // Not cached: the answer changes the moment "seen" is posted, and the file is small
-            var dto = await WhatsNew.GetAsync(db, version.Running, changelog.ReadText(), Lang.Current, ct);
+            var dto = await WhatsNew.GetAsync(db, version.Running, changelog.ReadText(version.Running.Kind), Lang.Current, ct);
             return Results.Ok(dto);
         });
 

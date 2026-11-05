@@ -550,6 +550,8 @@ export interface SettingsResponseDto {
   autoSwitchGameEnabled: boolean
   // Switch "Beta-Versionen erhalten" (updates.beta_channel, off by default): the update check also offers betas
   betaUpdatesEnabled: boolean
+  // Switch "Nightly-Versionen (α) erhalten" (updates.nightly_channel, off by default): the update check also offers nightlies (α), betas (β) and releases
+  nightlyUpdatesEnabled?: boolean
   // The dashboard's sort order per view as "<order>:<asc|desc>" (see utils/dashboardSort.ts)
   dashboardSortFavorites?: string
   dashboardSortAll?: string
@@ -754,6 +756,7 @@ export interface UpdateSettingsRequest {
   researchBlocks?: ResearchBlocksDto
   autoSwitchGameEnabled?: boolean
   betaUpdatesEnabled?: boolean
+  nightlyUpdatesEnabled?: boolean
   // "Nach Updates suchen" (see UpdateCheckInterval); the server rejects anything else with 400
   updateCheckInterval?: UpdateCheckInterval
   dashboardSortFavorites?: string
@@ -1092,10 +1095,11 @@ export type UpdateCheckInterval = 'startup' | '4h' | 'daily' | 'weekly' | 'month
 
 // Settings > System > Updates (GET /api/updates/status, POST /api/updates/check)
 export interface UpdateReleaseDto {
-  // Technical tag (v2026.11.12 / v2026.11.12.13.557-beta) and readable form (v2026.11.12 (13.557 β))
+  // Technical tag (v2026.11.12 / v2026.11.12.13.557-beta / v2026.11.12.13.557-nightly) and readable form (v2026.11.12 (13.557 β) / (13.557 α))
   tag: string
   display: string
   isBeta: boolean
+  isNightly?: boolean
   // The release page with its notes in the public repository (github.com only), null when unknown
   notesUrl: string | null
   // The release notes text (Markdown: English block, "---", German block, optionally a code signing policy footer) from the GitHub
@@ -1114,19 +1118,22 @@ export type UpdateState = 'disabled' | 'unchecked' | 'upToDate' | 'available' | 
 
 // What a container should do about its image tag (only for host "server"; the Windows program installs itself, the Linux package is
 // updated by running the install.sh of the new package)
-export type DockerAdvice = 'none' | 'useBeta' | 'betaStays' | 'switchToLatest'
+export type DockerAdvice = 'none' | 'useBeta' | 'betaStays' | 'switchToLatest' | 'useNightly' | 'nightlyStays' | 'switchToBeta'
 
 export interface UpdateStatusDto {
   currentVersion: string
   currentTag: string
-  currentChannel: 'release' | 'beta' | 'dev'
+  currentChannel: 'release' | 'beta' | 'nightly' | 'dev'
   betaUpdatesEnabled: boolean
+  nightlyUpdatesEnabled?: boolean
   host: 'desktop' | 'server' | 'linuxPackage'
   state: UpdateState
   available: UpdateReleaseDto | null
   latestRelease: UpdateReleaseDto | null
   // The newest beta that is newer than the newest release (null otherwise)
   latestBeta: UpdateReleaseDto | null
+  // The newest nightly (α) that is newer than the newest beta and release (null otherwise)
+  latestNightly?: UpdateReleaseDto | null
   checkedAt: string | null
   // Complete, in the UI language; only for state "error"
   error: string | null
@@ -1136,7 +1143,7 @@ export interface UpdateStatusDto {
   // Windows program: "Installieren" downloads, verifies and runs the installer
   canInstall: boolean
   dockerAdvice: DockerAdvice
-  // ghcr.io/sushiflux/platinvault - ":latest" = releases, ":beta" = betas and releases
+  // ghcr.io/sushiflux/platinvault - ":latest" = releases, ":beta" = betas and releases, ":nightly" = nightlies, betas and releases
   imageRepository: string
   checkInterval: UpdateCheckInterval
 }

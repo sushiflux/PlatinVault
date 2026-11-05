@@ -15,6 +15,7 @@ public sealed class VersionFormatTests
     [Theory]
     [InlineData(VersionKind.Release, "v2026.11.12 (13.557)")]
     [InlineData(VersionKind.Beta, "v2026.11.12 (13.557 \u03B2)")]
+    [InlineData(VersionKind.Nightly, "v2026.11.12 (13.557 \u03B1)")]
     [InlineData(VersionKind.Dev, "v2026.11.12 (13.557-dev)")]
     public void Display_has_the_counters_in_parentheses(VersionKind kind, string expected) =>
         Assert.Equal(expected, VersionFormat.Display(Short, Build, kind));
@@ -22,6 +23,7 @@ public sealed class VersionFormatTests
     [Theory]
     [InlineData(VersionKind.Release, "v2026.11.12")]
     [InlineData(VersionKind.Beta, "v2026.11.12")]
+    [InlineData(VersionKind.Nightly, "v2026.11.12")]
     [InlineData(VersionKind.Dev, "v2026.11.12-dev")]
     public void Display_falls_back_to_line_one_without_counters(VersionKind kind, string expected)
     {
@@ -34,6 +36,7 @@ public sealed class VersionFormatTests
     [Theory]
     [InlineData(VersionKind.Release, "v2026.11.12")]
     [InlineData(VersionKind.Beta, "v2026.11.12.13.557-beta")]
+    [InlineData(VersionKind.Nightly, "v2026.11.12.13.557-nightly")]
     [InlineData(VersionKind.Dev, "v2026.11.12.13.557-dev")]
     public void Tag_is_the_technical_form_without_spaces_or_beta_sign(VersionKind kind, string expected)
     {
@@ -42,10 +45,12 @@ public sealed class VersionFormatTests
         Assert.DoesNotContain(' ', tag);
         Assert.DoesNotContain('(', tag);
         Assert.DoesNotContain(VersionFormat.BetaMark, tag);
+        Assert.DoesNotContain(VersionFormat.NightlyMark, tag);
     }
 
     [Theory]
     [InlineData("v2026.11.12.13.557-beta", "v2026.11.12 (13.557 \u03B2)")]
+    [InlineData("v2026.11.12.13.557-nightly", "v2026.11.12 (13.557 \u03B1)")]
     [InlineData("v2026.11.12.13.557-dev", "v2026.11.12 (13.557-dev)")]
     [InlineData("v2026.11.12", "v2026.11.12")]
     [InlineData("v2026.11.9.31.2840-rc6", "v2026.11.9.31.2840-rc6")]
@@ -56,6 +61,7 @@ public sealed class VersionFormatTests
     [Theory]
     [InlineData(VersionKind.Release, "release")]
     [InlineData(VersionKind.Beta, "beta")]
+    [InlineData(VersionKind.Nightly, "nightly")]
     [InlineData(VersionKind.Dev, "dev")]
     public void The_channel_name_round_trips_through_the_kind(VersionKind kind, string channel)
     {
@@ -67,6 +73,9 @@ public sealed class VersionFormatTests
     [InlineData("beta", VersionKind.Beta)]
     [InlineData("BETA", VersionKind.Beta)]
     [InlineData("rc", VersionKind.Beta)]
+    [InlineData("nightly", VersionKind.Nightly)]
+    [InlineData("NIGHTLY", VersionKind.Nightly)]
+    [InlineData("alpha", VersionKind.Nightly)]
     [InlineData("dev", VersionKind.Dev)]
     [InlineData(" DEV ", VersionKind.Dev)]
     [InlineData("release", VersionKind.Release)]
@@ -79,6 +88,7 @@ public sealed class VersionFormatTests
     [InlineData("release", VersionKind.Release, "v2026.11.12 (13.557)")]
     [InlineData("beta", VersionKind.Release, "v2026.11.12 (13.557 \u03B2)")]
     [InlineData("rc", VersionKind.Release, "v2026.11.12 (13.557 \u03B2)")]
+    [InlineData("nightly", VersionKind.Release, "v2026.11.12 (13.557 \u03B1)")]
     [InlineData("release", VersionKind.Dev, "v2026.11.12 (13.557-dev)")]
     // A dev-build image: channel "dev" in a Production environment (the image is not the Development environment)
     [InlineData("dev", VersionKind.Release, "v2026.11.12 (13.557-dev)")]

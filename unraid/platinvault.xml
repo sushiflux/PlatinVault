@@ -6,7 +6,11 @@
   <DefaultTagDescription>Releases only (recommended) / Nur Releases (empfohlen)</DefaultTagDescription>
   <Branch>
     <Tag>beta</Tag>
-    <TagDescription>Betas and releases, always the newest of both. Also switch on "Receive beta versions" in PlatinVault (Settings - System - Updates). / Betas und Releases, immer die neueste von beiden. Schalte in PlatinVault auch "Beta-Versionen erhalten" ein (Einstellungen - System - Updates).</TagDescription>
+    <TagDescription>Betas (β) and releases, always the newest of both. Also switch on "Receive beta versions" in PlatinVault (Settings - System - Updates). / Betas (β) und Releases, immer die neueste von beiden. Schalte in PlatinVault auch "Beta-Versionen erhalten" ein (Einstellungen - System - Updates).</TagDescription>
+  </Branch>
+  <Branch>
+    <Tag>nightly</Tag>
+    <TagDescription>Nightly builds (α), betas (β) and releases, always the newest of all three. Also switch on "Receive nightly versions (α)" in PlatinVault (Settings - System - Updates). / Nightly-Builds (α), Betas (β) und Releases, immer die neueste aller drei. Schalte in PlatinVault auch "Nightly-Versionen (α) erhalten" ein (Einstellungen - System - Updates).</TagDescription>
   </Branch>
   <Network>bridge</Network>
   <Shell>sh</Shell>

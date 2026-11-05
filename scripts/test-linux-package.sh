@@ -54,6 +54,7 @@ tar -xzf "$package" -C "$tmp/pkg" || { echo "Entpacken fehlgeschlagen"; exit 1; 
 root="$(find "$tmp/pkg" -mindepth 1 -maxdepth 1 -type d | head -n1)"
 [[ -x "$root/install.sh" && -x "$root/app/platinvault" ]] && ok "install.sh und Programm vorhanden" || { bad "Paketaufbau"; exit 1; }
 for f in app/version.txt app/release-channel.txt app/wwwroot/index.html app/docs/LICENSE app/docs/THIRD-PARTY-NOTICES.md app/docs/CHANGELOG.md \
+    app/docs/CHANGELOG.beta.md app/docs/CHANGELOG.nightly.md \
     app/docs/handbuch/de app/docs/handbuch/en app/lib.sh app/run.sh app/ctl.sh uninstall.sh README.txt; do
     check "Datei $f" test -e "$root/$f"
 done

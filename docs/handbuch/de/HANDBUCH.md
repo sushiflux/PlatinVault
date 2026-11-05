@@ -329,10 +329,11 @@ merkt sich das. Mit den Pfeiltasten (hoch/runter, Pos1/Ende) springst du durch d
 Kapitel über den Knopf **Kapitel** in der Trophäenleiste: Sie schieben sich von links über die Seite und schließen sich wieder,
 sobald du ein Kapitel gewählt hast (oder mit Esc oder einem Tipp neben die Leiste).
 
-Ganz unten in der Kapitelleiste, unter einer feinen Trennlinie, stehen der Name der App, die **Version**, „Mit ♥ gemacht“, das Copyright und der Knopf
-**Lizenzen** (auf der Startseite stehen dieselben Angaben im Fuß). In einer eingeklappten Leiste (und in einem sehr niedrigen Fenster) ist daraus ein kleines **Info-Symbol** (ein „i“ im Kreis)
-geworden: Fährst du mit der Maus darüber, tippst du es an oder erreichst du es mit der Tab-Taste, öffnet sich eine Karte mit denselben Angaben. Sie bleibt offen,
-solange der Mauszeiger auf ihr oder auf dem Symbol ist – du kommst also bequem zu **Lizenzen** – und schließt sich mit Esc, einem Klick daneben oder wenn du die Maus wegbewegst.
+Ganz unten in der Kapitelleiste steht unter einer feinen Trennlinie ein kleines **Info-Symbol** (ein „i“ im Kreis), damit den Kapiteln der ganze Platz bleibt:
+Fährst du mit der Maus darüber, tippst oder klickst du es an oder erreichst du es mit der Tab-Taste, öffnet sich eine Karte mit dem Namen der App, der **Version**
+(als Knopf für **Version & Updates** und **Das ist neu in dieser Version**), „Mit ♥ gemacht“, dem Copyright und dem Knopf **Lizenzen** (auf der Startseite stehen
+dieselben Angaben im Fuß). Sie bleibt offen, solange der Mauszeiger auf ihr oder auf dem Symbol ist, und schließt sich mit Esc, einem Klick daneben oder wenn du
+die Maus wegbewegst.
 
 Die drei Bereiche der Leiste haben je eine eigene Farbe: **Live-Trophäen** gold, **Statistiken** blau, **Story & Lore** violett. Der Bereich, in dem du gerade bist, ist
 in seiner Farbe ausgefüllt.
@@ -628,6 +629,10 @@ Im Reiter **Live & Sound** der Einstellungen:
   neuen Trophäe: großer Pokal in der Farbe der Stufe, Name, Beschreibung, Seltenheit und Spiel – im Quer- wie im Hochformat. Ein Klick
   irgendwo oder die Taste Esc beendet das Popup früher; danach geht es mit der nächsten Trophäe weiter.
 - **Anzeigedauer der Trophäen-Popups:** Ein Schieberegler unter den Positionen. Er bestimmt, wie lange ein neuer Erfolg auf dem Bildschirm bleibt: ganze Sekunden von 2 bis 10, Standard 5. Das gilt für die Karte, das Vollbild-Popup, die Proben und das Overlay über dem Spiel. Das Vollbild-Popup schließt früher, wenn du klickst oder Esc drückst. Der Platin-Moment behält seine eigene Länge.
+- **Zeitbalken und Freischaltzeit:** Am Rand der Karte und des Vollbild-Popups läuft ein dünner Balken in der Farbe der Trophäenstufe von voll
+  auf leer. Er zeigt, wie lange das Popup noch stehen bleibt – auch im Overlay über dem Spiel. Ist in Windows „reduzierte Bewegung“ aktiv,
+  gleitet er nicht, sondern springt einmal pro Sekunde. Außerdem steht im Popup, **wann** du die Trophäe freigeschaltet hast (Datum und
+  Uhrzeit in der Sprache der App). Nennt Steam keine brauchbare Zeit, fehlt diese Zeile.
 - **Trophäen-Popup anzeigen:** **Nur in der App**, **Nur im Spiel** oder **Beides** (Standard). „Im Spiel“ heißt: als Overlay über dem
   Spiel – das gibt es nur im Windows-Programm (siehe 11.3). Im Browser und auf Unraid sind die beiden Spiel-Wahlen ausgegraut, dort
   erscheint das Popup immer in der App. Der Ton erklingt bei jeder Trophäe **genau einmal**, auch bei „Beides“.
@@ -742,7 +747,7 @@ der Linux-Bridge. Hilft `status` nicht weiter, melde uns bitte, was es und das P
   Fassung anderen über ein Netzwerk anbietet, muss den Quellcode unter derselben Lizenz anbieten. Zum Nutzen musst du nichts
   akzeptieren. Der Quellcode steht unter `github.com/sushiflux/PlatinVault`.
 - **Lizenzen:** Die Lizenz von PlatinVault (mit dem Knopf **Quellcode**) und die Lizenztexte der enthaltenen Open-Source-Komponenten liest du
-  in der App: auf der Startseite unten auf **Lizenzen** klicken, auf einer Spielseite unten in der Kapitelleiste (ist sie eingeklappt, erst das **Info-Symbol** öffnen), oder in den Einstellungen, Reiter **System**, auf **Lizenzen öffnen**. Dasselbe liegt als `LICENSE` und `THIRD-PARTY-NOTICES.md` im Bridge-ZIP, im Programmordner der Bridge und im Programmordner des Windows-Programms (`docs`);
+  in der App: auf der Startseite unten auf **Lizenzen** klicken, auf einer Spielseite unten in der Kapitelleiste das **Info-Symbol** öffnen und dort **Lizenzen** wählen, oder in den Einstellungen, Reiter **System**, auf **Lizenzen öffnen**. Dasselbe liegt als `LICENSE` und `THIRD-PARTY-NOTICES.md` im Bridge-ZIP, im Programmordner der Bridge und im Programmordner des Windows-Programms (`docs`);
   die Dateien lassen sich mit jedem Texteditor öffnen.
 
 # 10 Probleme lösen
@@ -899,7 +904,8 @@ prüft PlatinVault zusätzlich die Signatur des geladenen Installers und startet
 
 **Release-Notizen lesen:** In den Einstellungen unter **System** → **Updates** (und im Update-Symbol der Kopfzeile) öffnet
 **Release-Notizen ansehen** ein eigenes Fenster **Das ist neu** mit den Änderungen der Version – ohne dass du die GitHub-Seite öffnen musst.
-**Auf GitHub ansehen** öffnet die Release-Seite im Browser; **Esc** schließt das Fenster.
+**Auf GitHub ansehen** öffnet die Release-Seite im Browser; **Esc** schließt das Fenster. Das Fenster öffnet sich nach einem Update
+auch von selbst (siehe 12.1, „Das ist neu nach einem Update“).
 
 ## 11.7 Deinstallieren
 
@@ -946,35 +952,41 @@ um einen Fehlalarm; der Quellcode ist öffentlich einsehbar. Manche Programme ve
 4. Blockiert der Virenschutz danach weiter Dateinamen, obwohl du sie freigegeben hast: Entferne die PlatinVault-Einträge aus der
    Quarantäne bzw. dem Blockierverlauf oder starte Windows neu. Meist ist der Eintrag dann vergessen. Du kannst die Datei auch dem Hersteller deines Virenschutzes als Fehlalarm melden.
 
-# 12 Updates und Beta-Versionen
+# 12 Updates, Beta- und Nightly-Versionen
 
-Von PlatinVault gibt es zwei Arten von Versionen:
+Von PlatinVault gibt es drei veröffentlichte Kanäle:
 
 - **Releases** – die normalen, fertigen Versionen. Das ist der Standard und für die meisten die richtige Wahl.
-- **Betas** – Vorabversionen mit den neuesten Funktionen. Sie sind fertig gebaut und getestet, können aber noch Fehler haben. Eine
-  Beta zeigt hinter der Versionsnummer ein **β**, zum Beispiel `v2026.11.12 (13.557 β)`.
+- **Betas (`β`)** – geprüfte Vorabversionen mit neuen Funktionen vor der endgültigen Freigabe. Eine Beta zeigt hinter der Versionsnummer ein **β**, zum Beispiel `v2026.11.12 (13.557 β)`.
+- **Nightlies (`α`)** – frühe Vorabversionen mit den allerneuesten Änderungen direkt aus der laufenden Entwicklung. Eine Nightly zeigt hinter der Versionsnummer ein **α** (Alpha), zum Beispiel `v2026.11.20 (8.1234 α)`.
 
-## 12.1 Der Schalter „Beta-Versionen erhalten“
+## 12.1 Die Schalter für Beta- und Nightly-Versionen
 
-Unter Einstellungen → **System** → **Updates** steht – auf jeder Plattform – der Schalter **Beta-Versionen erhalten**. Er ist
-anfangs **aus**.
+Unter Einstellungen → **System** → **Updates** bleiben **Releases** immer aktiv; dazu gibt es – auf jeder Plattform – zwei Schalter für Vorabversionen (beide anfangs **aus**):
 
-- **Aus:** Du bekommst nur Releases.
-- **An:** Du bekommst Betas und Releases – immer die neueste von beiden.
+- **Beide aus:** Du bekommst nur fertige Releases.
+- **Beta-Versionen erhalten:** Du bekommst Betas (`β`) und Releases – immer die neueste von beiden.
+- **Nightly-Versionen (α) erhalten:** Du bekommst Nightly-Versionen (`α`), Betas (`β`) und Releases – immer die neueste Version aus allen drei Kanälen (dieser Schalter schaltet **Beta-Versionen erhalten** automatisch mit ein).
 
-Es gibt **nie einen Schritt zurück**: Schaltest du ihn aus, während eine Beta läuft, bleibt diese Beta, bis ein Release erscheint, das
-mindestens so neu ist. Dieses Release wird dir dann automatisch angeboten. Schaltest du ihn ein, bekommst du die neueste Beta, sobald
-sie neuer ist als deine Version.
+Es gibt **nie einen Schritt zurück**: Schaltest du einen Vorab-Kanal aus, während eine Nightly oder Beta läuft, bleibt deine installierte Version, bis im gewählten Kanal eine Version erscheint, die mindestens so neu ist. Diese Version wird dir dann automatisch angeboten.
 
 Darunter siehst du deine installierte Version und mit **Jetzt nach Updates suchen** das Ergebnis: „Du bist auf dem neuesten Stand“,
-„Neue Beta … verfügbar“ oder „Neues Release … verfügbar“ – mit einem Link zu den Release-Notizen. PlatinVault fragt die
+„Neue Nightly … verfügbar“, „Neue Beta … verfügbar“ oder „Neues Release … verfügbar“ – mit einem Knopf zu den Release-Notizen. PlatinVault fragt die
 veröffentlichten Versionen bei GitHub ab (ohne Anmeldung; nur ein paar Mal am Tag, eine Suche von Hand höchstens einmal pro Minute).
 Klappt das nicht, steht der vollständige Grund dort, zum Beispiel keine Internetverbindung oder ein ausgeschöpftes Abfrage-Kontingent
 bei GitHub.
 
-Gibt es für deine Installation eine neuere Version, erscheint in der Kopfzeile jeder Seite ein kleines **Update-Symbol** (Pfeil nach oben mit grünem Punkt). Ein Klick zeigt die neue Version, einen Link zu den Release-Notizen und – im Windows-Programm – **Update installieren**; bei Unraid, Docker und NAS steht dort kurz, wie du den Container aktualisierst. Mit **Alle Update-Einstellungen** springst du zu diesem Abschnitt. Ist alles aktuell, die Prüfung nicht möglich oder dies ein Dev-Build, siehst du kein Symbol; Fehler der Prüfung stehen nur hier in den Einstellungen.
+Gibt es für deine Installation eine neuere Version, erscheint in der Kopfzeile jeder Seite ein kleines **Update-Symbol** (Pfeil nach oben mit grünem Punkt). Ein Klick zeigt die neue Version, die Release-Notizen und – im Windows-Programm – **Update installieren**; bei Unraid, Docker und NAS steht dort kurz, wie du den Container aktualisierst. Mit **Alle Update-Einstellungen** springst du zu diesem Abschnitt. Ist alles aktuell, die Prüfung nicht möglich oder dies ein lokaler Entwicklungsstand, siehst du kein Symbol; Fehler der Prüfung stehen nur hier in den Einstellungen.
 
-Wie oft PlatinVault von selbst nach Updates sucht, stellst du in diesem Abschnitt unter **Nach Updates suchen** ein: **Bei jedem Start**, **Alle 4 Stunden**, **Täglich** (Standard), **Wöchentlich**, **Monatlich** oder **Nie (nur von Hand)**. Das gilt für jede Plattform, auch für das Windows-Programm. Von Hand suchst du mit **Jetzt nach Updates suchen** hier – oder ganz unten auf jeder Seite: ein Klick auf die Versionsnummer öffnet **Version & Updates** mit dem Knopf **Nach Updates suchen**, dem Zeitpunkt der letzten Prüfung und dem Ergebnis. Wird dabei eine neue Version gefunden, erscheint sofort das Update-Symbol in der Kopfzeile.
+**Das ist neu nach einem Update:** Startest du PlatinVault zum ersten Mal nach einem Update, öffnet sich von selbst das Fenster
+**Das ist neu in …** mit den Änderungen der Version, die jetzt läuft – in der Sprache der App. Ein Klick auf **Schließen**, die Taste
+**Esc** oder ein Klick neben das Fenster schließt es; danach kommt es für diese Version nicht wieder. Es erscheint nicht bei einer
+Neuinstallation, nicht bei einem lokalen Entwicklungsstand und erst, wenn die Einführungstour beim ersten Start beendet ist. Später liest du den Text
+jederzeit nach: Ein Klick auf die Versionsnummer unten auf der Startseite (oder in der Info-Karte des **Info-Symbols** unten in der Kapitelleiste auf der Spielseite)
+öffnet **Version & Updates**, dort steht **Das ist neu in dieser Version**. Die Texte gehören zum Programm; dafür brauchst du keine
+Internetverbindung.
+
+Wie oft PlatinVault von selbst nach Updates sucht, stellst du in diesem Abschnitt unter **Nach Updates suchen** ein: **Bei jedem Start**, **Alle 4 Stunden**, **Täglich** (Standard), **Wöchentlich**, **Monatlich** oder **Nie (nur von Hand)**. Das gilt für jede Plattform, auch für das Windows-Programm. Von Hand suchst du mit **Jetzt nach Updates suchen** hier – oder über die Versionsnummer (unten auf der Startseite bzw. im **Info-Symbol** unten in der Kapitelleiste): ein Klick öffnet **Version & Updates** mit dem Knopf **Nach Updates suchen**, dem Zeitpunkt der letzten Prüfung und dem Ergebnis. Wird dabei eine neue Version gefunden, erscheint sofort das Update-Symbol in der Kopfzeile.
 
 ## 12.2 Windows-Programm
 
@@ -990,9 +1002,10 @@ Versionen und zeigt dir in den Einstellungen genau, was zu tun ist. Welche Versi
 | Image | Du bekommst |
 |---|---|
 | `ghcr.io/sushiflux/platinvault:latest` | nur Releases |
-| `ghcr.io/sushiflux/platinvault:beta` | Betas und Releases (immer die neueste von beiden) |
+| `ghcr.io/sushiflux/platinvault:beta` | Betas (`β`) und Releases (immer die neueste von beiden) |
+| `ghcr.io/sushiflux/platinvault:nightly` | Nightlies (`α`), Betas (`β`) und Releases (immer die neueste von allen) |
 
-Stelle den Schalter in der App passend zum Tag ein. So stellst du den Tag um – deine Daten in Datenbank und Appdata bleiben dabei
+Stelle die Schalter in der App passend zum Tag ein. So stellst du den Tag um – deine Daten in Datenbank und Appdata bleiben dabei
 erhalten:
 
 - **Unraid:** Docker-Reiter → PlatinVault-Container anklicken → **Edit** → bei **Repository** den Tag ändern → **Apply**. Neue Versionen
@@ -1003,7 +1016,7 @@ erhalten:
 - **Andere NAS:** in der Container-Verwaltung deines NAS das Image des PlatinVault-Containers auf den gewünschten Tag umstellen und den
   Container mit dem neuen Image neu erstellen.
 
-Zurück von `:beta` auf `:latest` stellst du erst um, wenn ein Release erschienen ist, das mindestens so neu ist wie deine Beta – vorher
+Zurück von `:nightly` oder `:beta` auf einen ruhigeren Kanal stellst du erst um, wenn dort eine Version erschienen ist, die mindestens so neu ist wie deine laufende Version – vorher
 wäre es ein Schritt zurück auf eine ältere Version. Die Einstellungen sagen dir, wann es so weit ist.
 
 ## 12.4 Linux-Paket

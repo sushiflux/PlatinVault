@@ -24,5 +24,7 @@ intern
 # Licence documents ship inside the image (/app/docs/), served by GET /api/docs/licenses and zipped into the bridge download
 # (LICENSE has no extension and is not excluded at all)
 !THIRD-PARTY-NOTICES.md
-# The customer changelog ships too: the "What's new" window after an update reads the entry of the running version from /app/docs/CHANGELOG.md
+# The customer changelogs ship too: the "What's new" window after an update reads the entry of the running version from /app/docs/CHANGELOG*.md
 !CHANGELOG.md
+!CHANGELOG.beta.md
+!CHANGELOG.nightly.md

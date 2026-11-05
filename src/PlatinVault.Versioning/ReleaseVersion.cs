@@ -13,9 +13,9 @@ namespace PlatinVault.Versioning;
 /// public repository anyway).
 /// Shared by the server's update check (all hosts) and the Windows program's installer download - one implementation.
 /// </summary>
-public readonly partial record struct ReleaseVersion(int Year, int Month, int Commit, bool IsBeta, int? Rc, string Text) : IComparable<ReleaseVersion>
+public readonly partial record struct ReleaseVersion(int Year, int Month, int Commit, bool IsBeta, int? Rc, string Text, bool IsNightly = false) : IComparable<ReleaseVersion>
 {
-    [GeneratedRegex(@"^v?(\d{4})\.(\d{1,2})\.(\d+)(?:\.\d+\.\d+)?(?:-(?:(beta)|rc(\d+)))?$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^v?(\d{4})\.(\d{1,2})\.(\d+)(?:\.\d+\.\d+)?(?:-(?:(beta)|(nightly)|rc(\d+)))?$", RegexOptions.IgnoreCase)]
     private static partial Regex Pattern();
 
     public static ReleaseVersion? Parse(string? text)
@@ -24,13 +24,20 @@ public readonly partial record struct ReleaseVersion(int Year, int Month, int Co
         var match = Pattern().Match(text.Trim());
         if (!match.Success) return null;
         int Num(int g) => int.Parse(match.Groups[g].Value, CultureInfo.InvariantCulture);
-        return new ReleaseVersion(Num(1), Num(2), Num(3), match.Groups[4].Success, match.Groups[5].Success ? Num(5) : null, text.Trim());
+        return new ReleaseVersion(
+            Num(1),
+            Num(2),
+            Num(3),
+            match.Groups[4].Success,
+            match.Groups[6].Success ? Num(6) : null,
+            text.Trim(),
+            match.Groups[5].Success);
     }
 
-    /// <summary>A beta or a former release candidate: offered only while "Beta-Versionen erhalten" is switched on.</summary>
-    public bool IsPreRelease => IsBeta || Rc is not null;
+    /// <summary>A beta, nightly or former release candidate: offered only while pre-releases are switched on.</summary>
+    public bool IsPreRelease => IsBeta || IsNightly || Rc is not null;
 
-    /// <summary>The readable form for the user (<c>v2026.11.12 (13.557 β)</c>), see <see cref="VersionFormat.DisplayFromTag"/>.</summary>
+    /// <summary>The readable form for the user (<c>v2026.11.12 (13.557 β)</c> / <c>v2026.11.12 (13.557 α)</c>), see <see cref="VersionFormat.DisplayFromTag"/>.</summary>
     public string Display => VersionFormat.DisplayFromTag(Text);
 
     public int CompareTo(ReleaseVersion other)
@@ -39,11 +46,11 @@ public readonly partial record struct ReleaseVersion(int Year, int Month, int Co
         if (c != 0) return c;
         c = Commit.CompareTo(other.Commit);
         if (c != 0) return c;
-        // Same commit: the release is newer than its pre-releases, a beta newer than a release candidate, a later candidate newer than an earlier one
+        // Same commit: the release is newer than its pre-releases, a beta newer than a nightly, a nightly newer than a legacy release candidate
         return Rank.CompareTo(other.Rank);
     }
 
-    private int Rank => IsBeta ? int.MaxValue - 1 : Rc ?? int.MaxValue;
+    private int Rank => IsBeta ? int.MaxValue - 1 : IsNightly ? int.MaxValue - 2 : Rc ?? int.MaxValue;
 
     public static bool operator <(ReleaseVersion left, ReleaseVersion right) => left.CompareTo(right) < 0;
 

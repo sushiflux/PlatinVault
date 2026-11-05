@@ -196,12 +196,46 @@ describe('UpdatesSection', () => {
     )
     renderSection()
     expect(await screen.findByText('v2026.11.12 (13.557-dev)')).toBeTruthy()
-    const note = await screen.findByText(/Neue Dev-Builds kommen über den Update-Knopf von Unraid \(Tag :dev\)/)
-    expect(note.textContent).toContain('Installer aus dem Entwurf im Quell-Repo')
+    const note = await screen.findByText(/Dev-Build: Dieser lokale Entwicklungsstand sucht nicht nach Updates/)
+    expect(note.textContent).toContain('bietet nie Nightlies, Betas oder Releases an')
     expect(screen.getByRole('switch', { name: 'Beta-Versionen erhalten' }).hasAttribute('disabled')).toBe(true)
+    expect(screen.getByRole('switch', { name: 'Nightly-Versionen (α) erhalten' }).hasAttribute('disabled')).toBe(true)
     expect((screen.getByRole('button', { name: /Jetzt nach Updates suchen/ }) as HTMLButtonElement).disabled).toBe(true)
     expect(screen.queryByText('Container aktualisieren')).toBeNull()
     expect(screen.getByText('Dev-Build', { selector: 'span' })).toBeTruthy()
+  })
+
+  it('enables nightly versions (α) together with beta versions and shows nightly update offers and :nightly advice', async () => {
+    const nightly = {
+      tag: 'v2026.11.20.8.1234-nightly',
+      display: 'v2026.11.20 (8.1234 α)',
+      isBeta: false,
+      isNightly: true,
+      notesUrl: 'https://github.com/sushiflux/PlatinVault/releases/tag/v2026.11.20.8.1234-nightly',
+      notes: '### New\n- Nightly improvement.',
+      publishedAt: null,
+      hasInstaller: true,
+    }
+    fetchUpdateStatus.mockResolvedValueOnce(status())
+    fetchUpdateStatus.mockResolvedValue(
+      status({
+        betaUpdatesEnabled: true,
+        nightlyUpdatesEnabled: true,
+        state: 'available',
+        available: nightly,
+        latestNightly: nightly,
+        dockerAdvice: 'useNightly',
+      })
+    )
+    updateSettings.mockResolvedValue({} as SettingsResponseDto)
+    renderSection()
+    const nightlySwitch = await screen.findByRole('switch', { name: 'Nightly-Versionen (α) erhalten' })
+    await waitFor(() => expect((nightlySwitch as HTMLButtonElement).disabled).toBe(false))
+    fireEvent.click(nightlySwitch)
+    await waitFor(() => expect(updateSettings).toHaveBeenCalledWith({ betaUpdatesEnabled: true, nightlyUpdatesEnabled: true }))
+    expect(await screen.findByText('Neue Nightly v2026.11.20 (8.1234 α) verfügbar.')).toBeTruthy()
+    expect(screen.getByRole('note').textContent).toContain('ghcr.io/sushiflux/platinvault:nightly')
+    expect(screen.getAllByText('ghcr.io/sushiflux/platinvault:nightly').length).toBeGreaterThan(0)
   })
 
   it('offers the six check intervals (daily by default) and saves a choice at once; a failure is shown completely', async () => {

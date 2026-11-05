@@ -53,6 +53,9 @@ public static class CompanionHost
             ApplicationName = typeof(CompanionHost).Assembly.GetName().Name,
         });
 
+        // Do not advertise the web server implementation in HTTP responses
+        builder.WebHost.ConfigureKestrel(kestrel => kestrel.AddServerHeader = false);
+
         // The host's own settings first: the data folder decides where the key ring below lives
         options.ConfigureBuilder?.Invoke(builder);
         AddServices(builder);

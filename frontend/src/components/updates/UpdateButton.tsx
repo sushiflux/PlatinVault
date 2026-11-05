@@ -96,8 +96,9 @@ function UpdatePanel({ anchor, panelId, data, offer, installing, message, onInst
   const desktop = data.host === 'desktop'
   const linuxPackage = data.host === 'linuxPackage'
   const image = data.imageRepository
-  // A beta is wanted but the container follows :latest - a plain "Update" would never deliver it, so the settings text says what to change
-  const switchTag = data.dockerAdvice === 'useBeta' && offer.isBeta
+  // A beta or nightly is wanted but the container follows :latest (or :beta) - a plain "Update" would never deliver it, so the settings text says what to change
+  const switchToBeta = data.dockerAdvice === 'useBeta' && offer.isBeta
+  const switchToNightly = data.dockerAdvice === 'useNightly' && Boolean(offer.isNightly)
   const muted = { color: 'var(--text-secondary)' }
   const strong = { color: 'var(--text-primary)' }
 
@@ -118,7 +119,7 @@ function UpdatePanel({ anchor, panelId, data, offer, installing, message, onInst
     >
       <div className="flex items-center gap-2 font-extrabold" style={{ color: 'var(--accent-crystal)' }}>
         <IconCircleArrowUp size={18} aria-hidden="true" />
-        <span>{offer.isBeta ? t('header.update.titleBeta') : t('header.update.titleRelease')}</span>
+        <span>{offer.isNightly ? t('header.update.titleNightly') : offer.isBeta ? t('header.update.titleBeta') : t('header.update.titleRelease')}</span>
       </div>
       <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <span className="font-mono font-bold" style={strong} data-testid="update-version">
@@ -181,7 +182,11 @@ function UpdatePanel({ anchor, panelId, data, offer, installing, message, onInst
         </div>
       ) : (
         <div className="mt-3 space-y-1.5" style={muted} data-testid="update-container-steps">
-          {switchTag ? (
+          {switchToNightly ? (
+            <p className="font-semibold" style={strong}>
+              {ts('updates.docker.adviceUseNightlyNew', { version: offer.display, nightly: `${image}:nightly` })}
+            </p>
+          ) : switchToBeta ? (
             <p className="font-semibold" style={strong}>
               {ts('updates.docker.adviceUseBetaNew', { version: offer.display, latest: `${image}:latest`, beta: `${image}:beta` })}
             </p>

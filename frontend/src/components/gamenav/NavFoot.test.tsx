@@ -15,16 +15,6 @@ function stubServer() {
   )
 }
 
-// jsdom has no matchMedia: `shortWindow` answers the max-height queries of the foot
-function stubWindow(shortWindow: boolean) {
-  vi.stubGlobal('matchMedia', (query: string) => ({
-    matches: shortWindow && query.includes('max-height'),
-    media: query,
-    addEventListener: () => {},
-    removeEventListener: () => {},
-  }))
-}
-
 function renderFoot(props: { drawer?: boolean; collapsed?: boolean; onOpenChange?: (open: boolean) => void }) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
@@ -37,56 +27,41 @@ function renderFoot(props: { drawer?: boolean; collapsed?: boolean; onOpenChange
 }
 
 describe('NavFoot', () => {
-  beforeEach(() => {
-    stubServer()
-    stubWindow(false)
-  })
+  beforeEach(() => stubServer())
   afterEach(() => {
     cleanup()
     vi.unstubAllGlobals()
   })
 
-  it('shows the info block in the full nav: name (text, no logo), version, credit, copyright, licences', async () => {
-    const { container } = renderFoot({})
-    expect(await screen.findByText('v2026.10.7 (12.345 β)')).toBeTruthy()
-    expect(screen.getByText('PlatinVault')).toBeTruthy()
-    expect(screen.getByText(`© ${new Date().getFullYear()} SushiFlux`)).toBeTruthy()
-    expect(container.textContent).toMatch(/Mit\s*gemacht/)
-    expect(screen.getByRole('button', { name: 'Lizenzen' })).toBeTruthy()
-    // The block is the card's content without the logo, and there is no info symbol
-    expect(container.querySelector('img')).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Info zu Version und Lizenzen' })).toBeNull()
-    expect(container.querySelector('.pv-gnav-foot--block')).not.toBeNull()
+  it('always renders the slim info symbol row in the expanded nav, collapsed nav and phone drawer', () => {
+    for (const props of [{}, { collapsed: true }, { drawer: true }]) {
+      const { container } = renderFoot(props)
+      expect(screen.getByRole('button', { name: 'Info zu Version und Lizenzen' })).toBeTruthy()
+      expect(screen.queryByRole('button', { name: 'Lizenzen' })).toBeNull()
+      expect(container.querySelector('.pv-gnav-foot')).not.toBeNull()
+      expect(container.querySelector('.pv-gnav-foot--block')).toBeNull()
+      cleanup()
+    }
   })
 
-  it('shows the info symbol instead in the collapsed nav and in a window too low for the block', () => {
-    renderFoot({ collapsed: true })
-    expect(screen.getByRole('button', { name: 'Info zu Version und Lizenzen' })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Lizenzen' })).toBeNull()
-    cleanup()
-    stubWindow(true)
-    renderFoot({})
-    expect(screen.getByRole('button', { name: 'Info zu Version und Lizenzen' })).toBeTruthy()
-  })
-
-  it('"Lizenzen" in the block opens the licence viewer and tells the nav while it is up', async () => {
+  it('opens the floating info card with logo, name, version button, credit, copyright and licences, and reports to the nav', async () => {
     const onOpenChange = vi.fn()
     renderFoot({ onOpenChange })
-    fireEvent.click(screen.getByRole('button', { name: 'Lizenzen' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Info zu Version und Lizenzen' }))
+    const card = await screen.findByRole('dialog', { name: 'Über PlatinVault' })
+    expect(onOpenChange).toHaveBeenLastCalledWith(true)
+    expect(card.querySelector('img')).not.toBeNull()
+    expect(within(card).getByText('PlatinVault')).toBeTruthy()
+    expect(await within(card).findByText('v2026.10.7 (12.345 β)')).toBeTruthy()
+    expect(within(card).getByTestId('version-check')).toBeTruthy()
+    expect(within(card).getByText(`© ${new Date().getFullYear()} SushiFlux`)).toBeTruthy()
+    expect(card.textContent).toMatch(/Mit\s*gemacht/)
+
+    fireEvent.click(within(card).getByRole('button', { name: 'Lizenzen' }))
     const viewer = await screen.findByRole('dialog', { name: 'Lizenzen' })
     expect(within(viewer).getByRole('heading', { name: 'Lizenzen' })).toBeTruthy()
     expect(onOpenChange).toHaveBeenLastCalledWith(true)
     fireEvent.keyDown(document, { key: 'Escape' })
     await waitFor(() => expect(onOpenChange).toHaveBeenLastCalledWith(false))
-  })
-
-  it('the card of the symbol and the block show the same parts', async () => {
-    renderFoot({ collapsed: true })
-    fireEvent.click(screen.getByRole('button', { name: 'Info zu Version und Lizenzen' }))
-    const card = await screen.findByRole('dialog', { name: 'Über PlatinVault' })
-    // The card adds the logo; everything else is the block's content
-    expect(card.querySelector('img')).not.toBeNull()
-    expect(within(card).getByText('PlatinVault')).toBeTruthy()
-    expect(within(card).getByRole('button', { name: 'Lizenzen' })).toBeTruthy()
   })
 })

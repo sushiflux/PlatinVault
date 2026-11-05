@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { parseMarkdown, SimpleMarkdown } from './SimpleMarkdown'
+import { parseMarkdown, renderInline, SimpleMarkdown } from './SimpleMarkdown'
 
 describe('parseMarkdown', () => {
   it('reads headings, paragraphs and lists', () => {
@@ -61,5 +61,16 @@ describe('SimpleMarkdown', () => {
     expect(container.querySelector('strong')?.textContent).toBe('Wichtig')
     expect(container.querySelector('p code')?.textContent).toBe('code')
     expect(container.querySelector('pre')?.textContent).toBe('MIT   License\n  text')
+  })
+})
+
+describe('hostile input stays fast', () => {
+  it('a long heading line with blanks and a long "[" run render in well under a second', () => {
+    const started = performance.now()
+    parseMarkdown(`## a${' '.repeat(64 * 1024)}b`)
+    renderInline('['.repeat(64 * 1024))
+    expect(performance.now() - started).toBeLessThan(1000)
+    // A normal link still is one
+    expect(render(<p>{renderInline('see [docs](https://example.org/d)')}</p>).container.querySelector('a')?.getAttribute('href')).toBe('https://example.org/d')
   })
 })

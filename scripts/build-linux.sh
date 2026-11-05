@@ -46,7 +46,7 @@ done
 step() { printf '\n==> %s\n' "$*"; }
 die() { echo "FEHLER: $*" >&2; exit 1; }
 
-case "$channel" in release | beta | dev) ;; *) die "--channel muss release, beta oder dev sein (ist: $channel)" ;; esac
+case "$channel" in release | beta | nightly | dev) ;; *) die "--channel muss release, beta, nightly oder dev sein (ist: $channel)" ;; esac
 for tool in dotnet tar gzip sha256sum; do command -v "$tool" >/dev/null 2>&1 || die "$tool wurde nicht gefunden."; done
 
 # ---- version (version.txt line 1 = vYear.Month.Commit, line 2 = five-segment build id) ----------------------------------------------
@@ -141,8 +141,10 @@ done
 # Licence: the official GNU AGPL v3 text, copied unchanged; the server serves both documents
 cp "$root/LICENSE" "$app/docs/LICENSE"
 cp "$root/THIRD-PARTY-NOTICES.md" "$app/docs/THIRD-PARTY-NOTICES.md"
-# The customer changelog: the "What's new" window after an update reads the entry of the running version from it (works offline)
+# The customer changelogs: the "What's new" window after an update reads the entry of the running version from them (works offline)
 cp "$root/CHANGELOG.md" "$app/docs/CHANGELOG.md"
+cp "$root/CHANGELOG.beta.md" "$app/docs/CHANGELOG.beta.md"
+cp "$root/CHANGELOG.nightly.md" "$app/docs/CHANGELOG.nightly.md"
 cp "$root/branding/icon.png" "$app/platinvault.png"
 # version.txt keeps the two plain lines (version, build id); the server turns them into the readable form with the channel
 printf '%s\n%s' "$short" "$detail" > "$app/version.txt"

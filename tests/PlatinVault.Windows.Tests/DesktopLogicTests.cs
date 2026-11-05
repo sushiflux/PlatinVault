@@ -10,20 +10,22 @@ namespace PlatinVault.Windows.Tests;
 public sealed class UpdateCheckTests
 {
     [Theory]
-    [InlineData("v2026.11.9", 2026, 11, 9, false, null)]
-    [InlineData("v2026.11.12.13.557-beta", 2026, 11, 12, true, null)]
-    [InlineData("v2026.11.9.31.2840-rc6", 2026, 11, 9, false, 6)]
-    [InlineData("v2026.10.6-rc3", 2026, 10, 6, false, 3)]
-    public void Parses_versions(string text, int year, int month, int commit, bool beta, int? rc)
+    [InlineData("v2026.11.9", 2026, 11, 9, false, false, null)]
+    [InlineData("v2026.11.12.13.557-beta", 2026, 11, 12, true, false, null)]
+    [InlineData("v2026.11.12.13.557-nightly", 2026, 11, 12, false, true, null)]
+    [InlineData("v2026.11.9.31.2840-rc6", 2026, 11, 9, false, false, 6)]
+    [InlineData("v2026.10.6-rc3", 2026, 10, 6, false, false, 3)]
+    public void Parses_versions(string text, int year, int month, int commit, bool beta, bool nightly, int? rc)
     {
         var v = ReleaseVersion.Parse(text);
         Assert.NotNull(v);
-        Assert.Equal((year, month, commit, beta, rc), (v.Value.Year, v.Value.Month, v.Value.Commit, v.Value.IsBeta, v.Value.Rc));
-        Assert.Equal(beta || rc is not null, v.Value.IsPreRelease);
+        Assert.Equal((year, month, commit, beta, nightly, rc), (v.Value.Year, v.Value.Month, v.Value.Commit, v.Value.IsBeta, v.Value.IsNightly, v.Value.Rc));
+        Assert.Equal(beta || nightly || rc is not null, v.Value.IsPreRelease);
     }
 
     [Theory]
     [InlineData("v2026.11.12 (13.557 β)")]
+    [InlineData("v2026.11.12 (13.557 α)")]
     [InlineData("v2026.11.12.13.557-betas")]
     [InlineData("v2026.11")]
     [InlineData("")]
@@ -34,7 +36,9 @@ public sealed class UpdateCheckTests
     [InlineData("v2026.11.9-rc2", "v2026.11.9", true)]
     [InlineData("v2026.11.9-rc2", "v2026.11.9.3.100-rc3", true)]
     [InlineData("v2026.11.9.3.100-rc3", "v2026.11.9.4.200-beta", true)]
+    [InlineData("v2026.11.12.13.557-nightly", "v2026.11.12.13.557-beta", true)]
     [InlineData("v2026.11.12.13.557-beta", "v2026.11.12", true)]
+    [InlineData("v2026.11.12.13.557-beta", "v2026.11.13.1.5-nightly", true)]
     [InlineData("v2026.11.12.13.557-beta", "v2026.11.13.1.5-beta", true)]
     [InlineData("v2026.12.150", "v2027.1.1", true)]
     [InlineData("v2026.11.9", "v2026.11.9", false)]
@@ -47,6 +51,7 @@ public sealed class UpdateCheckTests
 
     [Theory]
     [InlineData("v2026.11.12.13.557-beta", "v2026.11.12 (13.557 β)")]
+    [InlineData("v2026.11.12.13.557-nightly", "v2026.11.12 (13.557 α)")]
     [InlineData("v2026.11.12", "v2026.11.12")]
     [InlineData("v2026.11.9.31.2840-rc6", "v2026.11.9.31.2840-rc6")]
     public void Shows_a_tag_in_the_readable_form(string tag, string expected) => Assert.Equal(expected, ReleaseVersion.Parse(tag)!.Value.Display);

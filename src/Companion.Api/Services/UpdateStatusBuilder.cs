@@ -48,8 +48,17 @@ public enum DockerAdvice
     /// <summary>Betas no longer wanted and a beta runs, no release is newer yet: stay, switch to <c>:latest</c> once a release is out.</summary>
     BetaStays,
 
-    /// <summary>Betas no longer wanted, a beta runs and a release at least as new exists: switching to <c>:latest</c> is safe now.</summary>
+    /// <summary>Betas/nightlies no longer wanted, a pre-release runs and a release at least as new exists: switching to <c>:latest</c> is safe now.</summary>
     SwitchToLatest,
+
+    /// <summary>Nightlies wanted (α + β) but a release or beta runs: the container should use <c>:nightly</c>.</summary>
+    UseNightly,
+
+    /// <summary>Nightlies no longer wanted and a nightly runs, no allowed version is at least as new yet: stay until one catches up.</summary>
+    NightlyStays,
+
+    /// <summary>Nightlies no longer wanted (betas still wanted), a nightly runs and a beta or release at least as new exists: switching to <c>:beta</c> is safe now.</summary>
+    SwitchToBeta,
 }
 
 /// <summary>Everything the settings (and the Windows program's tray) need to know about updates. Built by <see cref="UpdateStatusBuilder"/>.</summary>
@@ -68,25 +77,29 @@ public sealed record UpdateStatus(
     bool CanInstall,
     DockerAdvice Docker,
     UpdateCheckInterval CheckInterval = UpdateCheckIntervals.Default,
-    bool LinuxPackageHost = false);
+    bool LinuxPackageHost = false,
+    bool NightlyUpdatesEnabled = false,
+    PublishedRelease? LatestNightly = null);
 
 /// <summary>
 /// Turns the release list into the update status - pure apart from <see cref="GetAsync"/>, which only collects its inputs. The rules
-/// (user decision 2026-11-02): the switch "Beta-Versionen erhalten" (default off) decides whether betas count; the newest allowed version
-/// newer than the running one is offered; nothing older is ever offered, so switching the beta channel off keeps a running beta until a
-/// release newer than it exists. The Windows program only counts versions with an installer.
+/// (user decision 2026-11-02 / 2026-11-05): the switches "Beta-Versionen erhalten" (β) and "Nightly-Versionen erhalten" (α + β) decide
+/// whether betas and nightlies count; the newest allowed version newer than the running one is offered; nothing older is ever offered,
+/// so switching a pre-release channel off keeps a running nightly or beta until a newer allowed version exists.
 /// </summary>
 public static class UpdateStatusBuilder
 {
-    /// <summary>Reads the switch, asks the update service (with <paramref name="mode"/>) and builds the status.</summary>
+    /// <summary>Reads the switches, asks the update service (with <paramref name="mode"/>) and builds the status.</summary>
     public static async Task<UpdateStatus> GetAsync(IServiceProvider services, UpdateCheckMode mode, CancellationToken ct)
     {
         bool betaEnabled;
+        bool nightlyEnabled;
         UpdateCheckInterval interval;
         using (var scope = services.CreateScope())
         {
             var store = scope.ServiceProvider.GetRequiredService<SettingsStore>();
             betaEnabled = await store.GetBetaUpdatesEnabledAsync(ct);
+            nightlyEnabled = await store.GetNightlyUpdatesEnabledAsync(ct);
             interval = await store.GetUpdateCheckIntervalAsync(ct);
         }
         var running = services.GetRequiredService<AppVersion>().Running;
@@ -96,19 +109,20 @@ public static class UpdateStatusBuilder
             : await services.GetRequiredService<UpdateService>().GetAsync(mode, interval, ct);
         var desktop = services.GetService<IDesktopHost>();
         var linuxPackage = desktop is null && services.GetRequiredService<IOptions<CompanionOptions>>().Value.IsLinuxPackage;
-        return Build(running, list, betaEnabled, desktop is not null, desktop?.CanInstallUpdates == true, interval, linuxPackage);
+        return Build(running, list, betaEnabled, desktop is not null, desktop?.CanInstallUpdates == true, interval, linuxPackage, nightlyEnabled);
     }
 
     public static UpdateStatus Build(RunningVersion running, ReleaseListResult list, bool betaEnabled, bool desktopHost, bool desktopCanInstall,
-        UpdateCheckInterval interval = UpdateCheckIntervals.Default, bool linuxPackage = false)
+        UpdateCheckInterval interval = UpdateCheckIntervals.Default, bool linuxPackage = false, bool nightlyEnabled = false)
     {
         var releases = list.Releases ?? [];
         var latestRelease = ReleaseFeed.LatestRelease(releases);
         var latestBeta = ReleaseFeed.LatestBeta(releases);
+        var latestNightly = ReleaseFeed.LatestNightly(releases);
         // A dev build is never offered anything (see UpdateState.DevBuild)
         var isDev = running.Kind == VersionKind.Dev;
         var available = running.Version is { } current && !isDev
-            ? ReleaseFeed.PickUpdate(releases, current, betaEnabled, requireInstaller: desktopHost, requireLinuxPackage: linuxPackage)
+            ? ReleaseFeed.PickUpdate(releases, current, betaEnabled || nightlyEnabled, requireInstaller: desktopHost, requireLinuxPackage: linuxPackage, includeNightly: nightlyEnabled)
             : null;
 
         var error = list.Error;
@@ -126,7 +140,7 @@ public static class UpdateStatusBuilder
 
         return new UpdateStatus(
             running,
-            betaEnabled,
+            betaEnabled || nightlyEnabled,
             desktopHost,
             state,
             state == UpdateState.Available ? available : null,
@@ -137,24 +151,47 @@ public static class UpdateStatusBuilder
             list.Throttled,
             list.NextManualCheckAt,
             desktopHost && desktopCanInstall && state == UpdateState.Available && available?.Installer is not null,
-            desktopHost || linuxPackage ? DockerAdvice.None : AdviceFor(running, betaEnabled, latestRelease),
+            desktopHost || linuxPackage ? DockerAdvice.None : AdviceFor(running, betaEnabled || nightlyEnabled, latestRelease, nightlyEnabled, latestBeta),
             interval,
-            linuxPackage);
+            linuxPackage,
+            nightlyEnabled,
+            latestNightly);
     }
 
     /// <summary>
-    /// The image-tag advice for a container. The kind of the running build says which tag the container most likely uses (a beta image
-    /// comes from <c>:beta</c>, a release from <c>:latest</c> - or from <c>:beta</c> when the release also moved that tag, which is then
-    /// right for "betas on"). Never recommends a downgrade: <c>:latest</c> is only suggested once the newest release is at least as new as
-    /// the running beta.
+    /// The image-tag advice for a container. The kind of the running build says which tag the container most likely uses (a nightly image
+    /// comes from <c>:nightly</c>, a beta from <c>:beta</c>, a release from <c>:latest</c>). Never recommends a downgrade.
     /// </summary>
-    public static DockerAdvice AdviceFor(RunningVersion running, bool betaEnabled, PublishedRelease? latestRelease)
+    public static DockerAdvice AdviceFor(
+        RunningVersion running,
+        bool betaEnabled,
+        PublishedRelease? latestRelease,
+        bool nightlyEnabled = false,
+        PublishedRelease? latestBeta = null)
     {
         if (running.Kind == VersionKind.Dev || running.Version is not { } current) return DockerAdvice.None;
-        if (betaEnabled && running.Kind == VersionKind.Release) return DockerAdvice.UseBeta;
-        if (!betaEnabled && running.Kind == VersionKind.Beta)
+        if (nightlyEnabled)
+        {
+            return running.Kind == VersionKind.Nightly ? DockerAdvice.None : DockerAdvice.UseNightly;
+        }
+        if (betaEnabled)
+        {
+            if (running.Kind == VersionKind.Release) return DockerAdvice.UseBeta;
+            if (running.Kind == VersionKind.Nightly)
+            {
+                var caughtUp = (latestBeta is not null && latestBeta.Version >= current)
+                    || (latestRelease is not null && latestRelease.Version >= current);
+                return caughtUp ? DockerAdvice.SwitchToBeta : DockerAdvice.NightlyStays;
+            }
+            return DockerAdvice.None;
+        }
+        if (running.Kind == VersionKind.Beta)
         {
             return latestRelease is not null && latestRelease.Version >= current ? DockerAdvice.SwitchToLatest : DockerAdvice.BetaStays;
+        }
+        if (running.Kind == VersionKind.Nightly)
+        {
+            return latestRelease is not null && latestRelease.Version >= current ? DockerAdvice.SwitchToLatest : DockerAdvice.NightlyStays;
         }
         return DockerAdvice.None;
     }

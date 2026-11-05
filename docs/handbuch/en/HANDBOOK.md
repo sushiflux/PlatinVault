@@ -317,10 +317,10 @@ that. The arrow keys (up/down, Home/End) jump through the chapters. On a phone y
 button in the trophy bar: they slide in over the page from the left and close again as soon as you have chosen a chapter (or
 with Esc or a tap next to the panel).
 
-At the very bottom of the chapter sidebar, under a fine dividing line, are the name of the app, the **version**, "Made with ♥", the copyright and the
-**Licences** button (the start page shows the same details in its footer). In a collapsed sidebar (and in a very low window) this has become a small **info symbol** (an "i" in a circle): when you
-move the mouse over it, tap it or reach it with the Tab key, a card with the same details opens. It stays open while the mouse pointer is on it or on the symbol, so you can
-reach **Licences** comfortably, and it closes with Esc, a click next to it or when you move the mouse away.
+At the very bottom of the chapter sidebar, under a fine dividing line, sits a small **info symbol** (an "i" in a circle) so the chapters keep the full height:
+when you move the mouse over it, tap or click it, or reach it with the Tab key, a card opens with the name of the app, the **version** (a button for **Version & updates**
+and **What’s new in this version**), "Made with ♥", the copyright and the **Licences** button (the start page shows the same details in its footer). It stays open while
+the mouse pointer is on it or on the symbol, and closes with Esc, a click next to it or when you move the mouse away.
 
 The three areas of the bar each have their own colour: **Live trophies** gold, **Statistics** blue, **Story & Lore** purple. The area you are in is filled with its colour.
 
@@ -601,6 +601,10 @@ In the **Live & Sound** tab of the settings:
   Clicking a position shows a preview right away. With **Full screen** the whole window belongs to the new trophy for the chosen display time: a large trophy in the colour of its tier, name, description, rarity and game – in landscape and in portrait. A click
   anywhere or the Esc key ends the popup early; the next trophy then follows.
 - **Trophy pop-up duration:** a slider below the positions. It sets how long a new achievement stays on screen: whole seconds from 2 to 10, default 5. It applies to the card, the full-screen popup, the previews and the overlay over the game. The full-screen popup closes sooner if you click or press Esc. The platinum moment keeps its own length.
+- **Time bar and unlock time:** along the edge of the card and of the full-screen popup, a thin bar in the colour of the trophy tier runs
+  from full to empty. It shows how long the popup will stay – also in the overlay over the game. If "reduce motion" is switched on in
+  Windows, the bar does not glide but drops once per second. The popup also shows **when** you unlocked the trophy (date and time in
+  the language of the app). If Steam gives no usable time, that line is left out.
 - **Show trophy popup:** **Only in the app**, **Only in the game** or **Both** (default). "In the game" means: as an overlay over the
   game – only the Windows program has it (see 11.3). In the browser and on Unraid the two game choices are greyed out; there the popup
   always appears in the app. The sound plays **exactly once** per trophy, also with "Both".
@@ -711,7 +715,7 @@ bridge. If `status` does not help, please tell us what it and the log show.
   to others over a network must offer the source code under the same licence. There is nothing to accept to use it. The
   source code is at `github.com/sushiflux/PlatinVault`.
 - **Licences:** You can read PlatinVault's licence (with the **Source code** button) and the licence texts of the bundled open-source components in the
-  app: on the start page click **Licences** at the bottom; on a game page at the bottom of the chapter sidebar (with a collapsed sidebar open the **info symbol** first); or open the settings, tab **System**, and click **Open licences**. The same texts are in the bridge ZIP, in the bridge's program folder and in the Windows program's folder (`docs`) as `LICENSE` and
+  app: on the start page click **Licences** at the bottom; on a game page open the **info symbol** at the bottom of the chapter sidebar and click **Licences**; or open the settings, tab **System**, and click **Open licences**. The same texts are in the bridge ZIP, in the bridge's program folder and in the Windows program's folder (`docs`) as `LICENSE` and
   `THIRD-PARTY-NOTICES.md`; any text editor opens them.
 
 # 10 Troubleshooting
@@ -859,7 +863,8 @@ PlatinVault installed, this check applies only after the update to a signed vers
 
 **Reading the release notes:** in the settings under **System** → **Updates** (and in the header's update icon), **View release
 notes** opens a window of its own, **What’s new**, with the changes of that version – without opening the GitHub page. **View on
-GitHub** opens the release page in the browser; **Esc** closes the window.
+GitHub** opens the release page in the browser; **Esc** closes the window. The window also opens by itself after an update (see 12.1,
+"What's new after an update").
 
 ## 11.7 Uninstalling
 
@@ -905,33 +910,39 @@ publicly available. Some programs move files to quarantine in this case.
 4. If the antivirus keeps blocking file names after you have allowed them: remove the PlatinVault entries from the quarantine or the
    block history, or restart Windows. Usually the entry is forgotten then. You can also report the file to your antivirus vendor as a false alarm.
 
-# 12 Updates and beta versions
+# 12 Updates, beta and nightly versions
 
-PlatinVault comes in two kinds of versions:
+PlatinVault comes in three published channels:
 
 - **Releases** – the normal, finished versions. This is the default and the right choice for most people.
-- **Betas** – early versions with the newest features. They are fully built and tested but may still have bugs. A beta shows a **β**
-  after the version number, for example `v2026.11.12 (13.557 β)`.
+- **Betas (`β`)** – tested pre-releases with new features before final release. A beta shows a **β** after the version number, for example `v2026.11.12 (13.557 β)`.
+- **Nightlies (`α`)** – early pre-releases with the very latest changes straight from ongoing development. A nightly shows an **α** (alpha) after the version number, for example `v2026.11.20 (8.1234 α)`.
 
-## 12.1 The switch "Receive beta versions"
+## 12.1 The switches for beta and nightly versions
 
-Under Settings → **System** → **Updates** – on every platform – there is the switch **Receive beta versions**. It starts **off**.
+Under Settings → **System** → **Updates**, **Releases** are always enabled; in addition – on every platform – there are two switches for pre-release channels (both start **off**):
 
-- **Off:** you only get releases.
-- **On:** you get betas and releases – always the newest of both.
+- **Both off:** you only get finished releases.
+- **Receive beta versions:** you get betas (`β`) and releases – always the newest of both.
+- **Receive nightly versions (α):** you get nightly versions (`α`), betas (`β`) and releases – always the newest version across all three channels (turning this on automatically enables **Receive beta versions** as well).
 
-There is **never a step back**: if you switch it off while a beta is running, that beta stays until a release comes out that is at
-least as new. That release is then offered to you automatically. If you switch it on, you get the newest beta as soon as it is newer
-than your version.
+There is **never a step back**: if you switch off a pre-release channel while a nightly or beta is running, your installed version stays until a version in the chosen channel comes out that is at least as new. That version is then offered to you automatically.
 
-Below it you see your installed version and, with **Check for updates now**, the result: "You are up to date", "New beta … available" or
-"New release … available" – with a link to the release notes. PlatinVault asks GitHub for the published versions (without signing in;
+Below it you see your installed version and, with **Check for updates now**, the result: "You are up to date", "New nightly … available", "New beta … available" or
+"New release … available" – with a button for the release notes. PlatinVault asks GitHub for the published versions (without signing in;
 only a few times a day, a check by hand at most once a minute). If that does not work, the complete reason is shown there, for example no
 internet connection or a used-up request quota at GitHub.
 
-If a newer version exists for your installation, a small **update icon** (arrow up with a green dot) appears in the header of every page. A click shows the new version, a link to the release notes and - in the Windows program - **Install update**; on Unraid, Docker and NAS it briefly explains how to update the container. **All update settings** jumps to this section. If everything is up to date, the check is not possible or this is a dev build, no icon is shown; problems with the check are only reported here in the settings.
+If a newer version exists for your installation, a small **update icon** (arrow up with a green dot) appears in the header of every page. A click shows the new version, the release notes and - in the Windows program - **Install update**; on Unraid, Docker and NAS it briefly explains how to update the container. **All update settings** jumps to this section. If everything is up to date, the check is not possible or this is a local development version, no icon is shown; problems with the check are only reported here in the settings.
 
-How often PlatinVault looks for updates by itself is set in this section under **Look for updates**: **At every start**, **Every 4 hours**, **Daily** (default), **Weekly**, **Monthly** or **Never (by hand only)**. It applies to every platform, including the Windows program. You check by hand with **Check for updates now** here - or at the bottom of every page: a click on the version number opens **Version & updates** with the button **Check for updates**, the time of the last check and the result. If a new version is found, the update icon appears in the header at once.
+**What's new after an update:** When you start PlatinVault for the first time after an update, the window **What’s new in …** opens by
+itself. It shows the changes of the version that is running now, in the language of the app. A click on **Close**, the **Esc** key or a
+click beside the window closes it; it does not come back for that version. It does not appear after a fresh installation, in a local development
+version, or while the introduction tour of the first start is still running. You can read the text again at any time: a click on the version
+number at the bottom of the start page (or in the info card of the **info symbol** at the bottom of the chapter bar on a game page) opens **Version & updates**, where
+**What’s new in this version** is. The texts are part of the program, so you need no internet connection for them.
+
+How often PlatinVault looks for updates by itself is set in this section under **Look for updates**: **At every start**, **Every 4 hours**, **Daily** (default), **Weekly**, **Monthly** or **Never (by hand only)**. It applies to every platform, including the Windows program. You check by hand with **Check for updates now** here - or via the version number (at the bottom of the start page or inside the **info symbol** at the bottom of the chapter bar): a click opens **Version & updates** with the button **Check for updates**, the time of the last check and the result. If a new version is found, the update icon appears in the header at once.
 
 ## 12.2 Windows program
 
@@ -946,9 +957,10 @@ you in the settings exactly what to do. Which versions your container gets is de
 | Image | You get |
 |---|---|
 | `ghcr.io/sushiflux/platinvault:latest` | releases only |
-| `ghcr.io/sushiflux/platinvault:beta` | betas and releases (always the newest of both) |
+| `ghcr.io/sushiflux/platinvault:beta` | betas (`β`) and releases (always the newest of both) |
+| `ghcr.io/sushiflux/platinvault:nightly` | nightlies (`α`), betas (`β`) and releases (always the newest of all) |
 
-Set the switch in the app to match the tag. This is how you change the tag – your data in the database and appdata stays:
+Set the switches in the app to match the tag. This is how you change the tag – your data in the database and appdata stays:
 
 - **Unraid:** Docker tab → click the PlatinVault container → **Edit** → change the tag under **Repository** → **Apply**. Afterwards you
   get new versions as usual with **Check for Updates** and **Update**. In Community Applications you can pick the tag right at installation.
@@ -957,7 +969,7 @@ Set the switch in the app to match the tag. This is how you change the tag – y
 - **Other NAS:** in the container management of your NAS, change the image of the PlatinVault container to the tag you want and recreate
   the container with the new image.
 
-Go back from `:beta` to `:latest` only once a release is out that is at least as new as your beta – before that it would be a step back to
+Go back from `:nightly` or `:beta` to a quieter channel only once a version is out there that is at least as new as your running version – before that it would be a step back to
 an older version. The settings tell you when that is the case.
 
 ## 12.4 Linux package

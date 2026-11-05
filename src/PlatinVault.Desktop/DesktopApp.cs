@@ -569,7 +569,7 @@ internal sealed class DesktopApp : ApplicationContext
         {
             if (interactive && !_env.Quiet)
             {
-                Dialogs.Info(null, status.State == UpdateState.Unchecked ? DesktopTexts.Update.NotChecked : DesktopTexts.Update.UpToDate(_env.Version, status.BetaUpdatesEnabled));
+                Dialogs.Info(null, status.State == UpdateState.Unchecked ? DesktopTexts.Update.NotChecked : DesktopTexts.Update.UpToDate(_env.Version, status.BetaUpdatesEnabled, status.NightlyUpdatesEnabled));
             }
             return;
         }

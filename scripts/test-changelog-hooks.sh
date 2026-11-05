@@ -19,6 +19,7 @@ bad() { printf 'FAIL  %s\n' "$1"; fails=$((fails + 1)); }
 check() { if [ "$2" = "$3" ]; then ok "$1"; else bad "$1: expected [$3], got [$2]"; fi; }
 
 beta=$(printf '\316\262')
+alpha=$(printf '\316\261')
 dot=$(printf '\302\267')
 
 # The hooks run with this repository's git variables when the test itself is started from a hook - never touch this repository
@@ -81,30 +82,72 @@ check "changed-lines counter = commit size (release)" "$(counter_of)" "$(size_of
 check "prompt counter in the build id" "$(sed -n '2p' version.txt | awk -F. '{ print $(NF-1) }')" "4"
 check "post-commit resets the prompt counter" "$(tr -d ' \n' < .run/devbuild.json)" '{"prompts":0}'
 
-# ---- 2. beta placeholder: a new block on top of each language section ------------------------------------------------------------
-awk -v b="$beta" -v d="$dot" '
-    { print }
-    $0 == "## English" { print ""; print "## vNEXT " b " " d " Unraid"; print ""; print "- Beta change."; print "- Second line." }
-    $0 == "## Deutsch" { print ""; print "## vNEXT " b; print ""; print "- Beta-Änderung." }
-' CHANGELOG.md > CHANGELOG.tmp && mv CHANGELOG.tmp CHANGELOG.md
-git add CHANGELOG.md
+# ---- 2. beta and nightly changelogs (CHANGELOG.beta.md / CHANGELOG.nightly.md) ----------------------------------------------------
+cat > CHANGELOG.beta.md <<EOF
+# Beta Changelog
+
+<a name="english"></a>
+## English
+
+## vNEXT $beta $dot Unraid
+
+- Beta change.
+- Second line.
+
+---
+
+<a name="deutsch"></a>
+## Deutsch
+
+## vNEXT $beta
+
+- Beta-Änderung.
+EOF
+git add CHANGELOG.beta.md
 git commit -q -m two
 beta2=$(display_of beta)
-check "beta heading EN" "$(grep '^## v' CHANGELOG.md | sed -n '1p')" "## $beta2 $dot Unraid"
-check "beta heading DE" "$(grep '^## v' CHANGELOG.md | sed -n '3p')" "## $beta2"
-check "older release entry untouched" "$(grep '^## v' CHANGELOG.md | sed -n '2p')" "## $release1 $dot Unraid, Windows"
+check "beta heading EN" "$(grep '^## v' CHANGELOG.beta.md | sed -n '1p')" "## $beta2 $dot Unraid"
+check "beta heading DE" "$(grep '^## v' CHANGELOG.beta.md | sed -n '2p')" "## $beta2"
 check "changed-lines counter = commit size (beta)" "$(counter_of)" "$(size_of)"
+
+cat > CHANGELOG.nightly.md <<EOF
+# Nightly Changelog
+
+<a name="english"></a>
+## English
+
+## vNEXT $alpha $dot Windows
+
+- Nightly change.
+
+---
+
+<a name="deutsch"></a>
+## Deutsch
+
+## vNEXT $alpha
+
+- Nightly-Änderung.
+EOF
+git add CHANGELOG.nightly.md
+git commit -q -m two-nightly
+nightly2=$(display_of nightly)
+check "nightly heading EN" "$(grep '^## v' CHANGELOG.nightly.md | sed -n '1p')" "## $nightly2 $dot Windows"
+check "nightly heading DE" "$(grep '^## v' CHANGELOG.nightly.md | sed -n '2p')" "## $nightly2"
+check "changed-lines counter = commit size (nightly)" "$(counter_of)" "$(size_of)"
 
 # ---- 3. release notes --------------------------------------------------------------------------------------------------------------
 expected=$(printf '%s\n' "## $beta2 $dot Unraid" "" "- Beta change." "- Second line." "" "---" "" "## $beta2" "" "- Beta-Änderung.")
-check "release notes of the beta" "$(sh scripts/release-notes.sh CHANGELOG.md "$beta2")" "$expected"
+check "release notes of the beta" "$(sh scripts/release-notes.sh CHANGELOG.beta.md "$beta2")" "$expected"
+expected_nightly=$(printf '%s\n' "## $nightly2 $dot Windows" "" "- Nightly change." "" "---" "" "## $nightly2" "" "- Nightly-Änderung.")
+check "release notes of the nightly" "$(sh scripts/release-notes.sh CHANGELOG.nightly.md "$nightly2")" "$expected_nightly"
 notes=$(sh scripts/release-notes.sh CHANGELOG.md "$release1")
 check "release notes of the release start with its EN heading" "$(printf '%s\n' "$notes" | sed -n '1p')" "## $release1 $dot Unraid, Windows"
 check "release notes of the release end with its DE text" "$(printf '%s\n' "$notes" | tail -n 1)" "- Neues Ding."
 check "release notes: one rule between the languages" "$(printf '%s\n' "$notes" | grep -c '^---$')" "1"
 if sh scripts/release-notes.sh CHANGELOG.md "v1999.1.1 (1.1)" >/dev/null 2>&1; then bad "missing entry must fail"; else ok "missing entry fails"; fi
 # A release heading must not pick the beta block of the same commit and vice versa
-if sh scripts/release-notes.sh CHANGELOG.md "$(display_of release)" >/dev/null 2>&1; then
+if sh scripts/release-notes.sh CHANGELOG.beta.md "$(display_of release)" >/dev/null 2>&1; then
     bad "release notes found a release entry that only exists as beta"
 else
     ok "release and beta headings are told apart"

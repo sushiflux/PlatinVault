@@ -93,6 +93,12 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
     /// </summary>
     public const string KeyBetaUpdates = "updates.beta_channel";
 
+    /// <summary>
+    /// "Nightly-Versionen (α) erhalten" (user decision 2026-11-05, every platform): off (default), on = nightly (α), beta (β) and release
+    /// versions, always the newest of all three.
+    /// </summary>
+    public const string KeyNightlyUpdates = "updates.nightly_channel";
+
     /// <summary>"Nach Updates suchen" (<see cref="UpdateCheckInterval"/> id, default daily).</summary>
     public const string KeyUpdateCheckInterval = "updates.check_interval";
 
@@ -269,6 +275,7 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
         var achievementNotes = !all.TryGetValue(KeyAchievementNotes, out var an) || !bool.TryParse(an, out var anb) || anb;
         var autoSwitchGame = !all.TryGetValue(KeyAutoSwitchGame, out var asg) || !bool.TryParse(asg, out var asgb) || asgb;
         var betaUpdates = ParseBetaUpdates(all.GetValueOrDefault(KeyBetaUpdates));
+        var nightlyUpdates = ParseBetaUpdates(all.GetValueOrDefault(KeyNightlyUpdates));
         var selection = await ResolveAiSelectionAsync(all, ct);
         var keyedProviders = AiProvider.All.Where(HasProviderKey).ToList();
         var effectiveDefault = selection.DefaultProvider is { } stored && keyedProviders.Contains(stored)
@@ -314,7 +321,8 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
             SteamRoot: steamRoot,
             SteamLocal: steamLocal is null ? null : SteamLocalInfo.Settings(steamLocal),
             PinsAfterUnlock: pinsAfterUnlock,
-            PopupSeconds: popupSeconds
+            PopupSeconds: popupSeconds,
+            NightlyUpdatesEnabled: nightlyUpdates
         );
     }
 
@@ -378,6 +386,13 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
     public async Task<bool> GetBetaUpdatesEnabledAsync(CancellationToken ct = default)
     {
         var row = await db.AppSettings.AsNoTracking().FirstOrDefaultAsync(x => x.Key == KeyBetaUpdates, ct);
+        return ParseBetaUpdates(row?.Value);
+    }
+
+    /// <summary>The switch "Nightly-Versionen (α) erhalten" (off unless stored as true).</summary>
+    public async Task<bool> GetNightlyUpdatesEnabledAsync(CancellationToken ct = default)
+    {
+        var row = await db.AppSettings.AsNoTracking().FirstOrDefaultAsync(x => x.Key == KeyNightlyUpdates, ct);
         return ParseBetaUpdates(row?.Value);
     }
 
@@ -566,6 +581,8 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
             await UpsertSettingAsync(KeyAutoSwitchGame, request.AutoSwitchGameEnabled.Value.ToString(), ct);
         if (request.BetaUpdatesEnabled.HasValue)
             await UpsertSettingAsync(KeyBetaUpdates, request.BetaUpdatesEnabled.Value.ToString(), ct);
+        if (request.NightlyUpdatesEnabled.HasValue)
+            await UpsertSettingAsync(KeyNightlyUpdates, request.NightlyUpdatesEnabled.Value.ToString(), ct);
         if (updateInterval is not null)
             await UpsertSettingAsync(KeyUpdateCheckInterval, updateInterval, ct);
         if (sortFavorites is not null)

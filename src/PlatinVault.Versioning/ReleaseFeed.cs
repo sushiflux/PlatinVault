@@ -101,28 +101,52 @@ public static class ReleaseFeed
     }
 
     /// <summary>
-    /// What to offer: the newest release (and, with <paramref name="includeBetas"/>, beta) that is newer than <paramref name="current"/>;
-    /// null = up to date. <paramref name="requireInstaller"/>: only releases with a Windows installer count (the Windows program);
-    /// <paramref name="requireLinuxPackage"/>: only releases with a Linux package count (the Linux package).
+    /// What to offer: the newest release (and, with <paramref name="includeBetas"/>, beta; with <paramref name="includeNightly"/>, nightly and beta)
+    /// that is newer than <paramref name="current"/>; null = up to date. <paramref name="requireInstaller"/>: only releases with a Windows installer
+    /// count (the Windows program); <paramref name="requireLinuxPackage"/>: only releases with a Linux package count (the Linux package).
     /// </summary>
-    public static PublishedRelease? PickUpdate(IEnumerable<PublishedRelease> releases, ReleaseVersion current, bool includeBetas, bool requireInstaller = false, bool requireLinuxPackage = false) =>
+    public static PublishedRelease? PickUpdate(
+        IEnumerable<PublishedRelease> releases,
+        ReleaseVersion current,
+        bool includeBetas,
+        bool requireInstaller = false,
+        bool requireLinuxPackage = false,
+        bool includeNightly = false) =>
         releases
-            .Where(r => includeBetas || !r.IsPreRelease)
+            .Where(r => IsChannelAllowed(r, includeBetas, includeNightly))
             .Where(r => !requireInstaller || r.Installer is not null)
             .Where(r => !requireLinuxPackage || r.LinuxPackage is not null)
             .Where(r => r.Version > current)
             .MaxBy(r => r.Version);
 
-    /// <summary>The newest real release (no beta), or null when none is published yet.</summary>
+    private static bool IsChannelAllowed(PublishedRelease release, bool includeBetas, bool includeNightly)
+    {
+        if (!release.IsPreRelease) return true;
+        if (release.Version.IsNightly) return includeNightly;
+        return includeBetas || includeNightly;
+    }
+
+    /// <summary>The newest real release (no beta or nightly), or null when none is published yet.</summary>
     public static PublishedRelease? LatestRelease(IEnumerable<PublishedRelease> releases) =>
         releases.Where(r => !r.IsPreRelease).MaxBy(r => r.Version);
 
-    /// <summary>The newest beta that is newer than the newest release (an older beta is no news), or null.</summary>
+    /// <summary>The newest beta (excluding nightlies) that is newer than the newest release, or null.</summary>
     public static PublishedRelease? LatestBeta(IEnumerable<PublishedRelease> releases)
     {
         var list = releases as IReadOnlyCollection<PublishedRelease> ?? releases.ToList();
         var release = LatestRelease(list);
-        return list.Where(r => r.IsPreRelease && (release is null || r.Version > release.Version)).MaxBy(r => r.Version);
+        return list.Where(r => r.IsPreRelease && !r.Version.IsNightly && (release is null || r.Version > release.Version)).MaxBy(r => r.Version);
+    }
+
+    /// <summary>The newest nightly that is newer than the newest release and beta, or null.</summary>
+    public static PublishedRelease? LatestNightly(IEnumerable<PublishedRelease> releases)
+    {
+        var list = releases as IReadOnlyCollection<PublishedRelease> ?? releases.ToList();
+        var release = LatestRelease(list);
+        var beta = LatestBeta(list);
+        return list
+            .Where(r => r.Version.IsNightly && (release is null || r.Version > release.Version) && (beta is null || r.Version > beta.Version))
+            .MaxBy(r => r.Version);
     }
 
     /// <summary>Longest release text kept (characters): a release body is a few KB; this only protects the status answer and the cache.</summary>

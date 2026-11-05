@@ -57,6 +57,8 @@ jobs:
     outputs:
       tag: ${{ steps.version.outputs.tag }}
       is_beta: ${{ steps.version.outputs.is_beta }}
+      is_nightly: ${{ steps.version.outputs.is_nightly }}
+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
       is_dev: ${{ steps.version.outputs.is_dev }}
       kind: ${{ steps.version.outputs.kind }}
       builds_windows: ${{ steps.version.outputs.builds_windows }}
@@ -81,9 +83,15 @@ jobs:
         run: |
           tag="${GITHUB_REF_NAME}"
           is_beta=false
+          is_nightly=false
+          is_prerelease=false
           is_dev=false
           if [[ "$tag" == *-beta ]]; then
             is_beta=true
+            is_prerelease=true
+          elif [[ "$tag" == *-nightly ]]; then
+            is_nightly=true
+            is_prerelease=true
           elif [[ "$tag" == *-dev ]]; then
             is_dev=true
           elif [[ "$tag" == *-rc* ]]; then
@@ -132,9 +140,10 @@ jobs:
           if [[ -z "$detail_version" ]]; then detail_version="$short_version"; fi
           kind=release
           if [[ "$is_beta" == "true" ]]; then kind=beta; fi
+          if [[ "$is_nightly" == "true" ]]; then kind=nightly; fi
           if [[ "$is_dev" == "true" ]]; then kind=dev; fi
-          # The tag must be the technical form of this commit's version: a beta/dev tag carries the five-segment build id
-          # (v2026.11.12.13.557-beta / -dev), a release tag the plain version (v2026.11.12)
+          # The tag must be the technical form of this commit's version: a beta/nightly/dev tag carries the five-segment build id
+          # (v2026.11.12.13.557-beta / -nightly / -dev), a release tag the plain version (v2026.11.12)
           expected_tag="$(sh scripts/version-display.sh tag "$short_version" "$detail_version" "$kind")"
           if [[ "$tag" != "$expected_tag" ]]; then
             echo "::error::Tag $tag passt nicht zu $expected_tag (version.txt)"
@@ -150,22 +159,26 @@ jobs:
           channel=release
           # The release template points at the moving tag "latest" (a fixed version tag would never show an update in Unraid)
           template_tag=latest
-          # Release notes: this version's entry of CHANGELOG.md (English, rule, German). A dev build has none, its draft gets a one-line text.
+          # Release notes: this version's entry of CHANGELOG.md / CHANGELOG.beta.md / CHANGELOG.nightly.md (English, rule, German).
+          changelog_source=CHANGELOG.md
           notes_file=dist/release-notes.md
           mkdir -p dist
           if [[ "$is_beta" == "true" ]]; then
             channel=beta
-            # The beta template points at the moving tag "beta": the test container is updated in place by Unraid's own update
             template_tag=beta
+            changelog_source=CHANGELOG.beta.md
+          elif [[ "$is_nightly" == "true" ]]; then
+            channel=nightly
+            template_tag=nightly
+            changelog_source=CHANGELOG.nightly.md
           elif [[ "$is_dev" == "true" ]]; then
             channel=dev
-            # Same for the dev template and its moving tag "dev" (the image is never tagged beta/latest)
             template_tag=dev
           fi
           if [[ "$is_dev" == "true" ]]; then
             printf '%s\n' "Dev build for internal testing only - not a release, not offered as an update." > "$notes_file"
-          elif ! sh scripts/release-notes.sh CHANGELOG.md "$display_version" > "$notes_file"; then
-            echo "::error::CHANGELOG.md hat keinen Eintrag \"## $display_version\" (Englisch und Deutsch) - Changelog beim Commit schreiben (Überschrift ## vNEXT bzw. ## vNEXT β)"
+          elif ! sh scripts/release-notes.sh "$changelog_source" "$display_version" > "$notes_file"; then
+            echo "::error::$changelog_source hat keinen Eintrag \"## $display_version\" (Englisch und Deutsch) - Changelog beim Commit schreiben (Überschrift ## vNEXT / ## vNEXT β / ## vNEXT α)"
             exit 1
           fi
           echo "Release-Notizen ($(wc -l < "$notes_file") Zeilen):"
@@ -177,6 +190,8 @@ jobs:
           {
             echo "tag=$tag"
             echo "is_beta=$is_beta"
+            echo "is_nightly=$is_nightly"
+            echo "is_prerelease=$is_prerelease"
             echo "is_dev=$is_dev"
             echo "kind=$kind"
             echo "notes_file=$notes_file"
@@ -231,11 +246,11 @@ jobs:
             org.opencontainers.image.created=${{ steps.version.outputs.created }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.title=PlatinVault
-          # "beta" moves with every beta AND every release (":beta" = newest of both), "latest" only with a release; a dev build moves
-          # only its own tag "dev" (the kind is release / beta / dev)
+          # "nightly" moves with every nightly, beta and release; "beta" moves with every beta and release; "latest" only with a release
           tags: |
             ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.docker_tag }}
-            ${{ steps.version.outputs.kind == 'dev' && format('{0}:dev', env.IMAGE_NAME) || format('{0}:beta', env.IMAGE_NAME) }}
+            ${{ steps.version.outputs.kind == 'dev' && format('{0}:dev', env.IMAGE_NAME) || format('{0}:nightly', env.IMAGE_NAME) }}
+            ${{ (steps.version.outputs.kind == 'beta' || steps.version.outputs.kind == 'release') && format('{0}:beta', env.IMAGE_NAME) || '' }}
             ${{ steps.version.outputs.kind == 'release' && format('{0}:latest', env.IMAGE_NAME) || '' }}
 
       - name: Unraid-Template rendern
@@ -243,14 +258,14 @@ jobs:
         run: |
           mkdir -p dist
           template=dist/platinvault.xml
-          # unraid/platinvault.xml in the repository is the RELEASE form (":latest" plus the "beta" tag choice) - the raw file customers
-          # fetch with wget; the beta and dev templates are derived from it here
+          # unraid/platinvault.xml in the repository is the RELEASE form (":latest" plus the "beta" and "nightly" tag choices) - the raw file customers
+          # fetch with wget; the beta, nightly and dev templates are derived from it here
           grep -q '<Repository>ghcr.io/sushiflux/platinvault:latest</Repository>' unraid/platinvault.xml
           grep -q '<TemplateURL>https://raw.githubusercontent.com/sushiflux/PlatinVault/master/unraid/platinvault.xml</TemplateURL>' unraid/platinvault.xml
           sed "s#ghcr.io/sushiflux/platinvault:latest#ghcr.io/sushiflux/platinvault:${{ steps.version.outputs.template_tag }}#" \
             unraid/platinvault.xml > "$template"
-          if [[ "${{ steps.version.outputs.is_beta }}" == "true" ]]; then
-            # The beta template (hand-copied to the own Unraid for testing) has no tag choice: its default already is ":beta". It has no
+          if [[ "${{ steps.version.outputs.is_prerelease }}" == "true" ]]; then
+            # The beta/nightly template (hand-copied to the own Unraid for testing) has no tag choice: its default already is ":beta" / ":nightly". It has no
             # TemplateURL either (see the check at the end of this step).
             sed -i -e '/<DefaultTagDescription>/d' -e '/<Branch>/,/<\/Branch>/d' -e '/<TemplateURL>/d' "$template"
           fi
@@ -309,7 +324,7 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: ${{ steps.version.outputs.release_name }}
           draft: true
-          prerelease: ${{ steps.version.outputs.is_beta }}
+          prerelease: ${{ steps.version.outputs.is_prerelease }}
           body_path: ${{ steps.version.outputs.notes_file }}
           files: ${{ steps.version.outputs.builds_unraid == 'true' && steps.version.outputs.is_dev != 'true' && 'dist/platinvault.xml' || '' }}
 
@@ -376,6 +391,7 @@ jobs:
         run: |
           $buildArgs = @{ Stage = 'app'; BridgeVersion = '${{ needs.build.outputs.bridge_version }}'; ProductVersion = $env:PV_PRODUCT_VERSION }
           if ('${{ needs.build.outputs.is_beta }}' -eq 'true') { $buildArgs['Beta'] = $true }
+          if ('${{ needs.build.outputs.is_nightly }}' -eq 'true') { $buildArgs['Nightly'] = $true }
           if ('${{ needs.build.outputs.is_dev }}' -eq 'true') { $buildArgs['Dev'] = $true }
           if ('${{ steps.signing.outputs.sign }}' -eq 'true') { $buildArgs['PrepareSigning'] = $true }
           .\scripts\build-windows.ps1 @buildArgs
@@ -423,6 +439,7 @@ jobs:
         run: |
           $buildArgs = @{ Stage = 'setup'; ProductVersion = $env:PV_PRODUCT_VERSION }
           if ('${{ needs.build.outputs.is_beta }}' -eq 'true') { $buildArgs['Beta'] = $true }
+          if ('${{ needs.build.outputs.is_nightly }}' -eq 'true') { $buildArgs['Nightly'] = $true }
           if ('${{ needs.build.outputs.is_dev }}' -eq 'true') { $buildArgs['Dev'] = $true }
           if ('${{ steps.signing.outputs.sign }}' -eq 'true') { $buildArgs['SignedAppDir'] = 'artifacts\windows-cache\signed\app' }
           .\scripts\build-windows.ps1 @buildArgs
@@ -467,6 +484,7 @@ jobs:
         run: |
           $buildArgs = @{ Stage = 'checksum' }
           if ('${{ needs.build.outputs.is_beta }}' -eq 'true') { $buildArgs['Beta'] = $true }
+          if ('${{ needs.build.outputs.is_nightly }}' -eq 'true') { $buildArgs['Nightly'] = $true }
           if ('${{ needs.build.outputs.is_dev }}' -eq 'true') { $buildArgs['Dev'] = $true }
           if ('${{ steps.signing.outputs.sign }}' -eq 'true') {
             $buildArgs['SignedSetup'] = 'artifacts\windows-cache\signed\setup'
@@ -481,7 +499,7 @@ jobs:
         with:
           tag_name: ${{ needs.build.outputs.tag }}
           draft: true
-          prerelease: ${{ needs.build.outputs.is_beta }}
+          prerelease: ${{ needs.build.outputs.is_prerelease }}
           fail_on_unmatched_files: true
           files: |
             artifacts/windows/PlatinVault-Setup-*.exe
@@ -562,11 +580,11 @@ jobs:
         with:
           tag_name: ${{ needs.build.outputs.tag }}
           draft: true
-          prerelease: ${{ needs.build.outputs.is_beta }}
+          prerelease: ${{ needs.build.outputs.is_prerelease }}
           fail_on_unmatched_files: true
           files: ${{ steps.files.outputs.list }}
 
-  # Publishes the draft (beta: pre-release, release: normal release and "Latest") only after every selected platform job succeeded and
+  # Publishes the draft (beta/nightly: pre-release, release: normal release and "Latest") only after every selected platform job succeeded and
   # only when every expected file is attached. A dev build is never published (its draft stays for the user's own download).
   publish:
     needs: [build, windows, linux]
@@ -582,7 +600,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.build.outputs.tag }}
-          IS_BETA: ${{ needs.build.outputs.is_beta }}
+          IS_PRERELEASE: ${{ needs.build.outputs.is_prerelease }}
           BUILDS_WINDOWS: ${{ needs.build.outputs.builds_windows }}
           BUILDS_LINUX: ${{ needs.build.outputs.builds_linux }}
           BUILDS_UNRAID: ${{ needs.build.outputs.builds_unraid }}
@@ -619,7 +637,7 @@ jobs:
             echo "::error::Missing on the draft:$missing - the release stays a draft"
             exit 1
           fi
-          if [[ "$IS_BETA" == "true" ]]; then
+          if [[ "$IS_PRERELEASE" == "true" ]]; then
             gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease
           else
             gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease=false --latest

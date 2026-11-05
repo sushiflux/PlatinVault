@@ -92,7 +92,11 @@ public sealed class UpdateCheckTests
     [Fact]
     public void Off_offers_only_releases_on_offers_the_newest_of_both()
     {
-        var list = List(Release("v2026.11.14.2.30-beta", prerelease: true), Release("v2026.11.13"), Release("v2026.11.12.13.557-beta", prerelease: true));
+        var list = List(
+            Release("v2026.11.15.1.10-nightly", prerelease: true),
+            Release("v2026.11.14.2.30-beta", prerelease: true),
+            Release("v2026.11.13"),
+            Release("v2026.11.12.13.557-beta", prerelease: true));
         var running = Running("v2026.11.12", VersionKind.Release);
 
         var off = UpdateStatusBuilder.Build(running, list, betaEnabled: false, desktopHost: false, desktopCanInstall: false);
@@ -103,6 +107,15 @@ public sealed class UpdateCheckTests
         Assert.Equal("v2026.11.14.2.30-beta", on.Available!.Version.Text);
         Assert.Equal("v2026.11.13", on.LatestRelease!.Version.Text);
         Assert.Equal("v2026.11.14.2.30-beta", on.LatestBeta!.Version.Text);
+        Assert.Equal("v2026.11.15.1.10-nightly", on.LatestNightly!.Version.Text);
+
+        var nightlyOn = UpdateStatusBuilder.Build(running, list, betaEnabled: true, desktopHost: false, desktopCanInstall: false, nightlyEnabled: true);
+        Assert.Equal("v2026.11.15.1.10-nightly", nightlyOn.Available!.Version.Text);
+        Assert.Equal(DockerAdvice.UseNightly, nightlyOn.Docker);
+        var dto = UpdateEndpoints.ToDto(nightlyOn);
+        Assert.True(dto.NightlyUpdatesEnabled);
+        Assert.True(dto.Available!.IsNightly);
+        Assert.False(dto.Available.IsBeta);
     }
 
     [Fact]
