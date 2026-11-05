@@ -4,7 +4,7 @@ import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { IconCloudDownload, IconLoader2, IconRefresh } from '@tabler/icons-react'
+import { IconCloudDownload, IconLoader2, IconNotes, IconRefresh } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { checkForUpdates } from '../../api/client'
 import { useFormat } from '../../i18n/format'
@@ -12,8 +12,10 @@ import { useBranding } from '../FooterParts'
 import { ReservedText } from '../ui/ReservedText'
 import { StackedLabel } from '../ui/StackedLabel'
 import { Tooltip } from '../ui/Tooltip'
+import { ReleaseNotesViewer } from './ReleaseNotesDialog'
 import { UPDATE_STATUS_KEY, useHeaderUpdateStatus } from './updateOffer'
 import { RESULT_TONE_COLOR, updateResult, updateResultCandidates } from './updateResult'
+import { useWhatsNew, whatsNewRelease } from './WhatsNewGate'
 
 const PANEL_WIDTH = 336
 const EDGE = 8
@@ -22,10 +24,13 @@ interface PanelProps {
   anchor: HTMLElement
   panelId: string
   onClose: () => void
+  // The notes of the running version (changelog shipped with the app); the button is there from the start so the panel never changes size
+  hasNotes: boolean
+  onShowNotes: () => void
 }
 
 /** The popover of the version: version, when the last check was, the button "check now" and what it found. Opens upwards (the version sits at the foot of the page). */
-function VersionPanel({ anchor, panelId, onClose }: PanelProps) {
+function VersionPanel({ anchor, panelId, onClose, hasNotes, onShowNotes }: PanelProps) {
   const { t } = useTranslation('shell')
   const { t: ts } = useTranslation('settings')
   const format = useFormat()
@@ -134,6 +139,10 @@ function VersionPanel({ anchor, panelId, onClose }: PanelProps) {
       <ReservedText className="text-xs" style={{ color: 'var(--text-muted)' }} candidates={[ts('updates.result.throttled', { time: '00:00:00' }), t('footer.version.seeIcon')]}>
         {data?.state === 'available' ? t('footer.version.seeIcon') : throttled}
       </ReservedText>
+      <button type="button" className="pv-btn mt-2 !px-3 !py-1.5 !text-xs" data-testid="version-whats-new" onClick={onShowNotes} disabled={!hasNotes}>
+        <IconNotes size={14} aria-hidden="true" />
+        <span>{t('footer.version.whatsNew')}</span>
+      </button>
       <p className="mt-2 border-t pt-2 text-xs" style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-muted)' }}>
         {t('footer.version.settingsHint')}
       </p>
@@ -152,6 +161,14 @@ export function VersionCheck({ children, onOpenChange }: { children: ReactNode; 
   const buttonRef = useRef<HTMLButtonElement>(null)
   const panelId = useId()
   const close = useCallback(() => setOpen(false), [])
+  const [notesOpen, setNotesOpen] = useState(false)
+  // Asked only once the popover (or the dialog) is opened, so a page that never looks at it makes no extra request
+  const whatsNew = useWhatsNew(open || notesOpen)
+  const release = whatsNew.data?.notes ? whatsNewRelease(whatsNew.data) : null
+  const showNotes = useCallback(() => {
+    setNotesOpen(true)
+    setOpen(false)
+  }, [])
 
   useEffect(() => {
     onOpenChange?.(open)
@@ -176,8 +193,9 @@ export function VersionCheck({ children, onOpenChange }: { children: ReactNode; 
         </button>
       </Tooltip>
       <AnimatePresence>
-        {open && buttonRef.current && <VersionPanel key="version-panel" anchor={buttonRef.current} panelId={panelId} onClose={close} />}
+        {open && buttonRef.current && <VersionPanel key="version-panel" anchor={buttonRef.current} panelId={panelId} onClose={close} hasNotes={release !== null} onShowNotes={showNotes} />}
       </AnimatePresence>
+      <ReleaseNotesViewer release={notesOpen ? release : null} onClose={() => setNotesOpen(false)} restoreFocusRef={buttonRef} intro />
     </>
   )
 }

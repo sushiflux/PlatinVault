@@ -1389,3 +1389,13 @@ export interface DesktopFolderDto {
 export interface DesktopFoldersDto {
   folders: DesktopFolderDto[]
 }
+
+// GET /api/whats-new: the changelog entry of the running version, shipped with the product (never fetched from GitHub)
+export interface WhatsNewDto {
+  // The running version in its readable form (v2026.11.18 (9.7263 β))
+  version: string
+  // True once after an update (first start of a version the user has not seen yet); false for a fresh install, a dev build, a seen version
+  show: boolean
+  // The entry of this version in the language of the request (Markdown, heading line included); null when there is none
+  notes: string | null
+}

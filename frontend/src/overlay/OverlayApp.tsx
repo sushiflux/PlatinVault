@@ -115,6 +115,7 @@ function OverlayLayer({ channel }: { channel: WebViewChannel | null }) {
         gameName={achievement ? (gameNames.current.get(achievement) ?? null) : null}
         onDismiss={() => animationQueue.dismissAchievement()}
         dismissHint={false}
+        visibleMs={state.visibleMs}
       />
       <PlatinumCelebration
         data={state.currentPlatinum}

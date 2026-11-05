@@ -6,12 +6,14 @@ import { VersionCheck } from './VersionCheck'
 
 const fetchUpdateStatus = vi.hoisted(() => vi.fn<() => Promise<UpdateStatusDto>>())
 const checkForUpdates = vi.hoisted(() => vi.fn<() => Promise<UpdateStatusDto>>())
+const fetchWhatsNew = vi.hoisted(() => vi.fn(async () => ({ version: 'v2026.11.10 (31.2840)', show: false, notes: null as string | null })))
 const fetchBranding = vi.hoisted(() => vi.fn(async () => ({ productName: 'PlatinVault', tagline: '', company: 'SushiFlux', version: 'v2026.11.10 (31.2840)', host: 'server' })))
-vi.mock('../../api/client', () => ({ fetchUpdateStatus, checkForUpdates, fetchBranding }))
+vi.mock('../../api/client', () => ({ fetchUpdateStatus, checkForUpdates, fetchBranding, fetchWhatsNew }))
 
 beforeEach(() => {
   fetchUpdateStatus.mockReset()
   checkForUpdates.mockReset()
+  fetchWhatsNew.mockClear()
 })
 afterEach(cleanup)
 
@@ -105,5 +107,30 @@ describe('VersionCheck', () => {
     fireEvent.click(screen.getByTestId('version-check'))
     await screen.findByTestId('version-panel')
     await waitFor(() => expect((screen.getByRole('button', { name: /Nach Updates suchen/ }) as HTMLButtonElement).disabled).toBe(true))
+  })
+
+  it('offers the notes of the running version from the popover (disabled without notes) and opens them without marking anything', async () => {
+    fetchUpdateStatus.mockResolvedValue(status())
+    fetchWhatsNew.mockResolvedValue({ version: 'v2026.11.10 (31.2840)', show: false, notes: '## v2026.11.10 (31.2840)\n\n### ✨ Neu\n\n- Etwas Neues.' })
+    renderCheck()
+    fireEvent.click(screen.getByTestId('version-check'))
+    await screen.findByTestId('version-panel')
+    const button = screen.getByTestId('version-whats-new') as HTMLButtonElement
+    await waitFor(() => expect(button.disabled).toBe(false))
+    fireEvent.click(button)
+    const dialog = await screen.findByTestId('release-notes')
+    expect(dialog.textContent).toContain('Das ist neu in v2026.11.10 (31.2840)')
+    expect(dialog.textContent).toContain('Etwas Neues.')
+    await waitFor(() => expect(screen.queryByTestId('version-panel')).toBeNull())
+  })
+
+  it('keeps the notes button disabled when the version has no entry', async () => {
+    fetchUpdateStatus.mockResolvedValue(status())
+    fetchWhatsNew.mockResolvedValue({ version: 'v2026.11.10 (31.2840)', show: false, notes: null })
+    renderCheck()
+    fireEvent.click(screen.getByTestId('version-check'))
+    await screen.findByTestId('version-panel')
+    await waitFor(() => expect(fetchWhatsNew).toHaveBeenCalled())
+    expect((screen.getByTestId('version-whats-new') as HTMLButtonElement).disabled).toBe(true)
   })
 })

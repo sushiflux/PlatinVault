@@ -1,8 +1,10 @@
 using System.Globalization;
 using Companion.Api.Configuration;
 using Companion.Api.Localization;
+using Companion.Api.Services;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using PlatinVault.Versioning;
 
 namespace Companion.Api.Data;
 
@@ -41,8 +43,24 @@ public static class DatabaseInitializer
         {
             logger.LogInformation("Wende {Count} Datenbank-Migration(en) an: {Migrations}", pending.Count, string.Join(", ", pending));
         }
+        // A database without any applied migration is a fresh installation: remember the version right away, so "What's new" does not
+        // greet a first-time user as if they had updated (the schema version row below cannot tell, see WhatsNew)
+        var freshInstall = !(await db.Database.GetAppliedMigrationsAsync(ct)).Any();
         await db.Database.MigrateAsync(ct);
         await RecordSchemaVersionAsync(db, running, pending.Count > 0, logger, ct);
+        if (freshInstall && services.GetService<AppVersion>()?.Running is { Kind: not VersionKind.Dev } current)
+        {
+            try
+            {
+                await WhatsNew.RecordFreshInstallAsync(db, current.Display, ct);
+            }
+            catch (DbUpdateException ex)
+            {
+                // Best effort, like the schema version: a second server on the same file wrote it at the same moment
+                db.ChangeTracker.Clear();
+                logger.LogDebug(ex, "What's-new-Stand nicht gespeichert (gleichzeitiger Start).");
+            }
+        }
     }
 
     /// <summary>The applied migrations this build does not know (neither in code nor retired on purpose), oldest first.</summary>

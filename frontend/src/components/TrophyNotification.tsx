@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
+import { IconClock } from '@tabler/icons-react'
 import { motion, useReducedMotion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import type { CardPosition, LiveAchievementItemDto, RarityTier } from '../api/types'
 import { useFormat } from '../i18n/format'
 import { ACHIEVEMENT_VISIBLE_MS } from '../utils/animationQueue'
+import { useUnlockStamp } from '../utils/unlockStamp'
+import { PopupCountdown } from './PopupCountdown'
 import { TierTrophy, tierGlow } from './platinum/TierTrophy'
 
 interface TrophyNotificationProps {
@@ -125,7 +128,7 @@ export function TrophyNotification({
 
   return (
     <div style={getPositionStyle()}>
-      <TrophyCard achievement={achievement} />
+      <TrophyCard achievement={achievement} countdownMs={visibleMs} />
     </div>
   )
 }
@@ -146,13 +149,16 @@ interface TrophyCardProps {
   fluid?: boolean
   // Build the trophy up and stagger the text in; off = the finished card right away
   animated?: boolean
+  // The popup's total visible time: draws the thin time bar along the bottom edge that runs out in exactly that time. None = no bar (tour).
+  countdownMs?: number
 }
 
 // The card itself: the dark trophy popup without any positioning, shared by the live overlay and the tour.
-// Its footprint never changes: the trophy slot, the icon and the three text lines have fixed room.
-export function TrophyCard({ achievement, fluid = false, animated = true }: TrophyCardProps) {
+// Its footprint never changes: the trophy slot, the icon and the four text lines (tier, name, description, unlock time) have fixed room.
+export function TrophyCard({ achievement, fluid = false, animated = true, countdownMs }: TrophyCardProps) {
   const { t } = useTranslation('live')
   const fmt = useFormat()
+  const stamp = useUnlockStamp()(achievement)
   const reduce = useReducedMotion() ?? false
   const tier: RarityTier = achievement.rarityTier in TROPHY_TIER_COLORS ? achievement.rarityTier : 'Gold'
   const accentColor = TROPHY_TIER_COLORS[tier] ?? '#fbbf24'
@@ -237,7 +243,29 @@ export function TrophyCard({ achievement, fluid = false, animated = true }: Trop
         <motion.div className="mt-0.5 line-clamp-2 min-h-[2rem] text-xs text-slate-300" {...line(0.65)}>
           {achievement.description}
         </motion.div>
+        {/* When it was unlocked. The line always has its room (also without a time), so the card is the same height either way. */}
+        <motion.div
+          className="mt-1 flex h-4 items-center gap-1 text-[11px] font-medium tabular-nums text-slate-400"
+          data-unlock-stamp=""
+          {...line(0.75)}
+        >
+          {stamp && (
+            <>
+              <IconClock size={12} stroke={2} className="shrink-0" aria-hidden="true" />
+              <span className="truncate">{stamp}</span>
+            </>
+          )}
+        </motion.div>
       </div>
+
+      {countdownMs !== undefined && (
+        <PopupCountdown
+          key={`${achievement.apiName}-${achievement.unlockTime ?? ''}-${countdownMs}`}
+          durationMs={countdownMs}
+          color={accentColor}
+          style={{ insetInline: '1rem', insetBlockEnd: '0.3rem', blockSize: '3px' }}
+        />
+      )}
     </div>
   )
 }

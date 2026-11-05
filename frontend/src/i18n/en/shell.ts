@@ -80,6 +80,7 @@ const shell = {
       auto: 'Automatic check: {{interval}}',
       seeIcon: 'The update icon at the top right shows the details.',
       settingsHint: 'How often PlatinVault looks by itself is set under Settings → System → Updates.',
+      whatsNew: 'What’s new in this version',
     },
   },
   madeWith: {
@@ -138,6 +139,7 @@ const shell = {
   // The release notes dialog (components/updates/ReleaseNotesDialog.tsx)
   releaseNotes: {
     title: 'What’s new',
+    introTitle: 'What’s new in {{version}}',
     titleLabel: 'Release notes {{version}}',
     betaPill: 'Beta',
     published: 'published {{date}}',

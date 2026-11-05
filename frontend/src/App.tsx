@@ -7,6 +7,7 @@ import type { LiveAchievementItemDto, NotificationPosition } from './api/types'
 import { ErrorBoundary } from './components/errors/ErrorBoundary'
 import { FullscreenAchievement } from './components/FullscreenAchievement'
 import { PlatinumCelebration } from './components/PlatinumCelebration'
+import { WhatsNewGate } from './components/updates/WhatsNewGate'
 import { TrophyNotification } from './components/TrophyNotification'
 import { LanguageGate } from './components/onboarding/LanguageGate'
 import { AiChoiceProvider } from './components/ai/AiChoice'
@@ -142,6 +143,7 @@ function GlobalLiveOverlayBridge() {
         achievement={fullscreen && showHere ? activeNotification : null}
         gameName={fullscreenGameName}
         onDismiss={() => animationQueue.dismissAchievement()}
+        visibleMs={visibleMs}
       />
       <PlatinumCelebration
         data={showHere ? activePlatinum : null}
@@ -189,6 +191,8 @@ export function App() {
           <LanguageGate>
             {/* Starts games (Play) and shows what happens as floating notices, on every page */}
             <LaunchProvider>
+            {/* After an update: the notes of the new version, once (waits for the first-start tour) */}
+            <WhatsNewGate />
             <BrowserRouter>
               <GameStartSwitchBridge />
               <Routes>

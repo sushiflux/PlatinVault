@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useWhatsNewOpen } from '../updates/whatsNewState'
 
 // Fired when the seen-flags were cleared (Settings > System), so a page can show its hints again right away
 export const HINTS_RESET_EVENT = 'pv-hints-reset'
@@ -97,7 +98,10 @@ export function findHintTargets(screen: HintScreen): HintDefinition[] {
  * again on their own afterwards; `show` (the "?" button) brings them back on demand. `suspended` keeps them away
  * while something else owns the screen (intro tour, settings, dialogs).
  */
-export function useScreenHints(screen: HintScreen, suspended: boolean) {
+export function useScreenHints(screen: HintScreen, suspendedByPage: boolean) {
+  // The "What's new" window after an update comes first; the hints follow once it is closed
+  const whatsNewOpen = useWhatsNewOpen()
+  const suspended = suspendedByPage || whatsNewOpen
   const [open, setOpen] = useState(false)
   // Bumped when the seen-flags are cleared, so the first-visit check below runs again
   const [resetTick, setResetTick] = useState(0)

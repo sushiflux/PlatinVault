@@ -256,6 +256,8 @@ if ($Stage -in @('all', 'app')) {
     $utf8 = New-Object System.Text.UTF8Encoding($false)
     Copy-Item -LiteralPath (Join-Path $root 'LICENSE') -Destination (Join-Path $app 'docs\LICENSE')
     Copy-Item -LiteralPath (Join-Path $root 'THIRD-PARTY-NOTICES.md') -Destination (Join-Path $app 'docs\THIRD-PARTY-NOTICES.md')
+    # The customer changelog: the "What's new" window after an update reads the entry of the running version from it (works offline)
+    Copy-Item -LiteralPath (Join-Path $root 'CHANGELOG.md') -Destination (Join-Path $app 'docs\CHANGELOG.md')
     # version.txt keeps the two plain lines (version, build id); the program turns them into the readable form with the channel
     [IO.File]::WriteAllText((Join-Path $app 'version.txt'), "$short`n$detail", $utf8)
     [IO.File]::WriteAllText((Join-Path $app 'release-channel.txt'), $channel, $utf8)

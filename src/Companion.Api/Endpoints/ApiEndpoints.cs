@@ -373,6 +373,7 @@ public static class ApiEndpoints
         api.MapShowcase();
         api.MapLaunch();
         api.MapUpdates();
+        api.MapWhatsNew();
         api.MapDesktop();
         api.MapPins();
 

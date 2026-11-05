@@ -80,6 +80,7 @@ const shell = {
       auto: 'Automatische Suche: {{interval}}',
       seeIcon: 'Das Update-Symbol oben rechts zeigt Einzelheiten.',
       settingsHint: 'Wie oft PlatinVault von selbst sucht, stellst du unter Einstellungen → System → Updates ein.',
+      whatsNew: 'Das ist neu in dieser Version',
     },
   },
   // The heart is a component: <heart/> marks its place
@@ -139,6 +140,8 @@ const shell = {
   // The release notes dialog (components/updates/ReleaseNotesDialog.tsx)
   releaseNotes: {
     title: 'Das ist neu',
+    // The window that opens by itself after an update (updates/WhatsNewGate.tsx)
+    introTitle: 'Das ist neu in {{version}}',
     titleLabel: 'Release-Notizen {{version}}',
     betaPill: 'Beta',
     published: 'veröffentlicht am {{date}}',

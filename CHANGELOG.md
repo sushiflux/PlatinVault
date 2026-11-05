@@ -7,6 +7,22 @@
 <a name="english"></a>
 ## English
 
+## v2026.11.19 (3.1601 β)
+
+### ✨ New
+
+- **"What's new" after an update:** on the first start after an update, PlatinVault shows what is new in the version you
+  now run – in your language, sorted into New, Changed, Fixed and more. One click closes it, and it does not come back for
+  that version. You can open it again any time with "What's new in this version" in the version box at the bottom of the
+  start page or in the chapter bar. The notes come with PlatinVault itself, so this works offline too.
+- **Countdown on trophy pop-ups:** a thin bar in the trophy's colour runs down while a pop-up is on screen, so you can see
+  how long it stays – in the app, in full screen and in the overlay over your game.
+- **Unlock time in the pop-up:** the trophy pop-up now shows the date and time the achievement was unlocked.
+
+### 🔧 Fix
+
+- **Steam account box on the start page:** its bottom border no longer disappears when the mouse is over it.
+
 ## v2026.11.18 (9.7263 β) · Unraid, Windows
 
 ### ✨ New
@@ -170,6 +186,23 @@ free and open source.
 
 <a name="deutsch"></a>
 ## Deutsch
+
+## v2026.11.19 (3.1601 β)
+
+### ✨ Neu
+
+- **„Das ist neu“ nach einem Update:** Beim ersten Start nach einem Update zeigt PlatinVault, was in der Version neu ist, die
+  jetzt läuft – in deiner Sprache, sortiert nach Neu, Geändert, Behoben und mehr. Ein Klick schließt das Fenster, für diese
+  Version kommt es nicht wieder. Jederzeit erneut öffnen kannst du es mit „Das ist neu in dieser Version“ im Versions-Kasten
+  unten auf der Startseite oder in der Kapitelleiste. Die Notizen werden mit PlatinVault mitgeliefert, das klappt also auch
+  ohne Internet.
+- **Restzeit bei Trophäen-Popups:** Ein dünner Balken in der Farbe der Trophäe läuft ab, solange ein Popup zu sehen ist – so
+  siehst du, wie lange es noch bleibt. In der App, im Vollbild und im Overlay über dem Spiel.
+- **Freischaltzeit im Popup:** Das Trophäen-Popup zeigt jetzt Datum und Uhrzeit, zu der der Erfolg freigeschaltet wurde.
+
+### 🔧 Behoben
+
+- **Steam-Konto-Kasten auf der Startseite:** Sein unterer Rand verschwindet nicht mehr, wenn die Maus darüber ist.
 
 ## v2026.11.18 (9.7263 β) · Unraid, Windows
 

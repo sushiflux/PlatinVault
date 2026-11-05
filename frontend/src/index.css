@@ -1148,14 +1148,17 @@ html.pv-vt-reflow::view-transition-new(root) {
   }
 }
 
-/* Link/label area inside a toolbar (Steam account in the dashboard header) */
+/* Link/label area inside a toolbar (Steam account in the dashboard header).
+   It fills the inside of .pv-hchip: that box is 2.5rem tall INCLUDING its 1px border (border-box), so a fixed 2.5rem here was 2px
+   too tall, reached over the bottom border and the hover background painted over it. Stretching keeps it within the border,
+   and the radius is the chip's own minus the border width, so the hover fill follows the inner curve of the border. */
 .pv-chip-link {
   display: inline-flex;
   align-items: center;
+  align-self: stretch;
   gap: 0.55rem;
-  block-size: 2.5rem;
   padding-inline: 0.7rem;
-  border-radius: var(--radius-md);
+  border-radius: calc(var(--radius-md) - 1px);
   text-decoration: none;
   color: inherit;
 }
@@ -1171,6 +1174,22 @@ a.pv-chip-link:hover {
 a.pv-chip-link:focus-visible {
   outline: 2px solid var(--accent-crystal);
   outline-offset: 2px;
+}
+
+/* Time bar of the trophy popups (components/PopupCountdown.tsx): runs from full to nothing in exactly --pv-countdown, linear.
+   Reduced motion is handled by the component itself (it renders without this class and steps down per second). */
+@keyframes pv-popup-countdown {
+  from {
+    transform: scaleX(1);
+  }
+
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.pv-countdown-bar {
+  animation: pv-popup-countdown var(--pv-countdown, 5s) linear both;
 }
 
 /* Phones: a tighter header so the sticky bar does not eat the screen */

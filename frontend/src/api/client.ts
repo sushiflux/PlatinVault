@@ -46,6 +46,7 @@ import type {
   SteamRootCheckResponse,
   UpdateSettingsRequest,
   UpdateStatusDto,
+  WhatsNewDto,
   DesktopFolderKind,
   DesktopFoldersDto,
   InstallUpdateResponse,
@@ -582,6 +583,18 @@ export async function checkForUpdates(): Promise<UpdateStatusDto> {
 export async function installUpdate(tag: string): Promise<InstallUpdateResponse> {
   const res = await fetch('/api/updates/install', { method: 'POST', headers: MUTATION_HEADERS, body: JSON.stringify({ tag }) })
   return handleResponse<InstallUpdateResponse>(res)
+}
+
+// "What's new" after an update: the entry of the running version from the changelog that ships with the product, and the mark that the
+// user has seen it (the server remembers it, so the browser and the Windows program show it once)
+export async function fetchWhatsNew(): Promise<WhatsNewDto> {
+  const res = await fetch('/api/whats-new')
+  return handleResponse<WhatsNewDto>(res)
+}
+
+export async function markWhatsNewSeen(): Promise<void> {
+  const res = await fetch('/api/whats-new/seen', { method: 'POST', headers: MUTATION_HEADERS })
+  return handleResponse<void>(res)
 }
 
 // Windows program only: the folders of the installation, and "open in Explorer" (404 on a server, where there is no such program)

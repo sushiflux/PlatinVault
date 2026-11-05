@@ -3,6 +3,9 @@ import { useCallback, useEffect, useState } from 'react'
 // Fired by the "Restart the introduction" button in the settings (System tab)
 export const START_TOUR_EVENT = 'pv-start-tour'
 
+// Fired when the tour was finished or skipped, for whoever waits until the introduction is over ("What's new" after an update)
+export const TOUR_DONE_EVENT = 'pv-tour-done'
+
 // Per-browser flag: set once the tour was finished or skipped (the "_v1" lets a future, bigger tour show up again).
 const STORAGE_KEY = 'pv_onboarding_done_v1'
 
@@ -43,8 +46,21 @@ export function useOnboardingTour() {
   }, [start])
   const finish = useCallback(() => {
     markDone()
+    window.dispatchEvent(new Event(TOUR_DONE_EVENT))
     setOpen(false)
   }, [])
 
   return { open, start, finish }
+}
+
+
+/** True once the first-start tour was finished or skipped in this browser; follows the tour while it is running. */
+export function useOnboardingDone(): boolean {
+  const [done, setDone] = useState<boolean>(() => isDone())
+  useEffect(() => {
+    const onDone = () => setDone(true)
+    window.addEventListener(TOUR_DONE_EVENT, onDone)
+    return () => window.removeEventListener(TOUR_DONE_EVENT, onDone)
+  }, [])
+  return done
 }

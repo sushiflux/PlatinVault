@@ -111,9 +111,11 @@ interface DialogProps {
   release: UpdateReleaseDto
   onClose: () => void
   restoreFocusRef?: RefObject<HTMLElement | null>
+  // The window that opens by itself after an update: titled "What's new in <version>" (the version moves into the title)
+  intro?: boolean
 }
 
-function NotesDialog({ release, onClose, restoreFocusRef }: DialogProps) {
+function NotesDialog({ release, onClose, restoreFocusRef, intro = false }: DialogProps) {
   const { t } = useTranslation('shell')
   const format = useFormat()
   const reduce = useReducedMotion() ?? false
@@ -210,12 +212,14 @@ function NotesDialog({ release, onClose, restoreFocusRef }: DialogProps) {
           </span>
           <div className="min-w-0 flex-1">
             <h2 id={titleId} className="pv-notes-title">
-              {t('releaseNotes.title')}
+              {intro ? t('releaseNotes.introTitle', { version: release.display }) : t('releaseNotes.title')}
             </h2>
             <div className="pv-notes-meta">
-              <span className="font-mono font-bold" style={{ color: 'var(--text-primary)' }} data-testid="release-notes-version">
-                {release.display}
-              </span>
+              {!intro && (
+                <span className="font-mono font-bold" style={{ color: 'var(--text-primary)' }} data-testid="release-notes-version">
+                  {release.display}
+                </span>
+              )}
               {release.isBeta && <span className="pv-notes-pill">{t('releaseNotes.betaPill')}</span>}
               {published && <span>{t('releaseNotes.published', { date: published })}</span>}
               {parsed?.platforms && <span>{t('releaseNotes.platforms', { platforms: parsed.platforms })}</span>}
@@ -285,13 +289,16 @@ export function ReleaseNotesViewer({
   release,
   onClose,
   restoreFocusRef,
+  intro = false,
 }: {
   release: UpdateReleaseDto | null
   onClose: () => void
   restoreFocusRef?: RefObject<HTMLElement | null>
+  // The window that opens by itself after an update: titled "What's new in <version>" (the version moves into the title)
+  intro?: boolean
 }) {
   return createPortal(
-    <AnimatePresence>{release && <NotesDialog key={release.tag} release={release} onClose={onClose} restoreFocusRef={restoreFocusRef} />}</AnimatePresence>,
+    <AnimatePresence>{release && <NotesDialog key={release.tag} release={release} onClose={onClose} restoreFocusRef={restoreFocusRef} intro={intro} />}</AnimatePresence>,
     document.body
   )
 }

@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { IconDeviceGamepad2 } from '@tabler/icons-react'
+import { IconClock, IconDeviceGamepad2 } from '@tabler/icons-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import type { LiveAchievementItemDto, RarityTier } from '../api/types'
 import { useFormat } from '../i18n/format'
 import { useMediaQuery } from '../utils/useMediaQuery'
+import { useUnlockStamp } from '../utils/unlockStamp'
+import { PopupCountdown } from './PopupCountdown'
 import { TierTrophy, tierGlow } from './platinum/TierTrophy'
 
 // The "Vollbild" popup position: for a few seconds the whole window belongs to the achievement that was just unlocked.
@@ -23,6 +25,9 @@ interface FullscreenAchievementProps {
   onDismiss: () => void
   // False in the in-game overlay of the Windows program: its window lets every click through to the game, so the hint is left out
   dismissHint?: boolean
+  // How long the popup stays in total: draws the thin time bar along the bottom edge of the window that runs out in exactly that
+  // time. Not given = no bar.
+  visibleMs?: number
 }
 
 const EASE = [0.22, 1, 0.36, 1] as const
@@ -81,9 +86,13 @@ const SIZES = {
   },
 } as const satisfies Record<string, { stage: CSSProperties; text: CSSProperties } & Record<string, unknown>>
 
-export function FullscreenAchievement({ achievement, gameName, onDismiss, dismissHint = true }: FullscreenAchievementProps) {
+export function FullscreenAchievement({ achievement, gameName, onDismiss, dismissHint = true, visibleMs }: FullscreenAchievementProps) {
   const { t } = useTranslation(['live', 'stats'])
   const fmt = useFormat()
+  const unlockStamp = useUnlockStamp()
+  // Date and time of the unlock; '' without a (usable) time. There is no reserved line here: the stage is one composed moment that
+  // fades in as a whole, nothing below it can shift when a line is missing.
+  const stamp = achievement ? unlockStamp(achievement) : ''
   const reduce = useReducedMotion() ?? false
   const portrait = useMediaQuery('(orientation: portrait)')
   const size = portrait ? SIZES.portrait : SIZES.landscape
@@ -132,7 +141,13 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
 
   const TEXT_AT = 0.55
   const announcement = achievement
-    ? [t('live:fullscreen.unlocked', { tier: tierName }), achievement.displayName, achievement.description, rarity]
+    ? [
+        t('live:fullscreen.unlocked', { tier: tierName }),
+        achievement.displayName,
+        achievement.description,
+        rarity,
+        stamp ? t('live:trophy.unlockedOn', { date: stamp }) : '',
+      ]
         .filter(Boolean)
         // A sentence of its own each; no second full stop after a text that already ends with one
         .map((part) => (/[.!?…]$/.test(part) ? part : `${part}.`))
@@ -282,6 +297,18 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
                   </motion.p>
                 )}
 
+                {stamp && (
+                  <motion.div
+                    className="flex min-w-0 max-w-full items-center font-medium tabular-nums text-slate-300"
+                    data-unlock-stamp=""
+                    style={{ marginTop: 'clamp(0.6rem, 1.8vh, 1.75rem)', gap: '0.5em', fontSize: size.game }}
+                    {...rise(TEXT_AT + 0.45)}
+                  >
+                    <IconClock size="1.35em" aria-hidden="true" style={{ flexShrink: 0, color: tone }} />
+                    <span className="min-w-0">{stamp}</span>
+                  </motion.div>
+                )}
+
                 {gameName && (
                   <motion.div
                     className="flex min-w-0 max-w-full items-center font-semibold uppercase text-slate-300"
@@ -301,6 +328,16 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
                 )}
               </div>
             </motion.div>
+
+            {/* The time bar along the bottom edge of the window; out of the flow, runs out when the popup is removed */}
+            {visibleMs !== undefined && (
+              <PopupCountdown
+                key={`${achievement.apiName}-${achievement.unlockTime ?? ''}-${visibleMs}`}
+                durationMs={visibleMs}
+                color={edge}
+                style={{ insetInline: 0, insetBlockEnd: 0, blockSize: 'clamp(3px, 0.45vh, 6px)', borderRadius: 0 }}
+              />
+            )}
 
             {/* How to leave early; out of the flow, and left out on very short windows and in the click-through overlay */}
             {dismissHint && (

@@ -153,6 +153,8 @@ public static class CompanionHost
         builder.Services.AddSingleton<BridgeCommandQueue>();
         builder.Services.AddSingleton<HandbookFiles>();
         builder.Services.AddSingleton<LicenseFiles>();
+        // TryAdd: a host or a test that registered its own (e.g. another folder) before the server's registrations keeps it
+        builder.Services.TryAddSingleton<ChangelogFiles>();
         builder.Services.AddSingleton<LibraryStatsService>();
         builder.Services.AddSingleton<SteamLocalLibraryService>();
         builder.Services.AddSingleton<LibraryMetaService>();
