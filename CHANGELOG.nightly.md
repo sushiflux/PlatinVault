@@ -7,6 +7,13 @@
 <a name="english"></a>
 ## English
 
+## v2026.11.21 (8.105 α)
+
+### 🔄 Changed
+
+- **Calmer, smoother full-screen trophy pop-ups:** the full-screen trophy overlay now glides in more swiftly and harmoniously (~1.2 s) so that the finished trophy remains visible in all its detail for ~3.5 s. Before the chosen display duration runs out, a gentle 450 ms fade-out buffer softly darkens the screen and countdown bar together without clipping or abrupt cuts.
+- **Hardware-accelerated exit animations:** outer backdrop blur and inner trophy stage now share synchronized easing curves and compositing hints, eliminating GPU stutter during the fade-out on high-refresh and 4K displays.
+
 ## v2026.11.20 (10.1884 α)
 
 ### ✨ New
@@ -33,6 +40,13 @@
 
 <a name="deutsch"></a>
 ## Deutsch
+
+## v2026.11.21 (8.105 α)
+
+### 🔄 Geändert
+
+- **Ruhigere, geschmeidigere Vollbild-Trophäen-Popups:** Das Vollbild-Overlay fließt jetzt zügiger und harmonischer ein (~1,2 s), sodass die fertige Trophäe rund 3,5 Sekunden in voller Ruhe betrachtet werden kann. 450 ms vor Ablauf der eingestellten Anzeigedauer blendet ein sanfter Ausblend-Puffer das Overlay samt Zeitbalken weich aus – ohne harte Kanten oder plötzliche Abbrüche.
+- **Hardwarebeschleunigte Ausblend-Animation:** Außenrahmen mit Backdrop-Blur und Innenbühne nutzen synchrone Easing-Kurven und GPU-Hinweise (`willChange: 'opacity'`), wodurch das Ausblenden auch auf Bildschirmen mit hoher Bildwiederholrate butterweich und ruckelfrei abläuft.
 
 ## v2026.11.20 (10.1884 α)
 

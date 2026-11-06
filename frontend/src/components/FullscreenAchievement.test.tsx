@@ -130,4 +130,30 @@ describe('FullscreenAchievement', () => {
     )
     expect(container.querySelector('[data-fullscreen-achievement]')?.getAttribute('data-tier')).toBe('Gold')
   })
+
+  it('initiates the gentle exit fade buffer before the duration expires', () => {
+    vi.useFakeTimers()
+    try {
+      const { container } = render(
+        <FullscreenAchievement achievement={achievement()} visibleMs={5000} onDismiss={() => {}} />
+      )
+      const overlay = container.querySelector('[data-fullscreen-achievement]')
+      expect(overlay).not.toBeNull()
+      expect(overlay?.hasAttribute('data-closing')).toBe(false)
+
+      // Advance by 4540ms (before the 450ms buffer at 4550ms)
+      act(() => {
+        vi.advanceTimersByTime(4540)
+      })
+      expect(overlay?.hasAttribute('data-closing')).toBe(false)
+
+      // Cross the 4550ms threshold
+      act(() => {
+        vi.advanceTimersByTime(20)
+      })
+      expect(overlay?.hasAttribute('data-closing')).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })

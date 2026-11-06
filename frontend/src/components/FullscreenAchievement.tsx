@@ -35,6 +35,10 @@ const EASE = [0.22, 1, 0.36, 1] as const
 // Under the platinum moment (z 9999) and the card popup (9998): the 100 % celebration stays the biggest thing on screen
 const Z_INDEX = 9996
 
+// The fade-out buffer before the queue unmounts the achievement; finished when visibleMs expires
+const FULLSCREEN_EXIT_MS = 450
+const FULLSCREEN_EXIT_SECONDS = FULLSCREEN_EXIT_MS / 1000
+
 // Colour of the tier for lines of text. Lighter than the tier's border colour so that small text keeps its contrast on the stage
 // (the Bronze border colour #d97706 only reaches about 4.5:1 there).
 const TIER_TEXT: Record<RarityTier, string> = {
@@ -97,6 +101,24 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
   const portrait = useMediaQuery('(orientation: portrait)')
   const size = portrait ? SIZES.portrait : SIZES.landscape
 
+  const [closing, setClosing] = useState(false)
+
+  // Start the soft fade-out buffer slightly before the total duration runs out,
+  // matching TrophyNotification's CARD_EXIT_MS pattern.
+  useEffect(() => {
+    if (!achievement) {
+      setClosing(false)
+      return
+    }
+    setClosing(false)
+    if (visibleMs && visibleMs > FULLSCREEN_EXIT_MS) {
+      const timer = setTimeout(() => {
+        setClosing(true)
+      }, visibleMs - FULLSCREEN_EXIT_MS)
+      return () => clearTimeout(timer)
+    }
+  }, [achievement, visibleMs])
+
   // The parent passes a fresh callback on every render; keep the latest one without re-subscribing the key handler
   const onDismissRef = useRef(onDismiss)
   useEffect(() => {
@@ -136,10 +158,10 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
   const rise = (delay: number, distance = 14) => ({
     initial: { opacity: 0, y: reduce ? 0 : distance },
     animate: { opacity: 1, y: 0 },
-    transition: { duration: reduce ? 0.35 : 0.6, delay: reduce ? 0.15 : delay, ease: EASE },
+    transition: { duration: reduce ? 0.35 : 0.5, delay: reduce ? 0.1 : delay, ease: EASE },
   })
 
-  const TEXT_AT = 0.55
+  const TEXT_AT = 0.3
   const announcement = achievement
     ? [
         t('live:fullscreen.unlocked', { tier: tierName }),
@@ -167,15 +189,21 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
             key={`${achievement.apiName}-${achievement.unlockTime ?? ''}`}
             data-fullscreen-achievement=""
             data-tier={tier}
+            data-closing={closing ? '' : undefined}
             onClick={onDismiss}
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ opacity: closing ? 0 : 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: reduce ? 0.3 : 0.5, ease: 'easeOut' }}
+            transition={{
+              duration: closing ? FULLSCREEN_EXIT_SECONDS : reduce ? 0.3 : 0.45,
+              ease: EASE,
+            }}
             className="fixed inset-0 flex cursor-pointer select-none items-center justify-center overflow-hidden outline-none"
             style={{
               zIndex: Z_INDEX,
               padding: 'max(1.25rem, 5vmin)',
+              pointerEvents: closing ? 'none' : undefined,
+              willChange: 'opacity',
               // Dark in both themes: a tier-coloured glow in the middle, a vignette at the edges, the page softly blurred beneath
               background: `radial-gradient(ellipse 62% 56% at 50% 46%, ${glow}2e, rgba(2, 6, 23, 0) 72%), radial-gradient(ellipse 120% 100% at 50% 50%, rgba(2, 6, 23, 0) 45%, rgba(2, 6, 23, 0.55) 100%), rgba(2, 6, 23, 0.86)`,
               backdropFilter: 'blur(14px) saturate(1.1)',
@@ -185,23 +213,24 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
             <motion.div
               className="relative flex w-full items-center justify-center"
               style={{ ...size.stage, margin: '0 auto' }}
-              exit={reduce ? undefined : { opacity: 0, scale: 0.97 }}
-              transition={{ duration: 0.4, ease: 'easeIn' }}
+              animate={closing && !reduce ? { opacity: 0, scale: 0.98 } : { opacity: 1, scale: 1 }}
+              exit={reduce ? undefined : { opacity: 0, scale: 0.98 }}
+              transition={{ duration: reduce ? 0.3 : 0.45, ease: EASE }}
             >
               {/* Trophy: rises out of the dark on a spring, with a soft glow and one ring that spreads once it is complete */}
               <motion.div
                 className="relative shrink-0"
                 style={{ width: size.trophy, aspectRatio: '48 / 54' }}
-                initial={{ opacity: 0, scale: reduce ? 1 : 0.8, y: reduce ? 0 : 28 }}
+                initial={{ opacity: 0, scale: reduce ? 1 : 0.82, y: reduce ? 0 : 22 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                transition={reduce ? { duration: 0.4 } : { type: 'spring', stiffness: 150, damping: 17, delay: 0.1 }}
+                transition={reduce ? { duration: 0.35 } : { type: 'spring', stiffness: 160, damping: 20, delay: 0.08 }}
               >
                 <motion.span
                   className="pointer-events-none absolute rounded-full"
                   style={{ inset: '-38%', background: `radial-gradient(circle, ${glow}66, ${glow}1a 46%, transparent 70%)` }}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ duration: reduce ? 0.4 : 1.2, delay: reduce ? 0.1 : 0.25 }}
+                  transition={{ duration: reduce ? 0.35 : 0.9, delay: reduce ? 0.1 : 0.18 }}
                   aria-hidden="true"
                 />
                 {!reduce && (
@@ -211,7 +240,7 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
                       style={{ width: '112%', border: `2px solid ${edge}` }}
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: [0, 0.55, 0], scale: [0.8, 1.55, 1.9] }}
-                      transition={{ duration: 1.5, delay: 1.0, times: [0, 0.25, 1], ease: 'easeOut' }}
+                      transition={{ duration: 1.2, delay: 0.65, times: [0, 0.25, 1], ease: 'easeOut' }}
                     />
                   </span>
                 )}
@@ -219,8 +248,8 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
                   tier={tier}
                   reveal
                   calm={reduce}
-                  delay={0.3}
-                  speed={0.85}
+                  delay={0.2}
+                  speed={0.95}
                   burstRadius={150}
                   className="relative h-full w-full"
                   style={{ filter: `drop-shadow(0 0 28px ${glow}80) drop-shadow(0 14px 22px rgba(2, 6, 23, 0.6))` }}
@@ -261,7 +290,7 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
                     overflowWrap: 'anywhere',
                     textShadow: '0 4px 28px rgba(2, 6, 23, 0.7)',
                   }}
-                  {...rise(TEXT_AT + 0.12, 18)}
+                  {...rise(TEXT_AT + 0.08, 16)}
                 >
                   {achievement.displayName}
                 </motion.h1>
@@ -277,7 +306,7 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
                   }}
                   initial={{ opacity: 0, scaleX: reduce ? 1 : 0 }}
                   animate={{ opacity: 1, scaleX: 1 }}
-                  transition={{ duration: reduce ? 0.35 : 0.6, delay: reduce ? 0.15 : TEXT_AT + 0.3, ease: EASE }}
+                  transition={{ duration: reduce ? 0.3 : 0.45, delay: reduce ? 0.1 : TEXT_AT + 0.18, ease: EASE }}
                   aria-hidden="true"
                 />
 
@@ -291,7 +320,7 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
                       textWrap: 'pretty',
                       overflowWrap: 'anywhere',
                     }}
-                    {...rise(TEXT_AT + 0.35)}
+                    {...rise(TEXT_AT + 0.24)}
                   >
                     {achievement.description}
                   </motion.p>
@@ -302,7 +331,7 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
                     className="flex min-w-0 max-w-full items-center font-medium tabular-nums text-slate-300"
                     data-unlock-stamp=""
                     style={{ marginTop: 'clamp(0.6rem, 1.8vh, 1.75rem)', gap: '0.5em', fontSize: size.game }}
-                    {...rise(TEXT_AT + 0.45)}
+                    {...rise(TEXT_AT + 0.30)}
                   >
                     <IconClock size="1.35em" aria-hidden="true" style={{ flexShrink: 0, color: tone }} />
                     <span className="min-w-0">{stamp}</span>
@@ -318,7 +347,7 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
                       fontSize: size.game,
                       letterSpacing: '0.14em',
                     }}
-                    {...rise(TEXT_AT + 0.5)}
+                    {...rise(TEXT_AT + 0.36)}
                   >
                     <IconDeviceGamepad2 size="1.35em" aria-hidden="true" style={{ flexShrink: 0, color: tone }} />
                     <span className="min-w-0" style={{ overflowWrap: 'anywhere' }}>
@@ -346,7 +375,7 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
               style={{ bottom: 'max(0.9rem, 2.6vh)' }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: reduce ? 0.4 : 1.8 }}
+              transition={{ duration: 0.5, delay: reduce ? 0.3 : 0.9 }}
             >
               {t('live:fullscreen.dismiss')}
             </motion.p>
