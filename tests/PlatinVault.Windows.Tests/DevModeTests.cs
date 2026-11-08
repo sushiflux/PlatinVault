@@ -194,7 +194,7 @@ public sealed class DevEnvironmentTests
     {
         using var temp = new TempFolder();
         var env = DesktopEnvironment.Create(DesktopOptions.Parse(["--dev", FakeRepo(temp, "v2026.11.5\nv2026.11.5.9.321")]));
-        Assert.Equal("v2026.11.5 (9.321-dev)", env.Version);
+        Assert.Equal("v2026.11.5.9.321 (</>)", env.Version);
         Assert.Equal("v2026.11.5.9.321-dev", env.VersionTag);
     }
 
@@ -227,10 +227,10 @@ public sealed class DevEnvironmentTests
     }
 
     [Theory]
-    [InlineData("dev", true, "dev", "v2026.11.12 (13.557-dev)", "v2026.11.12.13.557-dev")]
-    [InlineData("nightly", false, "nightly", "v2026.11.12 (13.557 α)", "v2026.11.12.13.557-nightly")]
-    [InlineData("beta", false, "beta", "v2026.11.12 (13.557 β)", "v2026.11.12.13.557-beta")]
-    [InlineData("release", false, "release", "v2026.11.12 (13.557)", "v2026.11.12")]
+    [InlineData("dev", true, "dev", "v2026.11.12.13.557 (</>)", "v2026.11.12.13.557-dev")]
+    [InlineData("nightly", false, "nightly", "v2026.11.12.13.557 (α)", "v2026.11.12.13.557-nightly")]
+    [InlineData("beta", false, "beta", "v2026.11.12.13.557 (β)", "v2026.11.12.13.557-beta")]
+    [InlineData("release", false, "release", "v2026.11.12.13.557", "v2026.11.12")]
     public void An_installed_dev_build_never_checks_for_updates_a_beta_or_release_does(string channelFile, bool dev, string channel, string display, string tag)
     {
         using var temp = new TempFolder();

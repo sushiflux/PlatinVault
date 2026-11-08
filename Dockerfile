@@ -65,8 +65,8 @@ RUN dotnet publish src/PlatinVault.Bridge.Linux/PlatinVault.Bridge.Linux.csproj 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 ARG APP_VERSION=v0.0.0
 # Version of the tagged commit (line 1 of the repository's version.txt), its five-segment build id (line 2) and the channel. The app
-# writes them for people as "v2026.11.12 (13.557 β)" for "beta", "v2026.11.12 (13.557-dev)" for "dev" (a Dev-Build: the user's own test
-# image, ASPNETCORE_ENVIRONMENT stays Production) and "v2026.11.12 (13.557)" for "release" (VersionFormat.cs)
+# writes them for people as "v2026.11.12.13.557 (β)" for "beta", "v2026.11.12.13.557 (α)" for "nightly" and "v2026.11.12.13.557" for
+# "release" (VersionFormat.cs). Dev is never built into an image.
 ARG APP_VERSION_DETAIL=
 ARG APP_CHANNEL=release
 WORKDIR /app

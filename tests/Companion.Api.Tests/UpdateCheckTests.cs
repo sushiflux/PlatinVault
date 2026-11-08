@@ -81,66 +81,224 @@ public sealed class UpdateCheckTests
         Assert.Null(feed[1].Installer);
     }
 
+    // A tag the regular expression accepts but the number parser cannot read used to throw: one such release took down the whole check
+    [Theory]
+    [InlineData("v2026.11.99999999999")]
+    [InlineData("v2026.11.12-rc99999999999")]
+    [InlineData("v٢٠٢٦.11.12")]
+    public void A_tag_with_an_unusable_number_is_skipped_and_the_rest_of_the_list_stays(string tag)
+    {
+        Assert.Null(ReleaseVersion.Parse(tag));
+        var feed = ReleaseFeed.Parse(Releases(Release(tag), Release("v2026.11.30")));
+        Assert.Equal("v2026.11.30", feed.Single().Version.Text);
+    }
+
+    [Fact]
+    public void Asset_entries_that_are_not_objects_are_skipped()
+    {
+        var feed = ReleaseFeed.Parse(Releases(new { tag_name = "v2026.11.30", prerelease = false, assets = new object[] { 1, "x" } }));
+        Assert.Null(feed.Single().Installer);
+    }
+
+    // The asset name becomes a file name in the updates folder and part of the commands shown for the Linux package
+    [Theory]
+    [InlineData("PlatinVault-Setup-..\\..\\evil.exe")]
+    [InlineData("PlatinVault-Setup-a/../../evil.exe")]
+    [InlineData("PlatinVault-Setup-x:evil.exe")]
+    public void An_installer_whose_asset_name_is_not_a_plain_file_name_is_ignored(string name)
+    {
+        var feed = ReleaseFeed.Parse(Releases(new
+        {
+            tag_name = "v2026.11.30",
+            prerelease = false,
+            assets = new object[]
+            {
+                new { name, browser_download_url = "https://github.com/sushiflux/PlatinVault/releases/download/v2026.11.30/a.exe" },
+                new { name = name + ".sha256", browser_download_url = "https://github.com/sushiflux/PlatinVault/releases/download/v2026.11.30/a.sha256" },
+            },
+        }));
+        Assert.Null(feed.Single().Installer);
+    }
+
+    [Theory]
+    [InlineData("PlatinVault-linux-x64-$(touch x);id.tar.gz")]
+    [InlineData("PlatinVault-linux-x64-a b.tar.gz")]
+    public void A_linux_package_whose_asset_name_is_not_a_plain_file_name_is_ignored(string name)
+    {
+        var feed = ReleaseFeed.Parse(Releases(new
+        {
+            tag_name = "v2026.11.30",
+            prerelease = false,
+            assets = new object[]
+            {
+                new { name, browser_download_url = "https://github.com/sushiflux/PlatinVault/releases/download/v2026.11.30/a.tar.gz" },
+                new { name = name + ".sha256", browser_download_url = "https://github.com/sushiflux/PlatinVault/releases/download/v2026.11.30/a.sha256" },
+            },
+        }));
+        Assert.Null(feed.Single().LinuxPackage);
+    }
+
     [Fact]
     public void A_release_tag_marked_as_pre_release_on_github_counts_as_beta()
     {
         var feed = ReleaseFeed.Parse(Releases(Release("v2026.11.12", prerelease: true)));
         Assert.True(feed.Single().IsPreRelease);
-        Assert.Null(ReleaseFeed.PickUpdate(feed, ReleaseVersion.Parse("v2026.11.9")!.Value, includeBetas: false));
+        Assert.Null(ReleaseFeed.PickUpdate(feed, ReleaseVersion.Parse("v2026.11.9")!.Value, UpdateChannel.None));
     }
 
+    // A feed with all three kinds, newest first: nightly (.15) > beta (.14) > release (.13) > older beta (.12) > older release (.11)
+    private static ReleaseListResult ThreeKindFeed() => List(
+        Release("v2026.11.15.1.10-nightly", prerelease: true),
+        Release("v2026.11.14.2.30-beta", prerelease: true),
+        Release("v2026.11.13"),
+        Release("v2026.11.12.13.557-beta", prerelease: true),
+        Release("v2026.11.11"));
+
     [Fact]
-    public void Off_offers_only_releases_on_offers_the_newest_of_both()
+    public void Each_channel_offers_only_what_it_receives_from_a_feed_with_all_three_kinds()
     {
-        var list = List(
-            Release("v2026.11.15.1.10-nightly", prerelease: true),
-            Release("v2026.11.14.2.30-beta", prerelease: true),
-            Release("v2026.11.13"),
-            Release("v2026.11.12.13.557-beta", prerelease: true));
-        var running = Running("v2026.11.12", VersionKind.Release);
+        var running = Running("v2026.11.10", VersionKind.Release);
 
-        var off = UpdateStatusBuilder.Build(running, list, betaEnabled: false, desktopHost: false, desktopCanInstall: false);
-        Assert.Equal(UpdateState.Available, off.State);
-        Assert.Equal("v2026.11.13", off.Available!.Version.Text);
+        // none: full releases only
+        var none = UpdateStatusBuilder.Build(running, ThreeKindFeed(), UpdateChannel.None, desktopHost: false, desktopCanInstall: false);
+        Assert.Equal(UpdateState.Available, none.State);
+        Assert.Equal("v2026.11.13", none.Available!.Version.Text);
 
-        var on = UpdateStatusBuilder.Build(running, list, betaEnabled: true, desktopHost: false, desktopCanInstall: false);
-        Assert.Equal("v2026.11.14.2.30-beta", on.Available!.Version.Text);
-        Assert.Equal("v2026.11.13", on.LatestRelease!.Version.Text);
-        Assert.Equal("v2026.11.14.2.30-beta", on.LatestBeta!.Version.Text);
-        Assert.Equal("v2026.11.15.1.10-nightly", on.LatestNightly!.Version.Text);
+        // beta: betas and releases, never the nightly even though it is the newest of all
+        var beta = UpdateStatusBuilder.Build(running, ThreeKindFeed(), UpdateChannel.Beta, desktopHost: false, desktopCanInstall: false);
+        Assert.Equal("v2026.11.14.2.30-beta", beta.Available!.Version.Text);
+        Assert.False(UpdateEndpoints.ToDto(beta).Available!.IsNightly);
+        Assert.True(UpdateEndpoints.ToDto(beta).Available!.IsBeta);
 
-        var nightlyOn = UpdateStatusBuilder.Build(running, list, betaEnabled: true, desktopHost: false, desktopCanInstall: false, nightlyEnabled: true);
-        Assert.Equal("v2026.11.15.1.10-nightly", nightlyOn.Available!.Version.Text);
-        Assert.Equal(DockerAdvice.UseNightly, nightlyOn.Docker);
-        var dto = UpdateEndpoints.ToDto(nightlyOn);
-        Assert.True(dto.NightlyUpdatesEnabled);
-        Assert.True(dto.Available!.IsNightly);
-        Assert.False(dto.Available.IsBeta);
+        // nightly: nightlies and releases, never a beta
+        var nightly = UpdateStatusBuilder.Build(running, ThreeKindFeed(), UpdateChannel.Nightly, desktopHost: false, desktopCanInstall: false);
+        Assert.Equal("v2026.11.15.1.10-nightly", nightly.Available!.Version.Text);
+        var nightlyDto = UpdateEndpoints.ToDto(nightly);
+        Assert.True(nightlyDto.Available!.IsNightly);
+        Assert.False(nightlyDto.Available.IsBeta);
+
+        // the "latest" fields stay informational and do not depend on the channel
+        Assert.Equal("v2026.11.13", beta.LatestRelease!.Version.Text);
+        Assert.Equal("v2026.11.14.2.30-beta", beta.LatestBeta!.Version.Text);
+        Assert.Equal("v2026.11.15.1.10-nightly", beta.LatestNightly!.Version.Text);
     }
 
     [Fact]
-    public void Turning_the_switch_off_on_a_beta_never_downgrades()
+    public void A_nightly_user_is_not_offered_a_beta_even_when_the_beta_is_the_newest_version_there_is()
+    {
+        var feed = List(Release("v2026.11.14.2.30-beta", prerelease: true), Release("v2026.11.13"), Release("v2026.11.12.1.10-nightly", prerelease: true));
+        var running = Running("v2026.11.12", VersionKind.Release);
+        var nightly = UpdateStatusBuilder.Build(running, feed, UpdateChannel.Nightly, desktopHost: false, desktopCanInstall: false);
+        // The release .13 is newer than the running version, the beta .14 is newer still but not in this channel
+        Assert.Equal("v2026.11.13", nightly.Available!.Version.Text);
+        var onlyBeta = UpdateStatusBuilder.Build(Running("v2026.11.13", VersionKind.Release), feed, UpdateChannel.Nightly, desktopHost: false, desktopCanInstall: false);
+        Assert.Equal(UpdateState.UpToDate, onlyBeta.State);
+        Assert.Null(onlyBeta.Available);
+    }
+
+    [Fact]
+    public void A_beta_user_is_not_offered_a_nightly()
+    {
+        var feed = List(Release("v2026.11.14.1.10-nightly", prerelease: true), Release("v2026.11.13"));
+        var status = UpdateStatusBuilder.Build(Running("v2026.11.13", VersionKind.Release), feed, UpdateChannel.Beta, desktopHost: false, desktopCanInstall: false);
+        Assert.Equal(UpdateState.UpToDate, status.State);
+    }
+
+    [Fact]
+    public void The_channel_never_downgrades_and_a_running_version_newer_than_the_channel_stays()
+    {
+        // Running the newest nightly, switching to none or beta: nothing is offered, the nightly stays
+        var runningNightly = Running("v2026.11.15.1.10-nightly", VersionKind.Nightly);
+        foreach (var channel in new[] { UpdateChannel.None, UpdateChannel.Beta })
+        {
+            var status = UpdateStatusBuilder.Build(runningNightly, ThreeKindFeed(), channel, desktopHost: false, desktopCanInstall: false);
+            Assert.Equal(UpdateState.UpToDate, status.State);
+            Assert.Null(status.Available);
+        }
+
+        // Running the newest beta, switching to none or nightly: older release/nightly are not offered
+        var runningBeta = Running("v2026.11.14.2.30-beta", VersionKind.Beta);
+        var older = List(Release("v2026.11.13"), Release("v2026.11.13.1.5-nightly", prerelease: true));
+        foreach (var channel in new[] { UpdateChannel.None, UpdateChannel.Nightly })
+        {
+            Assert.Null(UpdateStatusBuilder.Build(runningBeta, older, channel, desktopHost: false, desktopCanInstall: false).Available);
+        }
+
+        // The same-commit order: release above beta above nightly
+        var sameCommit = List(Release("v2026.11.14"), Release("v2026.11.14.2.30-beta", prerelease: true), Release("v2026.11.14.1.10-nightly", prerelease: true));
+        Assert.Equal("v2026.11.14", UpdateStatusBuilder.Build(Running("v2026.11.14.1.10-nightly", VersionKind.Nightly), sameCommit, UpdateChannel.Nightly, false, false).Available!.Version.Text);
+        Assert.Equal("v2026.11.14.2.30-beta", UpdateStatusBuilder.Build(Running("v2026.11.14.1.10-nightly", VersionKind.Nightly), List(Release("v2026.11.14.2.30-beta", prerelease: true)), UpdateChannel.Beta, false, false).Available!.Version.Text);
+        Assert.Null(UpdateStatusBuilder.Build(Running("v2026.11.14.2.30-beta", VersionKind.Beta), List(Release("v2026.11.14.1.10-nightly", prerelease: true)), UpdateChannel.Nightly, false, false).Available);
+    }
+
+    [Fact]
+    public void The_status_names_the_selected_channel_and_the_image_tag_it_needs()
+    {
+        var running = Running("v2026.11.12", VersionKind.Release);
+        foreach (var (channel, id, tag) in new[]
+                 {
+                     (UpdateChannel.None, "none", "latest"),
+                     (UpdateChannel.Beta, "beta", "beta"),
+                     (UpdateChannel.Nightly, "nightly", "nightly"),
+                 })
+        {
+            var dto = UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(running, ThreeKindFeed(), channel, desktopHost: false, desktopCanInstall: false));
+            Assert.Equal(id, dto.UpdateChannel);
+            Assert.Equal(tag, dto.ImageTag);
+            Assert.Equal("release", dto.CurrentChannel);
+            Assert.Equal("ghcr.io/sushiflux/platinvault", dto.ImageRepository);
+        }
+    }
+
+    [Fact]
+    public void Turning_the_channel_off_on_a_beta_never_downgrades()
     {
         var running = Running("v2026.11.12.13.557-beta", VersionKind.Beta);
-        var waiting = UpdateStatusBuilder.Build(running, List(Release("v2026.11.11")), betaEnabled: false, desktopHost: false, desktopCanInstall: false);
+        var waiting = UpdateStatusBuilder.Build(running, List(Release("v2026.11.11")), UpdateChannel.None, desktopHost: false, desktopCanInstall: false);
         Assert.Equal(UpdateState.UpToDate, waiting.State);
         Assert.Equal(DockerAdvice.BetaStays, waiting.Docker);
 
         // The beta became a release (the same commit, released later): offered, and switching to :latest is safe now
-        var released = UpdateStatusBuilder.Build(running, List(Release("v2026.11.12"), Release("v2026.11.11")), betaEnabled: false, desktopHost: false, desktopCanInstall: false);
+        var released = UpdateStatusBuilder.Build(running, List(Release("v2026.11.12"), Release("v2026.11.11")), UpdateChannel.None, desktopHost: false, desktopCanInstall: false);
         Assert.Equal("v2026.11.12", released.Available!.Version.Text);
         Assert.Equal(DockerAdvice.SwitchToLatest, released.Docker);
     }
 
     [Fact]
-    public void Container_advice_follows_switch_and_running_kind()
+    public void Container_advice_follows_channel_and_running_kind()
     {
         var list = List(Release("v2026.11.13.1.2-beta", prerelease: true), Release("v2026.11.12"));
-        Assert.Equal(DockerAdvice.UseBeta, UpdateStatusBuilder.Build(Running("v2026.11.12", VersionKind.Release), list, true, false, false).Docker);
-        Assert.Equal(DockerAdvice.None, UpdateStatusBuilder.Build(Running("v2026.11.12", VersionKind.Release), list, false, false, false).Docker);
-        Assert.Equal(DockerAdvice.None, UpdateStatusBuilder.Build(Running("v2026.11.13.1.2-beta", VersionKind.Beta), list, true, false, false).Docker);
+        Assert.Equal(DockerAdvice.UseBeta, UpdateStatusBuilder.Build(Running("v2026.11.12", VersionKind.Release), list, UpdateChannel.Beta, false, false).Docker);
+        Assert.Equal(DockerAdvice.None, UpdateStatusBuilder.Build(Running("v2026.11.12", VersionKind.Release), list, UpdateChannel.None, false, false).Docker);
+        Assert.Equal(DockerAdvice.None, UpdateStatusBuilder.Build(Running("v2026.11.13.1.2-beta", VersionKind.Beta), list, UpdateChannel.Beta, false, false).Docker);
+        Assert.Equal(DockerAdvice.UseNightly, UpdateStatusBuilder.Build(Running("v2026.11.12", VersionKind.Release), list, UpdateChannel.Nightly, false, false).Docker);
+        Assert.Equal(DockerAdvice.None, UpdateStatusBuilder.Build(Running("v2026.11.14.1.1-nightly", VersionKind.Nightly), list, UpdateChannel.Nightly, false, false).Docker);
         // The Windows program installs itself: no image advice
-        Assert.Equal(DockerAdvice.None, UpdateStatusBuilder.Build(Running("v2026.11.12", VersionKind.Release), list, true, true, true).Docker);
+        Assert.Equal(DockerAdvice.None, UpdateStatusBuilder.Build(Running("v2026.11.12", VersionKind.Release), list, UpdateChannel.Beta, true, true).Docker);
+    }
+
+    [Fact]
+    public void Container_advice_never_recommends_a_tag_that_would_be_a_downgrade()
+    {
+        // A beta runs (.13); the newest nightly (.12) is older and no release is at least as new: :nightly would downgrade, so stay on :beta
+        var older = List(Release("v2026.11.12.1.1-nightly", prerelease: true), Release("v2026.11.11"));
+        var runningBeta = Running("v2026.11.13.1.2-beta", VersionKind.Beta);
+        Assert.Equal(DockerAdvice.BetaStaysForNightly, UpdateStatusBuilder.Build(runningBeta, older, UpdateChannel.Nightly, false, false).Docker);
+        // A nightly at least as new, or a release at least as new (it reaches :nightly too): the move is safe
+        var caught = List(Release("v2026.11.14.5.5-nightly", prerelease: true));
+        Assert.Equal(DockerAdvice.UseNightly, UpdateStatusBuilder.Build(runningBeta, caught, UpdateChannel.Nightly, false, false).Docker);
+        // A nightly of the SAME commit ranks below the beta, so it is not "at least as new"
+        var sameCommitNightly = List(Release("v2026.11.13.5.5-nightly", prerelease: true));
+        Assert.Equal(DockerAdvice.BetaStaysForNightly, UpdateStatusBuilder.Build(runningBeta, sameCommitNightly, UpdateChannel.Nightly, false, false).Docker);
+        Assert.Equal(DockerAdvice.UseNightly, UpdateStatusBuilder.Build(runningBeta, List(Release("v2026.11.13")), UpdateChannel.Nightly, false, false).Docker);
+
+        // A nightly runs and the Beta channel is chosen: switch to :beta only once a beta or release is at least as new
+        var runningNightly = Running("v2026.11.14.1.1-nightly", VersionKind.Nightly);
+        Assert.Equal(DockerAdvice.NightlyStays, UpdateStatusBuilder.Build(runningNightly, List(Release("v2026.11.13")), UpdateChannel.Beta, false, false).Docker);
+        Assert.Equal(DockerAdvice.SwitchToBeta, UpdateStatusBuilder.Build(runningNightly, List(Release("v2026.11.14.9.9-beta", prerelease: true)), UpdateChannel.Beta, false, false).Docker);
+        Assert.Equal(DockerAdvice.NightlyStays, UpdateStatusBuilder.Build(runningNightly, List(Release("v2026.11.13")), UpdateChannel.None, false, false).Docker);
+        Assert.Equal(DockerAdvice.SwitchToLatest, UpdateStatusBuilder.Build(runningNightly, List(Release("v2026.11.14")), UpdateChannel.None, false, false).Docker);
+        Assert.Equal("betaStaysForNightly", UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(runningBeta, older, UpdateChannel.Nightly, false, false)).DockerAdvice);
     }
 
     [Fact]
@@ -148,12 +306,12 @@ public sealed class UpdateCheckTests
     {
         var list = List(Release("v2026.11.14", installer: false), Release("v2026.11.13"));
         var running = Running("v2026.11.12", VersionKind.Release);
-        var desktop = UpdateStatusBuilder.Build(running, list, false, desktopHost: true, desktopCanInstall: true);
+        var desktop = UpdateStatusBuilder.Build(running, list, UpdateChannel.None, desktopHost: true, desktopCanInstall: true);
         Assert.Equal("v2026.11.13", desktop.Available!.Version.Text);
         Assert.True(desktop.CanInstall);
-        Assert.False(UpdateStatusBuilder.Build(running, list, false, desktopHost: true, desktopCanInstall: false).CanInstall);
+        Assert.False(UpdateStatusBuilder.Build(running, list, UpdateChannel.None, desktopHost: true, desktopCanInstall: false).CanInstall);
         // A container is told about every newer version, installer or not
-        Assert.Equal("v2026.11.14", UpdateStatusBuilder.Build(running, list, false, desktopHost: false, desktopCanInstall: false).Available!.Version.Text);
+        Assert.Equal("v2026.11.14", UpdateStatusBuilder.Build(running, list, UpdateChannel.None, desktopHost: false, desktopCanInstall: false).Available!.Version.Text);
     }
 
     [Fact]
@@ -179,19 +337,19 @@ public sealed class UpdateCheckTests
         // The newest release is an image-only build (for example platform: unraid): the package is not offered it
         var list = List(LinuxRelease("v2026.11.13"), Release("v2026.11.14", installer: false));
         var running = Running("v2026.11.12", VersionKind.Release);
-        var linux = UpdateStatusBuilder.Build(running, list, false, desktopHost: false, desktopCanInstall: false, linuxPackage: true);
+        var linux = UpdateStatusBuilder.Build(running, list, UpdateChannel.None, desktopHost: false, desktopCanInstall: false, linuxPackage: true);
         Assert.True(linux.LinuxPackageHost);
         Assert.Equal("v2026.11.13", linux.Available!.Version.Text);
         Assert.False(linux.CanInstall);
         Assert.Equal(DockerAdvice.None, linux.Docker);
         // With the beta switch on and a running release the container advice would say "use :beta" - not for the package
-        var withBetas = UpdateStatusBuilder.Build(running, List(LinuxRelease("v2026.11.13.1.2-beta", prerelease: true)), true, false, false, linuxPackage: true);
+        var withBetas = UpdateStatusBuilder.Build(running, List(LinuxRelease("v2026.11.13.1.2-beta", prerelease: true)), UpdateChannel.Beta, false, false, linuxPackage: true);
         Assert.Equal(DockerAdvice.None, withBetas.Docker);
         Assert.Equal("v2026.11.13.1.2-beta", withBetas.Available!.Version.Text);
         // Nothing newer with a package: up to date, although a newer image-only release exists
-        var upToDate = UpdateStatusBuilder.Build(Running("v2026.11.13", VersionKind.Release), list, false, false, false, linuxPackage: true);
+        var upToDate = UpdateStatusBuilder.Build(Running("v2026.11.13", VersionKind.Release), list, UpdateChannel.None, false, false, linuxPackage: true);
         Assert.Equal(UpdateState.UpToDate, upToDate.State);
-        Assert.False(UpdateStatusBuilder.Build(running, list, false, false, false).LinuxPackageHost);
+        Assert.False(UpdateStatusBuilder.Build(running, list, UpdateChannel.None, false, false).LinuxPackageHost);
     }
 
     [Fact]
@@ -199,23 +357,23 @@ public sealed class UpdateCheckTests
     {
         var list = List(LinuxRelease("v2026.11.13"));
         var running = Running("v2026.11.12", VersionKind.Release);
-        var dto = UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(running, list, false, false, false, linuxPackage: true));
+        var dto = UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(running, list, UpdateChannel.None, false, false, linuxPackage: true));
         Assert.Equal("linuxPackage", dto.Host);
         Assert.Equal("PlatinVault-linux-x64-v2026.11.13.tar.gz", dto.Available!.LinuxPackageName);
         Assert.StartsWith("https://github.com/", dto.Available.LinuxPackageUrl);
-        Assert.Equal("server", UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(running, list, false, false, false)).Host);
-        Assert.Equal("desktop", UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(running, list, false, true, false)).Host);
+        Assert.Equal("server", UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(running, list, UpdateChannel.None, false, false)).Host);
+        Assert.Equal("desktop", UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(running, list, UpdateChannel.None, true, false)).Host);
     }
 
     [Fact]
     public void A_dev_build_is_never_offered_a_beta_or_release_and_gets_no_image_advice()
     {
-        var dev = new RunningVersion("v2026.11.12 (13.557-dev)", "v2026.11.12.13.557-dev", VersionKind.Dev, ReleaseVersion.Parse("v2026.11.12"));
+        var dev = new RunningVersion("v2026.11.12.13.557 (</>)", "v2026.11.12.13.557-dev", VersionKind.Dev, ReleaseVersion.Parse("v2026.11.12"));
         // Even a clearly newer beta and release, with the beta switch on, and with a Windows installer: nothing is offered
         var list = List(Release("v2026.11.20"), Release("v2026.11.21.1.2-beta", prerelease: true), Release("v2026.11.12"));
         foreach (var desktop in new[] { false, true })
         {
-            var status = UpdateStatusBuilder.Build(dev, list, true, desktop, desktop);
+            var status = UpdateStatusBuilder.Build(dev, list, UpdateChannel.Beta, desktop, desktop);
             Assert.Equal(UpdateState.DevBuild, status.State);
             Assert.Null(status.Available);
             Assert.False(status.CanInstall);
@@ -234,7 +392,7 @@ public sealed class UpdateCheckTests
         var feed = ReleaseFeed.Parse(Releases(Release("v2026.11.20.1.2-dev", prerelease: true), Release("v2026.11.12")));
         Assert.Equal(new[] { "v2026.11.12" }, feed.Select(r => r.Version.Text));
         Assert.Null(ReleaseVersion.Parse("v2026.11.20.1.2-dev"));
-        Assert.Null(ReleaseFeed.PickUpdate(feed, ReleaseVersion.Parse("v2026.11.12")!.Value, includeBetas: true));
+        Assert.Null(ReleaseFeed.PickUpdate(feed, ReleaseVersion.Parse("v2026.11.12")!.Value, UpdateChannel.Beta));
     }
 
 
@@ -242,9 +400,9 @@ public sealed class UpdateCheckTests
     public void Disabled_and_unchecked_states()
     {
         var running = Running("v2026.11.12", VersionKind.Release);
-        Assert.Equal(UpdateState.Disabled, UpdateStatusBuilder.Build(running, new ReleaseListResult(false, null, null, null, null, false, null), false, true, false).State);
-        Assert.Equal(UpdateState.Unchecked, UpdateStatusBuilder.Build(running, new ReleaseListResult(true, null, null, null, null, false, null), false, false, false).State);
-        var dto = UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(running, List(Release("v2026.11.13")), false, false, false));
+        Assert.Equal(UpdateState.Disabled, UpdateStatusBuilder.Build(running, new ReleaseListResult(false, null, null, null, null, false, null), UpdateChannel.None, true, false).State);
+        Assert.Equal(UpdateState.Unchecked, UpdateStatusBuilder.Build(running, new ReleaseListResult(true, null, null, null, null, false, null), UpdateChannel.None, false, false).State);
+        var dto = UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(running, List(Release("v2026.11.13")), UpdateChannel.None, false, false));
         Assert.Equal("available", dto.State);
         Assert.Equal("server", dto.Host);
         Assert.Equal("ghcr.io/sushiflux/platinvault", dto.ImageRepository);
@@ -281,14 +439,14 @@ public sealed class UpdateCheckTests
     public void The_status_carries_the_notes_as_the_json_field_notes()
     {
         var running = Running("v2026.11.12", VersionKind.Release);
-        var dto = UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(running, List(Release("v2026.11.13", body: "Neu: Notizen im Status")), false, false, false));
+        var dto = UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(running, List(Release("v2026.11.13", body: "Neu: Notizen im Status")), UpdateChannel.None, false, false));
         Assert.Equal("Neu: Notizen im Status", dto.Available!.Notes);
         Assert.Equal("Neu: Notizen im Status", dto.LatestRelease!.Notes);
 
         var json = JsonSerializer.SerializeToElement(dto, new JsonSerializerOptions(JsonSerializerDefaults.Web));
         Assert.Equal("Neu: Notizen im Status", json.GetProperty("available").GetProperty("notes").GetString());
 
-        var without = UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(running, List(Release("v2026.11.13")), false, false, false));
+        var without = UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(running, List(Release("v2026.11.13")), UpdateChannel.None, false, false));
         var withoutJson = JsonSerializer.SerializeToElement(without, new JsonSerializerOptions(JsonSerializerDefaults.Web));
         Assert.Equal(JsonValueKind.Null, withoutJson.GetProperty("available").GetProperty("notes").ValueKind);
     }
@@ -449,7 +607,7 @@ public sealed class UpdateCheckTests
         var (service, github, clock) = Service();
         var first = await service.GetAsync(UpdateCheckMode.Automatic, CancellationToken.None);
         Assert.Equal(1, github.Calls);
-        Assert.Equal("https://fake-github.test/repos/sushiflux/PlatinVault/releases?per_page=30", github.Requests[0].ToString());
+        Assert.Equal("https://fake-github.test/repos/sushiflux/PlatinVault/releases?per_page=100", github.Requests[0].ToString());
         Assert.Equal("v2026.11.13", first.Releases!.Single().Version.Text);
 
         clock.Now += TimeSpan.FromHours(5);
@@ -547,7 +705,7 @@ public sealed class UpdateCheckTests
     {
         var running = Running("v2026.11.12", VersionKind.Release);
         var failed = new ReleaseListResult(true, null, null, ServerTexts.Updates.Timeout(20), DateTimeOffset.UtcNow, false, null);
-        var dto = UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(running, failed, false, false, false));
+        var dto = UpdateEndpoints.ToDto(UpdateStatusBuilder.Build(running, failed, UpdateChannel.None, false, false));
         Assert.Equal("error", dto.State);
         Assert.Equal(ServerTexts.Updates.Timeout(20).ToString(), dto.Error);
     }

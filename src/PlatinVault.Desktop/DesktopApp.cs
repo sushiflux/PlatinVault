@@ -533,8 +533,8 @@ internal sealed class DesktopApp : ApplicationContext
     // ---- updates ---------------------------------------------------------------------------------------------------------------------
 
     /// <summary>
-    /// Asks the server's update check (the same for every host) what to offer: betas only while "Beta-Versionen erhalten" is on in the
-    /// app (Settings > System > Updates), never a version older than this one, only versions with a Windows installer. The periodic check
+    /// Asks the server's update check (the same for every host) what to offer: betas only on the Beta channel and nightlies only on the
+    /// Nightly channel (chosen in the app, Settings > System > Updates), never a version older than this one, only versions with a Windows installer. The periodic check
     /// is quiet; the tray's "Nach Updates suchen" (<paramref name="interactive"/>) always says what it found.
     /// </summary>
     private async Task CheckForUpdateAsync(UpdateCheckMode mode, bool interactive)
@@ -569,7 +569,7 @@ internal sealed class DesktopApp : ApplicationContext
         {
             if (interactive && !_env.Quiet)
             {
-                Dialogs.Info(null, status.State == UpdateState.Unchecked ? DesktopTexts.Update.NotChecked : DesktopTexts.Update.UpToDate(_env.Version, status.BetaUpdatesEnabled, status.NightlyUpdatesEnabled));
+                Dialogs.Info(null, status.State == UpdateState.Unchecked ? DesktopTexts.Update.NotChecked : DesktopTexts.Update.UpToDate(_env.Version, status.Channel));
             }
             return;
         }

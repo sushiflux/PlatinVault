@@ -14,13 +14,13 @@ public sealed class ErrorCopyTests
     public void The_copied_text_is_the_complete_message_then_a_blank_line_then_version_and_time()
     {
         var at = new DateTimeOffset(2026, 11, 3, 14, 5, 12, TimeSpan.FromHours(1));
-        var text = ErrorReport.Build("Das Update ist fehlgeschlagen.\r\nGrund: Access to the path 'PlatinVault.exe' is denied.\n", "v2026.11.14 (13.557)", at);
+        var text = ErrorReport.Build("Das Update ist fehlgeschlagen.\r\nGrund: Access to the path 'PlatinVault.exe' is denied.\n", "v2026.11.14.13.557", at);
 
         var lines = text.Split(Environment.NewLine);
         Assert.Equal("Das Update ist fehlgeschlagen.", lines[0]);
         Assert.Equal("Grund: Access to the path 'PlatinVault.exe' is denied.", lines[1]);
         Assert.Equal(string.Empty, lines[2]);
-        Assert.Equal("PlatinVault v2026.11.14 (13.557) · 2026-11-03 14:05:12 +01:00", lines[3]);
+        Assert.Equal("PlatinVault v2026.11.14.13.557 · 2026-11-03 14:05:12 +01:00", lines[3]);
         Assert.Equal(4, lines.Length);
     }
 

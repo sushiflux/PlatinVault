@@ -7,6 +7,31 @@
 <a name="english"></a>
 ## English
 
+## v2026.11.22.1.2206 (α)
+
+### 🔄 Changed
+
+- **One update channel instead of two switches:** under Settings → System → Updates you now pick your channel with a single
+  choice – **None**, **Beta** or **Nightly**. None gives you finished releases only, Beta gives you betas (β) and releases,
+  Nightly gives you nightlies (α) and releases. If you had switched on one of the old switches, your choice is carried over
+  automatically (Nightly if "nightly" was on, otherwise Beta if "beta" was on, otherwise None). Please note: Nightly no longer
+  includes betas; if you want those too, choose Beta.
+- **Container tags follow the same rule:** a beta no longer moves the `nightly` image tag. `nightly` now carries nightlies and
+  releases, `beta` carries betas and releases, `latest` carries releases only. The Unraid template descriptions and the example
+  Compose file explain which tag goes with which channel.
+- **Version numbers now show all five parts:** a version is written as `v2026.11.22.8.105` for a release, with **(β)** for a beta
+  and **(α)** for a nightly after it, for example `v2026.11.22.8.105 (α)`, in the app, in the info card, in the installer and in
+  the release titles. Earlier "What’s new" entries written in the old style are still found after an update.
+
+### 🔒 Security
+
+- **A new release is no longer hidden behind many nightlies:** the update check now reads up to 100 releases from the feed
+  instead of 30, so a new final release is still found even when many nightlies were published after it.
+- **A strange version tag no longer breaks the update check:** an unusual or malformed version tag or release entry in the
+  update feed is now ignored instead of making the check fail.
+- **Download file names from the feed are checked:** only plain file names (letters, digits, dot, hyphen, underscore) are
+  accepted for installers and Linux packages.
+
 ## v2026.11.21 (8.105 α)
 
 ### 🔄 Changed
@@ -40,6 +65,31 @@
 
 <a name="deutsch"></a>
 ## Deutsch
+
+## v2026.11.22.1.2206 (α)
+
+### 🔄 Geändert
+
+- **Ein Update-Kanal statt zweier Schalter:** Unter Einstellungen → System → Updates wählst du deinen Kanal jetzt mit einer
+  einzigen Auswahl – **Keiner**, **Beta** oder **Nightly**. Keiner liefert nur fertige Releases, Beta liefert Betas (β) und
+  Releases, Nightly liefert Nightlies (α) und Releases. Hattest du einen der alten Schalter eingeschaltet, wird deine Wahl
+  automatisch übernommen (Nightly, wenn „Nightly“ an war, sonst Beta, wenn „Beta“ an war, sonst Keiner). Bitte beachten:
+  Nightly enthält keine Betas mehr; willst du auch diese, wähle Beta.
+- **Container-Tags folgen derselben Regel:** Eine Beta schiebt den Image-Tag `nightly` nicht mehr mit. `nightly` führt jetzt
+  Nightlies und Releases, `beta` führt Betas und Releases, `latest` nur Releases. Die Beschreibungen in der Unraid-Vorlage und
+  die Beispiel-Compose-Datei erklären, welcher Tag zu welchem Kanal gehört.
+- **Versionsnummern zeigen jetzt alle fünf Teile:** Eine Version steht als `v2026.11.22.8.105` für ein Release, mit **(β)**
+  für eine Beta und **(α)** für eine Nightly dahinter, zum Beispiel `v2026.11.22.8.105 (α)` – in der App, in der Info-Karte, im
+  Installer und in den Release-Titeln. Frühere „Das ist neu“-Einträge im alten Stil werden nach einem Update weiterhin gefunden.
+
+### 🔒 Sicherheit
+
+- **Ein neues Release verschwindet nicht mehr hinter vielen Nightlies:** Die Update-Prüfung liest jetzt bis zu 100 statt 30
+  Releases aus dem Feed, ein neues fertiges Release wird also auch dann gefunden, wenn danach viele Nightlies erschienen sind.
+- **Ein seltsames Versions-Tag bricht die Update-Prüfung nicht mehr:** Ein ungewöhnliches oder fehlerhaftes Versions-Tag oder
+  Release im Update-Feed wird jetzt übergangen, statt die Prüfung scheitern zu lassen.
+- **Dateinamen von Downloads aus dem Feed werden geprüft:** Für Installer und Linux-Pakete werden nur schlichte Dateinamen
+  (Buchstaben, Ziffern, Punkt, Bindestrich, Unterstrich) akzeptiert.
 
 ## v2026.11.21 (8.105 α)
 

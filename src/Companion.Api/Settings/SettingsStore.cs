@@ -6,6 +6,7 @@ using Companion.Api.Localization;
 using Companion.Api.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Win32;
+using PlatinVault.Versioning;
 
 namespace Companion.Api.Settings;
 
@@ -88,16 +89,20 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
     public const string KeyAutoSwitchGame = "features.auto_switch_game";
 
     /// <summary>
-    /// "Beta-Versionen erhalten" (user decision 2026-11-02, every platform): off (default) = the update check offers only releases, on =
-    /// betas and releases, always the newest. Switching it off never downgrades: a running beta stays until a newer release exists.
+    /// The update channel, ONE choice (every platform): "none" (default, full releases only), "beta" (betas and releases) or "nightly"
+    /// (nightlies and releases, no betas). Changing it never downgrades: a running beta or nightly stays until a newer version of the
+    /// chosen channel exists. See <see cref="UpdateChannels"/>.
     /// </summary>
-    public const string KeyBetaUpdates = "updates.beta_channel";
+    public const string KeyUpdateChannel = "updates.channel";
 
-    /// <summary>
-    /// "Nightly-Versionen (α) erhalten" (user decision 2026-11-05, every platform): off (default), on = nightly (α), beta (β) and release
-    /// versions, always the newest of all three.
-    /// </summary>
-    public const string KeyNightlyUpdates = "updates.nightly_channel";
+    /// <summary>The stored value of "no channel selected".</summary>
+    public const string DefaultUpdateChannel = UpdateChannels.NoneId;
+
+    /// <summary>The former switch "Beta-Versionen erhalten" ("true"/"false"). Read once to carry it into <see cref="KeyUpdateChannel"/>, then removed.</summary>
+    public const string KeyLegacyBetaUpdates = "updates.beta_channel";
+
+    /// <summary>The former switch "Nightly-Versionen erhalten" ("true"/"false"; it used to include betas). Read once to carry it into <see cref="KeyUpdateChannel"/>, then removed.</summary>
+    public const string KeyLegacyNightlyUpdates = "updates.nightly_channel";
 
     /// <summary>"Nach Updates suchen" (<see cref="UpdateCheckInterval"/> id, default daily).</summary>
     public const string KeyUpdateCheckInterval = "updates.check_interval";
@@ -274,8 +279,7 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
         var twitchStreams = !all.TryGetValue(KeyTwitchStreams, out var ts) || !bool.TryParse(ts, out var tsb) || tsb;
         var achievementNotes = !all.TryGetValue(KeyAchievementNotes, out var an) || !bool.TryParse(an, out var anb) || anb;
         var autoSwitchGame = !all.TryGetValue(KeyAutoSwitchGame, out var asg) || !bool.TryParse(asg, out var asgb) || asgb;
-        var betaUpdates = ParseBetaUpdates(all.GetValueOrDefault(KeyBetaUpdates));
-        var nightlyUpdates = ParseBetaUpdates(all.GetValueOrDefault(KeyNightlyUpdates));
+        var updateChannel = await ResolveUpdateChannelAsync(all, ct);
         var selection = await ResolveAiSelectionAsync(all, ct);
         var keyedProviders = AiProvider.All.Where(HasProviderKey).ToList();
         var effectiveDefault = selection.DefaultProvider is { } stored && keyedProviders.Contains(stored)
@@ -314,15 +318,14 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
             ResearchBlocks: ResearchBlocks.ToDto(researchBlocks),
             ResearchBlocksPolicy: ResearchBlocks.Policy(),
             AutoSwitchGameEnabled: autoSwitchGame,
-            BetaUpdatesEnabled: betaUpdates,
+            UpdateChannel: UpdateChannels.ToId(updateChannel),
             PopupTarget: popupTarget,
             DashboardSortFavorites: DashboardSort.Resolve(all.GetValueOrDefault(DashboardSort.KeyFavorites), favorites: true),
             DashboardSortAll: DashboardSort.Resolve(all.GetValueOrDefault(DashboardSort.KeyAll), favorites: false),
             SteamRoot: steamRoot,
             SteamLocal: steamLocal is null ? null : SteamLocalInfo.Settings(steamLocal),
             PinsAfterUnlock: pinsAfterUnlock,
-            PopupSeconds: popupSeconds,
-            NightlyUpdatesEnabled: nightlyUpdates
+            PopupSeconds: popupSeconds
         );
     }
 
@@ -382,18 +385,63 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
         return ResearchBlocks.Parse(row?.Value);
     }
 
-    /// <summary>The switch "Beta-Versionen erhalten" (off unless stored as true).</summary>
-    public async Task<bool> GetBetaUpdatesEnabledAsync(CancellationToken ct = default)
+    /// <summary>
+    /// The selected update channel ("none" when nothing or an unknown value is stored). An installation that still holds the two former
+    /// switches is carried over here, once (see <see cref="ResolveUpdateChannelAsync"/>).
+    /// </summary>
+    public async Task<UpdateChannel> GetUpdateChannelAsync(CancellationToken ct = default)
     {
-        var row = await db.AppSettings.AsNoTracking().FirstOrDefaultAsync(x => x.Key == KeyBetaUpdates, ct);
-        return ParseBetaUpdates(row?.Value);
+        string[] keys = [KeyUpdateChannel, KeyLegacyBetaUpdates, KeyLegacyNightlyUpdates];
+        var all = await db.AppSettings.AsNoTracking().Where(x => keys.Contains(x.Key)).ToDictionaryAsync(x => x.Key, x => x.Value, ct);
+        return await ResolveUpdateChannelAsync(all, ct);
     }
 
-    /// <summary>The switch "Nightly-Versionen (α) erhalten" (off unless stored as true).</summary>
-    public async Task<bool> GetNightlyUpdatesEnabledAsync(CancellationToken ct = default)
+    /// <summary>
+    /// The channel the two former switches ("Beta-Versionen erhalten", "Nightly-Versionen erhalten") stood for. The nightly switch was the
+    /// wider one (it included betas), so it wins: nightly on = Nightly, otherwise beta on = Beta, otherwise none. A missing or unreadable
+    /// value counts as off.
+    /// </summary>
+    public static UpdateChannel ChannelFromLegacySwitches(string? betaSwitch, string? nightlySwitch)
     {
-        var row = await db.AppSettings.AsNoTracking().FirstOrDefaultAsync(x => x.Key == KeyNightlyUpdates, ct);
-        return ParseBetaUpdates(row?.Value);
+        if (ParseSwitch(nightlySwitch)) return UpdateChannel.Nightly;
+        return ParseSwitch(betaSwitch) ? UpdateChannel.Beta : UpdateChannel.None;
+    }
+
+    private bool _updateChannelMigrationTried;
+
+    /// <summary>
+    /// The stored update channel. A database that still holds the former switches "updates.beta_channel" / "updates.nightly_channel" is
+    /// carried over here, once: the channel is derived with <see cref="ChannelFromLegacySwitches"/>, written to "updates.channel" (unless a
+    /// valid channel is stored already, which then wins) and both old rows are removed - so a later change of the new setting is never
+    /// overridden by a leftover. Installations without old rows are not touched.
+    /// </summary>
+    private async Task<UpdateChannel> ResolveUpdateChannelAsync(Dictionary<string, string> all, CancellationToken ct)
+    {
+        all.TryGetValue(KeyUpdateChannel, out var stored);
+        all.TryGetValue(KeyLegacyBetaUpdates, out var legacyBeta);
+        all.TryGetValue(KeyLegacyNightlyUpdates, out var legacyNightly);
+
+        var current = UpdateChannels.TryParse(stored);
+        var channel = current ?? ChannelFromLegacySwitches(legacyBeta, legacyNightly);
+
+        var hasLegacy = all.ContainsKey(KeyLegacyBetaUpdates) || all.ContainsKey(KeyLegacyNightlyUpdates);
+        if (hasLegacy && !_updateChannelMigrationTried)
+        {
+            _updateChannelMigrationTried = true;
+            try
+            {
+                if (current is null) await UpsertSettingAsync(KeyUpdateChannel, UpdateChannels.ToId(channel), ct);
+                await RemoveSettingAsync(KeyLegacyBetaUpdates, ct);
+                await RemoveSettingAsync(KeyLegacyNightlyUpdates, ct);
+                await db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException)
+            {
+                // A parallel request carried the switches over at the same moment: the rows are there, the channel read above is the same
+                db.ChangeTracker.Clear();
+            }
+        }
+        return channel;
     }
 
     /// <summary>How often the server looks for updates by itself (daily when nothing or an unknown value is stored).</summary>
@@ -403,8 +451,8 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
         return UpdateCheckIntervals.TryParse(row?.Value) ?? UpdateCheckIntervals.Default;
     }
 
-    // Default OFF: a missing or unreadable value means "releases only"
-    private static bool ParseBetaUpdates(string? value) => bool.TryParse(value, out var on) && on;
+    // A missing or unreadable value of a former switch means off
+    private static bool ParseSwitch(string? value) => bool.TryParse(value, out var on) && on;
 
     /// <summary>True when the Twitch credentials are stored and the live-stream feature is not switched off.</summary>
     public async Task<bool> IsTwitchStreamsActiveAsync(CancellationToken ct = default)
@@ -471,6 +519,15 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
         {
             pinsAfterUnlock = NormalizePinsAfterUnlock(request.PinsAfterUnlock)
                               ?? throw new SettingsValidationException(ServerTexts.Settings.PinsAfterUnlockInvalid(request.PinsAfterUnlock));
+        }
+
+        // The update channel must be one of the three ids (null = keep what is stored)
+        string? updateChannel = null;
+        if (request.UpdateChannel is not null)
+        {
+            updateChannel = UpdateChannels.TryParse(request.UpdateChannel) is { } parsedChannel
+                ? UpdateChannels.ToId(parsedChannel)
+                : throw new SettingsValidationException(ServerTexts.Settings.UpdateChannelInvalid(request.UpdateChannel));
         }
 
         // The update check interval must be one of the known ids (null = keep what is stored)
@@ -579,10 +636,13 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
             await UpsertSettingAsync(KeyAchievementNotes, request.AchievementNotesEnabled.Value.ToString(), ct);
         if (request.AutoSwitchGameEnabled.HasValue)
             await UpsertSettingAsync(KeyAutoSwitchGame, request.AutoSwitchGameEnabled.Value.ToString(), ct);
-        if (request.BetaUpdatesEnabled.HasValue)
-            await UpsertSettingAsync(KeyBetaUpdates, request.BetaUpdatesEnabled.Value.ToString(), ct);
-        if (request.NightlyUpdatesEnabled.HasValue)
-            await UpsertSettingAsync(KeyNightlyUpdates, request.NightlyUpdatesEnabled.Value.ToString(), ct);
+        if (updateChannel is not null)
+        {
+            await UpsertSettingAsync(KeyUpdateChannel, updateChannel, ct);
+            // The former switches are superseded by the explicit channel
+            await RemoveSettingAsync(KeyLegacyBetaUpdates, ct);
+            await RemoveSettingAsync(KeyLegacyNightlyUpdates, ct);
+        }
         if (updateInterval is not null)
             await UpsertSettingAsync(KeyUpdateCheckInterval, updateInterval, ct);
         if (sortFavorites is not null)

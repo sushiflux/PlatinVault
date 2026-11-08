@@ -13,19 +13,19 @@ public sealed class VersionFormatTests
     private const string Build = "v2026.11.12.13.557";
 
     [Theory]
-    [InlineData(VersionKind.Release, "v2026.11.12 (13.557)")]
-    [InlineData(VersionKind.Beta, "v2026.11.12 (13.557 \u03B2)")]
-    [InlineData(VersionKind.Nightly, "v2026.11.12 (13.557 \u03B1)")]
-    [InlineData(VersionKind.Dev, "v2026.11.12 (13.557-dev)")]
-    public void Display_has_the_counters_in_parentheses(VersionKind kind, string expected) =>
+    [InlineData(VersionKind.Release, "v2026.11.12.13.557")]
+    [InlineData(VersionKind.Beta, "v2026.11.12.13.557 (\u03B2)")]
+    [InlineData(VersionKind.Nightly, "v2026.11.12.13.557 (\u03B1)")]
+    [InlineData(VersionKind.Dev, "v2026.11.12.13.557 (</>)")]
+    public void Display_has_all_five_segments_then_the_channel_symbol_in_parentheses(VersionKind kind, string expected) =>
         Assert.Equal(expected, VersionFormat.Display(Short, Build, kind));
 
     [Theory]
     [InlineData(VersionKind.Release, "v2026.11.12")]
-    [InlineData(VersionKind.Beta, "v2026.11.12")]
-    [InlineData(VersionKind.Nightly, "v2026.11.12")]
-    [InlineData(VersionKind.Dev, "v2026.11.12-dev")]
-    public void Display_falls_back_to_line_one_without_counters(VersionKind kind, string expected)
+    [InlineData(VersionKind.Beta, "v2026.11.12 (\u03B2)")]
+    [InlineData(VersionKind.Nightly, "v2026.11.12 (\u03B1)")]
+    [InlineData(VersionKind.Dev, "v2026.11.12 (</>)")]
+    public void Display_without_counters_is_line_one_plus_the_symbol_if_there_is_one(VersionKind kind, string expected)
     {
         Assert.Equal(expected, VersionFormat.Display(Short, null, kind));
         Assert.Equal(expected, VersionFormat.Display(Short, "  ", kind));
@@ -49,14 +49,53 @@ public sealed class VersionFormatTests
     }
 
     [Theory]
-    [InlineData("v2026.11.12.13.557-beta", "v2026.11.12 (13.557 \u03B2)")]
-    [InlineData("v2026.11.12.13.557-nightly", "v2026.11.12 (13.557 \u03B1)")]
-    [InlineData("v2026.11.12.13.557-dev", "v2026.11.12 (13.557-dev)")]
+    [InlineData("v2026.11.12.13.557-beta", "v2026.11.12.13.557 (\u03B2)")]
+    [InlineData("v2026.11.12.13.557-nightly", "v2026.11.12.13.557 (\u03B1)")]
+    [InlineData("v2026.11.12.13.557-dev", "v2026.11.12.13.557 (</>)")]
+    [InlineData("v2026.11.12-beta", "v2026.11.12 (\u03B2)")]
+    [InlineData("v2026.11.12.13.557", "v2026.11.12.13.557")]
     [InlineData("v2026.11.12", "v2026.11.12")]
     [InlineData("v2026.11.9.31.2840-rc6", "v2026.11.9.31.2840-rc6")]
     [InlineData("something else", "something else")]
     public void A_tag_can_be_shown_in_the_readable_form(string tag, string expected) =>
         Assert.Equal(expected, VersionFormat.DisplayFromTag(tag));
+
+    // The notation until 2026-11-08, for finding changelog headings that were stamped back then and are never rewritten
+    [Theory]
+    [InlineData("v2026.11.12.13.557", "v2026.11.12 (13.557)")]
+    [InlineData("v2026.11.12.13.557 (β)", "v2026.11.12 (13.557 β)")]
+    [InlineData("v2026.11.12.13.557 (α)", "v2026.11.12 (13.557 α)")]
+    [InlineData("v2026.11.12.13.557 (</>)", "v2026.11.12 (13.557-dev)")]
+    [InlineData("  v2026.11.12.13.557 (β) ", "v2026.11.12 (13.557 β)")]
+    public void The_old_notation_can_be_derived_from_the_readable_form(string display, string legacy) =>
+        Assert.Equal(legacy, VersionFormat.LegacyDisplay(display));
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("v2026.11.12")]
+    [InlineData("v2026.11.12 (β)")]
+    [InlineData("v2026.11.12 (13.557)")]
+    [InlineData("v2026.11.12 (13.557 β)")]
+    [InlineData("v2026.11.12.13.557 ()")]
+    [InlineData("v2026.11.12.13.557-beta")]
+    public void Anything_that_is_not_the_readable_form_with_counters_has_no_old_notation(string? display) =>
+        Assert.Null(VersionFormat.LegacyDisplay(display));
+
+    [Theory]
+    [InlineData(VersionKind.Release)]
+    [InlineData(VersionKind.Beta)]
+    [InlineData(VersionKind.Nightly)]
+    [InlineData(VersionKind.Dev)]
+    public void Display_never_has_empty_parentheses_and_the_old_notation_always_round_trips(VersionKind kind)
+    {
+        foreach (var build in new string?[] { Build, null })
+        {
+            var display = VersionFormat.Display(Short, build, kind);
+            Assert.DoesNotContain("()", display);
+            if (build is not null) Assert.NotNull(VersionFormat.LegacyDisplay(display));
+        }
+    }
 
     [Theory]
     [InlineData(VersionKind.Release, "release")]
@@ -85,13 +124,13 @@ public sealed class VersionFormatTests
         Assert.Equal(expected, VersionFormat.KindFromChannel(channel));
 
     [Theory]
-    [InlineData("release", VersionKind.Release, "v2026.11.12 (13.557)")]
-    [InlineData("beta", VersionKind.Release, "v2026.11.12 (13.557 \u03B2)")]
-    [InlineData("rc", VersionKind.Release, "v2026.11.12 (13.557 \u03B2)")]
-    [InlineData("nightly", VersionKind.Release, "v2026.11.12 (13.557 \u03B1)")]
-    [InlineData("release", VersionKind.Dev, "v2026.11.12 (13.557-dev)")]
+    [InlineData("release", VersionKind.Release, "v2026.11.12.13.557")]
+    [InlineData("beta", VersionKind.Release, "v2026.11.12.13.557 (\u03B2)")]
+    [InlineData("rc", VersionKind.Release, "v2026.11.12.13.557 (\u03B2)")]
+    [InlineData("nightly", VersionKind.Release, "v2026.11.12.13.557 (\u03B1)")]
+    [InlineData("release", VersionKind.Dev, "v2026.11.12.13.557 (</>)")]
     // A dev-build image: channel "dev" in a Production environment (the image is not the Development environment)
-    [InlineData("dev", VersionKind.Release, "v2026.11.12 (13.557-dev)")]
+    [InlineData("dev", VersionKind.Release, "v2026.11.12.13.557 (</>)")]
     public void The_server_shows_the_version_of_its_channel(string channel, VersionKind running, string expected)
     {
         var folder = Path.Combine(Path.GetTempPath(), "pv-version-" + Guid.NewGuid().ToString("N"));

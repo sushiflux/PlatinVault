@@ -34,7 +34,7 @@ internal static class TestLayout
                 foreach (var scale in Scales)
                 {
                     var tag = $"{language}-{(dark ? "dark" : "light")}-{scale * 100:0}";
-                    using var window = new UninstallWindow(env.Layout, $"v2026.11.1 (12.345 {VersionFormat.BetaMark})", (_, _) => [], scale);
+                    using var window = new UninstallWindow(env.Layout, $"v2026.11.1.12.345 ({VersionFormat.BetaMark})", (_, _) => [], scale);
                     List<Rectangle>? baseline = null;
                     List<(string Name, Rectangle Bounds)>? failedPage = null;
                     foreach (var (state, show) in window.TestStates())

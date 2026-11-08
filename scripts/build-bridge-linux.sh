@@ -17,11 +17,11 @@
 # Runs on Linux (CI: ubuntu-latest; locally in a container such as mcr.microsoft.com/dotnet/sdk:10.0). Needs the .NET SDK (global.json),
 # bash, GNU tar, gzip and sha256sum.
 #
-#   scripts/build-bridge-linux.sh [--bridge-version 1.0.7] [--channel release|beta|dev] [--product-version "<readable version>"]
+#   scripts/build-bridge-linux.sh [--bridge-version 1.0.7] [--channel release|beta|nightly] [--product-version "<readable version>"]
 #                                 [--out <dir>] [--work-dir <dir>] [--print-version]
 #
 #   --print-version    only print the bridge version (1.0.<n>) and exit - the release workflow passes it to the Docker build
-#   --channel          release (default; or $PV_CHANNEL) | beta | dev: only used for the readable product version
+#   --channel          release (default; or $PV_CHANNEL) | beta | nightly: only used for the readable product version
 #   --product-version  the readable version for the file properties; default: computed with scripts/version-display.sh
 set -euo pipefail
 
@@ -64,7 +64,7 @@ if ((print_version)); then
     exit 0
 fi
 
-case "$channel" in release | beta | dev) ;; *) die "--channel muss release, beta oder dev sein (ist: $channel)" ;; esac
+case "$channel" in release | beta | nightly) ;; *) die "--channel muss release, beta oder nightly sein (ist: $channel)" ;; esac
 for tool in dotnet tar gzip sha256sum; do command -v "$tool" >/dev/null 2>&1 || die "$tool wurde nicht gefunden."; done
 
 # ---- product version for the file properties (same rules as scripts/build-linux.sh) ---------------------------------------------------

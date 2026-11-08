@@ -24,21 +24,21 @@
     all       app + setup.
 
   Version: version.txt of the repository (written by the pre-commit hook), nothing is maintained by hand. A beta passes -Beta: the program
-  then shows "v2026.11.12 (13.557 beta-sign)" instead of "v2026.11.12 (13.557)" (the program computes that itself from version.txt and the
+  then shows "v2026.11.12.13.557 (beta-sign)" instead of "v2026.11.12.13.557" (the program computes that itself from version.txt and the
   channel in release-channel.txt, see src\PlatinVault.Versioning\VersionFormat.cs). The installer's file name uses the technical form
   without spaces, parentheses or the beta sign: PlatinVault-Setup-v2026.11.12.exe (release) and
   PlatinVault-Setup-v2026.11.12.13.557-beta.exe (beta) - the same string as the git tag, which the program's update check relies on.
-  A dev build (commit word "Dev-Build", the user's own test package, never published) passes -Dev: channel "dev", the program shows
-  "v2026.11.12 (13.557-dev)", never looks for updates, and the installer is PlatinVault-Setup-v2026.11.12.13.557-dev.exe.
-  -Beta and -Dev exclude each other. Every stage of one build needs the same -Beta/-Dev.
+  A nightly passes -Nightly: channel "nightly", the program shows "v2026.11.12.13.557 (alpha-sign)" and the installer is
+  PlatinVault-Setup-v2026.11.12.13.557-nightly.exe. -Beta and -Nightly exclude each other. Every stage of one build needs the same
+  -Beta/-Nightly. There is no package for Dev: Dev only runs locally (start-windows.ps1) and is never built into an installer.
 
   File properties of every binary we build: product name "PlatinVault", product version = the readable version of the build (the same
-  for all files, e.g. "v2026.11.12 (13.557)"; -ProductVersion, otherwise computed with scripts\version-display.sh through Git's sh),
+  for all files, e.g. "v2026.11.12.13.557"; -ProductVersion, otherwise computed with scripts\version-display.sh through Git's sh),
   file version = the numeric form of version.txt line 1 (2026.11.12.0; the bridge keeps its own 1.0.<n>). See Directory.Build.props.
 
   Windows PowerShell 5.1 compatible. Console output is German and ASCII-only.
 
-  Aufruf:  .\scripts\build-windows.ps1 [-Stage all|app|setup|checksum] [-Beta | -Dev] [-BridgeVersion 1.0.7] [-SkipFrontend]
+  Aufruf:  .\scripts\build-windows.ps1 [-Stage all|app|setup|checksum] [-Beta | -Nightly] [-BridgeVersion 1.0.7] [-SkipFrontend]
            [-ProductVersion '<lesbare Version>'] [-PrepareSigning] [-SignedAppDir <Ordner>] [-SignedSetup <Datei|Ordner>]
            [-RequireSignature]
 #>
@@ -47,7 +47,6 @@ param(
     [string]$Stage = 'all',
     [switch]$Beta,
     [switch]$Nightly,
-    [switch]$Dev,
     [string]$BridgeVersion,
     [string]$ProductVersion,
     [switch]$SkipFrontend,
@@ -75,12 +74,12 @@ $versionLines = @(Get-Content -LiteralPath (Join-Path $root 'version.txt') | For
 if ($versionLines.Count -eq 0) { throw 'version.txt ist leer.' }
 $short = $versionLines[0]
 $detail = if ($versionLines.Count -gt 1) { $versionLines[1] } else { $short }
-if (([int]$Beta.IsPresent + [int]$Nightly.IsPresent + [int]$Dev.IsPresent) -gt 1) { throw '-Beta, -Nightly und -Dev schliessen sich gegenseitig aus.' }
-$channel = if ($Beta) { 'beta' } elseif ($Nightly) { 'nightly' } elseif ($Dev) { 'dev' } else { 'release' }
-# Technical form (git tag, installer file name): release = line 1, beta/nightly/dev = the five-segment build id + "-beta" / "-nightly" / "-dev". Same rule as
-# VersionFormat.Tag and scripts/version-display.sh. A beta, nightly or dev build needs the counters of line 2, otherwise its tag could not be told apart.
-if (($Beta -or $Nightly -or $Dev) -and $detail -notmatch ('^' + [regex]::Escape($short) + '\.\d+\.\d+$')) { throw 'version.txt hat keine Build-ID mit Zaehlern (Zeile 2) - ein Beta-/Nightly-/Dev-Tag braucht sie.' }
-$tagVersion = if ($Beta) { "$detail-beta" } elseif ($Nightly) { "$detail-nightly" } elseif ($Dev) { "$detail-dev" } else { $short }
+if (([int]$Beta.IsPresent + [int]$Nightly.IsPresent) -gt 1) { throw '-Beta und -Nightly schliessen sich gegenseitig aus.' }
+$channel = if ($Beta) { 'beta' } elseif ($Nightly) { 'nightly' } else { 'release' }
+# Technical form (git tag, installer file name): release = line 1, beta/nightly = the five-segment build id + "-beta" / "-nightly". Same rule as
+# VersionFormat.Tag and scripts/version-display.sh. A beta or nightly build needs the counters of line 2, otherwise its tag could not be told apart.
+if (($Beta -or $Nightly) -and $detail -notmatch ('^' + [regex]::Escape($short) + '\.\d+\.\d+$')) { throw 'version.txt hat keine Build-ID mit Zaehlern (Zeile 2) - ein Beta-/Nightly-Tag braucht sie.' }
+$tagVersion = if ($Beta) { "$detail-beta" } elseif ($Nightly) { "$detail-nightly" } else { $short }
 $final = Join-Path $out "PlatinVault-Setup-$tagVersion.exe"
 
 # File version: version.txt line 1 as four numbers (Windows allows at most 65535 per part)
@@ -108,7 +107,7 @@ function Find-PosixShell {
     return $null
 }
 
-# The readable version ("v2026.11.12 (13.557)", beta "... beta-sign)", dev "...-dev)") from the one shell definition of it
+# The readable version ("v2026.11.12.13.557", beta "... (beta-sign)", nightly "... (alpha-sign)") from the one shell definition of it
 function Get-ReadableVersion {
     $sh = Find-PosixShell
     if (-not $sh) { throw 'sh (Git for Windows) wurde nicht gefunden - ohne -ProductVersion wird die lesbare Version mit scripts/version-display.sh gebildet.' }
@@ -188,7 +187,7 @@ function Assert-ProgramFolder {
     $builtVersion = ([IO.File]::ReadAllText((Join-Path $app 'version.txt'))).Trim() -replace "`r", ''
     $builtChannel = ([IO.File]::ReadAllText((Join-Path $app 'release-channel.txt'))).Trim()
     if ($builtVersion -ne "$short`n$detail" -or $builtChannel -ne $channel) {
-        throw "Der Programmordner gehoert zu einem anderen Build (Kanal '$builtChannel') - alle Stufen mit derselben version.txt und denselben Schaltern (-Beta/-Dev) bauen."
+        throw "Der Programmordner gehoert zu einem anderen Build (Kanal '$builtChannel') - alle Stufen mit derselben version.txt und denselben Schaltern (-Beta/-Nightly) bauen."
     }
 }
 

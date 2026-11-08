@@ -20,12 +20,13 @@ export function useIsDesktopHost(): boolean {
 }
 
 // Takes the room of a short version while the answer is still on its way, so the text arriving moves nothing
-const VERSION_PLACEHOLDER = 'v0000.00.00 (00.0000 β)'
+const VERSION_PLACEHOLDER = 'v0000.00.000.00.0000 (β)'
 
 /**
- * The running version in mono type, exactly as the server writes it: release `v2026.11.12 (13.557)`, beta `v2026.11.12 (13.557 β)`,
- * dev `v2026.11.12 (13.557-dev)`. It is plain text and wraps at the space instead of being cut off. The colour is inherited: the
- * caller decides how loud it is.
+ * The running version in mono type, exactly as the server writes it: all five segments, then the channel symbol in parentheses (a
+ * release has none): release `v2026.11.12.13.557`, beta `v2026.11.12.13.557 (β)`, nightly `v2026.11.12.13.557 (α)`, dev
+ * `v2026.11.12.13.557 (</>)`. It is plain text and wraps at the space instead of being cut off. The colour is inherited: the caller
+ * decides how loud it is.
  */
 export function AppVersion({ className = '' }: { className?: string }) {
   const { data: branding } = useBranding()

@@ -15,7 +15,7 @@ const firstCopied = (writeText: ReturnType<typeof vi.fn>) => (writeText.mock.cal
 describe('CopyErrorButton', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('de')
-    rememberAppVersion('v2026.11.14 (13.557)')
+    rememberAppVersion('v2026.11.14.13.557')
   })
 
   afterEach(() => {
@@ -36,7 +36,7 @@ describe('CopyErrorButton', () => {
     expect(copied).toContain('Titel\nDer Server ist nicht erreichbar.')
     expect(copied).toContain('Technische Details:\nECONNREFUSED 127.0.0.1:5231')
     expect(copied).toContain('Fehlercode: HTTP 502')
-    expect(copied).toMatch(/PlatinVault v2026\.11\.14 \(13\.557\) · \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [+-]\d{2}:\d{2}$/)
+    expect(copied).toMatch(/PlatinVault v2026\.11\.14\.13\.557 · \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [+-]\d{2}:\d{2}$/)
     expect(await screen.findByText('Die Fehlermeldung wurde in die Zwischenablage kopiert.')).toBeTruthy()
   })
 

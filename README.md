@@ -209,21 +209,23 @@ der Dokumentation der Hersteller; getestet haben wir PlatinVault nur mit Docker 
   „Stacks“) annimmt; wenn ja, gilt dieselbe Vorgehensweise. Setze `PUID`/`PGID` auf die Zahlen des Benutzers, dem dein
   Datenordner gehört.
 
-### Beta-Versionen
+### Beta- und Nightly-Versionen
 
 Der Image-Tag entscheidet, was dein Container bekommt:
 
 | Image | Du bekommst |
 |---|---|
 | `ghcr.io/sushiflux/platinvault:latest` | nur Releases (Standard, empfohlen) |
-| `ghcr.io/sushiflux/platinvault:beta` | Betas und Releases – immer die neueste von beiden |
+| `ghcr.io/sushiflux/platinvault:beta` | Betas und Releases – immer die neueste von beiden, keine Nightlies |
+| `ghcr.io/sushiflux/platinvault:nightly` | Nightlies und Releases – immer die neueste von beiden, keine Betas |
 
-Schalte in PlatinVault zusätzlich **Einstellungen → System → Updates → „Beta-Versionen erhalten“** passend ein oder aus: Die
-App meldet dann neue Versionen und zeigt dir, ob dein Tag zur Wahl passt. Umstellen auf **Unraid**: Docker-Reiter → Container
-→ Edit → „Repository“ ändern → Apply (Appdata bleibt erhalten); in Community Applications kannst du den Tag schon bei der
-Installation wählen. Mit **Docker Compose**: Zeile `image:` ändern, dann `docker compose pull && docker compose up -d`.
-Zurück von `:beta` auf `:latest` erst, wenn ein Release erschienen ist, das mindestens so neu ist wie deine Beta – sonst
-wäre es ein Schritt zurück auf eine ältere Version (die App sagt dir, wann es so weit ist).
+Wähle in PlatinVault zusätzlich unter **Einstellungen → System → Updates → „Update-Kanal“** genau eine Möglichkeit: **Keiner**
+(nur Releases), **Beta** oder **Nightly**. Die App meldet dann neue Versionen und zeigt dir, ob dein Tag zur Wahl passt.
+Umstellen auf **Unraid**: Docker-Reiter → Container → Edit → „Repository“ ändern → Apply (Appdata bleibt erhalten); in
+Community Applications kannst du den Tag schon bei der Installation wählen. Mit **Docker Compose**: Zeile `image:` ändern,
+dann `docker compose pull && docker compose up -d`. Zurück von `:beta` oder `:nightly` auf `:latest` erst, wenn ein Release
+erschienen ist, das mindestens so neu ist wie deine Beta bzw. Nightly – sonst wäre es ein Schritt zurück auf eine ältere
+Version (die App sagt dir, wann es so weit ist).
 
 ### Datenschutz
 
@@ -468,21 +470,23 @@ documentation; we have only tested PlatinVault with Docker on Linux.
 - **Other NAS:** check your vendor's manual for whether the container manager accepts Compose files ("projects",
   "stacks"); if it does, the same steps apply. Set `PUID`/`PGID` to the numbers of the user that owns your data folder.
 
-### Beta versions
+### Beta and nightly versions
 
 The image tag decides what your container gets:
 
 | Image | You get |
 |---|---|
 | `ghcr.io/sushiflux/platinvault:latest` | releases only (default, recommended) |
-| `ghcr.io/sushiflux/platinvault:beta` | betas and releases – always the newest of both |
+| `ghcr.io/sushiflux/platinvault:beta` | betas and releases – always the newest of both, no nightlies |
+| `ghcr.io/sushiflux/platinvault:nightly` | nightlies and releases – always the newest of both, no betas |
 
-In PlatinVault, also switch **Settings → System → Updates → "Receive beta versions"** on or off to match: the app then reports
-new versions and tells you whether your tag fits your choice. Switching on **Unraid**: Docker tab → container → Edit → change
-"Repository" → Apply (appdata stays); in Community Applications you can pick the tag right at installation. With **Docker
-Compose**: change the `image:` line, then run `docker compose pull && docker compose up -d`. Go back from `:beta` to
-`:latest` only once a release is out that is at least as new as your beta – otherwise it would be a step back to an older
-version (the app tells you when that is the case).
+In PlatinVault, also pick exactly one option under **Settings → System → Updates → "Update channel"**: **None** (releases
+only), **Beta** or **Nightly**. The app then reports new versions and tells you whether your tag fits your choice. Switching
+on **Unraid**: Docker tab → container → Edit → change "Repository" → Apply (appdata stays); in Community Applications you can
+pick the tag right at installation. With **Docker Compose**: change the `image:` line, then run
+`docker compose pull && docker compose up -d`. Go back from `:beta` or `:nightly` to `:latest` only once a release is out that
+is at least as new as your beta or nightly – otherwise it would be a step back to an older version (the app tells you when
+that is the case).
 
 ### Handbook
 
@@ -559,10 +563,14 @@ sh scripts/test-version-display.sh; sh scripts/test-changelog-hooks.sh
 ```
 
 Versions and changelog: the git hooks in `scripts/git-hooks/` (enabled by `.\start.ps1` via `core.hooksPath`) write `version.txt`
-into every commit. `CHANGELOG.md` is the one customer changelog, English and German: a new entry is written with the heading
-`## vNEXT` (release) or `## vNEXT β` (beta, optionally ` · <platforms>`), and the pre-commit hook replaces it with the readable
-version of the commit. A running beta is one block at the top of each language section; the release turns it into its entry.
-The release workflow publishes only that entry as release notes (`scripts/release-notes.sh`).
+into every commit. There is one customer changelog per channel, each in English and German: `CHANGELOG.md` (releases),
+`CHANGELOG.beta.md` (betas) and `CHANGELOG.nightly.md` (nightlies). A new entry is written with the heading `## vNEXT`
+(release), `## vNEXT β` (beta) or `## vNEXT α` (nightly), optionally followed by ` · <platforms>`, and the pre-commit hook
+replaces it with the readable version of the commit: all five segments, then the channel symbol in parentheses, a release
+without one (`v2026.11.12.13.557`, `v2026.11.12.13.557 (β)`, `v2026.11.12.13.557 (α)`; a local development run shows
+`v2026.11.12.13.557 (</>)`). Stamped headings are never rewritten, so older entries keep the former notation
+(`## v2026.11.12 (13.557 β)`); the release notes and the "What's new" window find an entry in either notation. The release
+workflow publishes only the entry of that version from the file of its channel as release notes (`scripts/release-notes.sh`).
 
 Builds: `scripts/build-windows.ps1` (installer), `scripts/build-bridge.ps1` (bridge), `docker build .` (image),
 `scripts/build-notices.ps1` (third-party notices), `scripts/build-konzept.ps1` (handbook PDFs). Releases are built

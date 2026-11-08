@@ -4,9 +4,10 @@
 #   line 2: vYear.Month.Commit.Prompts.ChangedLines  (prompts since the last commit from .run/devbuild.json, kept by
 #           scripts/devbuild.mjs; changed lines = staged insertions + deletions of this commit, binaries not counted)
 # Then it stamps the changelogs with this commit's version:
-#   - CHANGELOG.md (customer changelog, staged): the placeholder headings "## vNEXT" (release) and "## vNEXT β" (beta) become the
-#     readable version of this commit ("## v2026.11.12 (13.557)" / "## v2026.11.12 (13.557 β)"); a suffix such as " · Unraid, Windows"
-#     is kept. A running beta is ONE block at the top of each language section; the release turns the same block into its entry.
+#   - The customer changelogs (staged): the placeholder headings "## vNEXT" (CHANGELOG.md, release), "## vNEXT β" (CHANGELOG.beta.md) and
+#     "## vNEXT α" (CHANGELOG.nightly.md) become the readable version of this commit ("## v2026.11.12.13.557" / "## v2026.11.12.13.557 (β)" /
+#     "## v2026.11.12.13.557 (α)"); a suffix such as " · Unraid, Windows" is kept. Headings stamped earlier are never touched; before
+#     2026-11-08 they were written "## v2026.11.12 (13.557)" / "## v2026.11.12 (13.557 β)" and are still found by release-notes.sh.
 #   - intern/CHANGELOG.dev.md (private developer changelog in its own git repository, optional): the newest "## v..." heading of each
 #     language section gets the version and the commit time. Missing file = nothing happens.
 

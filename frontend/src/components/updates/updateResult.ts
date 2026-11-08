@@ -48,10 +48,8 @@ export function updateResult(t: TFunction<'settings'>, { data, statusError, chec
         ? { tone: 'new', text: t('updates.result.availableBeta', { version: data.available.display }) }
         : { tone: 'new', text: t('updates.result.availableRelease', { version: data.available?.display ?? '' }) }
     default:
-      if (data.nightlyUpdatesEnabled) {
-        return { tone: 'ok', text: t('updates.result.upToDateNightlies') }
-      }
-      return { tone: 'ok', text: data.betaUpdatesEnabled ? t('updates.result.upToDateBetas') : t('updates.result.upToDate') }
+      if (data.updateChannel === 'nightly') return { tone: 'ok', text: t('updates.result.upToDateNightlies') }
+      return { tone: 'ok', text: data.updateChannel === 'beta' ? t('updates.result.upToDateBetas') : t('updates.result.upToDate') }
   }
 }
 
@@ -65,8 +63,8 @@ export function updateResultCandidates(t: TFunction<'settings'>): string[] {
     t('updates.result.upToDateBetas'),
     t('updates.result.upToDateNightlies'),
     t('updates.result.disabled'),
-    t('updates.result.availableNightly', { version: 'v0000.00.000 (00.0000 α)' }),
-    t('updates.result.availableBeta', { version: 'v0000.00.000 (00.0000 β)' }),
-    t('updates.result.availableRelease', { version: 'v0000.00.000 (00.0000)' }),
+    t('updates.result.availableNightly', { version: 'v0000.00.000.00.0000 (α)' }),
+    t('updates.result.availableBeta', { version: 'v0000.00.000.00.0000 (β)' }),
+    t('updates.result.availableRelease', { version: 'v0000.00.000.00.0000' }),
   ]
 }

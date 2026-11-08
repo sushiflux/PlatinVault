@@ -11,22 +11,30 @@ check() {
         fail=1
     fi
 }
-check display v2026.11.12 v2026.11.12.13.557 release "v2026.11.12 (13.557)"
-check display v2026.11.12 v2026.11.12.13.557 beta "v2026.11.12 (13.557 $beta)"
-check display v2026.11.12 v2026.11.12.13.557 nightly "v2026.11.12 (13.557 $alpha)"
-check display v2026.11.12 v2026.11.12.13.557 dev "v2026.11.12 (13.557-dev)"
+check display v2026.11.12 v2026.11.12.13.557 release "v2026.11.12.13.557"
+check display v2026.11.12 v2026.11.12.13.557 beta "v2026.11.12.13.557 ($beta)"
+check display v2026.11.12 v2026.11.12.13.557 nightly "v2026.11.12.13.557 ($alpha)"
+# Without counters: the plain version plus the symbol only if there is one, never empty parentheses
 check display v2026.11.12 "" release "v2026.11.12"
-check display v2026.11.12 "" beta "v2026.11.12"
-check display v2026.11.12 "" nightly "v2026.11.12"
-check display v2026.11.12 "" dev "v2026.11.12-dev"
-check display v2026.11.12 v2026.11.11.13.557 dev "v2026.11.12-dev"
+check display v2026.11.12 "" beta "v2026.11.12 ($beta)"
+check display v2026.11.12 "" nightly "v2026.11.12 ($alpha)"
+# A build id that is not "<short>.<prompts>.<lines>" carries no counters
 check display v2026.11.12 v2026.11.12.13 release "v2026.11.12"
+check display v2026.11.12 v2026.11.11.13.557 beta "v2026.11.12 ($beta)"
 check tag v2026.11.12 v2026.11.12.13.557 release "v2026.11.12"
 check tag v2026.11.12 v2026.11.12.13.557 beta "v2026.11.12.13.557-beta"
 check tag v2026.11.12 "" beta "v2026.11.12-beta"
 check tag v2026.11.12 v2026.11.12.13.557 nightly "v2026.11.12.13.557-nightly"
 check tag v2026.11.12 "" nightly "v2026.11.12-nightly"
-check tag v2026.11.12 v2026.11.12.13.557 dev "v2026.11.12.13.557-dev"
-check tag v2026.11.12 "" dev "v2026.11.12-dev"
+# Dev has no tag and no package: it is not a kind of this script
+rejects() {
+    if sh ./version-display.sh "$1" v2026.11.12 v2026.11.12.13.557 "$2" >/dev/null 2>&1; then
+        echo "FAIL: $1 with kind '$2' must be rejected"
+        fail=1
+    fi
+}
+rejects display dev
+rejects tag dev
+rejects tag bogus
 [ "$fail" = 0 ] && echo "version-display.sh: alle Faelle ok"
 exit "$fail"

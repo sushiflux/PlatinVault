@@ -312,7 +312,7 @@ internal static class Program
     }
 
     // The bridge's own version 1.0.<n> is its assembly version (PlatinVault.Bridge.csproj). The informational version ("product version")
-    // is the readable version of the PlatinVault build (e.g. "v2026.11.14 (15.116022)") and is not comparable, so it is not used here.
+    // is the readable version of the PlatinVault build (e.g. "v2026.11.14.15.116022") and is not comparable, so it is not used here.
     private static string GetVersion() => typeof(Program).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
 
 }

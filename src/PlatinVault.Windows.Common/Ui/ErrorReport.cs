@@ -11,7 +11,7 @@ namespace PlatinVault.Windows.Ui;
 /// </summary>
 public static class ErrorReport
 {
-    /// <summary>The readable version of this program ("v2026.11.14 (13.557)"), set once at startup by each program; null = unknown.</summary>
+    /// <summary>The readable version of this program ("v2026.11.14.13.557"), set once at startup by each program; null = unknown.</summary>
     public static string? AppVersion { get; set; }
 
     /// <summary>The text that was copied last (test aid; also set in a headless run, where the real clipboard is never touched).</summary>

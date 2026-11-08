@@ -33,7 +33,7 @@ public sealed class PayloadTests
         using var payload = Payload.FromExe(exe);
         Assert.NotNull(payload);
         Assert.True(payload!.Verify());
-        Assert.Equal("v2026.11.9 (31.2840 β)", PlatinVault.Setup.Program.ReadVersion(payload));
+        Assert.Equal("v2026.11.9.31.2840 (β)", PlatinVault.Setup.Program.ReadVersion(payload));
         Assert.Equal("# Licence", payload.ReadText("docs/LICENSE"));
 
         var target = temp.Sub("out");
@@ -51,7 +51,7 @@ public sealed class PayloadTests
         Payload.Append(exe, zip);
         using var payload = Payload.FromExe(exe);
         Assert.NotNull(payload);
-        Assert.Equal("v2026.11.12 (13.557-dev)", PlatinVault.Setup.Program.ReadVersion(payload!));
+        Assert.Equal("v2026.11.12.13.557 (</>)", PlatinVault.Setup.Program.ReadVersion(payload!));
     }
 
     [Fact]

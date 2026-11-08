@@ -6,15 +6,15 @@
 #   artifacts/linux/PlatinVault-linux-x64-<tag>.tar.gz.sha256   its SHA-256 ("<hash> *<file name>")
 #
 # <tag> is the technical form of the version, the same string as the git tag: v2026.11.12 (release) or v2026.11.12.13.557-beta /
-# v2026.11.12.13.557-dev (scripts/version-display.sh is the single definition, version.txt of the repository the source).
+# v2026.11.12.13.557-nightly (scripts/version-display.sh is the single definition, version.txt of the repository the source).
 #
 # Runs on Linux (CI: ubuntu-latest; locally in a container such as mcr.microsoft.com/dotnet/sdk:10.0). Needs the .NET SDK (global.json),
 # bash, GNU tar, gzip, sha256sum and - unless --frontend-dist is given - Node.js with npm.
 #
-#   scripts/build-linux.sh [--channel release|beta|dev] [--product-version "<readable version>"] [--frontend-dist <dir>] [--skip-frontend]
+#   scripts/build-linux.sh [--channel release|beta|nightly] [--product-version "<readable version>"] [--frontend-dist <dir>] [--skip-frontend]
 #                          [--out <dir>] [--work-dir <dir>]
 #
-#   --channel          release (default) | beta | dev: written to release-channel.txt (the server shows "v2026.11.12 (13.557 β)" etc.)
+#   --channel          release (default) | beta | nightly: written to release-channel.txt (the server shows "v2026.11.12.13.557 (β)" etc.)
 #   --product-version  the readable version for the file properties; default: computed with scripts/version-display.sh
 #   --frontend-dist    use an already built UI folder (index.html inside) instead of running npm
 #   --skip-frontend    use frontend/dist as it is
@@ -46,7 +46,7 @@ done
 step() { printf '\n==> %s\n' "$*"; }
 die() { echo "FEHLER: $*" >&2; exit 1; }
 
-case "$channel" in release | beta | nightly | dev) ;; *) die "--channel muss release, beta, nightly oder dev sein (ist: $channel)" ;; esac
+case "$channel" in release | beta | nightly) ;; *) die "--channel muss release, beta oder nightly sein (ist: $channel)" ;; esac
 for tool in dotnet tar gzip sha256sum; do command -v "$tool" >/dev/null 2>&1 || die "$tool wurde nicht gefunden."; done
 
 # ---- version (version.txt line 1 = vYear.Month.Commit, line 2 = five-segment build id) ----------------------------------------------
@@ -55,7 +55,7 @@ detail="$(sed -n '2p' "$root/version.txt" | tr -d '\r[:space:]')"
 [[ -n "$short" ]] || die "version.txt ist leer."
 [[ -n "$detail" ]] || detail="$short"
 if [[ "$channel" != release && ! "$detail" =~ ^${short//./\\.}\.[0-9]+\.[0-9]+$ ]]; then
-    die "version.txt hat keine Build-ID mit Zaehlern (Zeile 2) - ein Beta-/Dev-Paket braucht sie."
+    die "version.txt hat keine Build-ID mit Zaehlern (Zeile 2) - ein Beta-/Nightly-Paket braucht sie."
 fi
 tag="$(sh "$root/scripts/version-display.sh" tag "$short" "$detail" "$channel")"
 if [[ -z "$product_version" ]]; then

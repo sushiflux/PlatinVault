@@ -12,8 +12,9 @@ name: platinvault
 
 services:
   platinvault:
-    # Releases only (recommended). For betas and releases use  image: ghcr.io/sushiflux/platinvault:beta
-    # and also switch on "Receive beta versions" in PlatinVault (Settings > System > Updates).
+    # Releases only (recommended). For betas and releases use  image: ghcr.io/sushiflux/platinvault:beta ; for nightlies and
+    # releases use  image: ghcr.io/sushiflux/platinvault:nightly . Also set the update channel in PlatinVault to match
+    # (Settings > System > Updates > Update channel: None, Beta or Nightly).
     image: ghcr.io/sushiflux/platinvault:latest
     restart: unless-stopped
     ports:

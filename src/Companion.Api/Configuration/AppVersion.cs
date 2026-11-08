@@ -6,8 +6,8 @@ namespace Companion.Api.Configuration;
 /// <summary>
 /// Version from version.txt, written by the pre-commit hook on every commit: line 1 = vYear.Month.Commit, line 2 = the
 /// five-segment build id vYear.Month.Commit.Prompts.ChangedLines of that commit. Both only change with a commit.
-/// The readable form comes from <see cref="VersionFormat"/> (user decision 2026-11-02): release "v2026.11.12 (13.557)", beta
-/// "v2026.11.12 (13.557 β)", development "v2026.11.12 (13.557-dev)". Read fresh on every call, so a commit shows without restart.
+/// The readable form comes from <see cref="VersionFormat"/> (user decision 2026-11-02, notation changed 2026-11-08): release "v2026.11.12.13.557", beta
+/// "v2026.11.12.13.557 (β)", nightly "v2026.11.12.13.557 (α)", development run "v2026.11.12.13.557 (&lt;/&gt;)". Read fresh on every call, so a commit shows without restart.
 /// </summary>
 public sealed class AppVersion(IWebHostEnvironment environment, IOptions<CompanionOptions> options)
 {
@@ -17,7 +17,7 @@ public sealed class AppVersion(IWebHostEnvironment environment, IOptions<Compani
         get
         {
             var (shortVersion, buildId) = Read();
-            // The dev environment and a dev-build image (channel "dev") are always marked "-dev", so they can never be mistaken for a beta or a release
+            // The development environment is always marked with the dev symbol, so it can never be mistaken for a nightly, a beta or a release
             var kind = environment.IsDevelopment() ? VersionKind.Dev : VersionFormat.KindFromChannel(options.Value.ReleaseChannel);
             return VersionFormat.Display(shortVersion, buildId, kind);
         }

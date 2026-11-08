@@ -196,6 +196,9 @@ public static partial class ServerTexts
         public static Msg PopupSecondsInvalid(double value) => Msg.Same(
             $"Anzeigedauer der Trophäen-Popups \"{value.ToString(System.Globalization.CultureInfo.InvariantCulture)}\" ist ungültig – erlaubt sind ganze Sekunden von {Companion.Api.Settings.SettingsStore.MinPopupSeconds} bis {Companion.Api.Settings.SettingsStore.MaxPopupSeconds}. / Trophy pop-up duration \"{value.ToString(System.Globalization.CultureInfo.InvariantCulture)}\" is invalid – allowed: whole seconds from {Companion.Api.Settings.SettingsStore.MinPopupSeconds} to {Companion.Api.Settings.SettingsStore.MaxPopupSeconds}.");
 
+        public static Msg UpdateChannelInvalid(string value) => Msg.Same(
+            $"Update-Kanal \"{value}\" ist unbekannt – erlaubt sind \"none\", \"beta\" und \"nightly\". / Update channel \"{value}\" is unknown – allowed: \"none\", \"beta\" and \"nightly\".");
+
         public static Msg UpdateIntervalInvalid(string value) => Msg.Same(
             $"Update-Intervall \"{value}\" ist unbekannt – erlaubt sind \"startup\", \"4h\", \"daily\", \"weekly\", \"monthly\" und \"never\". / Update interval \"{value}\" is unknown – allowed: \"startup\", \"4h\", \"daily\", \"weekly\", \"monthly\" and \"never\".");
 

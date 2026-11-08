@@ -4,9 +4,11 @@
 #
 #   sh scripts/release-notes.sh <CHANGELOG.md> <readable version>
 #
-# readable version = what scripts/version-display.sh display prints, e.g. "v2026.11.12 (13.557)" for a release or
-# "v2026.11.12 (13.557 β)" for a beta. An entry is the "## <version>" heading (optionally followed by " · <platforms>") and everything
+# readable version = what scripts/version-display.sh display prints, e.g. "v2026.11.12.13.557" for a release or
+# "v2026.11.12.13.557 (β)" for a beta. An entry is the "## <version>" heading (optionally followed by " · <platforms>") and everything
 # up to the next "## " heading, the next language anchor or the end; a trailing "---" rule and blank lines are dropped.
+# Headings are stamped once and never rewritten, so entries written before 2026-11-08 carry the old notation
+# ("## v2026.11.12 (13.557)", "## v2026.11.12 (13.557 β)"): an entry is found under either form of the same build.
 # Exit code 1 with a message on stderr when the entry is missing in a language section.
 
 set -e
@@ -22,17 +24,26 @@ if [ ! -f "$file" ]; then
     exit 1
 fi
 
-# " · " (U+00B7) as bytes, so neither awk nor this file depend on the locale
+# " · " (U+00B7), β (U+03B2) and α (U+03B1) as bytes, so neither awk nor this file depend on the locale
 sep=$(printf ' \302\267 ')
+beta=$(printf '\316\262')
+alpha=$(printf '\316\261')
+
+# The old notation of the same build: "v2026.11.12.13.557 (β)" -> "v2026.11.12 (13.557 β)", "v2026.11.12.13.557" -> "v2026.11.12 (13.557)".
+# Empty when the version has no counters (nothing was ever stamped like that).
+legacy=$(printf '%s\n' "$version" | sed -n -E \
+    -e "s/^(v[0-9]{4}\.[0-9]{1,2}\.[0-9]+)\.([0-9]+\.[0-9]+) \(($beta|$alpha)\)\$/\1 (\2 \3)/p;t" \
+    -e "s/^(v[0-9]{4}\.[0-9]{1,2}\.[0-9]+)\.([0-9]+\.[0-9]+)\$/\1 (\2)/p")
 
 extract() {
-    awk -v lang="$1" -v version="$version" -v sep="$sep" '
+    awk -v lang="$1" -v version="$version" -v legacy="$legacy" -v sep="$sep" '
         { sub(/\r$/, "") }
         /^<a (id|name)="(english|deutsch)"/ { section = ($0 ~ "\"" lang "\""); if (taking) taking = 0; next }
         taking && /^## / { taking = 0 }
         section && !found && /^## / {
             heading = substr($0, 4)
-            if (heading == version || index(heading, version sep) == 1) { taking = 1; found = 1 }
+            if (heading == version || index(heading, version sep) == 1 ||
+                (legacy != "" && (heading == legacy || index(heading, legacy sep) == 1))) { taking = 1; found = 1 }
         }
         taking { lines[++n] = $0 }
         END {

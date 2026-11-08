@@ -1,7 +1,7 @@
 namespace Companion.Api.Localization;
 
 /// <summary>
-/// The texts of the update check ("Beta-Versionen erhalten", Settings > System > Updates) and of the start guard against a database
+/// The texts of the update check (update channel, Settings > System > Updates) and of the start guard against a database
 /// of a newer PlatinVault (part of <see cref="ServerTexts"/>, kept in its own file). Same rules as there: parameterised text = method,
 /// fixed text = field, English line directly behind the German one.
 /// </summary>

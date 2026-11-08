@@ -5,9 +5,8 @@ import { useTranslation } from 'react-i18next'
 import { IconCloudDownload, IconDownload, IconExternalLink, IconLoader2, IconNotes, IconRefresh } from '@tabler/icons-react'
 import { hasReleaseNotes, releasePageUrl } from '../../api/releaseNotes'
 import { checkForUpdates, fetchUpdateStatus, installUpdate, updateSettings } from '../../api/client'
-import type { UpdateCheckInterval, UpdateStatusDto } from '../../api/types'
+import type { UpdateChannel, UpdateCheckInterval, UpdateStatusDto } from '../../api/types'
 import { useFormat } from '../../i18n/format'
-import { Switch } from '../ui/Switch'
 import { ReservedText } from '../ui/ReservedText'
 import { StackedLabel } from '../ui/StackedLabel'
 import { useConfirm } from '../ui/ConfirmDialog'
@@ -15,10 +14,12 @@ import { ReleaseNotesViewer } from '../updates/ReleaseNotesDialog'
 import { UPDATE_CHECK_INTERVALS, UPDATE_STATUS_KEY } from '../updates/updateOffer'
 import { errorText, RESULT_TONE_COLOR, updateResult, updateResultCandidates, type ResultTone } from '../updates/updateResult'
 
-const SWITCH_ROW = 'flex w-full items-center gap-2.5 text-xs font-semibold text-[color:var(--text-secondary)]'
+const UPDATE_CHANNELS: UpdateChannel[] = ['none', 'beta', 'nightly']
+// The image tag each channel needs (the server sends the same value as imageTag; used for the optimistic update only)
+const IMAGE_TAG: Record<UpdateChannel, string> = { none: 'latest', beta: 'beta', nightly: 'nightly' }
 
 /**
- * Settings > System > Updates (user decision 2026-11-02, every platform): the switch "Beta-Versionen erhalten" (default off; saved at
+ * Settings > System > Updates (every platform): the one update channel choice (none / beta / nightly, default none; saved at
  * once, it changes what the check offers), the running version, "Jetzt nach Updates suchen" with its result, and - depending on the
  * host - "Update installieren" (the Windows program installs itself) or how to switch the image tag (a container cannot replace its own
  * image: Unraid, NAS, docker compose). Every result line has its room reserved; errors are shown in full.
@@ -41,46 +42,18 @@ export function UpdatesSection() {
     onSuccess: (fresh) => queryClient.setQueryData(UPDATE_STATUS_KEY, fresh),
   })
 
-  const toggle = useMutation({
-    mutationFn: (enabled: boolean) =>
-      updateSettings(!enabled && data?.nightlyUpdatesEnabled ? { betaUpdatesEnabled: false, nightlyUpdatesEnabled: false } : { betaUpdatesEnabled: enabled }),
-    onMutate: (enabled) => {
+  const channel = useMutation({
+    mutationFn: (next: UpdateChannel) => updateSettings({ updateChannel: next }),
+    onMutate: (next) => {
       setSwitchError(null)
-      // Show the new position at once; the status is read again afterwards (the offer depends on the switch)
+      // Show the new position at once; the status is read again afterwards (the offer depends on the channel)
       const previous = queryClient.getQueryData<UpdateStatusDto>(UPDATE_STATUS_KEY)
-      if (previous) {
-        queryClient.setQueryData(UPDATE_STATUS_KEY, {
-          ...previous,
-          betaUpdatesEnabled: enabled,
-          nightlyUpdatesEnabled: enabled ? previous.nightlyUpdatesEnabled : false,
-        })
-      }
+      if (previous) queryClient.setQueryData(UPDATE_STATUS_KEY, { ...previous, updateChannel: next, imageTag: IMAGE_TAG[next] })
       return { previous }
     },
-    onError: (error, _enabled, context) => {
+    onError: (error, _next, context) => {
       if (context?.previous) queryClient.setQueryData(UPDATE_STATUS_KEY, context.previous)
       setSwitchError(t('updates.saveFailed', { reason: errorText(error) }))
-    },
-    onSettled: () => void queryClient.invalidateQueries({ queryKey: UPDATE_STATUS_KEY }),
-  })
-
-  const nightlyToggle = useMutation({
-    mutationFn: (enabled: boolean) => updateSettings(enabled ? { betaUpdatesEnabled: true, nightlyUpdatesEnabled: true } : { nightlyUpdatesEnabled: false }),
-    onMutate: (enabled) => {
-      setSwitchError(null)
-      const previous = queryClient.getQueryData<UpdateStatusDto>(UPDATE_STATUS_KEY)
-      if (previous) {
-        queryClient.setQueryData(UPDATE_STATUS_KEY, {
-          ...previous,
-          betaUpdatesEnabled: enabled ? true : previous.betaUpdatesEnabled,
-          nightlyUpdatesEnabled: enabled,
-        })
-      }
-      return { previous }
-    },
-    onError: (error, _enabled, context) => {
-      if (context?.previous) queryClient.setQueryData(UPDATE_STATUS_KEY, context.previous)
-      setSwitchError(t('updates.nightlySaveFailed', { reason: errorText(error) }))
     },
     onSettled: () => void queryClient.invalidateQueries({ queryKey: UPDATE_STATUS_KEY }),
   })
@@ -107,8 +80,7 @@ export function UpdatesSection() {
     onError: (error) => setInstallMessage({ tone: 'error', text: t('updates.result.installFailed', { reason: errorText(error) }) }),
   })
 
-  const nightlyOn = data?.nightlyUpdatesEnabled ?? false
-  const betaOn = (data?.betaUpdatesEnabled ?? false) || nightlyOn
+  const selected: UpdateChannel = data?.updateChannel ?? 'none'
   const available = data?.available ?? null
   const checking = check.isPending
 
@@ -167,19 +139,34 @@ export function UpdatesSection() {
         </div>
       </div>
 
-      <Switch checked={betaOn} onChange={(next) => toggle.mutate(next)} className={SWITCH_ROW} disabled={!data || devBuild || toggle.isPending || nightlyToggle.isPending}>
-        {t('updates.betaSwitch')}
-      </Switch>
-      <Switch checked={nightlyOn} onChange={(next) => nightlyToggle.mutate(next)} className={SWITCH_ROW} disabled={!data || devBuild || toggle.isPending || nightlyToggle.isPending}>
-        {t('updates.nightlySwitch')}
-      </Switch>
-      {/* Explanation of the current position; room for the longest of the three, and for a failed save under it */}
+      {/* The one update choice (never two switches): the shared segmented control; the three labels are short, so the row is the same in both languages */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span id="update-channel-label" className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
+          {t('updates.channelLabel')}
+        </span>
+        <div className="pv-segmented" role="group" aria-labelledby="update-channel-label" data-testid="update-channel">
+          {UPDATE_CHANNELS.map((id) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={selected === id}
+              disabled={!data || devBuild || channel.isPending}
+              onClick={() => {
+                if (id !== selected) channel.mutate(id)
+              }}
+            >
+              {t(`updates.channelOptions.${id}`)}
+            </button>
+          ))}
+        </div>
+      </div>
+      {/* What the selected channel receives; room for the longest of the three in the active language, so a change moves nothing */}
       <ReservedText
         className="text-xs leading-relaxed"
         style={{ color: 'var(--text-muted)' }}
-        candidates={[t('updates.nightlyOn'), t('updates.betaOn'), t('updates.betaOff')]}
+        candidates={UPDATE_CHANNELS.map((id) => t(`updates.channelHints.${id}`))}
       >
-        {nightlyOn ? t('updates.nightlyOn') : betaOn ? t('updates.betaOn') : t('updates.betaOff')}
+        {t(`updates.channelHints.${selected}`)}
       </ReservedText>
       {switchError && (
         <p role="alert" className="text-xs font-semibold leading-relaxed" style={{ color: 'var(--accent-crimson)' }}>
@@ -364,12 +351,14 @@ function DockerHowTo({ data, latestTag, betaTag, nightlyTag }: { data: UpdateSta
           ? t('updates.docker.adviceUseBetaNew', { version: data.available.display, latest: latestTag, beta: betaTag })
           : t('updates.docker.adviceUseBeta', { latest: latestTag, beta: betaTag })
       case 'nightlyStays':
-        return t('updates.docker.adviceNightlyStays', { current: data.currentVersion, target: data.betaUpdatesEnabled ? betaTag : latestTag })
+        return t('updates.docker.adviceNightlyStays', { current: data.currentVersion, target: data.updateChannel === 'beta' ? betaTag : latestTag })
+      case 'betaStaysForNightly':
+        return t('updates.docker.adviceBetaStaysForNightly', { current: data.currentVersion, beta: betaTag, nightly: nightlyTag })
       case 'switchToBeta':
         return t('updates.docker.adviceSwitchToBeta', {
           version: data.latestBeta?.display ?? data.latestRelease?.display ?? '',
           current: data.currentVersion,
-          beta: betaTag,
+          target: data.updateChannel === 'beta' ? betaTag : latestTag,
         })
       case 'betaStays':
         return t('updates.docker.adviceBetaStays', { current: data.currentVersion, latest: latestTag })
@@ -379,15 +368,17 @@ function DockerHowTo({ data, latestTag, betaTag, nightlyTag }: { data: UpdateSta
         return null
     }
   })()
-  const wanted = data.nightlyUpdatesEnabled ? nightlyTag : data.betaUpdatesEnabled ? betaTag : latestTag
-  const sample = 'v0000.00.000 (00.0000 β)'
+  // The tag the chosen channel needs, as the server names it (imageTag has no colon)
+  const wanted = `${data.imageRepository}:${data.imageTag}`
+  const sample = 'v0000.00.000.00.0000 (β)'
   const adviceCandidates = [
     t('updates.docker.adviceUseNightly', { nightly: nightlyTag }),
     t('updates.docker.adviceUseNightlyNew', { version: sample, nightly: nightlyTag }),
     t('updates.docker.adviceUseBeta', { latest: latestTag, beta: betaTag }),
     t('updates.docker.adviceUseBetaNew', { version: sample, latest: latestTag, beta: betaTag }),
     t('updates.docker.adviceNightlyStays', { current: sample, target: betaTag }),
-    t('updates.docker.adviceSwitchToBeta', { version: sample, current: sample, beta: betaTag }),
+    t('updates.docker.adviceSwitchToBeta', { version: sample, current: sample, target: betaTag }),
+    t('updates.docker.adviceBetaStaysForNightly', { current: sample, beta: betaTag, nightly: nightlyTag }),
     t('updates.docker.adviceBetaStays', { current: sample, latest: latestTag }),
     t('updates.docker.adviceSwitchToLatest', { version: sample, current: sample, latest: latestTag }),
   ]

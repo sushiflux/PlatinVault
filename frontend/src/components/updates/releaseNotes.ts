@@ -1,7 +1,7 @@
 // Parses the release notes of one version into structured data for the notes dialog. The input is the body of the GitHub release,
 // which is the entry of CHANGELOG.md in two blocks (English, a "---" rule, German - see scripts/release-notes.sh):
 //
-//   ## v2026.11.14 (15.116022)            <- title (version, optionally " · platforms")
+//   ## v2026.11.14.15.116022              <- title (version, optionally " · platforms"; older entries read "v2026.11.14 (15.116022)")
 //   Summary paragraph(s)                  <- only the first entry of a product has one
 //   ### ✨ New                            <- one section per category, bullets below
 //   - **Bold lead:** text ...
@@ -28,7 +28,7 @@ export interface NotesSection {
 }
 
 export interface ParsedReleaseNotes {
-  /** The entry heading ("v2026.11.14 (15.116022)") without the platforms, null when the body has none */
+  /** The entry heading ("v2026.11.14.15.116022") without the platforms, null when the body has none */
   title: string | null
   /** The platforms after " · " in the heading ("Unraid, Windows"), null when there are none */
   platforms: string | null
@@ -188,7 +188,7 @@ function parseBlock(markdown: string): ParsedReleaseNotes {
       const { level, text } = heading
       const isFirst = result.title === null && result.sections.length === 0 && result.summary.length === 0
       if (level <= 2 && isFirst && /^v?\d/i.test(text)) {
-        // "v2026.11.12 (13.557 β) · Unraid, Windows"
+        // "v2026.11.12.13.557 (β) · Unraid, Windows" (older entries: "v2026.11.12 (13.557 β) · ...")
         const dot = text.indexOf(' · ')
         result.title = dot >= 0 ? text.slice(0, dot).trim() : text
         result.platforms = dot >= 0 ? text.slice(dot + 3).trim() || null : null

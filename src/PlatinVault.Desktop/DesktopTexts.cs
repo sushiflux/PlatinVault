@@ -1,3 +1,4 @@
+using PlatinVault.Versioning;
 using PlatinVault.Windows.Localization;
 
 namespace PlatinVault.Desktop;
@@ -128,17 +129,19 @@ internal static class DesktopTexts
             $"Das Update konnte nicht geladen werden: {reason}",
             $"The update could not be downloaded: {reason}");
 
-        public static Msg UpToDate(string version, bool betas, bool nightlies = false) => new(
-            nightlies
-                ? $"PlatinVault {version} ist aktuell – es gibt keine neuere Nightly, Beta und kein neueres Release."
-                : betas
-                    ? $"PlatinVault {version} ist aktuell – es gibt keine neuere Beta und kein neueres Release."
-                    : $"PlatinVault {version} ist aktuell – es gibt kein neueres Release. (Betas und Nightlies bekommst du, wenn du sie in den Einstellungen unter System → Updates einschaltest.)",
-            nightlies
-                ? $"PlatinVault {version} is up to date – there is no newer nightly, beta or release."
-                : betas
-                    ? $"PlatinVault {version} is up to date – there is no newer beta and no newer release."
-                    : $"PlatinVault {version} is up to date – there is no newer release. (To get betas or nightlies, switch them on in Settings under System → Updates.)");
+        public static Msg UpToDate(string version, UpdateChannel channel) => new(
+            channel switch
+            {
+                UpdateChannel.Nightly => $"PlatinVault {version} ist aktuell – es gibt keine neuere Nightly und kein neueres Release.",
+                UpdateChannel.Beta => $"PlatinVault {version} ist aktuell – es gibt keine neuere Beta und kein neueres Release.",
+                _ => $"PlatinVault {version} ist aktuell – es gibt kein neueres Release. (Betas oder Nightlies bekommst du, wenn du den Beta- oder Nightly-Kanal in den Einstellungen unter System → Updates wählst.)",
+            },
+            channel switch
+            {
+                UpdateChannel.Nightly => $"PlatinVault {version} is up to date – there is no newer nightly and no newer release.",
+                UpdateChannel.Beta => $"PlatinVault {version} is up to date – there is no newer beta and no newer release.",
+                _ => $"PlatinVault {version} is up to date – there is no newer release. (To get betas or nightlies, choose the Beta or Nightly channel in Settings under System → Updates.)",
+            });
 
         public static Msg CheckFailed(string reason) => new(
             $"Die Update-Prüfung hat nicht geklappt: {reason}",

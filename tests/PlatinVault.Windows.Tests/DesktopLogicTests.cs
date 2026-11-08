@@ -24,8 +24,8 @@ public sealed class UpdateCheckTests
     }
 
     [Theory]
-    [InlineData("v2026.11.12 (13.557 β)")]
-    [InlineData("v2026.11.12 (13.557 α)")]
+    [InlineData("v2026.11.12.13.557 (β)")]
+    [InlineData("v2026.11.12.13.557 (α)")]
     [InlineData("v2026.11.12.13.557-betas")]
     [InlineData("v2026.11")]
     [InlineData("")]
@@ -50,8 +50,8 @@ public sealed class UpdateCheckTests
     }
 
     [Theory]
-    [InlineData("v2026.11.12.13.557-beta", "v2026.11.12 (13.557 β)")]
-    [InlineData("v2026.11.12.13.557-nightly", "v2026.11.12 (13.557 α)")]
+    [InlineData("v2026.11.12.13.557-beta", "v2026.11.12.13.557 (β)")]
+    [InlineData("v2026.11.12.13.557-nightly", "v2026.11.12.13.557 (α)")]
     [InlineData("v2026.11.12", "v2026.11.12")]
     [InlineData("v2026.11.9.31.2840-rc6", "v2026.11.9.31.2840-rc6")]
     public void Shows_a_tag_in_the_readable_form(string tag, string expected) => Assert.Equal(expected, ReleaseVersion.Parse(tag)!.Value.Display);
@@ -71,28 +71,72 @@ public sealed class UpdateCheckTests
             : [new { name = $"PlatinVault-Setup-{tag}.exe", browser_download_url = $"https://{host}/x/{tag}.exe" }],
     };
 
-    // The switch "Beta-Versionen erhalten" decides (user decision 2026-11-02), not the channel of the installed build
+    // The selected update channel decides, not the channel of the installed build
     [Fact]
-    public void Switch_off_only_takes_releases()
+    public void No_channel_only_takes_releases()
     {
-        var json = Releases(Release("v2026.11.12.1.10-beta"), Release("v2026.11.12.1.9-rc1"), Release("v2026.11.11"), Release("v2026.11.9"));
-        var offer = UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.9")!.Value, includeBetas: false);
+        var json = Releases(Release("v2026.11.12.1.10-beta"), Release("v2026.11.12.1.9-rc1"), Release("v2026.11.12.1.8-nightly"), Release("v2026.11.11"), Release("v2026.11.9"));
+        var offer = UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.9")!.Value, UpdateChannel.None);
         Assert.Equal("v2026.11.11", offer?.Version.Text);
+    }
+
+    [Fact]
+    public void Each_channel_takes_only_what_it_receives_from_a_feed_with_all_three_kinds()
+    {
+        var json = Releases(
+            Release("v2026.11.15.1.10-nightly"),
+            Release("v2026.11.14.2.30-beta"),
+            Release("v2026.11.13"),
+            Release("v2026.11.12.13.557-beta"),
+            Release("v2026.11.11"));
+        var current = ReleaseVersion.Parse("v2026.11.10")!.Value;
+        Assert.Equal("v2026.11.13", UpdateChecker.Pick(json, current, UpdateChannel.None)?.Version.Text);
+        Assert.Equal("v2026.11.14.2.30-beta", UpdateChecker.Pick(json, current, UpdateChannel.Beta)?.Version.Text);
+        Assert.Equal("v2026.11.15.1.10-nightly", UpdateChecker.Pick(json, current, UpdateChannel.Nightly)?.Version.Text);
+    }
+
+    [Fact]
+    public void The_nightly_channel_is_never_offered_a_beta()
+    {
+        // The newest thing in the feed is a beta; a nightly user takes the release behind it, and nothing at all when there is none newer
+        var json = Releases(Release("v2026.11.14.2.30-beta"), Release("v2026.11.13"));
+        Assert.Equal("v2026.11.13", UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.12")!.Value, UpdateChannel.Nightly)?.Version.Text);
+        Assert.Null(UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.13")!.Value, UpdateChannel.Nightly));
+        // and the beta channel is never offered a nightly
+        var nightlyOnly = Releases(Release("v2026.11.14.1.10-nightly"));
+        Assert.Null(UpdateChecker.Pick(nightlyOnly, ReleaseVersion.Parse("v2026.11.13")!.Value, UpdateChannel.Beta));
+        Assert.Null(UpdateChecker.Pick(nightlyOnly, ReleaseVersion.Parse("v2026.11.13")!.Value, UpdateChannel.None));
+    }
+
+    [Fact]
+    public void A_running_version_newer_than_its_channel_stays_and_nothing_is_a_downgrade()
+    {
+        var json = Releases(Release("v2026.11.13"), Release("v2026.11.13.1.5-nightly"), Release("v2026.11.13.1.4-beta"));
+        // A nightly of a later commit than everything published stays on every channel
+        var runningNightly = ReleaseVersion.Parse("v2026.11.14.1.1-nightly")!.Value;
+        foreach (var channel in new[] { UpdateChannel.None, UpdateChannel.Beta, UpdateChannel.Nightly })
+        {
+            Assert.Null(UpdateChecker.Pick(json, runningNightly, channel));
+        }
+        // Same commit: a release is above its beta, which is above its nightly
+        var sameCommit = Releases(Release("v2026.11.14"), Release("v2026.11.14.2.30-beta"), Release("v2026.11.14.1.10-nightly"));
+        Assert.Equal("v2026.11.14", UpdateChecker.Pick(sameCommit, runningNightly, UpdateChannel.Nightly)?.Version.Text);
+        Assert.Null(UpdateChecker.Pick(Releases(Release("v2026.11.14.1.10-nightly")), ReleaseVersion.Parse("v2026.11.14.2.30-beta")!.Value, UpdateChannel.Nightly));
     }
 
     [Fact]
     public void Switch_on_takes_the_newest_of_betas_and_releases()
     {
         var json = Releases(Release("v2026.11.12.1.10-beta"), Release("v2026.11.11"));
-        Assert.Equal("v2026.11.12.1.10-beta", UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.9")!.Value, includeBetas: true)?.Version.Text);
-        Assert.Equal("v2026.11.12.1.10-beta", UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.9.3.20-beta")!.Value, includeBetas: true)?.Version.Text);
+        Assert.Equal("v2026.11.12.1.10-beta", UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.9")!.Value, UpdateChannel.Beta)?.Version.Text);
+        Assert.Equal("v2026.11.12.1.10-beta", UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.9.3.20-beta")!.Value, UpdateChannel.Beta)?.Version.Text);
     }
 
     [Fact]
     public void A_running_beta_takes_a_newer_release_when_no_newer_beta_exists()
     {
         var json = Releases(Release("v2026.11.12"), Release("v2026.11.10.4.4-beta"));
-        var offer = UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.10.4.4-beta")!.Value, includeBetas: true);
+        var offer = UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.10.4.4-beta")!.Value, UpdateChannel.Beta);
         Assert.Equal("v2026.11.12", offer?.Version.Text);
     }
 
@@ -101,25 +145,25 @@ public sealed class UpdateCheckTests
     {
         // Running a beta that is newer than every release: nothing is offered (no downgrade to v2026.11.11)
         var json = Releases(Release("v2026.11.12.13.557-beta"), Release("v2026.11.11"));
-        Assert.Null(UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.12.13.557-beta")!.Value, includeBetas: false));
+        Assert.Null(UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.12.13.557-beta")!.Value, UpdateChannel.None));
         // The beta became a release (same commit, later): offered automatically
         json = Releases(Release("v2026.11.12"), Release("v2026.11.12.13.557-beta"), Release("v2026.11.11"));
-        Assert.Equal("v2026.11.12", UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.12.13.557-beta")!.Value, includeBetas: false)?.Version.Text);
+        Assert.Equal("v2026.11.12", UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.12.13.557-beta")!.Value, UpdateChannel.None)?.Version.Text);
     }
 
     [Fact]
     public void An_old_candidate_install_is_offered_betas_only_with_the_switch()
     {
         var json = Releases(Release("v2026.11.12.13.557-beta"), Release("v2026.11.9.31.2840-rc6"));
-        Assert.Equal("v2026.11.12.13.557-beta", UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.9.31.2840-rc6")!.Value, includeBetas: true)?.Version.Text);
-        Assert.Null(UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.9.31.2840-rc6")!.Value, includeBetas: false));
+        Assert.Equal("v2026.11.12.13.557-beta", UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.9.31.2840-rc6")!.Value, UpdateChannel.Beta)?.Version.Text);
+        Assert.Null(UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.9.31.2840-rc6")!.Value, UpdateChannel.None));
     }
 
     [Fact]
     public void Old_candidate_tags_stay_pre_releases_for_release_only_installs()
     {
         var json = Releases(Release("v2026.11.9.31.2840-rc6"));
-        Assert.Null(UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.8")!.Value, includeBetas: false));
+        Assert.Null(UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.8")!.Value, UpdateChannel.None));
     }
 
     [Fact]
@@ -128,15 +172,15 @@ public sealed class UpdateCheckTests
         var json = Releases(Release("v2026.11.20.1.2-dev"), Release("v2026.11.12.13.557-beta"));
         Assert.Null(ReleaseVersion.Parse("v2026.11.20.1.2-dev"));
         // Only the beta is a candidate; the (hypothetical) dev release is skipped even with the beta switch on
-        Assert.Equal("v2026.11.12.13.557-beta", UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.9")!.Value, includeBetas: true)?.Version.Text);
-        Assert.Null(UpdateChecker.Pick(Releases(Release("v2026.11.20.1.2-dev")), ReleaseVersion.Parse("v2026.11.9")!.Value, includeBetas: true));
+        Assert.Equal("v2026.11.12.13.557-beta", UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.9")!.Value, UpdateChannel.Beta)?.Version.Text);
+        Assert.Null(UpdateChecker.Pick(Releases(Release("v2026.11.20.1.2-dev")), ReleaseVersion.Parse("v2026.11.9")!.Value, UpdateChannel.Beta));
     }
 
     [Fact]
     public void Drafts_releases_without_checksum_and_foreign_hosts_are_ignored()
     {
         var json = Releases(Release("v2026.11.20", draft: true), Release("v2026.11.19", checksum: false), Release("v2026.11.18", host: "evil.example"));
-        Assert.Null(UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.9")!.Value, includeBetas: true));
+        Assert.Null(UpdateChecker.Pick(json, ReleaseVersion.Parse("v2026.11.9")!.Value, UpdateChannel.Beta));
     }
 
     [Fact]

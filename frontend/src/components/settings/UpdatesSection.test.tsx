@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { textWithoutCopyButton } from '../../test/withoutCopyButton'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -25,7 +25,8 @@ function status(overrides: Partial<UpdateStatusDto> = {}): UpdateStatusDto {
     currentVersion: 'v2026.11.10 (31.2840)',
     currentTag: 'v2026.11.10',
     currentChannel: 'release',
-    betaUpdatesEnabled: false,
+    updateChannel: 'none',
+    imageTag: 'latest',
     host: 'server',
     state: 'upToDate',
     available: null,
@@ -65,27 +66,31 @@ function renderSection() {
 }
 
 describe('UpdatesSection', () => {
-  it('shows the version, the switch off by default and the container how-to with both tags', async () => {
+  it('shows the version, the channel "Keiner" selected by default and the container how-to with both tags', async () => {
     fetchUpdateStatus.mockResolvedValue(status())
     renderSection()
     expect(await screen.findByText('v2026.11.10 (31.2840)')).toBeTruthy()
-    const toggle = screen.getByRole('switch', { name: 'Beta-Versionen erhalten' })
-    expect(toggle.getAttribute('aria-checked')).toBe('false')
+    expect(screen.queryByRole('switch')).toBeNull()
+    const group = screen.getByRole('group', { name: 'Update-Kanal' })
+    expect(within(group).getAllByRole('button').map((b) => b.textContent)).toEqual(['Keiner', 'Beta', 'Nightly'])
+    expect(within(group).getByRole('button', { name: 'Keiner' }).getAttribute('aria-pressed')).toBe('true')
+    expect(within(group).getByRole('button', { name: 'Beta' }).getAttribute('aria-pressed')).toBe('false')
     expect(screen.getByRole('status').textContent).toContain('kein neueres Release')
     expect(screen.getAllByText('ghcr.io/sushiflux/platinvault:latest').length).toBeGreaterThan(0)
     expect(screen.getAllByText('ghcr.io/sushiflux/platinvault:beta').length).toBeGreaterThan(0)
     expect(screen.getByText('Container aktualisieren')).toBeTruthy()
   })
 
-  it('saves the switch at once and reads the status again', async () => {
+  it('saves the chosen channel at once and reads the status again', async () => {
     fetchUpdateStatus.mockResolvedValueOnce(status())
-    fetchUpdateStatus.mockResolvedValue(status({ betaUpdatesEnabled: true, state: 'available', available: beta, dockerAdvice: 'useBeta' }))
+    fetchUpdateStatus.mockResolvedValue(status({ updateChannel: 'beta', imageTag: 'beta', state: 'available', available: beta, dockerAdvice: 'useBeta' }))
     updateSettings.mockResolvedValue({} as SettingsResponseDto)
     renderSection()
-    const toggle = await screen.findByRole('switch', { name: 'Beta-Versionen erhalten' })
-    await waitFor(() => expect((toggle as HTMLButtonElement).disabled).toBe(false))
-    fireEvent.click(toggle)
-    await waitFor(() => expect(updateSettings).toHaveBeenCalledWith({ betaUpdatesEnabled: true }))
+    const beta_ = await screen.findByRole('button', { name: 'Beta' })
+    await waitFor(() => expect((beta_ as HTMLButtonElement).disabled).toBe(false))
+    fireEvent.click(beta_)
+    await waitFor(() => expect(updateSettings).toHaveBeenCalledWith({ updateChannel: 'beta' }))
+    await waitFor(() => expect(beta_.getAttribute('aria-pressed')).toBe('true'))
     expect(await screen.findByText('Neue Beta v2026.11.12 (13.557 β) verfügbar.')).toBeTruthy()
     // A release runs while betas are wanted: the container most likely still uses :latest
     expect(screen.getByRole('note').textContent).toContain('ghcr.io/sushiflux/platinvault:beta')
@@ -114,17 +119,17 @@ describe('UpdatesSection', () => {
     expect(screen.queryByRole('button', { name: /Release-Notizen/ })).toBeNull()
   })
 
-  it('shows a failed save of the switch in full and keeps the old position', async () => {
+  it('shows a failed save of the channel in full and keeps the old position', async () => {
     fetchUpdateStatus.mockResolvedValue(status())
     updateSettings.mockRejectedValue(new Error('Server nicht erreichbar: Verbindung abgelehnt (127.0.0.1:5231).'))
     renderSection()
-    const toggle = await screen.findByRole('switch', { name: 'Beta-Versionen erhalten' })
-    await waitFor(() => expect((toggle as HTMLButtonElement).disabled).toBe(false))
-    fireEvent.click(toggle)
+    const betaButton = await screen.findByRole('button', { name: 'Beta' })
+    await waitFor(() => expect((betaButton as HTMLButtonElement).disabled).toBe(false))
+    fireEvent.click(betaButton)
     expect(textWithoutCopyButton(await screen.findByRole('alert'))).toBe(
-      'Die Einstellung „Beta-Versionen erhalten“ wurde nicht gespeichert: Server nicht erreichbar: Verbindung abgelehnt (127.0.0.1:5231).'
+      'Der Update-Kanal wurde nicht gespeichert: Server nicht erreichbar: Verbindung abgelehnt (127.0.0.1:5231).'
     )
-    await waitFor(() => expect(toggle.getAttribute('aria-checked')).toBe('false'))
+    await waitFor(() => expect(betaButton.getAttribute('aria-pressed')).toBe('false'))
   })
 
   it('shows a check error completely', async () => {
@@ -145,7 +150,7 @@ describe('UpdatesSection', () => {
   })
 
   it('installs in the Windows program only after the own confirmation dialog', async () => {
-    fetchUpdateStatus.mockResolvedValue(status({ host: 'desktop', state: 'available', available: beta, betaUpdatesEnabled: true, canInstall: true }))
+    fetchUpdateStatus.mockResolvedValue(status({ host: 'desktop', state: 'available', available: beta, updateChannel: 'beta', imageTag: 'beta', canInstall: true }))
     installUpdate.mockResolvedValue({ started: true, tag: beta.tag })
     renderSection()
     fireEvent.click(await screen.findByRole('button', { name: 'Update installieren' }))
@@ -190,7 +195,7 @@ describe('UpdatesSection', () => {
     expect(screen.getByTestId('updates-linux-download').closest('div')?.getAttribute('aria-hidden')).toBe('true')
   })
 
-  it('shows a calm note on a dev build and locks the switch and the check (no container how-to, no offer)', async () => {
+  it('shows a calm note on a dev build and locks the channel choice and the check (no container how-to, no offer)', async () => {
     fetchUpdateStatus.mockResolvedValue(
       status({ currentChannel: 'dev', currentVersion: 'v2026.11.12 (13.557-dev)', currentTag: 'v2026.11.12.13.557-dev', state: 'devBuild', checkedAt: null })
     )
@@ -198,14 +203,13 @@ describe('UpdatesSection', () => {
     expect(await screen.findByText('v2026.11.12 (13.557-dev)')).toBeTruthy()
     const note = await screen.findByText(/Dev-Build: Dieser lokale Entwicklungsstand sucht nicht nach Updates/)
     expect(note.textContent).toContain('bietet nie Nightlies, Betas oder Releases an')
-    expect(screen.getByRole('switch', { name: 'Beta-Versionen erhalten' }).hasAttribute('disabled')).toBe(true)
-    expect(screen.getByRole('switch', { name: 'Nightly-Versionen (α) erhalten' }).hasAttribute('disabled')).toBe(true)
+    for (const name of ['Keiner', 'Beta', 'Nightly']) expect(screen.getByRole('button', { name }).hasAttribute('disabled')).toBe(true)
     expect((screen.getByRole('button', { name: /Jetzt nach Updates suchen/ }) as HTMLButtonElement).disabled).toBe(true)
     expect(screen.queryByText('Container aktualisieren')).toBeNull()
     expect(screen.getByText('Dev-Build', { selector: 'span' })).toBeTruthy()
   })
 
-  it('enables nightly versions (α) together with beta versions and shows nightly update offers and :nightly advice', async () => {
+  it('chooses Nightly (one value, no beta flag) and shows nightly update offers and :nightly advice', async () => {
     const nightly = {
       tag: 'v2026.11.20.8.1234-nightly',
       display: 'v2026.11.20 (8.1234 α)',
@@ -219,8 +223,8 @@ describe('UpdatesSection', () => {
     fetchUpdateStatus.mockResolvedValueOnce(status())
     fetchUpdateStatus.mockResolvedValue(
       status({
-        betaUpdatesEnabled: true,
-        nightlyUpdatesEnabled: true,
+        updateChannel: 'nightly',
+        imageTag: 'nightly',
         state: 'available',
         available: nightly,
         latestNightly: nightly,
@@ -229,13 +233,25 @@ describe('UpdatesSection', () => {
     )
     updateSettings.mockResolvedValue({} as SettingsResponseDto)
     renderSection()
-    const nightlySwitch = await screen.findByRole('switch', { name: 'Nightly-Versionen (α) erhalten' })
-    await waitFor(() => expect((nightlySwitch as HTMLButtonElement).disabled).toBe(false))
-    fireEvent.click(nightlySwitch)
-    await waitFor(() => expect(updateSettings).toHaveBeenCalledWith({ betaUpdatesEnabled: true, nightlyUpdatesEnabled: true }))
+    const nightlyButton = await screen.findByRole('button', { name: 'Nightly' })
+    await waitFor(() => expect((nightlyButton as HTMLButtonElement).disabled).toBe(false))
+    fireEvent.click(nightlyButton)
+    await waitFor(() => expect(updateSettings).toHaveBeenCalledWith({ updateChannel: 'nightly' }))
     expect(await screen.findByText('Neue Nightly v2026.11.20 (8.1234 α) verfügbar.')).toBeTruthy()
     expect(screen.getByRole('note').textContent).toContain('ghcr.io/sushiflux/platinvault:nightly')
     expect(screen.getAllByText('ghcr.io/sushiflux/platinvault:nightly').length).toBeGreaterThan(0)
+  })
+
+  it('Nightly channel on a running beta: the container stays on :beta (betaStaysForNightly), the how-to names the chosen image', async () => {
+    fetchUpdateStatus.mockResolvedValue(
+      status({ currentChannel: 'beta', currentVersion: 'v2026.11.12 (13.557 β)', updateChannel: 'nightly', imageTag: 'nightly', dockerAdvice: 'betaStaysForNightly' })
+    )
+    renderSection()
+    const note = (await screen.findByRole('note')).textContent ?? ''
+    expect(note).toContain('Schritt zurück')
+    expect(note).toContain('bleibt vorerst auf ghcr.io/sushiflux/platinvault:beta')
+    expect(screen.getByText(/Du bekommst Nightly-Versionen .α. und Releases/)).toBeTruthy()
+    expect(document.querySelector('pre')?.textContent).toContain('image: ghcr.io/sushiflux/platinvault:nightly')
   })
 
   it('offers the six check intervals (daily by default) and saves a choice at once; a failure is shown completely', async () => {

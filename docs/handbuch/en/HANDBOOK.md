@@ -2,7 +2,7 @@
 title: PlatinVault
 subtitle: Handbook
 tagline: Live trophies for your Steam games and 100 % guides in one place – how to set up PlatinVault and use it every day.
-version: v2026.11.18
+version: v2026.11.22
 date: 2026-11-03
 status: Release
 copyright: © 2026 SushiFlux
@@ -61,7 +61,7 @@ appdata folder.
 **Own domain / reverse proxy:** if you open PlatinVault under a name of your own domain (for example `pv.example.com` through a reverse proxy, a web server placed in front), enter that name in the template under "Show more settings" at `PLATINVAULT_ALLOWED_HOSTS`. Separate several names with `;`; `*.example.com` covers every name below it. You need nothing for IP addresses, `localhost`, names without a dot (for example `tower`) and names ending in `.local`, `.lan`, `.home.arpa`, `.internal` or `.fritz.box`. Background: PlatinVault refuses other names so that foreign web pages cannot reach it by a trick with the name system (DNS rebinding). If you already open PlatinVault this way, enter the name once after the update. If your proxy rewrites the name, the live popups also need `PLATINVAULT_ALLOWED_ORIGINS=https://pv.example.com`.
 
 You get updates through Unraid like for any other container; your data in the appdata folder stays. Whether your container
-gets only releases or betas too is decided by its image tag – see chapter 12.
+gets only releases or pre-releases too is decided by its image tag – see chapter 12.
 
 ## 3.2 Linux with Docker
 
@@ -853,7 +853,7 @@ is taken too, there is no shortcut – then open the guide from the icon next to
 
 ## 11.6 Updates
 
-PlatinVault checks by itself whether a new version exists – as often as set under **Look for updates** (default: daily) –, releases only, or betas too if you switched on **Receive beta versions**
+PlatinVault checks by itself whether a new version exists – as often as set under **Look for updates** (default: daily) –, releases only, or betas too if you chose **Beta** (or **Nightly**) as the **Update channel**
 under Settings → **System** → **Updates** (chapter 12). If there is one, the icon's menu shows **Install update …** and a notification
 appears. To look right away, use **Check for updates** in the icon's menu or **Check for updates now** in the settings; there you can
 also install a version that was found with **Install update**. After you confirm, PlatinVault downloads the setup, checks its checksum,
@@ -915,20 +915,28 @@ publicly available. Some programs move files to quarantine in this case.
 PlatinVault comes in three published channels:
 
 - **Releases** – the normal, finished versions. This is the default and the right choice for most people.
-- **Betas (`β`)** – tested pre-releases with new features before final release. A beta shows a **β** after the version number, for example `v2026.11.12 (13.557 β)`.
-- **Nightlies (`α`)** – early pre-releases with the very latest changes straight from ongoing development. A nightly shows an **α** (alpha) after the version number, for example `v2026.11.20 (8.1234 α)`.
+- **Betas (`β`)** – tested pre-releases with new features before final release. A beta shows a **β** after the version number, for example `v2026.11.12.13.557 (β)`.
+- **Nightlies (`α`)** – early pre-releases with the very latest changes straight from ongoing development. A nightly shows an **α** (alpha) after the version number, for example `v2026.11.20.8.1234 (α)`.
 
-## 12.1 The switches for beta and nightly versions
+## 12.1 Choosing the update channel
 
-Under Settings → **System** → **Updates**, **Releases** are always enabled; in addition – on every platform – there are two switches for pre-release channels (both start **off**):
+The **Update channel** decides which kind of versions PlatinVault offers you. You choose it in the same place on every platform:
 
-- **Both off:** you only get finished releases.
-- **Receive beta versions:** you get betas (`β`) and releases – always the newest of both.
-- **Receive nightly versions (α):** you get nightly versions (`α`), betas (`β`) and releases – always the newest version across all three channels (turning this on automatically enables **Receive beta versions** as well).
+1. Open the **Settings** and switch to **System**.
+2. Find the section **Updates**. The **Update channel** is directly below **Installed version**.
+3. Click one of the three buttons. Your choice is saved at once; a short text below explains what the channel means.
 
-There is **never a step back**: if you switch off a pre-release channel while a nightly or beta is running, your installed version stays until a version in the chosen channel comes out that is at least as new. That version is then offered to you automatically.
+The three buttons:
 
-Below it you see your installed version and, with **Check for updates now**, the result: "You are up to date", "New nightly … available", "New beta … available" or
+- **None:** you only get finished releases. This is the default.
+- **Beta:** you get betas (`β`) and releases – always the newer of both, but no nightlies.
+- **Nightly:** you get nightly versions (`α`) and releases – always the newer of both, but no betas.
+
+If you used one of the two older pre-release switches before, your choice is kept: if "nightly" was on, **Nightly** is now selected; otherwise, if "beta" was on, **Beta**; otherwise **None**.
+
+There is **never a step back**: if you move to a quieter channel while a nightly or beta is running, your installed version stays until a version in the chosen channel comes out that is at least as new. That version is then offered to you automatically.
+
+Further down you see, with **Check for updates now**, the result: "You are up to date", "New nightly … available", "New beta … available" or
 "New release … available" – with a button for the release notes. PlatinVault asks GitHub for the published versions (without signing in;
 only a few times a day, a check by hand at most once a minute). If that does not work, the complete reason is shown there, for example no
 internet connection or a used-up request quota at GitHub.
@@ -958,9 +966,9 @@ you in the settings exactly what to do. Which versions your container gets is de
 |---|---|
 | `ghcr.io/sushiflux/platinvault:latest` | releases only |
 | `ghcr.io/sushiflux/platinvault:beta` | betas (`β`) and releases (always the newest of both) |
-| `ghcr.io/sushiflux/platinvault:nightly` | nightlies (`α`), betas (`β`) and releases (always the newest of all) |
+| `ghcr.io/sushiflux/platinvault:nightly` | nightlies (`α`) and releases (always the newest of both) |
 
-Set the switches in the app to match the tag. This is how you change the tag – your data in the database and appdata stays:
+In the app, choose the matching **Update channel**: **None** for `:latest`, **Beta** for `:beta`, **Nightly** for `:nightly`. If channel and tag do not match, PlatinVault names the tag your choice needs in the settings and in the update icon. This is how you change the tag – your data in the database and appdata stays:
 
 - **Unraid:** Docker tab → click the PlatinVault container → **Edit** → change the tag under **Repository** → **Apply**. Afterwards you
   get new versions as usual with **Check for Updates** and **Update**. In Community Applications you can pick the tag right at installation.

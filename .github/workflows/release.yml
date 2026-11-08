@@ -1,18 +1,24 @@
 name: Release
 
-# Three-tier push model: dev build, beta, release.
+# Release pipeline for the three published channels: nightly, beta, release. Dev is local and native on the developer's machine only:
+# it has no tag, no image, no package and no upload, so this workflow knows nothing about it and rejects a "-dev" tag.
 # Since 2026-11-03 PlatinVault is open source (AGPL-3.0-only) in ONE public repository: source code, customer files and every
 # release live here (the former private source repo and the separate customer repo were merged).
+#   v2026.11.12.13.557-nightly -> nightly (no counter, the five segments are unique per commit): builds the image (version tag + moving
+#                              tag "nightly"), public GitHub pre-release in this repository
 #   v2026.11.12.13.557-beta -> beta (replaces the former release candidate; no counter, the five segments are unique per commit):
 #                              builds the image (version tag + moving tag "beta"), public GitHub pre-release in this repository
-#   v2026.11.12             -> release: same build, version tag + "latest" + "beta", normal public GitHub Release
-# Release notes (beta and release): only this version's entry of CHANGELOG.md - its English and its German block, found by the readable
-# version in the heading ("## v2026.11.12 (13.557 β)" for a beta, "## v2026.11.12 (13.557)" for a release), extracted by
-# scripts/release-notes.sh. A missing entry stops the run.
-# Image tags for customers (switch "Beta-Versionen erhalten", user decision 2026-11-02): ":latest" = releases only, ":beta" = the newest of
-# betas AND releases - so a release moves "beta" too (a release is always a later commit than the betas before it).
+#   v2026.11.12             -> release: same build, version tag + "latest" + "beta" + "nightly", normal public GitHub Release
+# Release notes (nightly, beta and release): only this version's entry of the customer changelog of its channel (CHANGELOG.nightly.md,
+# CHANGELOG.beta.md, CHANGELOG.md) - its English and its German block, found by the readable version in the heading
+# ("## v2026.11.12.13.557 (α)" for a nightly, "## v2026.11.12.13.557 (β)" for a beta, "## v2026.11.12.13.557" for a release), extracted by
+# scripts/release-notes.sh, which also finds headings stamped in the notation used before 2026-11-08 ("## v2026.11.12 (13.557 β)").
+# A missing entry stops the run.
+# Image tags for customers, one channel per tag: ":latest" = full releases only, ":beta" = betas and full releases, ":nightly" = nightlies and
+# full releases. Each build moves exactly the tags of its own channel: a nightly moves "nightly", a beta moves "beta" (never "nightly"), and a
+# release moves "latest", "beta" and "nightly" (a full release reaches every channel).
 # Tags and image labels use the technical form (no spaces, parentheses or the beta sign); people see the readable form
-# "v2026.11.12 (13.557 β)" (release: "v2026.11.12 (13.557)") in the release title and the app - scripts/version-display.sh is the single
+# "v2026.11.12.13.557 (β)" (release: "v2026.11.12.13.557") in the release title and the app - scripts/version-display.sh is the single
 # definition for this workflow, src/PlatinVault.Versioning/VersionFormat.cs for the programs.
 # The target is not part of the tag name: the annotated tag message carries a line "platform: unraid" (ids unraid,
 # windows-server, windows-desktop, linux, comma-separated, or all); no such line means every target. unraid/all/empty build the
@@ -20,26 +26,17 @@ name: Release
 # build the Linux package PlatinVault-linux-x64-<tag>.tar.gz (the server as a self-contained program with install.sh, scripts/build-linux.sh)
 # and the Linux bridge (job "linux"). windows-server has no job yet.
 #
-# Third kind, "Dev-Build" (user decision 2026-11-02): the real package for the user's own testing on his Unraid / Windows PC, never published.
-#   v2026.11.12.13.557-dev  -> dev build (five-segment id, no counter; checked against version.txt line 2 like a beta):
-#                              image: version tag + moving tag "dev" (never "beta"/"latest"); the Unraid template for it (PlatinVault-Dev,
-#                              own appdata and port) is only a workflow artifact; Windows: the installer is attached to a DRAFT release in
-#                              this repository (drafts are only visible to collaborators with write access, and the update check
-#                              never sees them). The release notes are not taken from any changelog file (a dev build has no
-#                              customer-facing notes).
-# Note: the GHCR package itself is public (so Unraid can pull it without a login), hence ":dev" is technically pullable by anyone.
-#
 # Draft first (2026-11-03): the "build" job always creates the GitHub release as a DRAFT, the "windows" and "linux" jobs attach their files to that
-# draft, and only the last job "publish" turns it into a pre-release (beta) or a normal release - after every selected platform job
+# draft, and only the last job "publish" turns it into a pre-release (nightly, beta) or a normal release - after every selected platform job
 # succeeded and every expected file is attached. So a release is never visible (nor offered by the update check, which only sees
-# published releases) without its installer. A dev build stays a draft.
+# published releases) without its installer.
 #
 # Code signing of the Windows files (SignPath Foundation, free for open source): two stages, because the installer carries the program as
 # a ZIP appended to the setup exe - stage 1 signs our own binaries of the program folder and the bridge
 # (.signpath/artifact-configurations/windows-app.xml), they are packed into the installer, stage 2 signs the installer (windows-setup.xml).
 # Every signing request waits for a manual approval in SignPath (up to 60 minutes per stage). Signing runs only when the repository
 # variables SIGNPATH_ORGANIZATION_ID, SIGNPATH_PROJECT_SLUG, SIGNPATH_SIGNING_POLICY_SLUG and the secret SIGNPATH_API_TOKEN exist, and only
-# for betas and releases (dev builds only with the variable SIGNPATH_SIGN_DEV=true). Without them the result is the unsigned installer
+# for nightlies, betas and releases. Without them the result is the unsigned installer
 # exactly as before ("signing skipped (SignPath not configured)" in the log). Optional variables: SIGNPATH_APP_ARTIFACT_CONFIGURATION_SLUG
 # (default windows-app), SIGNPATH_SETUP_ARTIFACT_CONFIGURATION_SLUG (default windows-setup). All jobs run on GitHub-hosted runners
 # (SignPath's origin verification for open-source projects requires that).
@@ -59,14 +56,12 @@ jobs:
       is_beta: ${{ steps.version.outputs.is_beta }}
       is_nightly: ${{ steps.version.outputs.is_nightly }}
       is_prerelease: ${{ steps.version.outputs.is_prerelease }}
-      is_dev: ${{ steps.version.outputs.is_dev }}
       kind: ${{ steps.version.outputs.kind }}
       builds_windows: ${{ steps.version.outputs.builds_windows }}
       builds_linux: ${{ steps.version.outputs.builds_linux }}
       bridge_version: ${{ steps.version.outputs.bridge_version }}
       release_name: ${{ steps.version.outputs.release_name }}
       display_version: ${{ steps.version.outputs.display_version }}
-      has_release: ${{ steps.version.outputs.has_release }}
       builds_unraid: ${{ steps.version.outputs.builds_unraid }}
     permissions:
       contents: write
@@ -85,7 +80,6 @@ jobs:
           is_beta=false
           is_nightly=false
           is_prerelease=false
-          is_dev=false
           if [[ "$tag" == *-beta ]]; then
             is_beta=true
             is_prerelease=true
@@ -93,7 +87,8 @@ jobs:
             is_nightly=true
             is_prerelease=true
           elif [[ "$tag" == *-dev ]]; then
-            is_dev=true
+            echo "::error::Dev is local and native only (no tag, no image, no package, no upload); $tag cannot be built"
+            exit 1
           elif [[ "$tag" == *-rc* ]]; then
             echo "::error::Release candidates were replaced by betas (tag v<year>.<month>.<commit>.<prompts>.<lines>-beta); $tag cannot be built any more"
             exit 1
@@ -134,16 +129,15 @@ jobs:
           fi
 
           # version.txt is written into every commit by the pre-commit hook: line 1 = vYear.Month.Commit, line 2 = the
-          # five-segment build id. The app derives its readable version ("v2026.11.12 (13.557 β)") from both lines plus the channel.
+          # five-segment build id. The app derives its readable version ("v2026.11.12.13.557 (β)") from both lines plus the channel.
           short_version="$(sed -n '1p' version.txt | tr -d '\r[:space:]')"
           detail_version="$(sed -n '2p' version.txt | tr -d '\r[:space:]')"
           if [[ -z "$detail_version" ]]; then detail_version="$short_version"; fi
           kind=release
           if [[ "$is_beta" == "true" ]]; then kind=beta; fi
           if [[ "$is_nightly" == "true" ]]; then kind=nightly; fi
-          if [[ "$is_dev" == "true" ]]; then kind=dev; fi
-          # The tag must be the technical form of this commit's version: a beta/nightly/dev tag carries the five-segment build id
-          # (v2026.11.12.13.557-beta / -nightly / -dev), a release tag the plain version (v2026.11.12)
+          # The tag must be the technical form of this commit's version: a beta/nightly tag carries the five-segment build id
+          # (v2026.11.12.13.557-beta / -nightly), a release tag the plain version (v2026.11.12)
           expected_tag="$(sh scripts/version-display.sh tag "$short_version" "$detail_version" "$kind")"
           if [[ "$tag" != "$expected_tag" ]]; then
             echo "::error::Tag $tag passt nicht zu $expected_tag (version.txt)"
@@ -171,31 +165,20 @@ jobs:
             channel=nightly
             template_tag=nightly
             changelog_source=CHANGELOG.nightly.md
-          elif [[ "$is_dev" == "true" ]]; then
-            channel=dev
-            template_tag=dev
           fi
-          if [[ "$is_dev" == "true" ]]; then
-            printf '%s\n' "Dev build for internal testing only - not a release, not offered as an update." > "$notes_file"
-          elif ! sh scripts/release-notes.sh "$changelog_source" "$display_version" > "$notes_file"; then
+          if ! sh scripts/release-notes.sh "$changelog_source" "$display_version" > "$notes_file"; then
             echo "::error::$changelog_source hat keinen Eintrag \"## $display_version\" (Englisch und Deutsch) - Changelog beim Commit schreiben (Überschrift ## vNEXT / ## vNEXT β / ## vNEXT α)"
             exit 1
           fi
           echo "Release-Notizen ($(wc -l < "$notes_file") Zeilen):"
           cat "$notes_file"
-          # Is there a GitHub release at all? A dev build only gets one when there is a Windows installer or a Linux package to attach to it
-          has_release=true
-          if [[ "$is_dev" == "true" && "$builds_windows" != "true" && "$builds_linux" != "true" ]]; then has_release=false; fi
-
           {
             echo "tag=$tag"
             echo "is_beta=$is_beta"
             echo "is_nightly=$is_nightly"
             echo "is_prerelease=$is_prerelease"
-            echo "is_dev=$is_dev"
             echo "kind=$kind"
             echo "notes_file=$notes_file"
-            echo "has_release=$has_release"
             echo "display_version=$display_version"
             echo "builds_unraid=$builds_unraid"
             echo "builds_windows=$builds_windows"
@@ -209,7 +192,7 @@ jobs:
             echo "bridge_version=1.0.$bridge_count"
             echo "bridge_linux_version=$bridge_linux_version"
             # The release title is the readable version, then the target (same shape as the changelog heading):
-            # "v2026.11.12 (13.557 β) · Unraid, Windows"; the middle dot is written as its UTF-8 bytes
+            # "v2026.11.12.13.557 (β) · Unraid, Windows"; the middle dot is written as its UTF-8 bytes
             echo "release_name=$display_version $(printf '\302\267') $target_label"
           } >> "$GITHUB_OUTPUT"
 
@@ -246,10 +229,11 @@ jobs:
             org.opencontainers.image.created=${{ steps.version.outputs.created }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.title=PlatinVault
-          # "nightly" moves with every nightly, beta and release; "beta" moves with every beta and release; "latest" only with a release
+          # Version tag plus the moving tag(s) of the build's own channel: nightly -> "nightly"; beta -> "beta" (not "nightly");
+          # release -> "latest", "beta" and "nightly" (a full release reaches every channel)
           tags: |
             ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.docker_tag }}
-            ${{ steps.version.outputs.kind == 'dev' && format('{0}:dev', env.IMAGE_NAME) || format('{0}:nightly', env.IMAGE_NAME) }}
+            ${{ (steps.version.outputs.kind == 'nightly' || steps.version.outputs.kind == 'release') && format('{0}:nightly', env.IMAGE_NAME) || '' }}
             ${{ (steps.version.outputs.kind == 'beta' || steps.version.outputs.kind == 'release') && format('{0}:beta', env.IMAGE_NAME) || '' }}
             ${{ steps.version.outputs.kind == 'release' && format('{0}:latest', env.IMAGE_NAME) || '' }}
 
@@ -259,7 +243,7 @@ jobs:
           mkdir -p dist
           template=dist/platinvault.xml
           # unraid/platinvault.xml in the repository is the RELEASE form (":latest" plus the "beta" and "nightly" tag choices) - the raw file customers
-          # fetch with wget; the beta, nightly and dev templates are derived from it here
+          # fetch with wget; the beta and nightly templates are derived from it here
           grep -q '<Repository>ghcr.io/sushiflux/platinvault:latest</Repository>' unraid/platinvault.xml
           grep -q '<TemplateURL>https://raw.githubusercontent.com/sushiflux/PlatinVault/master/unraid/platinvault.xml</TemplateURL>' unraid/platinvault.xml
           sed "s#ghcr.io/sushiflux/platinvault:latest#ghcr.io/sushiflux/platinvault:${{ steps.version.outputs.template_tag }}#" \
@@ -269,56 +253,17 @@ jobs:
             # TemplateURL either (see the check at the end of this step).
             sed -i -e '/<DefaultTagDescription>/d' -e '/<Branch>/,/<\/Branch>/d' -e '/<TemplateURL>/d' "$template"
           fi
-          if [[ "${{ steps.version.outputs.is_dev }}" == "true" ]]; then
-            # The dev template can run next to a real installation: own container name, own appdata folder (its own SQLite database -
-            # a dev build may be ahead of the live schema) and its own host port (5239; the live template uses 5233). No tag choice:
-            # its default already is ":dev". It is only a workflow artifact (the user copies it to his own Unraid) - never published anywhere.
-            template=dist/PlatinVault-Dev.xml
-            mv dist/platinvault.xml "$template"
-            sed -i \
-              -e '/<DefaultTagDescription>/d' -e '/<Branch>/,/<\/Branch>/d' -e '/<TemplateURL>/d' \
-              -e 's#<Name>PlatinVault</Name>#<Name>PlatinVault-Dev</Name>#' \
-              -e 's#/mnt/cache/appdata/platinvault#/mnt/cache/appdata/platinvault-dev#g' \
-              -e '/Name="WebUI Port"/s/5233/5239/g' \
-              -e 's#<Overview>#<Overview>DEV BUILD for the developer'"'"'s own testing - not for everyday use. It keeps its own data (database, backups, keys) in its own appdata folder, apart from a real installation. / DEV-BUILD nur zum eigenen Testen des Entwicklers - nicht fuer den Alltag. Er hat seine eigenen Daten (Datenbank, Sicherungen, Schluessel) in einem eigenen Appdata-Ordner, getrennt von einer echten Installation.\n\n#' \
-              "$template"
-            grep -q '<Name>PlatinVault-Dev</Name>' "$template"
-            grep -q 'Default="5239"' "$template"
-            grep -q 'Default="/mnt/cache/appdata/platinvault-dev"' "$template"
-            grep -q '>/mnt/cache/appdata/platinvault-dev<' "$template"
-            # Neither the live appdata folder nor any database setting may be left in the dev template
-            if grep -qE '/mnt/(cache|user)/appdata/platinvault(<|")' "$template"; then
-              echo "::error::The dev template still points at the live appdata folder"
-              exit 1
-            fi
-            if grep -qiE 'Companion__Database|PostgreSQL' "$template"; then
-              echo "::error::The dev template still contains database settings"
-              exit 1
-            fi
-          fi
           # Only the release template (the raw file in the repository) carries the TemplateURL: Community Applications matches an
           # installed template to its feed entry by that URL, and Unraid's (today disabled) template refresh would copy names, defaults and
-          # descriptions from it - a beta/dev container must never be taken for the release one or get its appdata path and port back.
+          # descriptions from it - a beta/nightly container must never be taken for the release one or get its appdata path and port back.
           if [[ "${{ steps.version.outputs.kind }}" != "release" ]] && grep -q '<TemplateURL>' "$template"; then
-            echo "::error::A beta/dev template must not carry the TemplateURL of the release template"
+            echo "::error::A beta/nightly template must not carry the TemplateURL of the release template"
             exit 1
           fi
           grep -q "<Repository>ghcr.io/sushiflux/platinvault:${{ steps.version.outputs.template_tag }}</Repository>" "$template"
 
-      # The dev template is not attached to any release: it is a workflow artifact of this run (private repository, 30 days)
-      - name: Dev-Template als Workflow-Artefakt ablegen
-        if: steps.version.outputs.builds_unraid == 'true' && steps.version.outputs.is_dev == 'true'
-        uses: actions/upload-artifact@v7
-        with:
-          name: PlatinVault-Dev-template
-          path: dist/PlatinVault-Dev.xml
-          retention-days: 30
-          if-no-files-found: error
-
       # Always created as a DRAFT (draft first): the "windows" job attaches its files, the "publish" job publishes it at the very end.
-      # A dev build only gets a (draft) release when there is a Windows installer or a Linux package to attach to it, and it stays a draft.
       - name: GitHub Release als Entwurf erstellen
-        if: steps.version.outputs.has_release == 'true'
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
@@ -326,7 +271,7 @@ jobs:
           draft: true
           prerelease: ${{ steps.version.outputs.is_prerelease }}
           body_path: ${{ steps.version.outputs.notes_file }}
-          files: ${{ steps.version.outputs.builds_unraid == 'true' && steps.version.outputs.is_dev != 'true' && 'dist/platinvault.xml' || '' }}
+          files: ${{ steps.version.outputs.builds_unraid == 'true' && 'dist/platinvault.xml' || '' }}
 
   # Windows program: the designed installer PlatinVault-Setup-<version>.exe (scripts/build-windows.ps1, in stages). Built on Windows because
   # the program and the installer are WinForms exes (the database is SQLite inside the program, nothing else is bundled or compiled).
@@ -366,16 +311,11 @@ jobs:
           PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG }}
           POLICY_SLUG: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
           HAS_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN != '' }}
-          SIGN_DEV: ${{ vars.SIGNPATH_SIGN_DEV }}
-          KIND: ${{ needs.build.outputs.kind }}
         run: |
           sign=false
           if [[ -z "$ORGANIZATION_ID" || -z "$PROJECT_SLUG" || -z "$POLICY_SLUG" || "$HAS_TOKEN" != "true" ]]; then
             echo "signing skipped (SignPath not configured): the Windows files stay unsigned"
             echo "::notice::signing skipped (SignPath not configured) - the Windows files of this build are unsigned"
-          elif [[ "$KIND" == "dev" && "$SIGN_DEV" != "true" ]]; then
-            echo "signing skipped (dev build; the repository variable SIGNPATH_SIGN_DEV=true signs dev builds too)"
-            echo "::notice::signing skipped (dev build) - the Windows files of this build are unsigned"
           else
             sign=true
             echo "Signing with SignPath (project $PROJECT_SLUG, policy $POLICY_SLUG): two signing requests, each waits for an approval in SignPath"
@@ -392,7 +332,6 @@ jobs:
           $buildArgs = @{ Stage = 'app'; BridgeVersion = '${{ needs.build.outputs.bridge_version }}'; ProductVersion = $env:PV_PRODUCT_VERSION }
           if ('${{ needs.build.outputs.is_beta }}' -eq 'true') { $buildArgs['Beta'] = $true }
           if ('${{ needs.build.outputs.is_nightly }}' -eq 'true') { $buildArgs['Nightly'] = $true }
-          if ('${{ needs.build.outputs.is_dev }}' -eq 'true') { $buildArgs['Dev'] = $true }
           if ('${{ steps.signing.outputs.sign }}' -eq 'true') { $buildArgs['PrepareSigning'] = $true }
           .\scripts\build-windows.ps1 @buildArgs
 
@@ -440,7 +379,6 @@ jobs:
           $buildArgs = @{ Stage = 'setup'; ProductVersion = $env:PV_PRODUCT_VERSION }
           if ('${{ needs.build.outputs.is_beta }}' -eq 'true') { $buildArgs['Beta'] = $true }
           if ('${{ needs.build.outputs.is_nightly }}' -eq 'true') { $buildArgs['Nightly'] = $true }
-          if ('${{ needs.build.outputs.is_dev }}' -eq 'true') { $buildArgs['Dev'] = $true }
           if ('${{ steps.signing.outputs.sign }}' -eq 'true') { $buildArgs['SignedAppDir'] = 'artifacts\windows-cache\signed\app' }
           .\scripts\build-windows.ps1 @buildArgs
 
@@ -485,7 +423,6 @@ jobs:
           $buildArgs = @{ Stage = 'checksum' }
           if ('${{ needs.build.outputs.is_beta }}' -eq 'true') { $buildArgs['Beta'] = $true }
           if ('${{ needs.build.outputs.is_nightly }}' -eq 'true') { $buildArgs['Nightly'] = $true }
-          if ('${{ needs.build.outputs.is_dev }}' -eq 'true') { $buildArgs['Dev'] = $true }
           if ('${{ steps.signing.outputs.sign }}' -eq 'true') {
             $buildArgs['SignedSetup'] = 'artifacts\windows-cache\signed\setup'
             $buildArgs['RequireSignature'] = $true
@@ -555,6 +492,10 @@ jobs:
       # scripts/build-bridge-linux.sh writes artifacts/linux/PlatinVault-Bridge-linux-x64.tar.gz (+ .sha256); a missing file fails the job.
       - name: Linux-Bridge bauen
         id: bridge
+        env:
+          # The bridge computes its product version (file properties) from the channel; without it every bridge would count as a release
+          PV_CHANNEL: ${{ needs.build.outputs.kind }}
+          PV_PRODUCT_VERSION: ${{ needs.build.outputs.display_version }}
         run: |
           bash scripts/build-bridge-linux.sh
           test -f artifacts/linux/PlatinVault-Bridge-linux-x64.tar.gz
@@ -585,11 +526,11 @@ jobs:
           files: ${{ steps.files.outputs.list }}
 
   # Publishes the draft (beta/nightly: pre-release, release: normal release and "Latest") only after every selected platform job succeeded and
-  # only when every expected file is attached. A dev build is never published (its draft stays for the user's own download).
+  # only when every expected file is attached.
   publish:
     needs: [build, windows, linux]
     if: >-
-      always() && needs.build.result == 'success' && needs.build.outputs.is_dev != 'true' && needs.build.outputs.has_release == 'true' &&
+      always() && needs.build.result == 'success' &&
       (needs.windows.result == 'success' || needs.windows.result == 'skipped') &&
       (needs.linux.result == 'success' || needs.linux.result == 'skipped')
     runs-on: ubuntu-latest

@@ -28,8 +28,8 @@ internal static class SetupLayoutCheck
             ThemeMode.Set(dark);
             var state = new SetupState
             {
-                Version = $"v2026.11.9 (31.2840 {VersionFormat.BetaMark})",
-                InstalledVersion = update ? $"v2026.11.1 (12.345 {VersionFormat.BetaMark})" : null,
+                Version = $"v2026.11.9.31.2840 ({VersionFormat.BetaMark})",
+                InstalledVersion = update ? $"v2026.11.1.12.345 ({VersionFormat.BetaMark})" : null,
                 LicenceText = template.LicenceText,
                 PayloadSize = template.PayloadSize,
                 InstallDir = @"C:\Users\Beispiel\AppData\Local\Programs\PlatinVault",

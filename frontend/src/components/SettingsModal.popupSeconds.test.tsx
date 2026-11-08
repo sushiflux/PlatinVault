@@ -60,7 +60,7 @@ function settings(popupSeconds: number): SettingsResponseDto {
     researchBlocks: { scope: null, focus: [], spoilers: null, presentation: null },
     researchBlocksPolicy: { scope: [], focus: [], spoilers: [], presentation: [] },
     autoSwitchGameEnabled: true,
-    betaUpdatesEnabled: false,
+    updateChannel: 'none',
   }
 }
 

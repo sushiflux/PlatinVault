@@ -4,7 +4,8 @@
 #   - the changed-lines counter in version.txt equals the real size of the commit (stamping never changes it)
 #   - intern/CHANGELOG.dev.md gets version + time in its newest heading per language, only when it changed, and intern/ (its own git
 #     repository) is committed by post-commit with the version as message
-#   - release-notes.sh prints exactly the entry of one version (English, rule, German) and fails for a missing one
+#   - release-notes.sh prints exactly the entry of one version (English, rule, German) and fails for a missing one; it finds entries under
+#     the notation of 2026-11-08 (v2026.11.12.13.557 (β)) and under the old one (v2026.11.12 (13.557 β)), which stamped headings keep
 #
 #   sh scripts/test-changelog-hooks.sh
 
@@ -152,6 +153,68 @@ if sh scripts/release-notes.sh CHANGELOG.beta.md "$(display_of release)" >/dev/n
 else
     ok "release and beta headings are told apart"
 fi
+
+# ---- 3b. headings stamped in the old notation (before 2026-11-08) are never rewritten and must still be found -------------------------
+# Old: "## v2026.11.19 (2.40 β)" / "## v2026.11.18 (9.7263)"; new: "## v2026.11.20.3.150 (β)" / "## v2026.11.17.24.19071". One file holds both.
+cat > CHANGELOG.beta.md <<EOF
+# Beta Changelog
+
+<a name="english"></a>
+## English
+
+## vNEXT $beta
+
+- Newest beta.
+
+## v2026.11.19 (2.40 $beta) $dot Unraid, Windows
+
+- Old notation, beta.
+
+## v2026.11.18 (9.7263)
+
+- Old notation, release.
+
+## v2026.11.17.24.19071
+
+- New notation, release.
+
+---
+
+<a name="deutsch"></a>
+## Deutsch
+
+## vNEXT $beta
+
+- Neueste Beta.
+
+## v2026.11.19 (2.40 $beta) $dot Unraid, Windows
+
+- Alte Schreibweise, Beta.
+
+## v2026.11.18 (9.7263)
+
+- Alte Schreibweise, Release.
+
+## v2026.11.17.24.19071
+
+- Neue Schreibweise, Release.
+EOF
+git add CHANGELOG.beta.md
+git commit -q -m legacy
+beta3=$(display_of beta)
+check "stamping leaves old-notation headings alone" "$(grep '^## v' CHANGELOG.beta.md | sed -n '2p;3p' | tr '\n' '|')" "## v2026.11.19 (2.40 $beta) $dot Unraid, Windows|## v2026.11.18 (9.7263)|"
+check "stamping leaves new-notation headings alone" "$(grep '^## v' CHANGELOG.beta.md | sed -n '4p')" "## v2026.11.17.24.19071"
+check "the placeholder next to them is stamped" "$(grep '^## v' CHANGELOG.beta.md | sed -n '1p')" "## $beta3"
+# The new notation finds an entry stamped in the old one (platforms kept), and the old notation still works as an argument
+check "old-notation beta found by the new version" "$(sh scripts/release-notes.sh CHANGELOG.beta.md "v2026.11.19.2.40 ($beta)" | sed -n '1p')" "## v2026.11.19 (2.40 $beta) $dot Unraid, Windows"
+check "old-notation beta: German part found too" "$(sh scripts/release-notes.sh CHANGELOG.beta.md "v2026.11.19.2.40 ($beta)" | tail -n 1)" "- Alte Schreibweise, Beta."
+check "old-notation release found by the new version" "$(sh scripts/release-notes.sh CHANGELOG.beta.md "v2026.11.18.9.7263" | tail -n 1)" "- Alte Schreibweise, Release."
+check "old-notation release: English part stops at the next heading" "$(sh scripts/release-notes.sh CHANGELOG.beta.md "v2026.11.18.9.7263" | sed -n '3p')" "- Old notation, release."
+check "new-notation release found" "$(sh scripts/release-notes.sh CHANGELOG.beta.md "v2026.11.17.24.19071" | tail -n 1)" "- Neue Schreibweise, Release."
+check "old notation as the argument still works" "$(sh scripts/release-notes.sh CHANGELOG.beta.md "v2026.11.18 (9.7263)" | tail -n 1)" "- Alte Schreibweise, Release."
+# A beta heading is not the release of the same build, and a longer counter is not a shorter one
+if sh scripts/release-notes.sh CHANGELOG.beta.md "v2026.11.19.2.40" >/dev/null 2>&1; then bad "the release form picked a beta entry (old notation)"; else ok "old-notation beta is not found as a release"; fi
+if sh scripts/release-notes.sh CHANGELOG.beta.md "v2026.11.18.9.72630" >/dev/null 2>&1; then bad "a longer counter matched a shorter one"; else ok "counters are matched exactly"; fi
 
 # ---- 4. private developer changelog in intern/ (its own git repository) --------------------------------------------------------
 mkdir -p intern

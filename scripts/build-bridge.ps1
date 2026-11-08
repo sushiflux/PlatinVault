@@ -13,12 +13,12 @@
   touched the bridge, its shared core or the Steam readers (so it only changes when the bridge itself changes). Without any
   commit n is 0. For CI/Docker without .git pass -Version 1.0.7 or set the environment variable BRIDGE_VERSION.
   The bridge version is the exe's file and assembly version. -ProductVersion (scripts\build-windows.ps1 passes the readable version of
-  the PlatinVault build, e.g. "v2026.11.14 (15.116022)") sets the product version in its file properties; without it the product
+  the PlatinVault build, e.g. "v2026.11.14.15.116022") sets the product version in its file properties; without it the product
   version is the bridge version.
 
   Windows PowerShell 5.1 compatible. Console output is German and ASCII-only.
 
-  Aufruf:  .\scripts\build-bridge.ps1 [-Version 1.0.7] [-ProductVersion 'v2026.11.14 (15.116022)']
+  Aufruf:  .\scripts\build-bridge.ps1 [-Version 1.0.7] [-ProductVersion 'v2026.11.14.15.116022']
 #>
 param(
     [string]$Version,

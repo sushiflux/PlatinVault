@@ -14,7 +14,9 @@ public sealed record WhatsNewDto(string Version, bool Show, string? Notes);
 /// Cuts one version's entry out of the customer changelog. The same rules as scripts/release-notes.sh (which builds the GitHub release
 /// body): the English section is announced by an anchor <c>&lt;a name="english"&gt;</c>, the German one by <c>&lt;a name="deutsch"&gt;</c>;
 /// an entry is the <c>## &lt;version&gt;</c> heading (optionally followed by <c> · &lt;platforms&gt;</c>) and everything up to the next
-/// <c>## </c> heading or the next anchor, without a trailing <c>---</c> rule and blank lines.
+/// <c>## </c> heading or the next anchor, without a trailing <c>---</c> rule and blank lines. Headings are stamped once and never rewritten,
+/// so an entry written before 2026-11-08 carries the old notation (<c>v2026.11.17 (24.19071)</c>, see <see cref="VersionFormat.LegacyDisplay"/>)
+/// while the running version is written <c>v2026.11.17.24.19071</c>: both forms are found.
 /// </summary>
 public static class ChangelogEntry
 {
@@ -28,6 +30,7 @@ public static class ChangelogEntry
         var taking = false;
         var found = false;
         var lines = new List<string>();
+        var legacyVersion = VersionFormat.LegacyDisplay(readableVersion);
 
         foreach (var raw in markdown.Split('\n'))
         {
@@ -42,7 +45,7 @@ public static class ChangelogEntry
             if (section && !found && line.StartsWith("## ", StringComparison.Ordinal))
             {
                 var heading = line[3..];
-                if (heading == readableVersion || heading.StartsWith(readableVersion + PlatformSeparator, StringComparison.Ordinal))
+                if (IsHeadingOf(heading, readableVersion) || (legacyVersion is not null && IsHeadingOf(heading, legacyVersion)))
                 {
                     taking = true;
                     found = true;
@@ -63,6 +66,10 @@ public static class ChangelogEntry
         return Extract(markdown, readableVersion, primary)
             ?? Extract(markdown, readableVersion, primary == Lang.German ? Lang.English : Lang.German);
     }
+
+    // The heading text after "## " is exactly the version, optionally followed by " · <platforms>"
+    private static bool IsHeadingOf(string heading, string version) =>
+        heading == version || heading.StartsWith(version + PlatformSeparator, StringComparison.Ordinal);
 
     private static bool IsAnchor(string line, out string name)
     {

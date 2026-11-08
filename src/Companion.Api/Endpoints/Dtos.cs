@@ -609,8 +609,9 @@ public sealed record SettingsResponseDto(
     ResearchBlocksPolicyDto ResearchBlocksPolicy,
     // Switch "features.auto_switch_game" (on by default): every open window switches to the game page when a vault game is started
     bool AutoSwitchGameEnabled = true,
-    // Switch "updates.beta_channel" ("Beta-Versionen erhalten", off by default): the update check also offers betas
-    bool BetaUpdatesEnabled = false,
+    // The update channel (setting "updates.channel"): "none" (default, full releases only) | "beta" (betas and releases) | "nightly"
+    // (nightlies and releases, no betas). One choice, not two switches.
+    string UpdateChannel = Settings.SettingsStore.DefaultUpdateChannel,
     // The dashboard's sort order per view as "<order>:<asc|desc>" (DashboardSort); the defaults when nothing was chosen yet
     string DashboardSortFavorites = Settings.DashboardSort.DefaultFavorites,
     string DashboardSortAll = Settings.DashboardSort.DefaultAll,
@@ -624,9 +625,7 @@ public sealed record SettingsResponseDto(
     // What happens to a pinned achievement when it is unlocked (setting "live.pins_after_unlock"): "keep" (default) / "remove"
     string PinsAfterUnlock = Settings.SettingsStore.DefaultPinsAfterUnlock,
     // How long a trophy popup stays on screen, in whole seconds (setting "live.popup_seconds", 2..10, default 5)
-    int PopupSeconds = Settings.SettingsStore.DefaultPopupSeconds,
-    // Switch "updates.nightly_channel" ("Nightly-Versionen (α) erhalten", off by default): the update check also offers nightlies (α) and betas (β)
-    bool NightlyUpdatesEnabled = false
+    int PopupSeconds = Settings.SettingsStore.DefaultPopupSeconds
 );
 
 /// <summary>
@@ -710,8 +709,8 @@ public sealed record UpdateSettingsRequest(
     ResearchBlocksDto? ResearchBlocks = null,
     // Switch to the game page when a game is started: null = keep the stored switch
     bool? AutoSwitchGameEnabled = null,
-    // "Beta-Versionen erhalten": null = keep the stored switch
-    bool? BetaUpdatesEnabled = null,
+    // Update channel: "none" | "beta" | "nightly" (anything else is rejected with 400): null = keep what is stored
+    string? UpdateChannel = null,
     // Dashboard sort order per view ("<order>:<asc|desc>", see DashboardSort; anything else is rejected with 400): null = keep
     string? DashboardSortFavorites = null,
     string? DashboardSortAll = null,
@@ -726,9 +725,7 @@ public sealed record UpdateSettingsRequest(
     string? PinsAfterUnlock = null,
     // Trophy popup duration in whole seconds, 2..10 (anything else, a fraction included, is rejected with 400): null = keep what is stored.
     // A double on purpose: "5.5" reaches the validation and gets the bilingual message instead of a generic binding error.
-    double? PopupSeconds = null,
-    // "Nightly-Versionen (α) erhalten": null = keep the stored switch
-    bool? NightlyUpdatesEnabled = null
+    double? PopupSeconds = null
 );
 
 public sealed record AiProviderModelsRequestDto(

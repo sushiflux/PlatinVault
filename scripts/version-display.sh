@@ -3,13 +3,19 @@
 # heading) and the release workflow (GitHub release title); the C# twin is src/PlatinVault.Versioning/VersionFormat.cs - keep both in step
 # (tests/Companion.Api.Tests/VersionFormatTests.cs pins the C# side, scripts/test-version-display.sh pins this one).
 #
-#   sh scripts/version-display.sh display <short> <buildId> <release|beta|nightly|dev>
-#   sh scripts/version-display.sh tag     <short> <buildId> <release|beta|nightly|dev>
+#   sh scripts/version-display.sh display <short> <buildId> <release|beta|nightly>
+#   sh scripts/version-display.sh tag     <short> <buildId> <release|beta|nightly>
 #
 # short = line 1 of version.txt (v2026.11.12), buildId = line 2 (v2026.11.12.13.557, may be empty).
-#   display: release "v2026.11.12 (13.557)", beta "v2026.11.12 (13.557 β)", nightly "v2026.11.12 (13.557 α)", dev "v2026.11.12 (13.557-dev)".
-#            Without counters the plain short version (plus "-dev" for dev) - never empty parentheses.
+#   display: all five segments, then the channel symbol in parentheses; a release has none:
+#            release "v2026.11.12.13.557", beta "v2026.11.12.13.557 (β)", nightly "v2026.11.12.13.557 (α)".
+#            Without counters the plain short version plus the symbol, if there is one ("v2026.11.12 (β)") - never empty parentheses.
+#            (Until 2026-11-08 the form was "v2026.11.12 (13.557)" / "v2026.11.12 (13.557 β)"; scripts/release-notes.sh still finds
+#            changelog headings stamped in that form, because stamped headings are never rewritten.)
 #   tag:     release "v2026.11.12", beta "v2026.11.12.13.557-beta", nightly "v2026.11.12.13.557-nightly" (no spaces, parentheses or Greek sign: usable as git/Docker tag and file name).
+#
+# Dev is not a kind here: it only runs locally on the developer machine and has no tag, no image and no package. Its readable form
+# ("v2026.11.12.13.557 (</>)") is computed by the programs themselves from their environment (src/PlatinVault.Versioning/VersionFormat.cs).
 
 set -e
 
@@ -19,9 +25,16 @@ build="${3:-}"
 kind="${4:-release}"
 
 if [ -z "$short" ] || { [ "$mode" != "display" ] && [ "$mode" != "tag" ]; }; then
-    echo "usage: version-display.sh display|tag <short> <buildId> <release|beta|nightly|dev>" >&2
+    echo "usage: version-display.sh display|tag <short> <buildId> <release|beta|nightly>" >&2
     exit 2
 fi
+case "$kind" in
+    release | beta | nightly | alpha) ;;
+    *)
+        echo "version-display.sh: unknown kind '$kind' (release, beta or nightly; dev has no tag and no package)" >&2
+        exit 2
+        ;;
+esac
 
 # U+03B2 (β) and U+03B1 (α) written as their UTF-8 bytes, so the result never depends on the encoding of this file or on the locale
 beta_mark=$(printf '\316\262')
@@ -45,19 +58,16 @@ if [ "$mode" = "tag" ]; then
     case "$kind" in
         beta) printf '%s-beta\n' "$full" ;;
         nightly|alpha) printf '%s-nightly\n' "$full" ;;
-        dev) printf '%s-dev\n' "$full" ;;
         *) printf '%s\n' "$short" ;;
     esac
     exit 0
 fi
 
-if [ -z "$counters" ]; then
-    if [ "$kind" = "dev" ]; then printf '%s-dev\n' "$short"; else printf '%s\n' "$short"; fi
-    exit 0
-fi
+# All five segments, or only line 1 when the build id carries no counters; then the symbol in parentheses (a release has none)
+full="$short"
+[ -z "$counters" ] || full="$short.$counters"
 case "$kind" in
-    beta) printf '%s (%s %s)\n' "$short" "$counters" "$beta_mark" ;;
-    nightly|alpha) printf '%s (%s %s)\n' "$short" "$counters" "$nightly_mark" ;;
-    dev) printf '%s (%s-dev)\n' "$short" "$counters" ;;
-    *) printf '%s (%s)\n' "$short" "$counters" ;;
+    beta) printf '%s (%s)\n' "$full" "$beta_mark" ;;
+    nightly|alpha) printf '%s (%s)\n' "$full" "$nightly_mark" ;;
+    *) printf '%s\n' "$full" ;;
 esac

@@ -7,7 +7,7 @@ export interface BrandingInfo {
   // The public source code repository (PlatinVault is AGPL-3.0-only; the licence viewer links to it)
   sourceUrl?: string
   version: string
-  // Readable version as the server writes it, e.g. "v2026.11.12 (13.557)", beta "v2026.11.12 (13.557 β)", dev "v2026.11.12 (13.557-dev)"
+  // Readable version as the server writes it, e.g. "v2026.11.12.13.557", beta "v2026.11.12.13.557 (β)", nightly "(α)", dev "v2026.11.12.13.557 (</>)"
   // "desktop" = the Windows program shows this UI in its own window and reads Steam on this PC (no bridge needed); "server" otherwise
   host?: 'desktop' | 'server'
   // The provider's own technical text (English); errorMessage is our short explanation. Fold it under "technical details".
@@ -548,10 +548,8 @@ export interface SettingsResponseDto {
   researchBlocksPolicy: ResearchBlocksPolicyDto
   // Switch "features.auto_switch_game" (on by default): switch to the game page when a vault game is started
   autoSwitchGameEnabled: boolean
-  // Switch "Beta-Versionen erhalten" (updates.beta_channel, off by default): the update check also offers betas
-  betaUpdatesEnabled: boolean
-  // Switch "Nightly-Versionen (α) erhalten" (updates.nightly_channel, off by default): the update check also offers nightlies (α), betas (β) and releases
-  nightlyUpdatesEnabled?: boolean
+  // The update channel (default "none"): none = full releases only, beta = betas + releases, nightly = nightlies + releases (no betas)
+  updateChannel: UpdateChannel
   // The dashboard's sort order per view as "<order>:<asc|desc>" (see utils/dashboardSort.ts)
   dashboardSortFavorites?: string
   dashboardSortAll?: string
@@ -755,8 +753,8 @@ export interface UpdateSettingsRequest {
   // Omitted = keep; an object replaces the whole selection (everything empty = nothing ticked)
   researchBlocks?: ResearchBlocksDto
   autoSwitchGameEnabled?: boolean
-  betaUpdatesEnabled?: boolean
-  nightlyUpdatesEnabled?: boolean
+  // Omitted = keep; an unknown value is answered with 400
+  updateChannel?: UpdateChannel
   // "Nach Updates suchen" (see UpdateCheckInterval); the server rejects anything else with 400
   updateCheckInterval?: UpdateCheckInterval
   dashboardSortFavorites?: string
@@ -1095,7 +1093,7 @@ export type UpdateCheckInterval = 'startup' | '4h' | 'daily' | 'weekly' | 'month
 
 // Settings > System > Updates (GET /api/updates/status, POST /api/updates/check)
 export interface UpdateReleaseDto {
-  // Technical tag (v2026.11.12 / v2026.11.12.13.557-beta / v2026.11.12.13.557-nightly) and readable form (v2026.11.12 (13.557 β) / (13.557 α))
+  // Technical tag (v2026.11.12 / v2026.11.12.13.557-beta / v2026.11.12.13.557-nightly) and readable form (v2026.11.12.13.557 (β) / (α))
   tag: string
   display: string
   isBeta: boolean
@@ -1118,14 +1116,27 @@ export type UpdateState = 'disabled' | 'unchecked' | 'upToDate' | 'available' | 
 
 // What a container should do about its image tag (only for host "server"; the Windows program installs itself, the Linux package is
 // updated by running the install.sh of the new package)
-export type DockerAdvice = 'none' | 'useBeta' | 'betaStays' | 'switchToLatest' | 'useNightly' | 'nightlyStays' | 'switchToBeta'
+// betaStaysForNightly: the nightly channel is chosen while a beta runs and no nightly or release is at least as new, so :nightly would be a downgrade
+export type DockerAdvice =
+  | 'none'
+  | 'useBeta'
+  | 'betaStays'
+  | 'switchToLatest'
+  | 'useNightly'
+  | 'nightlyStays'
+  | 'switchToBeta'
+  | 'betaStaysForNightly'
+
+// The one update choice: none = full releases only (default), beta = betas + releases, nightly = nightlies + releases
+export type UpdateChannel = 'none' | 'beta' | 'nightly'
 
 export interface UpdateStatusDto {
   currentVersion: string
   currentTag: string
   currentChannel: 'release' | 'beta' | 'nightly' | 'dev'
-  betaUpdatesEnabled: boolean
-  nightlyUpdatesEnabled?: boolean
+  // The chosen channel, and the image tag it needs ("latest", "beta" or "nightly", no colon)
+  updateChannel: UpdateChannel
+  imageTag: string
   host: 'desktop' | 'server' | 'linuxPackage'
   state: UpdateState
   available: UpdateReleaseDto | null
@@ -1143,7 +1154,7 @@ export interface UpdateStatusDto {
   // Windows program: "Installieren" downloads, verifies and runs the installer
   canInstall: boolean
   dockerAdvice: DockerAdvice
-  // ghcr.io/sushiflux/platinvault - ":latest" = releases, ":beta" = betas and releases, ":nightly" = nightlies, betas and releases
+  // ghcr.io/sushiflux/platinvault - ":latest" = releases, ":beta" = betas and releases, ":nightly" = nightlies and releases (the notice shows imageRepository:imageTag)
   imageRepository: string
   checkInterval: UpdateCheckInterval
 }
@@ -1399,7 +1410,7 @@ export interface DesktopFoldersDto {
 
 // GET /api/whats-new: the changelog entry of the running version, shipped with the product (never fetched from GitHub)
 export interface WhatsNewDto {
-  // The running version in its readable form (v2026.11.18 (9.7263 β))
+  // The running version in its readable form (v2026.11.18.9.7263 (β))
   version: string
   // True once after an update (first start of a version the user has not seen yet); false for a fresh install, a dev build, a seen version
   show: boolean

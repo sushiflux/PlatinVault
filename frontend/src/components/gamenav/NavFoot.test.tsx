@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { NavFoot } from './NavFoot'
 
-const BRANDING = { productName: 'PlatinVault', company: 'SushiFlux', version: 'v2026.10.7 (12.345 β)' }
+const BRANDING = { productName: 'PlatinVault', company: 'SushiFlux', version: 'v2026.10.7.12.345 (β)' }
 
 function stubServer() {
   vi.stubGlobal(
@@ -52,7 +52,7 @@ describe('NavFoot', () => {
     expect(onOpenChange).toHaveBeenLastCalledWith(true)
     expect(card.querySelector('img')).not.toBeNull()
     expect(within(card).getByText('PlatinVault')).toBeTruthy()
-    expect(await within(card).findByText('v2026.10.7 (12.345 β)')).toBeTruthy()
+    expect(await within(card).findByText('v2026.10.7.12.345 (β)')).toBeTruthy()
     expect(within(card).getByTestId('version-check')).toBeTruthy()
     expect(within(card).getByText(`© ${new Date().getFullYear()} SushiFlux`)).toBeTruthy()
     expect(card.textContent).toMatch(/Mit\s*gemacht/)

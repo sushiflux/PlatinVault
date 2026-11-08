@@ -131,8 +131,8 @@ internal static class Program
     }
 
     /// <summary>
-    /// The version the program will show, in the readable form of <see cref="VersionFormat"/> (e.g. "v2026.11.12 (13.557 β)" for a beta,
-    /// "v2026.11.12 (13.557)" for a release). The payload carries version.txt (line 1 version, line 2 build id) and release-channel.txt.
+    /// The version the program will show, in the readable form of <see cref="VersionFormat"/> (e.g. "v2026.11.12.13.557 (β)" for a beta,
+    /// "v2026.11.12.13.557" for a release). The payload carries version.txt (line 1 version, line 2 build id) and release-channel.txt.
     /// </summary>
     public static string ReadVersion(Payload payload)
     {

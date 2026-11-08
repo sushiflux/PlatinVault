@@ -13,17 +13,21 @@ namespace Companion.Api.Endpoints;
 public sealed record UpdateReleaseDto(string Tag, string Display, bool IsBeta, string? NotesUrl, DateTimeOffset? PublishedAt, bool HasInstaller, string? Notes = null, string? LinuxPackageName = null, string? LinuxPackageUrl = null, bool IsNightly = false);
 
 /// <summary>
-/// Settings > System > Updates. <c>State</c>: "disabled" | "unchecked" | "upToDate" | "available" | "error" | "devBuild" (a dev build is
-/// never offered a beta or release and does not ask GitHub); <c>Host</c>: "desktop" (the
+/// Settings > System > Updates. <c>State</c>: "disabled" | "unchecked" | "upToDate" | "available" | "error" | "devBuild" (a development run on the
+/// developer's machine is never offered anything and does not ask GitHub); <c>Host</c>: "desktop" (the
 /// Windows program, installs itself), "linuxPackage" (the Linux package: download the new package and run its install.sh) or "server" (a container: the image tag decides, see <c>DockerAdvice</c>: "none" | "useBeta" |
-/// "betaStays" | "switchToLatest" | "useNightly" | "nightlyStays" | "switchToBeta"). <c>Error</c> is complete and in the language of the request. <c>CurrentChannel</c>: "release" |
-/// "beta" | "nightly" | "dev". <c>Throttled</c>: a manual check came within a minute of the previous one and was answered from memory.
+/// "betaStays" | "switchToLatest" | "useNightly" | "nightlyStays" | "switchToBeta" | "betaStaysForNightly"). <c>Error</c> is complete and in the
+/// language of the request. <c>CurrentChannel</c> is the kind of the RUNNING build: "release" | "beta" | "nightly" | "dev".
+/// <c>UpdateChannel</c> is the channel the user SELECTED (setting "updates.channel"): "none" (full releases only) | "beta" (betas and
+/// releases) | "nightly" (nightlies and releases, no betas). <c>ImageTag</c> is the container image tag that selection needs: "latest" |
+/// "beta" | "nightly" (shown as <c>ImageRepository:ImageTag</c>). <c>Throttled</c>: a manual check came within a minute of the previous
+/// one and was answered from memory.
 /// </summary>
 public sealed record UpdateStatusDto(
     string CurrentVersion,
     string CurrentTag,
     string CurrentChannel,
-    bool BetaUpdatesEnabled,
+    string UpdateChannel,
     string Host,
     string State,
     UpdateReleaseDto? Available,
@@ -36,9 +40,9 @@ public sealed record UpdateStatusDto(
     bool CanInstall,
     string DockerAdvice,
     string ImageRepository,
+    string ImageTag,
     // How often the server looks by itself: "startup" | "4h" | "daily" | "weekly" | "monthly" | "never" (setting "updates.check_interval")
     string CheckInterval,
-    bool NightlyUpdatesEnabled = false,
     UpdateReleaseDto? LatestNightly = null);
 
 public sealed record InstallUpdateRequest(string? Tag);
@@ -53,7 +57,7 @@ public sealed record InstallUpdateResponse(bool Started, string Tag);
 /// </summary>
 public static class UpdateEndpoints
 {
-    /// <summary>The image the containers run; <c>:latest</c> = releases, <c>:beta</c> = betas and releases (CI moves both on a release).</summary>
+    /// <summary>The image the containers run; <c>:latest</c> = releases, <c>:beta</c> = betas and releases, <c>:nightly</c> = nightlies and releases (CI moves all three on a release).</summary>
     public const string ImageRepository = "ghcr.io/sushiflux/platinvault";
 
     public static void MapUpdates(this RouteGroupBuilder api)
@@ -106,7 +110,7 @@ public static class UpdateEndpoints
             VersionKind.Beta => "beta",
             _ => "release",
         },
-        status.BetaUpdatesEnabled,
+        UpdateChannels.ToId(status.Channel),
         status.DesktopHost ? "desktop" : status.LinuxPackageHost ? "linuxPackage" : "server",
         StateId(status.State),
         Release(status.Available),
@@ -119,8 +123,8 @@ public static class UpdateEndpoints
         status.CanInstall,
         AdviceId(status.Docker),
         ImageRepository,
+        UpdateChannels.ImageTag(status.Channel),
         UpdateCheckIntervals.ToId(status.CheckInterval),
-        status.NightlyUpdatesEnabled,
         Release(status.LatestNightly));
 
     private static UpdateReleaseDto? Release(PublishedRelease? release) => release is null
@@ -155,6 +159,7 @@ public static class UpdateEndpoints
         DockerAdvice.UseNightly => "useNightly",
         DockerAdvice.NightlyStays => "nightlyStays",
         DockerAdvice.SwitchToBeta => "switchToBeta",
+        DockerAdvice.BetaStaysForNightly => "betaStaysForNightly",
         _ => "none",
     };
 }

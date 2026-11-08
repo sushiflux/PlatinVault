@@ -9,6 +9,8 @@ describe('parseAtxHeading', () => {
     const lines = [
       '# Title',
       '## v2026.11.19 (3.1601 β) · Unraid, Windows',
+      '## v2026.11.19.3.1601 (β) · Unraid, Windows',
+      '## v2026.11.19.3.1601 (</>)',
       '### ✨ New',
       '   #### Indented',
       '    # four blanks is no heading',

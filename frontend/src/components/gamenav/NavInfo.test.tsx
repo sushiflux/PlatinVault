@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { NavInfo } from './NavInfo'
 
-const BRANDING = { productName: 'PlatinVault', company: 'SushiFlux', version: 'v2026.10.7 (12.345 β)' }
+const BRANDING = { productName: 'PlatinVault', company: 'SushiFlux', version: 'v2026.10.7.12.345 (β)' }
 
 function stubServer() {
   vi.stubGlobal(
@@ -17,7 +17,8 @@ function stubServer() {
             currentVersion: BRANDING.version,
             currentTag: 'v2026.10.7.12.345-beta',
             currentChannel: 'beta',
-            betaUpdatesEnabled: true,
+            updateChannel: 'beta',
+            imageTag: 'beta',
             host: 'server',
             state: 'upToDate',
             available: null,
@@ -91,7 +92,7 @@ describe('NavInfo', () => {
     expect(card.textContent).toMatch(/Mit\s*gemacht/)
     // The card lives in <body>, not inside the nav that clips its own content
     expect(card.closest('nav')).toBeNull()
-    await waitFor(() => expect(screen.getByText('v2026.10.7 (12.345 β)')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('v2026.10.7.12.345 (β)')).toBeTruthy())
     expect(within(card).getByRole('button', { name: 'Lizenzen' })).toBeTruthy()
   })
 

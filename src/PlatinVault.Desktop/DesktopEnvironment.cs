@@ -45,7 +45,7 @@ internal sealed class DesktopEnvironment
     /// <summary>The global hotkey is off in a test run and in a development run (it would take the key from an installed PlatinVault) unless <c>--dev-hotkey</c>.</summary>
     public bool HotkeyAllowed => !Quiet && (!IsDev || Options.DevHotkey);
 
-    /// <summary>The daily look at GitHub releases only makes sense for an installed beta or release; never for a test run, a development run or a dev build.</summary>
+    /// <summary>The daily look at GitHub releases only makes sense for an installed nightly, beta or release; never for a test run or a development run.</summary>
     public bool UpdateCheckAllowed => !IsTest && Kind != VersionKind.Dev;
 
     /// <summary>"Production" for the program, "Development" for a development run; <c>--environment</c> overrides both.</summary>
@@ -61,7 +61,7 @@ internal sealed class DesktopEnvironment
     /// <summary>Folder of the bridge downloads: the program's own <c>bridge</c> folder, in a development run the bridge build output.</summary>
     public string BridgeDir => RepoRoot is { } repo ? Path.Combine(repo, "artifacts", "bridge") : Path.Combine(InstallDir, "bridge");
 
-    /// <summary>"beta", "dev" or "release" as written by scripts/build-windows.ps1 (release-channel.txt; the former "rc" counts as beta); without the file it is a release.</summary>
+    /// <summary>"nightly", "beta" or "release" as written by scripts/build-windows.ps1 (release-channel.txt; the former "rc" counts as beta); without the file it is a release.</summary>
     public string ReleaseChannel
     {
         get
@@ -72,16 +72,16 @@ internal sealed class DesktopEnvironment
         }
     }
 
-    /// <summary>The kind of this build: development run or installed dev build (both <see cref="VersionKind.Dev"/>), beta or release.</summary>
+    /// <summary>The kind of this build: development run (<see cref="VersionKind.Dev"/>), nightly, beta or release.</summary>
     public VersionKind Kind => IsDev ? VersionKind.Dev : VersionFormat.KindFromChannel(ReleaseChannel);
 
-    /// <summary>The version of this build as shown to people, e.g. <c>v2026.11.12 (13.557 β)</c> (see <see cref="VersionFormat"/>).</summary>
+    /// <summary>The version of this build as shown to people, e.g. <c>v2026.11.12.13.557 (β)</c> (see <see cref="VersionFormat"/>).</summary>
     public string Version
     {
         get
         {
             var (shortVersion, buildId) = ReadVersionLines();
-            return shortVersion is null ? "v0.0.0-dev" : VersionFormat.Display(shortVersion, buildId, Kind);
+            return VersionFormat.Display(shortVersion ?? "v0.0.0", shortVersion is null ? null : buildId, Kind);
         }
     }
 

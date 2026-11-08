@@ -20,9 +20,10 @@ public sealed record PublishedRelease(ReleaseVersion Version, bool IsPreRelease,
 
 /// <summary>
 /// Reads the GitHub releases list of the public repository (<c>GET /repos/{owner}/{repo}/releases</c>) and decides which version to
-/// offer. The rule (user decision 2026-11-02, switch "Beta-Versionen erhalten"): off = only releases, on = betas and releases, always
-/// the newest of them, and only when it is newer than what runs - so switching the beta channel off never offers a downgrade: a running
-/// beta simply stays until a release newer than it exists (a release is always a later commit than the betas before it).
+/// offer. One channel is selected (<see cref="UpdateChannel"/>): none = only releases, Beta = betas and releases, Nightly = nightlies
+/// and releases (no betas); always the newest of what the channel receives, and only when it is newer than what runs - so changing the
+/// channel never offers a downgrade: a running beta or nightly simply stays until a version newer than it exists in the chosen channel
+/// (a release is always a later commit than the pre-releases before it).
 /// Pure functions, used by the server (every host) and the Windows program.
 /// </summary>
 public static class ReleaseFeed
@@ -57,9 +58,10 @@ public static class ReleaseFeed
         string? installer = null, installerName = null, checksum = null;
         foreach (var asset in assets.EnumerateArray())
         {
+            if (asset.ValueKind != JsonValueKind.Object) continue;
             var name = Text(asset, "name") ?? string.Empty;
             var url = Text(asset, "browser_download_url");
-            if (url is null || !name.StartsWith("PlatinVault-Setup-", StringComparison.OrdinalIgnoreCase)) continue;
+            if (url is null || !IsPlainFileName(name) || !name.StartsWith("PlatinVault-Setup-", StringComparison.OrdinalIgnoreCase)) continue;
             if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             {
                 installer = url;
@@ -82,9 +84,10 @@ public static class ReleaseFeed
         string? package = null, packageName = null, checksum = null;
         foreach (var asset in assets.EnumerateArray())
         {
+            if (asset.ValueKind != JsonValueKind.Object) continue;
             var name = Text(asset, "name") ?? string.Empty;
             var url = Text(asset, "browser_download_url");
-            if (url is null || !name.StartsWith("PlatinVault-linux-x64-", StringComparison.OrdinalIgnoreCase)) continue;
+            if (url is null || !IsPlainFileName(name) || !name.StartsWith("PlatinVault-linux-x64-", StringComparison.OrdinalIgnoreCase)) continue;
             if (name.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase))
             {
                 package = url;
@@ -101,30 +104,24 @@ public static class ReleaseFeed
     }
 
     /// <summary>
-    /// What to offer: the newest release (and, with <paramref name="includeBetas"/>, beta; with <paramref name="includeNightly"/>, nightly and beta)
-    /// that is newer than <paramref name="current"/>; null = up to date. <paramref name="requireInstaller"/>: only releases with a Windows installer
-    /// count (the Windows program); <paramref name="requireLinuxPackage"/>: only releases with a Linux package count (the Linux package).
+    /// What to offer: the newest version the <paramref name="channel"/> receives (see <see cref="UpdateChannels.Receives"/>: releases for
+    /// every channel, betas only for Beta, nightlies only for Nightly) that is newer than <paramref name="current"/>; null = up to date.
+    /// Never older than what runs, so a running version that is newer than everything in the channel simply stays.
+    /// <paramref name="requireInstaller"/>: only releases with a Windows installer count (the Windows program);
+    /// <paramref name="requireLinuxPackage"/>: only releases with a Linux package count (the Linux package).
     /// </summary>
     public static PublishedRelease? PickUpdate(
         IEnumerable<PublishedRelease> releases,
         ReleaseVersion current,
-        bool includeBetas,
+        UpdateChannel channel,
         bool requireInstaller = false,
-        bool requireLinuxPackage = false,
-        bool includeNightly = false) =>
+        bool requireLinuxPackage = false) =>
         releases
-            .Where(r => IsChannelAllowed(r, includeBetas, includeNightly))
+            .Where(r => UpdateChannels.Receives(channel, r))
             .Where(r => !requireInstaller || r.Installer is not null)
             .Where(r => !requireLinuxPackage || r.LinuxPackage is not null)
             .Where(r => r.Version > current)
             .MaxBy(r => r.Version);
-
-    private static bool IsChannelAllowed(PublishedRelease release, bool includeBetas, bool includeNightly)
-    {
-        if (!release.IsPreRelease) return true;
-        if (release.Version.IsNightly) return includeNightly;
-        return includeBetas || includeNightly;
-    }
 
     /// <summary>The newest real release (no beta or nightly), or null when none is published yet.</summary>
     public static PublishedRelease? LatestRelease(IEnumerable<PublishedRelease> releases) =>
@@ -181,4 +178,9 @@ public static class ReleaseFeed
 
     private static bool IsGitHubUrl(string url) =>
         Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps && uri.Host == "github.com";
+
+    // An asset name becomes a file name in the updates folder and part of the commands shown for the Linux package: only the characters
+    // our builds use (no path separators, no stream separator, nothing a shell would interpret)
+    private static bool IsPlainFileName(string name) =>
+        name.Length is > 0 and <= 255 && name.All(ch => char.IsAsciiLetterOrDigit(ch) || ch is '.' or '-' or '_');
 }

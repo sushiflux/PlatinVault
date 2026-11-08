@@ -2,7 +2,7 @@
 title: PlatinVault
 subtitle: Handbuch
 tagline: Live-Trophäen für deine Steam-Spiele und 100-%-Guides an einem Ort – so richtest du PlatinVault ein und nutzt es im Alltag.
-version: v2026.11.18
+version: v2026.11.22
 date: 2026-11-03
 status: Release
 copyright: © 2026 SushiFlux
@@ -63,7 +63,7 @@ Appdata-Ordner.
 **Eigene Domain / Reverse-Proxy:** Rufst du PlatinVault über einen Namen mit eigener Domain auf (zum Beispiel `pv.example.com` über einen Reverse-Proxy, also einen vorgeschalteten Webserver), trage diesen Namen in der Vorlage unter „Show more settings“ bei `PLATINVAULT_ALLOWED_HOSTS` ein. Mehrere Namen trennst du mit `;`, `*.example.com` gilt für alle Namen darunter. Nötig ist das nicht für IP-Adressen, `localhost`, Namen ohne Punkt (zum Beispiel `tower`) und Namen auf `.local`, `.lan`, `.home.arpa`, `.internal` oder `.fritz.box`. Hintergrund: PlatinVault lehnt andere Namen ab, damit fremde Webseiten es nicht über eine Täuschung im Namenssystem (DNS-Rebinding) ansprechen können. Rufst du PlatinVault schon jetzt so auf, trage den Namen nach dem Update einmal ein. Schreibt dein Proxy den Namen um, kommt für die Live-Popups zusätzlich `PLATINVAULT_ALLOWED_ORIGINS=https://pv.example.com` dazu.
 
 Updates bekommst du über Unraid wie bei jedem anderen Container; deine Daten im Appdata-Ordner bleiben erhalten. Ob dein
-Container nur Releases oder auch Betas bekommt, entscheidet sein Image-Tag – siehe Kapitel 12.
+Container nur Releases oder auch Vorabversionen bekommt, entscheidet sein Image-Tag – siehe Kapitel 12.
 
 ## 3.2 Linux mit Docker
 
@@ -894,7 +894,7 @@ neben der Uhr.
 ## 11.6 Updates
 
 PlatinVault sieht von selbst nach, ob es eine neue Version gibt – so oft, wie unter **Nach Updates suchen** eingestellt (Standard: täglich) –, nur Releases, oder auch Betas, wenn du unter Einstellungen →
-**System** → **Updates** den Schalter **Beta-Versionen erhalten** eingeschaltet hast (Kapitel 12). Gibt es eine, erscheint im Menü des
+**System** → **Updates** beim **Update-Kanal** **Beta** (oder **Nightly**) gewählt hast (Kapitel 12). Gibt es eine, erscheint im Menü des
 Symbols **Update auf … installieren** und eine Benachrichtigung. Sofort nachsehen kannst du mit **Nach Updates suchen** im Menü des
 Symbols oder mit **Jetzt nach Updates suchen** in den Einstellungen; dort installierst du ein gefundenes Update auch direkt mit
 **Update installieren**. Nach deiner Bestätigung lädt PlatinVault den Installer, prüft seine Prüfsumme, beendet sich (mit Sicherung)
@@ -957,20 +957,28 @@ um einen Fehlalarm; der Quellcode ist öffentlich einsehbar. Manche Programme ve
 Von PlatinVault gibt es drei veröffentlichte Kanäle:
 
 - **Releases** – die normalen, fertigen Versionen. Das ist der Standard und für die meisten die richtige Wahl.
-- **Betas (`β`)** – geprüfte Vorabversionen mit neuen Funktionen vor der endgültigen Freigabe. Eine Beta zeigt hinter der Versionsnummer ein **β**, zum Beispiel `v2026.11.12 (13.557 β)`.
-- **Nightlies (`α`)** – frühe Vorabversionen mit den allerneuesten Änderungen direkt aus der laufenden Entwicklung. Eine Nightly zeigt hinter der Versionsnummer ein **α** (Alpha), zum Beispiel `v2026.11.20 (8.1234 α)`.
+- **Betas (`β`)** – geprüfte Vorabversionen mit neuen Funktionen vor der endgültigen Freigabe. Eine Beta zeigt hinter der Versionsnummer ein **β**, zum Beispiel `v2026.11.12.13.557 (β)`.
+- **Nightlies (`α`)** – frühe Vorabversionen mit den allerneuesten Änderungen direkt aus der laufenden Entwicklung. Eine Nightly zeigt hinter der Versionsnummer ein **α** (Alpha), zum Beispiel `v2026.11.20.8.1234 (α)`.
 
-## 12.1 Die Schalter für Beta- und Nightly-Versionen
+## 12.1 Den Update-Kanal wählen
 
-Unter Einstellungen → **System** → **Updates** bleiben **Releases** immer aktiv; dazu gibt es – auf jeder Plattform – zwei Schalter für Vorabversionen (beide anfangs **aus**):
+Der **Update-Kanal** legt fest, welche Art von Versionen dir PlatinVault anbietet. Du wählst ihn auf jeder Plattform an derselben Stelle:
 
-- **Beide aus:** Du bekommst nur fertige Releases.
-- **Beta-Versionen erhalten:** Du bekommst Betas (`β`) und Releases – immer die neueste von beiden.
-- **Nightly-Versionen (α) erhalten:** Du bekommst Nightly-Versionen (`α`), Betas (`β`) und Releases – immer die neueste Version aus allen drei Kanälen (dieser Schalter schaltet **Beta-Versionen erhalten** automatisch mit ein).
+1. Öffne die **Einstellungen** und wechsle zu **System**.
+2. Suche den Abschnitt **Updates**. Der **Update-Kanal** steht direkt unter **Installierte Version**.
+3. Klicke auf einen der drei Knöpfe. Die Wahl wird sofort gespeichert; darunter erklärt ein kurzer Text, was der Kanal bedeutet.
 
-Es gibt **nie einen Schritt zurück**: Schaltest du einen Vorab-Kanal aus, während eine Nightly oder Beta läuft, bleibt deine installierte Version, bis im gewählten Kanal eine Version erscheint, die mindestens so neu ist. Diese Version wird dir dann automatisch angeboten.
+Die drei Knöpfe:
 
-Darunter siehst du deine installierte Version und mit **Jetzt nach Updates suchen** das Ergebnis: „Du bist auf dem neuesten Stand“,
+- **Keiner:** Du bekommst nur fertige Releases. Das ist der Standard.
+- **Beta:** Du bekommst Betas (`β`) und Releases – immer die neuere von beiden, aber keine Nightlies.
+- **Nightly:** Du bekommst Nightly-Versionen (`α`) und Releases – immer die neuere von beiden, aber keine Betas.
+
+Hast du früher einen der beiden alten Schalter für Vorabversionen benutzt, behältst du deine Wahl: War „Nightly“ eingeschaltet, ist jetzt **Nightly** gewählt, sonst bei eingeschaltetem „Beta“ der Kanal **Beta**, sonst **Keiner**.
+
+Es gibt **nie einen Schritt zurück**: Wechselst du auf einen ruhigeren Kanal, während eine Nightly oder Beta läuft, bleibt deine installierte Version, bis im gewählten Kanal eine Version erscheint, die mindestens so neu ist. Diese Version wird dir dann automatisch angeboten.
+
+Weiter unten siehst du mit **Jetzt nach Updates suchen** das Ergebnis: „Du bist auf dem neuesten Stand“,
 „Neue Nightly … verfügbar“, „Neue Beta … verfügbar“ oder „Neues Release … verfügbar“ – mit einem Knopf zu den Release-Notizen. PlatinVault fragt die
 veröffentlichten Versionen bei GitHub ab (ohne Anmeldung; nur ein paar Mal am Tag, eine Suche von Hand höchstens einmal pro Minute).
 Klappt das nicht, steht der vollständige Grund dort, zum Beispiel keine Internetverbindung oder ein ausgeschöpftes Abfrage-Kontingent
@@ -1003,9 +1011,9 @@ Versionen und zeigt dir in den Einstellungen genau, was zu tun ist. Welche Versi
 |---|---|
 | `ghcr.io/sushiflux/platinvault:latest` | nur Releases |
 | `ghcr.io/sushiflux/platinvault:beta` | Betas (`β`) und Releases (immer die neueste von beiden) |
-| `ghcr.io/sushiflux/platinvault:nightly` | Nightlies (`α`), Betas (`β`) und Releases (immer die neueste von allen) |
+| `ghcr.io/sushiflux/platinvault:nightly` | Nightlies (`α`) und Releases (immer die neueste von beiden) |
 
-Stelle die Schalter in der App passend zum Tag ein. So stellst du den Tag um – deine Daten in Datenbank und Appdata bleiben dabei
+Wähle in der App den passenden **Update-Kanal**: **Keiner** für `:latest`, **Beta** für `:beta`, **Nightly** für `:nightly`. Stimmen Kanal und Tag nicht überein, nennt dir PlatinVault in den Einstellungen und im Update-Symbol den Tag, den deine Wahl braucht. So stellst du den Tag um – deine Daten in Datenbank und Appdata bleiben dabei
 erhalten:
 
 - **Unraid:** Docker-Reiter → PlatinVault-Container anklicken → **Edit** → bei **Repository** den Tag ändern → **Apply**. Neue Versionen

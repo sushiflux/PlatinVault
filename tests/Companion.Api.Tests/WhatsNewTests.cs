@@ -102,6 +102,86 @@ public sealed class WhatsNewTests
         Assert.Null(ChangelogEntry.Extract(Changelog, "v2026.11.17", "en"));
     }
 
+    // ---- both heading notations ----------------------------------------------------------------------------------------------------
+    // Until 2026-11-08 the stamped headings read "v2026.11.17 (24.19071)" / "v2026.11.18 (9.7263 β)"; since then "v2026.11.17.24.19071" /
+    // "v2026.11.18.9.7263 (β)". Stamped headings are never rewritten, so a changelog holds both and the running version (new notation) must
+    // find an entry of either.
+
+    private static readonly string MixedChangelog = string.Join('\n',
+        "<a name=\"english\"></a>",
+        $"## v2026.11.20.3.150 ({Beta}) · Unraid",
+        "",
+        "- New notation, beta.",
+        "",
+        "## v2026.11.19.2.40",
+        "",
+        "- New notation, release.",
+        "",
+        $"## v2026.11.18 (9.7263 {Beta}) · Unraid, Windows",
+        "",
+        "- Old notation, beta.",
+        "",
+        "## v2026.11.17 (24.19071)",
+        "",
+        "- Old notation, release.",
+        "",
+        "---",
+        "",
+        "<a name=\"deutsch\"></a>",
+        $"## v2026.11.20.3.150 ({Beta}) · Unraid",
+        "",
+        "- Neue Schreibweise, Beta.",
+        "",
+        "## v2026.11.19.2.40",
+        "",
+        "- Neue Schreibweise, Release.",
+        "",
+        $"## v2026.11.18 (9.7263 {Beta}) · Unraid, Windows",
+        "",
+        "- Alte Schreibweise, Beta.",
+        "",
+        "## v2026.11.17 (24.19071)",
+        "",
+        "- Alte Schreibweise, Release.",
+        "");
+
+    [Theory]
+    [InlineData("v2026.11.20.3.150 (β)", "New notation, beta.", "Neue Schreibweise, Beta.")]
+    [InlineData("v2026.11.19.2.40", "New notation, release.", "Neue Schreibweise, Release.")]
+    [InlineData("v2026.11.18.9.7263 (β)", "Old notation, beta.", "Alte Schreibweise, Beta.")]
+    [InlineData("v2026.11.17.24.19071", "Old notation, release.", "Alte Schreibweise, Release.")]
+    public void An_entry_is_found_in_the_new_and_in_the_old_heading_notation(string running, string english, string german)
+    {
+        Assert.Contains(english, ChangelogEntry.Extract(MixedChangelog, running, "en"));
+        Assert.Contains(german, ChangelogEntry.Extract(MixedChangelog, running, "de"));
+        // The entry stops at the next heading, whichever notation that one is written in
+        Assert.DoesNotContain("notation, release.", ChangelogEntry.Extract(MixedChangelog, "v2026.11.18.9.7263 (β)", "en"));
+    }
+
+    [Fact]
+    public void An_old_notation_entry_keeps_its_platforms_and_the_new_release_form_does_not_pick_the_beta_of_the_same_build()
+    {
+        var entry = ChangelogEntry.Extract(MixedChangelog, "v2026.11.18.9.7263 (β)", "en");
+        Assert.StartsWith($"## v2026.11.18 (9.7263 {Beta}) · Unraid, Windows", entry);
+
+        // A beta heading is not the release of the same build, in neither notation
+        Assert.Null(ChangelogEntry.Extract(MixedChangelog, "v2026.11.18.9.7263", "en"));
+        Assert.Null(ChangelogEntry.Extract(MixedChangelog, "v2026.11.20.3.150", "en"));
+        // Nor does a longer counter match a shorter one: "(9.72630)" is not "(9.7263)"
+        Assert.Null(ChangelogEntry.Extract(MixedChangelog, "v2026.11.18.9.72630 (β)", "en"));
+    }
+
+    [Fact]
+    public async Task The_window_opens_for_a_new_notation_version_whose_entry_still_has_an_old_notation_heading()
+    {
+        using var scratch = new SqliteScratch();
+        await using var db = await scratch.MigratedAsync();
+        await SetAsync(db, WhatsNew.LastVersionKey, "v2026.11.10.1.1");
+        var dto = await WhatsNew.GetAsync(db, Running("v2026.11.17.24.19071"), MixedChangelog, "en");
+        Assert.True(dto.Show);
+        Assert.Contains("Old notation, release.", dto.Notes);
+    }
+
     [Fact]
     public void Windows_line_endings_work_and_a_missing_language_section_falls_back_to_the_other_language()
     {

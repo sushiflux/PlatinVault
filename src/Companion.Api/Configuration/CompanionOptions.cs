@@ -45,9 +45,8 @@ public sealed class CompanionOptions
     /// <summary>Where the AI providers are reached. The official addresses unless configured otherwise (a proxy, or a test double).</summary>
     public AiProviderUrls Ai { get; set; } = new();
 
-    /// <summary>"beta" for a beta image (version shown as "v2026.11.12 (13.557 β)"; the former "rc" is accepted as beta too),
-    /// "dev" for a dev-build image ("v2026.11.12 (13.557-dev)", no update offers; the server environment stays Production),
-    /// "release" otherwise ("v2026.11.12 (13.557)"); set by the Docker build.</summary>
+    /// <summary>"beta" for a beta image (version shown as "v2026.11.12.13.557 (β)"; the former "rc" is accepted as beta too),
+    /// "nightly" for a nightly image ("v2026.11.12.13.557 (α)"), "release" otherwise ("v2026.11.12.13.557"); set by the Docker build.</summary>
     public string ReleaseChannel { get; set; } = "release";
 
     /// <summary>

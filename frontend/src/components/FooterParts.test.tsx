@@ -25,9 +25,9 @@ afterEach(() => {
 
 describe('AppVersion', () => {
   it.each([
-    ['release', 'v2026.11.12 (13.557)'],
-    ['beta', 'v2026.11.12 (13.557 β)'],
-    ['dev', 'v2026.11.12 (13.557-dev)'],
+    ['release', 'v2026.11.12.13.557'],
+    ['beta', 'v2026.11.12.13.557 (β)'],
+    ['dev', 'v2026.11.12.13.557 (</>)'],
   ])('shows the %s version exactly as the server wrote it, as plain mono text', async (_kind, version) => {
     stubBranding({ productName: 'PlatinVault', company: 'SushiFlux', version })
     renderWithClient(<AppVersion className="my-class" />)
@@ -40,14 +40,14 @@ describe('AppVersion', () => {
   })
 
   it('reserves its line while the answer is on its way: invisible, hidden from screen readers, never empty', async () => {
-    stubBranding({ productName: 'PlatinVault', company: 'SushiFlux', version: 'v2026.11.12 (13.557 β)' }, 30)
+    stubBranding({ productName: 'PlatinVault', company: 'SushiFlux', version: 'v2026.11.12.13.557 (β)' }, 30)
     const { container } = renderWithClient(<AppVersion />)
     const placeholder = container.querySelector('span.invisible')
     expect(placeholder).not.toBeNull()
     expect(placeholder?.getAttribute('aria-hidden')).toBe('true')
     expect((placeholder?.textContent ?? '').length).toBeGreaterThan(5)
     await waitFor(() => expect(container.querySelector('span.invisible')).toBeNull())
-    expect(screen.getByText('v2026.11.12 (13.557 β)')).toBeTruthy()
+    expect(screen.getByText('v2026.11.12.13.557 (β)')).toBeTruthy()
   })
 })
 

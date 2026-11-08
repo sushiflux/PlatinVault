@@ -134,7 +134,8 @@ public sealed partial class UpdateService(
             }
 
             var http = httpFactory.CreateClient(HttpClientName);
-            using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(baseUri, $"repos/{repository}/releases?per_page=30"));
+            // 100 is GitHub's maximum: with frequent nightlies a shorter page would hide the newest release from a release-only installation
+            using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(baseUri, $"repos/{repository}/releases?per_page=100"));
             request.Headers.UserAgent.Add(new ProductInfoHeaderValue("PlatinVault", "1.0"));
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
             request.Headers.Add("X-GitHub-Api-Version", "2022-11-28");

@@ -4,7 +4,7 @@ using PlatinVault.Versioning;
 
 namespace PlatinVault.Desktop.Updates;
 
-/// <summary>A newer installer found on GitHub (the newest beta or release the switch "Beta-Versionen erhalten" allows).</summary>
+/// <summary>A newer installer found on GitHub (the newest version the selected update channel receives).</summary>
 internal sealed record UpdateOffer(ReleaseVersion Version, string InstallerUrl, string ChecksumUrl, string InstallerName)
 {
     /// <summary>The offer for a published release; null when it has no Windows installer.</summary>
@@ -15,14 +15,14 @@ internal sealed record UpdateOffer(ReleaseVersion Version, string InstallerUrl, 
 /// <summary>
 /// Downloads and verifies the installer of an update. WHICH update is offered is decided by the server's update check
 /// (<c>Companion.Api.Services.UpdateService</c>, the same for every host) with the shared rules in <see cref="ReleaseFeed"/>: the
-/// releases of the public repository sushiflux/PlatinVault, betas only while "Beta-Versionen erhalten" is switched on, never older than
-/// what runs. The installer is only run after its SHA-256 matches the published ".sha256" file.
+/// releases of the public repository sushiflux/PlatinVault, betas only on the Beta channel, nightlies only on the Nightly channel, never
+/// older than what runs. The installer is only run after its SHA-256 matches the published ".sha256" file.
 /// </summary>
 internal sealed class UpdateChecker(HttpClient http)
 {
     /// <summary>The newest acceptable release with an installer and its checksum (pure, unit-tested; same rules as the server).</summary>
-    public static UpdateOffer? Pick(JsonElement releases, ReleaseVersion current, bool includeBetas, bool includeNightly = false) =>
-        UpdateOffer.From(ReleaseFeed.PickUpdate(ReleaseFeed.Parse(releases), current, includeBetas, requireInstaller: true, includeNightly: includeNightly));
+    public static UpdateOffer? Pick(JsonElement releases, ReleaseVersion current, UpdateChannel channel) =>
+        UpdateOffer.From(ReleaseFeed.PickUpdate(ReleaseFeed.Parse(releases), current, channel, requireInstaller: true));
 
     /// <summary>In the delayed cleanup pass (a while after the start) only installers older than this are deleted: a younger one may belong to an update the user just started.</summary>
     public static readonly TimeSpan DelayedCleanupMinAge = TimeSpan.FromMinutes(10);

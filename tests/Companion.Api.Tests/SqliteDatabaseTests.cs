@@ -183,13 +183,13 @@ public sealed class SqliteStartGuardTests
             await c.OpenAsync();
             await SqliteDatabase.ExecuteAsync(c,
                 "INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") VALUES ('20991231000000_FromTheFuture', '10.0.0');" +
-                "UPDATE app_settings SET \"Value\" = 'v2099.1.5 (2.40 β)' WHERE \"Key\" = 'app.schema_version';", default);
+                "UPDATE app_settings SET \"Value\" = 'v2099.1.5.2.40 (β)' WHERE \"Key\" = 'app.schema_version';", default);
         }
         var before = await SnapshotAsync(scratch.DatabaseFile);
 
         var refused = await Assert.ThrowsAsync<NewerDatabaseException>(() => DatabaseInitializer.MigrateAsync(services, NullLogger.Instance));
         Assert.Equal(["20991231000000_FromTheFuture"], refused.UnknownMigrations);
-        Assert.Contains("v2099.1.5 (2.40 β)", refused.Text.De);
+        Assert.Contains("v2099.1.5.2.40 (β)", refused.Text.De);
         Assert.Contains("unverändert", refused.Text.De);
         Assert.Contains("untouched", refused.Text.En);
         Assert.Equal(before, await SnapshotAsync(scratch.DatabaseFile));

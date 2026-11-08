@@ -14,7 +14,7 @@ describe('buildErrorReport', () => {
   it('puts the complete message first, then details, code, and one line with version and time', () => {
     const text = buildErrorReport(
       { title: 'Guide konnte nicht vervollständigt werden', message: 'Google lehnt den Gemini-Key ab.', details: 'Google: API key not valid. Please pass a valid API key.', code: 'HTTP 400 · gemini · invalidKey' },
-      'v2026.11.14 (13.557)',
+      'v2026.11.14.13.557',
       at,
     )
     const [head, details, code, stamp, ...rest] = text.split('\n\n')
@@ -22,7 +22,7 @@ describe('buildErrorReport', () => {
     expect(head).toBe('Guide konnte nicht vervollständigt werden\nGoogle lehnt den Gemini-Key ab.')
     expect(details).toBe('Technische Details:\nGoogle: API key not valid. Please pass a valid API key.')
     expect(code).toBe('Fehlercode: HTTP 400 · gemini · invalidKey')
-    expect(stamp).toMatch(/^PlatinVault v2026\.11\.14 \(13\.557\) · 2026-11-03 14:05:12 [+-]\d{2}:\d{2}$/)
+    expect(stamp).toMatch(/^PlatinVault v2026\.11\.14\.13\.557 · 2026-11-03 14:05:12 [+-]\d{2}:\d{2}$/)
   })
 
   it('never shortens a long message or its details', () => {
@@ -48,9 +48,9 @@ describe('buildErrorReport', () => {
   })
 
   it('uses the version the server reported when none is given', () => {
-    rememberAppVersion('v2026.11.14 (13.557 β)')
-    expect(getKnownAppVersion()).toBe('v2026.11.14 (13.557 β)')
-    expect(buildErrorReport({ message: 'x' }, undefined, at)).toContain('PlatinVault v2026.11.14 (13.557 β) · ')
+    rememberAppVersion('v2026.11.14.13.557 (β)')
+    expect(getKnownAppVersion()).toBe('v2026.11.14.13.557 (β)')
+    expect(buildErrorReport({ message: 'x' }, undefined, at)).toContain('PlatinVault v2026.11.14.13.557 (β) · ')
     rememberAppVersion(null)
     expect(getKnownAppVersion()).toBeNull()
   })

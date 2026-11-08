@@ -15,7 +15,7 @@ interface InfoBodyProps {
 
 /**
  * What the floating info card at the foot of the side navigation shows: the logo and name of the app (from the branding), the
- * version as the interactive VersionCheck pill (e.g. "v2026.11.12 (13.557 β)", never cut off, opens "Version & Updates" incl.
+ * version as the interactive VersionCheck pill (e.g. "v2026.11.12.13.557 (β)", never cut off, opens "Version & Updates" incl.
  * "What's new in this version"), "Made with <heart>", the copyright, a fine rule and the licences button. The pieces are the
  * same as the dashboard footer's (FooterParts.tsx, MadeWith.tsx); the type and spacing come from .pv-info-body (gamenav.css).
  */

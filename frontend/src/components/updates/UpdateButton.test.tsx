@@ -31,7 +31,8 @@ function status(overrides: Partial<UpdateStatusDto> = {}): UpdateStatusDto {
     currentVersion: 'v2026.11.10 (31.2840)',
     currentTag: 'v2026.11.10',
     currentChannel: 'release',
-    betaUpdatesEnabled: false,
+    updateChannel: 'none',
+    imageTag: 'latest',
     host: 'server',
     state: 'available',
     available: release,
@@ -142,7 +143,7 @@ describe('UpdateButton', () => {
 
   it('container host with a wanted beta on a release image: explains the tag switch', async () => {
     const beta = { ...release, tag: 'v2026.11.12.13.557-beta', display: 'v2026.11.12 (13.557 β)', isBeta: true }
-    fetchUpdateStatus.mockResolvedValue(status({ available: beta, dockerAdvice: 'useBeta', betaUpdatesEnabled: true }))
+    fetchUpdateStatus.mockResolvedValue(status({ available: beta, dockerAdvice: 'useBeta', updateChannel: 'beta', imageTag: 'beta' }))
     renderButton()
     fireEvent.click(await screen.findByTestId('update-button'))
     expect((await screen.findByTestId('update-container-steps')).textContent).toContain('ghcr.io/sushiflux/platinvault:beta')

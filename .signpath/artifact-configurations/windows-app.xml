@@ -8,7 +8,7 @@
   Only our own binaries are signed (SignPath Foundation: "sign your own binaries only"); the .NET runtime, WebView2Loader.dll, e_sqlite3.dll
   and every other third-party file stay as they are. Every file must exist exactly once (SignPath's default min/max matches = 1).
   Metadata restrictions (required by SignPath Foundation): product name = the project's name, product version = the same readable version
-  for every binary of one build ("v2026.11.14 (15.116022)", parameter productVersion, passed by the workflow).
+  for every binary of one build ("v2026.11.14.15.116022", parameter productVersion, passed by the workflow).
 -->
 <artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
   <parameters>

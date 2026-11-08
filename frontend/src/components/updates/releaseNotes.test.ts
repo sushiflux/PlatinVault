@@ -102,6 +102,28 @@ describe('parseReleaseNotes with the real v2026.11.14 entry', () => {
   })
 })
 
+// Headings are stamped once and never rewritten: entries from before 2026-11-08 read "v2026.11.20 (16.300 β)", newer ones
+// "v2026.11.20.16.300 (β)". The "What's new" window and the release notes dialog must read both.
+describe('parseReleaseNotes heading notations', () => {
+  const body = (heading: string, heading2: string) =>
+    [`${heading}`, '', '### ✨ New', '', '- English point.', '', '---', '', `${heading2}`, '', '### ✨ Neu', '', '- Deutscher Punkt.'].join('\n')
+
+  it.each([
+    ['## v2026.11.20 (16.300 β) · Unraid, Windows', 'v2026.11.20 (16.300 β)', 'Unraid, Windows'],
+    ['## v2026.11.20 (16.300)', 'v2026.11.20 (16.300)', null],
+    ['## v2026.11.20.16.300 (β) · Unraid, Windows', 'v2026.11.20.16.300 (β)', 'Unraid, Windows'],
+    ['## v2026.11.20.16.300 (α)', 'v2026.11.20.16.300 (α)', null],
+    ['## v2026.11.20.16.300', 'v2026.11.20.16.300', null],
+  ])('reads the heading %s as title and platforms, in both languages', (heading, title, platforms) => {
+    for (const language of ['en', 'de'] as const) {
+      const notes = parseReleaseNotes(body(heading, heading), language)
+      expect(notes.title).toBe(title)
+      expect(notes.platforms).toBe(platforms)
+      expect(notes.sections).toHaveLength(1)
+    }
+  })
+})
+
 describe('parseReleaseNotes other shapes', () => {
   const entry = [
     '## v2026.11.20 (16.300 β) · Unraid, Windows',
