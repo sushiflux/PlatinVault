@@ -145,6 +145,55 @@ public sealed class ManualBatchTests
     }
 
     [Fact]
+    public void The_German_prompt_asks_for_one_array_in_one_file_with_a_code_block_fallback_and_no_loop_as_the_normal_path()
+    {
+        var chapters = Plan(13, walkthrough: true);
+        var prompt = AiGuideGeneratorService.ComposeManualBatchPrompt(Context(), Game(), Lang.German, chapters);
+
+        Assert.Contains("EIN JSON-Array mit ALLEN 13 Kapiteln", prompt);
+        Assert.Contains("[ <Objekt K01>, … <Objekt K13> ]", prompt);
+        Assert.Contains("Beginne jedes Objekt in einer neuen Zeile", prompt);
+        Assert.Contains("„game“, „steamAppId“, „chapter“", prompt);
+        Assert.Contains("als EINE Datei zum Herunterladen mit dem Namen „platinvault-suncraft-kapitel.json“", prompt);
+        Assert.Contains("hänge jedes fertige Kapitel an die Datei an", prompt);
+        Assert.Contains("gültiges JSON", prompt);
+        Assert.Contains("NUR wenn dein Chat keine Datei erzeugen kann", prompt);
+        Assert.Contains("„NOCH OFFEN: K05–K13“", prompt);                                    // real keys of this list
+        Assert.Contains("NEUEN Array nur der offenen Kapitel", prompt);
+        Assert.Contains("„ALLE KAPITEL FERTIG: K01–K13“", prompt);
+        Assert.DoesNotContain("ALLEIN", prompt);
+        Assert.DoesNotContain("Beginne jetzt mit", prompt);
+        Assert.DoesNotContain("in einem eigenen Codeblock wie jedes andere Kapitel", prompt);
+        Assert.EndsWith("Recherchiere und schreibe jetzt alle 13 Kapitel (K01–K13) und liefere das JSON-Array.", prompt);
+    }
+
+    [Fact]
+    public void The_English_prompt_says_the_same_and_the_still_open_example_uses_the_real_keys()
+    {
+        var chapters = Plan(13, walkthrough: true);
+        var prompt = AiGuideGeneratorService.ComposeManualBatchPrompt(Context(Lang.English), Game(language: Lang.English), Lang.English, chapters);
+
+        Assert.Contains("ONE JSON array with ALL 13 chapters", prompt);
+        Assert.Contains("[ <object K01>, … <object K13> ]", prompt);
+        Assert.Contains("as ONE downloadable file named \"platinvault-suncraft-chapters.json\"", prompt);
+        Assert.Contains("append each finished chapter to the file", prompt);
+        Assert.Contains("ONLY if your chat cannot create a file", prompt);
+        Assert.Contains("\"STILL OPEN: K05–K13\"", prompt);
+        Assert.Contains("NEW array of only the open chapters", prompt);
+        Assert.Contains("\"ALL CHAPTERS DONE: K01–K13\"", prompt);
+        Assert.DoesNotContain("ALONE", prompt);
+        Assert.DoesNotContain("Begin with", prompt);
+        Assert.EndsWith("Now research and write all 13 chapters (K01–K13) and deliver the JSON array.", prompt);
+
+        // A short list: the example never points past the list
+        var three = AiGuideGeneratorService.ComposeManualBatchPrompt(Context(), Game(), Lang.German, Plan(3));
+        Assert.Contains("„NOCH OFFEN: K03“", three);
+        var one = AiGuideGeneratorService.ComposeManualBatchPrompt(Context(), Game(), Lang.German, Plan(1));
+        Assert.Contains("„NOCH OFFEN: K01“", one);
+        Assert.Contains("„ALLE KAPITEL FERTIG: K01“", one);
+    }
+
+    [Fact]
     public void The_batch_prompt_is_much_smaller_than_the_single_prompts_it_replaces()
     {
         var chapters = Plan(31);
@@ -160,10 +209,12 @@ public sealed class ManualBatchTests
     {
         var with = AiGuideGeneratorService.ComposeManualBatchPrompt(Context(), Game(), Lang.German, Plan(5, walkthrough: true));
         Assert.Contains("Sonderfall Komplettlösung (K01)", with);
-        Assert.Contains("ALLEIN in einer eigenen Antwort", with);
+        Assert.Contains("im selben Array", with);                                             // it is no longer answered alone
+        Assert.DoesNotContain("ALLEIN", with);
+        Assert.DoesNotContain("eigene Antwort", with);
         Assert.Contains("Prüfe zuerst, ob es eine belastbare, VOLLSTÄNDIGE Quelle", with);   // the single-answer instructions
         Assert.Contains("Erlaubte Bausteine (nur diese Typen)", with);
-        Assert.Contains("eigene Antwort (Sonderfall Komplettlösung)", with);
+        Assert.Contains("| Sonderfall Komplettlösung", with);
 
         var without = AiGuideGeneratorService.ComposeManualBatchPrompt(Context(), Game(), Lang.German, Plan(5));
         Assert.DoesNotContain("Sonderfall Komplettlösung", without);
@@ -271,6 +322,131 @@ public sealed class ManualBatchTests
         Assert.Equal(["K05", "K06"], ManualBatchReader.Read(wrapper).Objects.Select(o => o.KeyHint));
     }
 
+    /// <summary>A real chapter whose content has "…" / "..." / "&lt;…&gt;" values deep inside (a table cell, a text).</summary>
+    private static JsonObject NodeWithPlaceholderLikeContent(string key, string title)
+    {
+        var node = Node(key, title);
+        var cells = node["sections"]![1]!["table"]!["rows"]![0]!["cells"]!.AsObject();
+        cells["name"] = "…";
+        cells["ort"] = "...";
+        cells["hinweis"] = "<noch unbekannt>";
+        node["sections"]![0]!["htmlContent"] = "mdi:... ist nur ein Beispiel, und hier steht der echte Text des Kapitels über die Brücke und den Markt.";
+        return node;
+    }
+
+    [Fact]
+    public void A_real_chapter_with_an_ellipsis_or_angle_bracket_cell_is_found_not_dropped_silently()
+    {
+        var chapter = NodeWithPlaceholderLikeContent("K01", "Kapitel Nummer 1").ToJsonString();
+
+        var read = ManualBatchReader.Read(Fenced(chapter));
+        Assert.Equal(["K01"], read.Objects.Select(o => o.KeyHint));
+        Assert.NotNull(read.Objects[0].Node);
+
+        var check = Generator().CheckManualBatch(Game(), Fenced(chapter), Plan(2)).Dto;
+        Assert.Equal(1, check.Found);
+        Assert.NotEqual("missing", Item(check, "K01").State);
+        Assert.NotNull(Item(check, "K01").Preview);
+
+        // Also inside an array and inside the chapters wrapper
+        Assert.Equal(["K01"], ManualBatchReader.Read("[" + chapter + "]").Objects.Select(o => o.KeyHint));
+        Assert.Equal(["K01"], ManualBatchReader.Read("{ \"chapters\": [" + chapter + "] }").Objects.Select(o => o.KeyHint));
+    }
+
+    [Fact]
+    public void A_cut_off_real_chapter_with_an_ellipsis_cell_is_reported_not_dropped_silently()
+    {
+        var chapter = NodeWithPlaceholderLikeContent("K02", "Kapitel Nummer 2").ToJsonString();
+        var text = Fenced(Obj("K01", "Kapitel Nummer 1")) + "\n\n```json\n" + chapter[..(chapter.Length - 60)];
+
+        var read = ManualBatchReader.Read(text);
+
+        Assert.Equal(2, read.Objects.Count);
+        Assert.Equal(BatchFailure.CutOff, read.Objects[1].Failure);
+        Assert.Equal("K02", read.Objects[1].KeyHint);
+    }
+
+    [Fact]
+    public void An_object_is_the_prompts_pattern_when_a_top_level_value_is_a_placeholder()
+    {
+        string[] patterns =
+        [
+            """{ "game": "Suncraft", "steamAppId": 1, "chapter": "<key from the list, e.g. K07>", "title": "T", "icon": "mdi:home", "sections": [] }""",
+            """{ "game": "Suncraft", "steamAppId": 1, "chapter": "K01", "title": "<chapter title from the list>", "icon": "mdi:home", "sections": [] }""",
+            """{ "game": "Suncraft", "steamAppId": 1, "chapter": "K05", "notApplicable": true, "reason": "..." }""",
+            """{ "game": "Suncraft", "steamAppId": 1, "chapter": "K05", "notApplicable": true, "reason": "One short sentence why (what the game has instead)" }""",
+            """{ "game": "Suncraft", "steamAppId": 1, "chapter": "K01", "title": "T", "icon": "mdi:home", "sections": [...] }""",   // not valid JSON: bare ellipsis
+        ];
+        foreach (var pattern in patterns)
+        {
+            Assert.Empty(ManualBatchReader.Read(pattern).Objects);
+        }
+    }
+
+    [Fact]
+    public void A_real_chapter_whose_icon_or_game_is_still_a_placeholder_is_recognised()
+    {
+        var withIcon = Node("K01", "Kapitel Nummer 1");
+        withIcon["icon"] = "mdi:...";
+        var withGame = Node("K02", "Kapitel Nummer 2");
+        withGame["game"] = "<Spielname>";
+
+        var fenced = Fenced(withIcon.ToJsonString(), withGame.ToJsonString());
+        Assert.Equal(["K01", "K02"], ManualBatchReader.Read(fenced).Objects.Select(o => o.KeyHint));
+
+        var array = "[\n" + withIcon.ToJsonString() + ",\n" + Obj("K02", "Kapitel Nummer 2") + "\n]";
+        var read = ManualBatchReader.Read(array);
+        Assert.Equal(["K01", "K02"], read.Objects.Select(o => o.KeyHint));
+        Assert.All(read.Objects, o => Assert.NotNull(o.Node));
+
+        var check = Generator().CheckManualBatch(Game(), array, Plan(2)).Dto;
+        Assert.Equal(2, check.Found);
+        Assert.NotEqual("missing", Item(check, "K01").State);
+
+        // A cut-off real chapter with that icon is reported, not dropped
+        var cut = withIcon.ToJsonString();
+        var broken = ManualBatchReader.Read("```json\n" + cut[..(cut.Length - 60)]);
+        Assert.Equal(BatchFailure.CutOff, Assert.Single(broken.Objects).Failure);
+    }
+
+    [Fact]
+    public void One_file_with_an_array_of_13_chapters_including_the_walkthrough_and_a_not_applicable_object_gives_13_chapters()
+    {
+        var chapters = Plan(13, walkthrough: true);   // K01 walkthrough, K02 roadmap, K03.. extras
+        var elements = chapters.Select(c => c.Key == "K05" ? NotApplicable("K05") : Obj(c.Key, c.Title, itemId: "id-" + c.Key.ToLowerInvariant())).ToList();
+        var file = "[\n" + string.Join(",\n", elements) + "\n]\n";
+
+        var read = ManualBatchReader.Read(file);
+        Assert.Equal(13, read.Objects.Count);
+        Assert.Equal(chapters.Select(c => c.Key), read.Objects.Select(o => o.KeyHint));
+
+        var check = Generator().CheckManualBatch(Game(), file, chapters).Dto;
+        Assert.Equal(13, check.Found);
+        Assert.Empty(check.Unmatched);
+        Assert.DoesNotContain(check.Items, i => i.State is "missing" or "error");
+        Assert.Equal("notApplicable", Item(check, "K05").State);
+        Assert.Equal(12, check.Items.Count(i => i.State is "ok" or "warning"));
+        Assert.Equal(chapters.Select(c => c.Key), check.Items.Select(i => i.Key));
+    }
+
+    [Fact]
+    public void A_cut_off_array_gives_the_complete_chapters_and_reports_the_last_as_cut_off()
+    {
+        var chapters = Plan(13);
+        var elements = chapters.Select(c => Obj(c.Key, c.Title, itemId: "id-" + c.Key.ToLowerInvariant())).ToList();
+        var full = "[\n" + string.Join(",\n", elements) + "\n]";
+        var file = full[..(full.Length - 120)];   // cut inside the last chapter, no closing bracket
+
+        var check = Generator().CheckManualBatch(Game(), file, chapters).Dto;
+
+        Assert.Equal(13, check.Found);
+        Assert.Equal(12, check.Items.Count(i => i.State is "ok" or "warning"));
+        var last = Item(check, "K13");
+        Assert.Equal("error", last.State);
+        Assert.Contains("abgeschnitten", Assert.Single(last.Errors).Message);
+        Assert.Empty(check.Unmatched);
+    }
+
     [Theory]
     [InlineData("de")]
     [InlineData("en")]
@@ -291,6 +467,28 @@ public sealed class ManualBatchTests
         Assert.Empty(check.Unmatched);
     }
 
+    [Theory]
+    [InlineData("de")]
+    [InlineData("en")]
+    public void The_new_prompt_with_every_shape_example_is_ignored_and_a_pasted_array_answer_after_it_is_read(string language)
+    {
+        var chapters = Plan(13, walkthrough: true);
+        var prompt = AiGuideGeneratorService.ComposeManualBatchPrompt(Context(language), Game(language: language), language, chapters);
+        Assert.Empty(ManualBatchReader.Read(prompt).Objects);
+        // A single-chapter list with a droppable chapter (the "does not exist" form is in the prompt)
+        var droppable = Plan(0, items: [new(null, "Gegner", "f", "bestiary", null, null, null)]);
+        Assert.Empty(ManualBatchReader.Read(AiGuideGeneratorService.ComposeManualBatchPrompt(Context(language), Game(language: language), language, droppable)).Objects);
+
+        var array = "[\n" + string.Join(",\n", new[] { Obj("K03", "Kapitel Nummer 3"), Obj("K04", "Kapitel Nummer 4") }) + "\n]";
+        var page = prompt + "\n\n" + (language == "de" ? "Claude hat gesagt:\n" : "Claude said:\n") + "```json\n" + array + "\n```\n\nNOCH OFFEN: K05–K13\n\nweiter";
+
+        var read = ManualBatchReader.Read(page);
+        Assert.Equal(["K03", "K04"], read.Objects.Select(o => o.KeyHint));
+        var check = Generator().CheckManualBatch(Game(language: language), page, chapters).Dto;
+        Assert.Equal(2, check.Found);
+        Assert.Empty(check.Unmatched);
+    }
+
     [Fact]
     public void The_pattern_of_the_blueprint_and_chapter_prompts_is_ignored_too()
     {
@@ -298,7 +496,9 @@ public sealed class ManualBatchTests
         var chapter = AiGuideGeneratorService.ComposeManualChapterPrompt(Context(), Game(), Lang.German, "Dorfausbau", "Alles", "dünn", "weapons");
         var walkthrough = AiGuideGeneratorService.ComposeManualChapterPrompt(Context(Lang.English), Game(language: Lang.English), Lang.English, "Walkthrough", "Alles", "thin", "walkthrough");
 
-        foreach (var text in new[] { blueprint, chapter, walkthrough })
+        var chapterEn = AiGuideGeneratorService.ComposeManualChapterPrompt(Context(Lang.English), Game(language: Lang.English), Lang.English, "Village", "All", "thin", "weapons");
+        var walkthroughDe = AiGuideGeneratorService.ComposeManualChapterPrompt(Context(), Game(), Lang.German, "Komplettlösung", "Alles", "dünn", "walkthrough");
+        foreach (var text in new[] { blueprint, chapter, walkthrough, chapterEn, walkthroughDe })
         {
             Assert.Empty(ManualBatchReader.Read(text).Objects);
         }
@@ -342,6 +542,50 @@ public sealed class ManualBatchTests
     {
         var many = string.Join("\n", Enumerable.Range(0, ManualBatchReader.MaxObjects + 5).Select(i => Obj($"K{i}", "T" + i)));
         Assert.True(ManualBatchReader.Read(many).TooMany);
+    }
+
+    [Fact]
+    public void Thousands_of_unclosed_object_starts_near_the_size_limit_are_refused_quickly()
+    {
+        // Every unclosed start is scanned to the end of the text: 3000 of them before 4 MB of filler took about 50 s of CPU per request before the work budget
+        var text = new StringBuilder();
+        for (var k = 0; k < 3100; k++)
+        {
+            text.Append("{\"game\":...\n");
+        }
+        text.Append('a', ManualBatchReader.MaxKilobytes * 1000 - text.Length);
+
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var read = ManualBatchReader.Read(text.ToString());
+        watch.Stop();
+
+        Assert.True(read.TooMany);
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(5), $"took {watch.Elapsed}");
+    }
+
+    [Fact]
+    public void A_large_real_text_with_several_cut_off_answers_is_still_read_completely()
+    {
+        // About 3.5 MB of real chapters with a cut-off answer after every 30th: well inside the work budget
+        var parts = new List<string>();
+        var big = new string('x', 19_000);
+        for (var k = 1; k <= 180; k++)
+        {
+            parts.Add(Fenced(Obj($"K{k:D3}", "Kapitel Nummer " + k, text: big)));
+            if (k % 30 == 0)
+            {
+                var cut = Obj($"C{k:D3}", "Abgeschnitten " + k, text: big);
+                parts.Add("```json\n" + cut[..(cut.Length / 2)] + "\n```\n\nweiter");
+            }
+        }
+        var text = string.Join("\n\n", parts);
+        Assert.True(text.Length is > 3_000_000 and < ManualBatchReader.MaxKilobytes * 1000);
+
+        var read = ManualBatchReader.Read(text);
+
+        Assert.False(read.TooMany);
+        Assert.Equal(180, read.Objects.Count(o => o.Failure == BatchFailure.None));
+        Assert.Equal(6, read.Objects.Count(o => o.Failure == BatchFailure.CutOff));
     }
 
     // ---- matching and judging ---------------------------------------------------------------------------------------------------

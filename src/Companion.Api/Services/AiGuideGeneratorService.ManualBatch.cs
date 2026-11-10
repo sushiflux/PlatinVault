@@ -82,6 +82,9 @@ public sealed partial class AiGuideGeneratorService
         var puzzleRules = PuzzleRules(language);
         var rules = WithLinkRules(ResearchRules(language, context.Blocks), context);
         var answerFile = ManualBatchAnswerFileName(game, language);
+        // Example for the "still open" line of the code-block fallback, made from the real keys of this list
+        var openStart = chapters[Math.Min(4, chapters.Count - 1)].Key;
+        var openExample = chapters.Count == 1 || openStart == last ? last : $"{openStart}–{last}";
 
         // The source situation is one value in practice (from the blueprint); it is stated once, and per chapter only when the chapters differ
         var sources = chapters.Select(c => c.SourceSituation ?? UnknownSource(language)).Distinct(StringComparer.Ordinal).ToList();
@@ -107,8 +110,8 @@ public sealed partial class AiGuideGeneratorService
             text.AppendLine();
         }
         text.AppendLine(T(
-            "So arbeitest du: Alle Kapitel stehen am Ende unter „Kapitel“. Schreibe jedes Kapitel für sich nach der folgenden Vorgabe – sie gilt für JEDES Kapitel. Jedes Kapitel bekommt sein eigenes JSON-Objekt (siehe „Ausgabe in diesem Chat“).",
-            "How this works: all chapters are listed at the end under \"Chapters\". Write each chapter on its own, following the specification below – it applies to EVERY chapter. Every chapter gets its own JSON object (see \"Output in this chat\")."));
+            "So arbeitest du: Alle Kapitel stehen am Ende unter „Kapitel“. Schreibe jedes Kapitel für sich nach der folgenden Vorgabe – sie gilt für JEDES Kapitel. Jedes Kapitel ist ein eigenes JSON-Objekt, alle zusammen bilden EIN JSON-Array (siehe „Ausgabe in diesem Chat“).",
+            "How this works: all chapters are listed at the end under \"Chapters\". Write each chapter on its own, following the specification below – it applies to EVERY chapter. Every chapter is its own JSON object, all of them together form ONE JSON array (see \"Output in this chat\")."));
         text.AppendLine();
         text.AppendLine(structure);
         text.AppendLine();
@@ -130,8 +133,8 @@ public sealed partial class AiGuideGeneratorService
         if (anyDroppable)
         {
             text.AppendLine(T(
-                $"Kapitel mit „notApplicable erlaubt“ dürfen entfallen: Zeigt deine Recherche, dass es das Thema in „{game.Title}“ NICHT gibt (z. B. Gegner/Bosse in einem Aufbau- oder Fabrikspiel ohne Kampf) oder nur so am Rande, dass ein eigenes Kapitel sinnlos ist, schreibe das Kapitel NICHT, erkläre nicht lang, dass es fehlt, und fülle es nicht mit Stoff aus anderen Themen auf. Antworte für dieses Kapitel stattdessen mit diesem Objekt (in einem eigenen Codeblock wie jedes andere Kapitel): {{ \"game\": \"{title}\", \"steamAppId\": {appId}, \"chapter\": \"K05\", \"notApplicable\": true, \"reason\": \"...\" }} – „reason“ ist ein kurzer Satz, warum (was das Spiel stattdessen hat). Kapitel mit „notApplicable NICHT erlaubt“ schreibst du immer vollständig.",
-                $"Chapters marked \"notApplicable allowed\" may be left out: if your research shows that the topic does NOT exist in \"{game.Title}\" (e.g. enemies/bosses in a building or factory game without combat) or only so marginally that a chapter of its own is pointless, do NOT write the chapter, do not explain at length that it is missing and do not fill it with material from other topics. For that chapter answer with this object instead (in its own code block like every other chapter): {{ \"game\": \"{title}\", \"steamAppId\": {appId}, \"chapter\": \"K05\", \"notApplicable\": true, \"reason\": \"...\" }} – \"reason\" is one short sentence why (what the game has instead). Chapters marked \"notApplicable NOT allowed\" are always written in full."));
+                $"Kapitel mit „notApplicable erlaubt“ dürfen entfallen: Zeigt deine Recherche, dass es das Thema in „{game.Title}“ NICHT gibt (z. B. Gegner/Bosse in einem Aufbau- oder Fabrikspiel ohne Kampf) oder nur so am Rande, dass ein eigenes Kapitel sinnlos ist, schreibe das Kapitel NICHT, erkläre nicht lang, dass es fehlt, und fülle es nicht mit Stoff aus anderen Themen auf. Setze für dieses Kapitel stattdessen dieses Objekt an seine Stelle im Array: {{ \"game\": \"{title}\", \"steamAppId\": {appId}, \"chapter\": \"K05\", \"notApplicable\": true, \"reason\": \"...\" }} – „reason“ ist ein kurzer Satz, warum (was das Spiel stattdessen hat). Kapitel mit „notApplicable NICHT erlaubt“ schreibst du immer vollständig.",
+                $"Chapters marked \"notApplicable allowed\" may be left out: if your research shows that the topic does NOT exist in \"{game.Title}\" (e.g. enemies/bosses in a building or factory game without combat) or only so marginally that a chapter of its own is pointless, do NOT write the chapter, do not explain at length that it is missing and do not fill it with material from other topics. For that chapter put this object in its place in the array instead: {{ \"game\": \"{title}\", \"steamAppId\": {appId}, \"chapter\": \"K05\", \"notApplicable\": true, \"reason\": \"...\" }} – \"reason\" is one short sentence why (what the game has instead). Chapters marked \"notApplicable NOT allowed\" are always written in full."));
             text.AppendLine();
         }
 
@@ -139,8 +142,8 @@ public sealed partial class AiGuideGeneratorService
         {
             var keys = string.Join(", ", walkthroughs.Select(c => c.Key));
             text.AppendLine(T(
-                $"Sonderfall Komplettlösung ({keys}): Beantworte dieses Kapitel ALLEIN in einer eigenen Antwort (es ist lang), nicht zusammen mit anderen Kapiteln. Der Pflicht-Aufbau oben gilt dafür NICHT; es gilt stattdessen:",
-                $"Special case walkthrough ({keys}): answer this chapter ALONE in its own answer (it is long), not together with other chapters. The mandatory structure above does NOT apply to it; this applies instead:"));
+                $"Sonderfall Komplettlösung ({keys}): Sie steht wie jedes andere Kapitel im selben Array, an ihrer Stelle der Liste. Sie ist lang; baue sie wie die anderen Kapitel Schritt für Schritt auf. Der Pflicht-Aufbau oben gilt dafür NICHT; es gilt stattdessen:",
+                $"Special case walkthrough ({keys}): it goes into the same array like every other chapter, at its place in the list. It is long; build it step by step like the other chapters. The mandatory structure above does NOT apply to it; this applies instead:"));
             text.AppendLine(WalkthroughSingleInstructions(language));
             text.AppendLine(AchievementReference(context));
             text.AppendLine(T(
@@ -157,17 +160,17 @@ public sealed partial class AiGuideGeneratorService
             $"- Gemeint ist genau dieses Spiel: „{game.Title}“, {appIdLine} – die Steam-Version auf dem PC. Prüfe vor dem Schreiben, dass du dieses Spiel meinst – nicht ein gleichnamiges Spiel, einen Vorgänger, Nachfolger, ein Remake oder eine Demo.",
             $"- The game is exactly this one: \"{game.Title}\", {appIdLine} – the Steam version on PC. Before writing, make sure you mean this game – not a game with the same name, a predecessor, a successor, a remake or a demo."));
         text.AppendLine(T(
-            $"- Schreibe JEDES Kapitel als eigenes JSON-Objekt in einem eigenen Codeblock (```json … ```), im Block nichts außer dem Objekt. Jedes Objekt beginnt mit den Feldern „game“, „steamAppId“, „chapter“ (der Schlüssel aus der Liste, z. B. „{first}“) und „title“, danach „icon“ und „sections“, so (verkürzt, schreibe die echten Inhalte): {skeleton}",
-            $"- Write EVERY chapter as its own JSON object in its own code block (```json … ```), nothing but the object inside the block. Every object starts with the fields \"game\", \"steamAppId\", \"chapter\" (the key from the list, e.g. \"{first}\") and \"title\", then \"icon\" and \"sections\", like this (shortened, write the real content): {skeleton}"));
+            $"- Die Ausgabe ist EIN JSON-Array mit ALLEN {chapters.Count} Kapiteln in der Reihenfolge der Liste: [ <Objekt {first}>, … <Objekt {last}> ]. Pro Kapitel genau ein Objekt, im Array sonst nichts – kein Text, keine Kommentare, keine Platzhalter. Beginne jedes Objekt in einer neuen Zeile. Die Felder stehen in genau dieser Reihenfolge: „game“, „steamAppId“, „chapter“ (der Schlüssel aus der Liste, exakt, z. B. „{first}“), „title“, „icon“, „sections“, so (verkürzt, schreibe die echten Inhalte): {skeleton}",
+            $"- The output is ONE JSON array with ALL {chapters.Count} chapters in the order of the list: [ <object {first}>, … <object {last}> ]. Exactly one object per chapter, nothing else in the array – no text, no comments, no placeholders. Start every object on a new line. The fields are in exactly this order: \"game\", \"steamAppId\", \"chapter\" (the key from the list, exactly, e.g. \"{first}\"), \"title\", \"icon\", \"sections\", like this (shortened, write the real content): {skeleton}"));
         text.AppendLine(T(
-            "- Beantworte die Kapitel in der Reihenfolge der Liste. Schreibe pro Antwort so viele VOLLSTÄNDIGE Kapitel, wie hineinpassen; schneide nie ein Kapitel mittendrin ab – höre nach einem vollständigen Kapitel auf. Schreibe ich dann „weiter“, mache mit dem nächsten Kapitel weiter, das noch fehlt.",
-            "- Answer the chapters in the order of the list. Put as many COMPLETE chapters into one answer as fit; never cut a chapter off in the middle – stop after a complete one. When I then write \"continue\", go on with the next chapter that is still missing."));
+            $"- Kann dein Chat Code ausführen oder Dateien erzeugen: Liefere das Array als EINE Datei zum Herunterladen mit dem Namen „{answerFile}“. Baue sie Kapitel für Kapitel auf – hänge jedes fertige Kapitel an die Datei an, damit kein einzelner Schritt alles auf einmal tragen muss – und prüfe am Ende, dass die ganze Datei gültiges JSON ist (z. B. indem du sie einliest). Schreibe den Inhalt dann nicht zusätzlich in den Chat; schreibe nur die Abschlusszeile.",
+            $"- If your chat can run code or create files: deliver the array as ONE downloadable file named \"{answerFile}\". Build it chapter by chapter – append each finished chapter to the file, so that no single step has to hold everything at once – and at the end check that the whole file is valid JSON (e.g. by reading it back in). Do not write the content into the chat as well; write only the final line."));
         text.AppendLine(T(
-            $"- Nach dem letzten Kapitel schreibe als allerletzte Zeile: „ALLE KAPITEL FERTIG: {doneRange}“.",
-            $"- After the last chapter write as the very last line: \"ALL CHAPTERS DONE: {doneRange}\"."));
+            $"- NUR wenn dein Chat keine Datei erzeugen kann: Schreibe dasselbe Array in EINEN ```json-Codeblock in EINER Antwort, im Block nichts außer dem Array. Passt nicht alles hinein, höre nach einem vollständigen Kapitel auf (schneide nie mitten in einem Kapitel ab), schließe das Array mit ] und schreibe als allerletzte Zeile „NOCH OFFEN: {openExample}“ (mit den echten Schlüsseln der fehlenden Kapitel). Schreibe ich dann „weiter“, antworte mit einem NEUEN Array nur der offenen Kapitel, nach denselben Regeln.",
+            $"- ONLY if your chat cannot create a file: write the same array into ONE ```json code block in ONE answer, nothing but the array inside the block. If everything does not fit, stop after a complete chapter (never cut off in the middle of a chapter), close the array with ] and write as the very last line \"STILL OPEN: {openExample}\" (with the real keys of the missing chapters). When I then write \"continue\", answer with a NEW array of only the open chapters, following the same rules."));
         text.AppendLine(T(
-            $"- Kann dein Chat eine Datei zum Herunterladen erzeugen, darfst du stattdessen alle Kapitel-Objekte (gleiche Felder) als EIN JSON-Array in eine Datei „{answerFile}“ schreiben und danach dieselbe Abschlusszeile ausgeben.",
-            $"- If your chat can create a downloadable file, you MAY instead put all chapter objects (same fields) as ONE JSON array into one file \"{answerFile}\" and then write the same final line."));
+            $"- Wenn alle Kapitel fertig sind, schreibe als allerletzte Zeile: „ALLE KAPITEL FERTIG: {doneRange}“.",
+            $"- When all chapters are done, write as the very last line: \"ALL CHAPTERS DONE: {doneRange}\"."));
         text.AppendLine(T(
             "- Schreibe echte Inhalte, keine Platzhalter wie \"...\" – die Strukturbeschreibung oben ist nur das Muster. Was du nicht belegen kannst: „Noch nicht dokumentiert (Stand <heutiges Datum>)“ – erfinde nichts.",
             "- Write real content, no placeholders like \"...\" – the structure description above is only the pattern. What you cannot back up: \"Not documented yet (as of <today's date>)\" – invent nothing."));
@@ -183,7 +186,7 @@ public sealed partial class AiGuideGeneratorService
             var flags = droppable ? T("notApplicable erlaubt", "notApplicable allowed") : T("notApplicable NICHT erlaubt", "notApplicable NOT allowed");
             if (chapter.TopicId == WalkthroughTab.TopicId)
             {
-                flags += T(" | eigene Antwort (Sonderfall Komplettlösung)", " | own answer (special case walkthrough)");
+                flags += T(" | Sonderfall Komplettlösung", " | special case walkthrough");
             }
             text.AppendLine($"- {chapter.Key} | \"{chapter.Title.Replace("\"", "'")}\" | {flags}");
             text.AppendLine($"  {T("Rechercheauftrag", "Research assignment")}: {OneLine(chapter.Focus)}");
@@ -193,7 +196,9 @@ public sealed partial class AiGuideGeneratorService
             }
         }
         text.AppendLine();
-        text.Append(T($"Beginne jetzt mit {first}.", $"Begin with {first} now."));
+        text.Append(T(
+            $"Recherchiere und schreibe jetzt {(chapters.Count == 1 ? "das Kapitel" : $"alle {chapters.Count} Kapitel ({doneRange})")} und liefere das JSON-Array.",
+            $"Now research and write {(chapters.Count == 1 ? "the chapter" : $"all {chapters.Count} chapters ({doneRange})")} and deliver the JSON array."));
         return text.ToString().Replace("\r\n", "\n");
     }
 

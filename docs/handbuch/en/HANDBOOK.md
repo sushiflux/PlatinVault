@@ -360,14 +360,16 @@ from your collection and your Steam library.
   - *All at once:* PlatinVault makes **one** prompt for all chosen chapters (above it you see how many chapters there are and how big the prompt
     is). Proceed like this:
     1. Copy the prompt and paste it into the chat of your subscription, ideally with web search switched on.
-    2. The chat answers chapter by chapter. Paste every answer into the field **Answers of the chat** – it is appended to what is already
-       there – or drop the file your chat created (`.json`, `.md` or `.txt`, or **Choose file**). Write “continue” in the chat until its last line
-       says **ALL CHAPTERS DONE**.
+    2. The chat creates **one** file with all chapters (named `platinvault-<game>-chapters.json`) and offers it for download. Drop the file
+       into the field **Answers of the chat** (`.json`, `.md` or `.txt`, or **Choose file**). If your chat cannot create files, paste its
+       answer instead: one code block with all chapters. The walkthrough is part of it – it is no longer answered on its own. When the chat
+       ends with **ALL CHAPTERS DONE**, everything is there.
     3. Under **Chapters** every chapter shows its state: **Pending**, **Recognised**, **With notes**, **Error**, **Not in this game** or **Saved**.
        Click a chapter for the details. Answers that cannot be assigned to a chapter (the chat did not use the given chapter ID K01, K02 …) are
        listed separately and are not saved.
-    4. **Save N chapters** creates all recognised chapters at once, exactly like AI results. If the chat did not finish or a chapter is faulty,
-       copy **Copy prompt for the remaining X chapters**, paste it into the chat and carry on with it.
+    4. **Save N chapters** creates all recognised chapters at once, exactly like AI results. If not everything fits into one answer, the chat stops after
+       a complete chapter and writes **STILL OPEN: K05–K13**. Then – or if a chapter is faulty – copy **Copy prompt for the remaining X chapters**,
+       paste it into the chat and carry on with it (or write “continue”; the chat then answers with the open chapters).
     5. When all chapters are saved, PlatinVault tells you that you can close the window.
 
     What you pasted is kept when you close the window in between (as long as you leave the browser tab open). **Clear pasted text** discards it after
@@ -733,7 +735,7 @@ bridge. If `status` does not help, please tell us what it and the log show.
 | The popup shows, but without sound | If the notice **"Sound blocked by the browser"** is shown, the browser held the sound back: browsers only play sounds after a click or key press on the page, for example after a reload. One click allows sound again, **Play the missed sound** plays it afterwards. Without that notice: raise the volume under Settings → **Live & sound** (quiet sounds get lost next to loud game audio) and check that the browser tab is not muted. |
 | The AI reports a limit | In Settings → AI research the **Your AIs** list shows which AI had a problem and since when. With the automatic switch on, PlatinVault carries on with the next AI and tells you; otherwise you pick another AI yourself ("Try again with …"). For Gemini, "Test connection for real" also shows the reason: daily limit (try again later), model overloaded (wait a moment) or no web search on the free tier (a Google project with billing is needed). |
 | A warning with foreign-language sentences appears in the AI subscription window | The chat's answer contains sentences in a language other than the guide's. **Copy correction prompt**, paste it into the same chat and insert the new answer (section 6.2). |
-| With "All at once" a chapter stays **Pending** or appears under **Answers without a chapter** | The chat did not use the chapter ID (K01, K02 …) or did not finish. Write "continue" in the chat until it says **ALL CHAPTERS DONE**, or copy **Copy prompt for the remaining X chapters** and carry on with it. |
+| With "All at once" a chapter stays **Pending** or appears under **Answers without a chapter** | The chat did not use the chapter ID (K01, K02 …) or did not finish. If the chat says **STILL OPEN**, copy **Copy prompt for the remaining X chapters** (or write "continue") and carry on until it says **ALL CHAPTERS DONE**. |
 | A chapter is too thin or outdated | **Research chapter again** or **Research again with my AI subscription** above the chapter content (section 6.2). |
 | A chapter says "could not be researched" | Click **Research this chapter again** (details in 6.2). The reason is in the note; for a quota or key problem first look in Settings → **AI research** or pick another AI with the arrow on the button. |
 | "The server was restarted and the research was interrupted" | The server was briefly gone during the research (update, restart). Finished chapters are saved; start the same action again, it carries on from there. |

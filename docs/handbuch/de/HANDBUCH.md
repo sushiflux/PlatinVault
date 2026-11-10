@@ -375,14 +375,16 @@ Verbindung). Starten kannst du nur Spiele aus deiner Sammlung und deiner Steam-B
   - *Alle auf einmal:* PlatinVault macht **einen** Prompt für alle gewählten Kapitel (darüber steht, wie viele Kapitel es sind und wie groß der
     Prompt ist). So gehst du vor:
     1. Prompt kopieren und im Chat deines Abos einfügen, am besten mit eingeschalteter Websuche.
-    2. Der Chat antwortet Kapitel für Kapitel. Füge jede Antwort in das Feld **Antworten des Chats** ein – sie wird an das bisher Eingefügte
-       angehängt – oder ziehe die Datei hinein, die dein Chat erstellt hat (`.json`, `.md` oder `.txt`, oder **Datei wählen**). Schreibe im Chat
-       „weiter“, bis er als letzte Zeile **ALLE KAPITEL FERTIG** meldet.
+    2. Der Chat erstellt **eine** Datei mit allen Kapiteln (Name `platinvault-<spiel>-kapitel.json`) und gibt sie dir zum Herunterladen. Ziehe
+       die Datei in das Feld **Antworten des Chats** (`.json`, `.md` oder `.txt`, oder **Datei wählen**). Kann dein Chat keine Datei erzeugen,
+       füge stattdessen seine Antwort ein: ein Codeblock mit allen Kapiteln. Auch die Komplettlösung gehört dazu – sie wird nicht mehr
+       einzeln beantwortet. Meldet der Chat am Ende **ALLE KAPITEL FERTIG**, ist alles da.
     3. Unter **Kapitel** steht für jedes Kapitel sein Zustand: **Ausstehend**, **Erkannt**, **Mit Hinweisen**, **Fehler**, **Gibt es im Spiel
        nicht** oder **Gespeichert**. Ein Klick auf ein Kapitel zeigt die Einzelheiten. Antworten, die keinem Kapitel zugeordnet werden können
        (der Chat hat die vorgegebene Kapitel-ID K01, K02 … nicht benutzt), stehen gesondert und werden nicht gespeichert.
-    4. **N Kapitel speichern** legt alle erkannten Kapitel auf einmal an, genau wie KI-Ergebnisse. Ist der Chat nicht fertig geworden oder
-       ist ein Kapitel fehlerhaft, kopierst du **Prompt für die restlichen X Kapitel kopieren**, fügst ihn im Chat ein und machst damit weiter.
+    4. **N Kapitel speichern** legt alle erkannten Kapitel auf einmal an, genau wie KI-Ergebnisse. Passt nicht alles in eine Antwort, hört der Chat nach einem
+       vollständigen Kapitel auf und schreibt **NOCH OFFEN: K05–K13**. Dann – oder wenn ein Kapitel fehlerhaft ist – kopierst du **Prompt für die
+       restlichen X Kapitel kopieren**, fügst ihn im Chat ein und machst damit weiter (oder du schreibst „weiter“; der Chat antwortet dann mit den offenen Kapiteln).
     5. Sind alle Kapitel gespeichert, sagt PlatinVault, dass du das Fenster schließen kannst.
 
     Was du eingefügt hast, bleibt erhalten, wenn du das Fenster zwischendurch schließt (solange du den Browser-Tab offen lässt). **Eingefügtes
@@ -765,7 +767,7 @@ der Linux-Bridge. Hilft `status` nicht weiter, melde uns bitte, was es und das P
 | Popup kommt, aber ohne Ton | Steht der Hinweis **„Ton vom Browser gesperrt“** da, hat der Browser den Ton zurückgehalten: Browser spielen Töne erst nach einem Klick oder Tastendruck auf der Seite, zum Beispiel nach dem Neuladen. Ein Klick gibt den Ton frei, **Verpassten Ton abspielen** spielt ihn nach. Ohne diesen Hinweis: Lautstärke unter Einstellungen → **Live & Sound** erhöhen (neben lautem Spielsound gehen leise Töne unter) und prüfen, ob der Browser-Tab stumm geschaltet ist. |
 | Die KI meldet ein Limit | Unter Einstellungen → KI-Recherche zeigt die Liste **Deine KIs**, welche KI wann ein Problem bekam. Mit eingeschaltetem automatischem Wechsel macht PlatinVault mit der nächsten KI weiter und sagt es dir; sonst wählst du selbst eine andere KI („Mit … erneut versuchen“). „Verbindung echt testen“ zeigt bei Gemini zusätzlich den Grund: Tageslimit (später erneut versuchen), Modell überlastet (kurz warten) oder keine Websuche im Gratis-Tarif (Google-Projekt mit Abrechnung nötig). |
 | Im KI-Abo-Fenster erscheint eine Warnung mit fremdsprachigen Sätzen | Die Antwort des Chats enthält Sätze in einer anderen Sprache als der Guide. **Korrektur-Prompt kopieren**, im selben Chat einfügen und die neue Antwort einsetzen (Abschnitt 6.2). |
-| Bei „Alle auf einmal“ bleibt ein Kapitel **Ausstehend** oder steht bei **Nicht zuordenbare Antworten** | Der Chat hat die Kapitel-ID (K01, K02 …) nicht benutzt oder ist nicht fertig geworden. Schreibe im Chat „weiter“, bis er **ALLE KAPITEL FERTIG** meldet, oder kopiere **Prompt für die restlichen X Kapitel kopieren** und mach damit weiter. |
+| Bei „Alle auf einmal“ bleibt ein Kapitel **Ausstehend** oder steht bei **Nicht zuordenbare Antworten** | Der Chat hat die Kapitel-ID (K01, K02 …) nicht benutzt oder ist nicht fertig geworden. Meldet der Chat **NOCH OFFEN**, kopiere **Prompt für die restlichen X Kapitel kopieren** (oder schreibe „weiter“) und mach damit weiter, bis er **ALLE KAPITEL FERTIG** meldet. |
 | Ein Kapitel ist zu dünn oder veraltet | **Kapitel neu recherchieren** bzw. **Mit meinem KI-Abo neu recherchieren** über dem Kapitelinhalt (Abschnitt 6.2). |
 | Ein Kapitel zeigt „konnte nicht recherchiert werden“ | Auf **Kapitel erneut recherchieren** klicken (Details siehe 6.2). Der Grund steht im Hinweis; bei einem Quoten- oder Key-Problem zuerst unter Einstellungen → **KI-Recherche** nachsehen oder über den Pfeil am Knopf eine andere KI wählen. |
 | „Der Server wurde neu gestartet, die Recherche wurde unterbrochen“ | Der Server war während der Recherche kurz weg (Update, Neustart). Fertige Kapitel sind gespeichert; starte dieselbe Aktion noch einmal, sie macht dort weiter. |

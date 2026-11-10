@@ -147,6 +147,10 @@ internal static partial class ManualBatchReader
     // Raw objects looked at (patterns and fragments included) before giving up: bounds the work for a 4 MB text of tiny objects
     private const int MaxScanned = 3000;
 
+    // Characters the bracket scan may walk in total: an object that never closes is scanned to the end of the text, so thousands of unclosed starts in a
+    // 4 MB text would cost billions of steps (tens of seconds of CPU per request). A real text needs about its length plus a few cut-off objects.
+    private const long MaxScanWork = 32L * MaxKilobytes * 1000;
+
     // A line that starts a chapter object ({ "game" / "steamAppId" / "chapter" ...): where the next object certainly begins after a cut-off one
     [GeneratedRegex(@"^[ \t]*(?<b>\{)\s*""(?:game|steamAppId|chapter)""\s*:", RegexOptions.Multiline | RegexOptions.CultureInvariant)]
     private static partial Regex Marker();
@@ -156,9 +160,6 @@ internal static partial class ManualBatchReader
 
     [GeneratedRegex(@"""title""\s*:\s*""(?<v>(?:[^""\\]|\\.){1,240})""")]
     private static partial Regex TitleValue();
-
-    [GeneratedRegex(@":\s*""(?:\.\.\.|…|mdi:\.\.\.)""")]
-    private static partial Regex EllipsisValue();
 
     // The example reasons of the "does not exist" pattern in the single-chapter prompt (ChapterApplicability.PromptRule); a pasted prompt must not look like an answer
     private static readonly string[] PatternReasons = ["Ein kurzer Satz, warum (was das Spiel stattdessen hat)", "One short sentence why (what the game has instead)"];
@@ -172,6 +173,7 @@ internal static partial class ManualBatchReader
         var objects = new List<BatchObject>();
         var order = 0;
         var scanned = 0;
+        long work = 0;
         var i = 0;
 
         while (i < text.Length)
@@ -187,6 +189,11 @@ internal static partial class ManualBatchReader
             }
 
             var end = BalancedEnd(text, start, out _);
+            work += (end >= 0 ? end + 1 : text.Length) - start;
+            if (work > MaxScanWork)
+            {
+                return new BatchRead(objects, TooMany: true);
+            }
             var next = NextMarker(markers, start);
 
             if (end >= 0)
@@ -249,7 +256,7 @@ internal static partial class ManualBatchReader
 
     private static void AcceptOne(JsonObject obj, List<BatchObject> objects, ref int order)
     {
-        if (IsFragment(obj) || IsPattern(obj, 0))
+        if (IsFragment(obj) || IsPattern(obj))
         {
             return;
         }
@@ -271,25 +278,69 @@ internal static partial class ManualBatchReader
     private static bool IsFragment(JsonObject obj) =>
         (obj.ContainsKey("type") && !obj.ContainsKey("sections")) || !ChapterKeys.Any(obj.ContainsKey);
 
-    /// <summary>The prompt's own pattern: a value that is a placeholder ("...", "…", "mdi:...", "&lt;key ...&gt;") anywhere in the object.</summary>
-    private static bool IsPattern(JsonNode? node, int depth)
+    // The fields that identify a chapter; only a placeholder in one of these makes an object the prompt's pattern ("icon" and "game" alone never do:
+    // a chat may copy the skeleton's "mdi:..." icon into a real chapter)
+    private static readonly HashSet<string> IdentifyingFields = new(["chapter", "title", "reason"], StringComparer.Ordinal);
+
+    /// <summary>A string that only stands for a value in the prompt's pattern: "...", "…", "mdi:...", "&lt;key from the list&gt;" or an example reason.</summary>
+    private static bool IsPlaceholder(string value)
+    {
+        var t = value.Trim();
+        return t is "..." or "…" || PatternReasons.Contains(t) || t.StartsWith("mdi:...", StringComparison.Ordinal) || (t.Length is > 2 and < 80 && t[0] == '<' && t[^1] == '>');
+    }
+
+    /// <summary>
+    /// The prompt's own pattern. A chapter-shaped object (it has "sections" or "notApplicable") is judged ONLY by its top-level "chapter", "title" and
+    /// "reason" (not "icon", not "game"): the prompt's pattern has a placeholder there, a real chapter never does. A placeholder deeper inside (a "…" table
+    /// cell, a "&lt;3" in a text) says nothing, so a real chapter is never dropped silently because of its content. Any other object (the blueprint example of
+    /// the blueprint prompt: "topics", "extraChapters" ...) is no chapter anyway; there a placeholder anywhere marks the prompt's example.
+    /// </summary>
+    private static bool IsPattern(JsonObject obj)
+    {
+        if (!obj.ContainsKey("sections") && !obj.ContainsKey("notApplicable"))
+        {
+            return HasPlaceholder(obj, 0);
+        }
+        if (obj.Any(p => IdentifyingFields.Contains(p.Key) && p.Value is JsonValue value && value.TryGetValue<string>(out var s) && IsPlaceholder(s)))
+        {
+            return true;
+        }
+        // The single-chapter prompt's structure example has a real title and no "chapter", but a placeholder icon AND a sections skeleton full of placeholders.
+        // A placeholder icon alone (a chat copied the skeleton's icon into a real chapter) does not make a pattern.
+        return obj["icon"] is JsonValue icon && icon.TryGetValue<string>(out var iconText) && IsPlaceholder(iconText) && CountPlaceholders(obj["sections"], 0) >= SkeletonPlaceholders;
+    }
+
+    // A skeleton of sections has dozens of placeholder values; a real chapter has none or at most the odd "…" cell
+    private const int SkeletonPlaceholders = 5;
+
+    private static int CountPlaceholders(JsonNode? node, int depth)
+    {
+        if (depth > 14)
+        {
+            return 0;
+        }
+        return node switch
+        {
+            JsonValue value when value.TryGetValue<string>(out var s) => IsPlaceholder(s) ? 1 : 0,
+            JsonArray array => array.Sum(x => CountPlaceholders(x, depth + 1)),
+            JsonObject obj => obj.Sum(p => CountPlaceholders(p.Value, depth + 1)),
+            _ => 0
+        };
+    }
+
+    private static bool HasPlaceholder(JsonNode? node, int depth)
     {
         if (depth > 14)
         {
             return false;
         }
-        switch (node)
+        return node switch
         {
-            case JsonValue value when value.TryGetValue<string>(out var s):
-                var t = s.Trim();
-                return t is "..." or "…" || PatternReasons.Contains(t) || t.StartsWith("mdi:...", StringComparison.Ordinal) || (t.Length is > 2 and < 80 && t[0] == '<' && t[^1] == '>');
-            case JsonArray array:
-                return array.Any(x => IsPattern(x, depth + 1));
-            case JsonObject obj:
-                return obj.Any(p => IsPattern(p.Value, depth + 1));
-            default:
-                return false;
-        }
+            JsonValue value when value.TryGetValue<string>(out var s) => IsPlaceholder(s),
+            JsonArray array => array.Any(x => HasPlaceholder(x, depth + 1)),
+            JsonObject obj => obj.Any(p => HasPlaceholder(p.Value, depth + 1)),
+            _ => false
+        };
     }
 
     /// <summary>An object that could not be read: the prompt's pattern (silently ignored) or a real chapter that is cut off or broken (reported).</summary>
@@ -336,14 +387,18 @@ internal static partial class ManualBatchReader
         }
     }
 
-    /// <summary>A span that cannot be parsed and is the prompt's pattern: "..." as a value, or a bare "..." / "…" outside of strings ([...]).</summary>
+    /// <summary>
+    /// A span that cannot be parsed and is the prompt's pattern: a bare "..." / "…" outside of strings ("sections": [...]; a real chapter never has one) or a
+    /// placeholder as the top-level value of "chapter", "title" or "reason". A "…" inside a text or table cell of a cut-off or broken real chapter does not count, so that chapter is reported.
+    /// </summary>
     private static bool IsPatternSpan(string span)
     {
-        if (EllipsisValue().IsMatch(span))
-        {
-            return true;
-        }
+        var depth = 0;
         var inString = false;
+        var stringStart = 0;
+        var beforeString = '\0';
+        var last = '\0';
+        string? key = null;
         for (var i = 0; i < span.Length; i++)
         {
             var c = span[i];
@@ -356,17 +411,47 @@ internal static partial class ManualBatchReader
                 else if (c == '"')
                 {
                     inString = false;
+                    if (depth == 1)
+                    {
+                        var text = span[(stringStart + 1)..i];
+                        if (beforeString != ':')
+                        {
+                            key = text;   // a string not after ":" at depth 1 is a key
+                        }
+                        // A string right after a ":" at depth 1 is a top-level value; only the identifying fields count
+                        else if (key is not null && IdentifyingFields.Contains(key) && IsPlaceholder(text))
+                        {
+                            return true;
+                        }
+                    }
+                    last = '"';
                 }
+                continue;
+            }
+            if (char.IsWhiteSpace(c))
+            {
                 continue;
             }
             if (c == '"')
             {
                 inString = true;
+                stringStart = i;
+                beforeString = last;
+                continue;
             }
-            else if (c == '…' || (c == '.' && i + 2 < span.Length && span[i + 1] == '.' && span[i + 2] == '.'))
+            if (c == '…' || (c == '.' && i + 2 < span.Length && span[i + 1] == '.' && span[i + 2] == '.'))
             {
                 return true;
             }
+            if (c is '{' or '[')
+            {
+                depth++;
+            }
+            else if (c is '}' or ']')
+            {
+                depth--;
+            }
+            last = c;
         }
         return false;
     }

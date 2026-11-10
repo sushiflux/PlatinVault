@@ -7,6 +7,21 @@
 <a name="english"></a>
 ## English
 
+## v2026.11.23.2.530 (α)
+
+### 🔄 Changed
+
+- **"All at once" with your own AI subscription now delivers every chapter in one answer:** the prompt asks the AI for one
+  file with all chapters, which you simply drop into PlatinVault. If your chat cannot create files, all chapters come in a
+  single code block. No more writing "continue" and pasting again and again.
+- If not everything fits into one answer, the chat stops after a complete chapter and reports **STILL OPEN** with the
+  missing chapters. You get the rest with **Copy prompt for the remaining chapters**.
+
+### 🔧 Fix
+
+- When you pasted the answers, a chapter could disappear without any message if a table contained "…" or the AI had kept
+  the example icon from the prompt. Such chapters are now recognised.
+
 ## v2026.11.22.1.2206 (α)
 
 ### 🔄 Changed
@@ -65,6 +80,21 @@
 
 <a name="deutsch"></a>
 ## Deutsch
+
+## v2026.11.23.2.530 (α)
+
+### 🔄 Geändert
+
+- **„Alle auf einmal“ mit deinem KI-Abo liefert jetzt alle Kapitel in einer Antwort:** Der Prompt bittet die KI um eine
+  Datei mit allen Kapiteln, die du einfach in PlatinVault ziehst. Kann dein Chat keine Datei erstellen, kommen alle Kapitel
+  in einem einzigen Codeblock. Das ständige „weiter“ schreiben und Einfügen entfällt.
+- Passt nicht alles in eine Antwort, hört der Chat nach einem vollständigen Kapitel auf und meldet **NOCH OFFEN** mit den
+  fehlenden Kapiteln. Den Rest holst du über **Prompt für die restlichen Kapitel kopieren**.
+
+### 🔧 Behoben
+
+- Beim Einfügen der Antworten ging ein Kapitel ohne Meldung verloren, wenn in einer Tabelle „…“ stand oder die KI das
+  Beispiel-Symbol aus dem Prompt übernommen hatte. Solche Kapitel werden jetzt erkannt.
 
 ## v2026.11.22.1.2206 (α)
 

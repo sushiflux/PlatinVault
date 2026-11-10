@@ -125,7 +125,7 @@ describe('mode switch', () => {
 describe('batch view', () => {
   it('explains the steps, offers the prompt for all chapters and shows its size', async () => {
     open()
-    expect(screen.getByTestId('batch-view').textContent).toContain('weiter')
+    expect(screen.getByTestId('batch-view').textContent).toContain('EINE Datei')
     await waitFor(() => expect(screen.getByTestId('batch-prompt-info').textContent).toBe('3 Kapitel · Prompt ca. 1 KB'))
     expect(client.manualBatchPrompt).toHaveBeenCalledWith('suncraft', expect.arrayContaining([expect.objectContaining({ key: 'K01', title: 'Beste Waffen', tabId: 'tab-1', topicId: 'weapons' })]))
     expect(client.manualBatchPrompt.mock.calls[0]![1].map((c: { key: string }) => c.key)).toEqual(['K01', 'K02', 'K03'])
