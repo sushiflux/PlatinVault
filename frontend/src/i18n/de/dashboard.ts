@@ -68,29 +68,30 @@ const dashboard = {
       large: 'Groß',
     },
   },
-  // The three figure badges, the view switch and the compact bar under the header
+  // The three calm figures of the page head and the view switch
   figures: {
-    favorites_one: '{{count, number}} Favorit',
-    favorites_other: '{{count, number}} Favoriten',
-    library_one: '{{count, number}} Spiel in der Bibliothek',
-    library_other: '{{count, number}} Spiele in der Bibliothek',
-    libraryShort_one: '{{count, number}} Spiel',
-    libraryShort_other: '{{count, number}} Spiele',
-    trophies: '{{unlocked}} / {{total}} Trophäen ({{percent}})',
-    trophiesShort: '{{unlocked}} / {{total}} ({{percent}})',
-    platinum_one: '{{count, number}} Spiel auf Platin',
-    platinum_other: '{{count, number}} Spiele auf Platin',
-    platinumShort: '{{n}} Platin',
+    favoritesLabel_one: 'Favorit',
+    favoritesLabel_other: 'Favoriten',
+    libraryLabel_one: 'Spiel in der Bibliothek',
+    libraryLabel_other: 'Spiele in der Bibliothek',
+    trophiesLabel: 'Trophäen ({{percent}})',
+    platinumLabel_one: 'Spiel auf Platin',
+    platinumLabel_other: 'Spiele auf Platin',
     scanning: 'Bibliothek wird ausgewertet: {{done}} / {{total}}',
   },
   controls: {
     viewGroup: 'Welche Spiele angezeigt werden',
     favorites: 'Favoriten ({{n}})',
     allGames: 'Alle Spiele ({{n}})',
-    subBar: 'Schnellzugriff: Suche, Ansicht und Kennzahlen',
-    searchPlaceholder: 'Spiel finden …',
-    searchLabel: 'Spiel schnell finden',
-    changeTileSize: 'Kachelgröße ändern',
+  },
+  // Column heads of the list sizes (Nur Text, Liste); the same words are read to screen readers in front of each value
+  list: {
+    title: 'Titel',
+    playtime: 'Spielzeit',
+    lastPlayed: 'Zuletzt gespielt',
+    trophies: 'Trophäen',
+    size: 'Größe',
+    actions: 'Aktionen',
   },
   // Header of the start page
   header: {
@@ -98,9 +99,6 @@ const dashboard = {
     // Shown instead of the server's branding tagline in English (the branding file has one text only)
     tagline: 'Live Steam-Achievements, Platin-Overlay & 100% Master-Guides.',
     overall: {
-      label: 'Trophäen über alle Spiele',
-      description: 'Freigeschaltete Steam-Trophäen aller Spiele deiner Sammlung',
-      text: '{{unlocked}} / {{total}} Trophäen ({{percent}})',
       progress: 'Trophäen-Fortschritt aller Spiele',
     },
     importGroup: 'Guide importieren',

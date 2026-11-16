@@ -4,7 +4,9 @@ import { useTranslation } from 'react-i18next'
 import { IconX } from '@tabler/icons-react'
 import { saveLiveAchievementNote } from '../api/client'
 import type { LiveAchievementItemDto } from '../api/types'
-import { CopyErrorButton } from './ui/CopyErrorButton'
+import { ErrorBlock } from './ui/ErrorBlock'
+import { IconButton } from './ui/IconButton'
+import '../styles/dialogs.css'
 
 interface AchievementNoteDialogProps {
   ach: LiveAchievementItemDto
@@ -45,23 +47,38 @@ export function AchievementNoteDialog({ ach, appId, onClose }: AchievementNoteDi
   }
 
   return (
-    <div className="pv-modal-backdrop" onClick={onClose}>
-      <div className="pv-modal w-full max-w-md p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="text-base font-extrabold" style={{ color: 'var(--text-primary)' }}>
+    <div
+      className="pv-modal-backdrop pv-modal-backdrop--top"
+      onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.stopPropagation()
+          onClose()
+        }
+      }}
+    >
+      <div
+        className="pv-modal w-full max-w-lg p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="achievement-note-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 id="achievement-note-title" className="pv-dialog-title">
               {t('noteDialog.title')}
-            </h4>
-            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+            </h2>
+            <p className="pv-dialog-text" style={{ marginTop: '0.25rem' }}>
               {ach.displayName}
             </p>
           </div>
-          <button type="button" onClick={onClose} className="pv-btn !p-1.5" aria-label={t('common:close')}>
-            <IconX size={18} />
-          </button>
+          <IconButton label={t('common:close')} onClick={onClose} className="shrink-0">
+            <IconX size={20} aria-hidden="true" />
+          </IconButton>
         </div>
 
-        <form onSubmit={save} className="space-y-3">
+        <form onSubmit={save} className="mt-4 space-y-3">
           <textarea
             rows={4}
             value={draft}
@@ -71,19 +88,16 @@ export function AchievementNoteDialog({ ach, appId, onClose }: AchievementNoteDi
               setError(null)
             }}
             placeholder={t('noteDialog.placeholder')}
+            aria-label={t('noteDialog.title')}
             className="pv-input w-full"
+            autoFocus
           />
-          {error && (
-            <p role="alert" className="pv-alert pv-alert-danger !px-3 !py-2 text-xs font-semibold">
-              {error}
-              <CopyErrorButton className="ms-2 align-middle" report={{ message: error }} />
-            </p>
-          )}
-          <div className="flex justify-end gap-2">
+          {error && <ErrorBlock title={t('noteDialog.failedTitle')} message={error} defaultOpen />}
+          <div className="pv-dialog-actions" style={{ marginBlockStart: '0.5rem' }}>
             <button type="button" onClick={onClose} className="pv-btn">
               {t('common:cancel')}
             </button>
-            <button type="submit" disabled={saving} className="pv-btn pv-btn-emerald">
+            <button type="submit" disabled={saving} className="pv-btn pv-btn-primary">
               {t('noteDialog.save')}
             </button>
           </div>

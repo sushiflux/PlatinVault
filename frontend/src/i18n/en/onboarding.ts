@@ -13,6 +13,26 @@ const onboarding = {
     saveFailed: 'The language could not be saved: {{reason}}',
   },
 
+  // First-run screen, left part (language + colour scheme) and right part (brand panel). Read with a fixed language, like the block above.
+  first: {
+    title: 'Welcome to {{name}}',
+    lead: 'Choose how {{name}} looks for you. You can change both at any time later.',
+    languageLabel: 'Language',
+    themeLabel: 'Colour scheme',
+    themeLight: 'Light',
+    themeDark: 'Dark',
+    note: 'PlatinVault has no sign-in: there is exactly one user. You connect your Steam account afterwards in the settings.',
+    saveFailedTitle: 'Language not saved',
+    brandLabel: 'What PlatinVault can do',
+    features: {
+      live: { title: 'Live trophies in real time', text: 'New Steam achievements pop up the moment you unlock them.' },
+      overlay: { title: 'Platinum overlay in your game', text: 'The pop-up also appears right inside the game.' },
+      guides: { title: 'AI guides for 100 %', text: 'Walkthrough, puzzles and missables in one guide.' },
+      stats: { title: 'Statistics', text: 'Rarity, pace and player counts for every game.' },
+      cabinet: { title: 'Trophy cabinet', text: 'Every game at 100 % in one display case.' },
+    },
+  },
+
   tour: {
     ariaLabel: 'Get to know PlatinVault',
     stepOf: 'Step {{current}} of {{total}}',
@@ -268,7 +288,7 @@ const onboarding = {
     },
     dashboardCabinet: {
       title: 'Trophy cabinet',
-      text: 'All games you have completed to 100% stand here in the display case – with date and key facts.',
+      text: 'In the navigation: all games you have completed to 100% stand here in the display case – with date and key facts.',
     },
     headerLanguage: {
       title: 'Language',
@@ -280,11 +300,11 @@ const onboarding = {
     },
     gameNav: {
       title: 'Chapters',
-      text: 'Here you switch between the chapters of the guide. PlatinVault remembers your ticks.',
+      text: 'The open game unfolds in the navigation on the left: live trophies, statistics, the chapters of the guide and Story & Lore. PlatinVault remembers your ticks.',
     },
     gameNavPhone: {
       title: 'Chapters',
-      text: 'This button opens the chapter list of the guide. PlatinVault remembers your ticks.',
+      text: 'This button opens the navigation – with the chapters of the guide, live trophies and statistics. PlatinVault remembers your ticks.',
     },
     gameLive: {
       title: 'Live trophies',
@@ -296,7 +316,7 @@ const onboarding = {
     },
     settings: {
       title: 'Settings',
-      text: 'Here you enter your Steam ID and keys, set up popups and switch features on or off.',
+      text: 'At the bottom of the navigation: here you enter your Steam ID and keys, set up popups and switch features on or off.',
     },
   },
 } satisfies Translation<typeof de>

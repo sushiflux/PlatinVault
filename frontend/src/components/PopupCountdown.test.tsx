@@ -124,7 +124,8 @@ describe('the countdown in the popups', () => {
 
   it('card: uses the colour of the tier', () => {
     const { container } = render(<TrophyNotification achievement={{ ...achievement, rarityTier: 'Bronze' }} />)
-    expect(bar(container)!.style.background).toMatch(/#d97706|rgb\(217, 119, 6\)/)
+    // The tier's own colour token (the bronze one), not a fixed hex value: the line follows the theme
+    expect(bar(container)!.style.background).toBe('var(--tier-bronze)')
   })
 
   it('full screen: bar along the bottom edge for the given time; none without a time; click still ends it early', () => {

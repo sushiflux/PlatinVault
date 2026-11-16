@@ -133,7 +133,7 @@ function WelcomeVisual() {
       </Reveal>
 
       <Reveal i={1} className="pv-card space-y-2 !p-4">
-        <div className="flex items-center justify-between text-xs font-extrabold">
+        <div className="flex items-center justify-between text-xs font-semibold">
           <span style={{ color: 'var(--text-secondary)' }}>{t('steps.welcome.visual.progress')}</span>
           <span style={{ color: 'var(--accent-emerald)' }}>{t('steps.welcome.visual.progressValue')}</span>
         </div>
@@ -141,7 +141,7 @@ function WelcomeVisual() {
       </Reveal>
 
       <Reveal i={2} className="space-y-2">
-        <div className="text-xs font-extrabold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+        <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
           {t('steps.welcome.visual.popupExample')}
         </div>
         <TrophyCard achievement={demoAchievement(2, t)} fluid />
@@ -179,7 +179,7 @@ function AddGamesVisual() {
           aria-hidden="true"
         >
           <IconDeviceGamepad2 size={20} className="shrink-0" style={{ color: 'var(--accent-crystal)' }} />
-          <span className="min-w-0 flex-1 truncate text-sm font-extrabold" style={{ color: 'var(--text-primary)' }}>
+          <span className="min-w-0 flex-1 truncate text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
             Elden Ring
           </span>
           <span className="shrink-0 text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>
@@ -223,10 +223,10 @@ function AddGamesVisual() {
 
           <div className="space-y-2.5 p-3.5">
             <div className="space-y-0.5">
-              <div className="text-[11px] font-extrabold uppercase tracking-wider" style={{ color: 'var(--accent-emerald)' }}>
+              <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--accent-emerald)' }}>
                 {t('steps.games.visual.genre')}
               </div>
-              <div className="text-sm font-extrabold leading-snug" style={{ color: 'var(--text-primary)' }}>
+              <div className="text-sm font-semibold leading-snug" style={{ color: 'var(--text-primary)' }}>
                 Elden Ring
               </div>
               <p className="line-clamp-2 text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
@@ -244,7 +244,7 @@ function AddGamesVisual() {
             </dl>
 
             <div>
-              <div className="mb-1 flex items-center justify-between text-xs font-extrabold">
+              <div className="mb-1 flex items-center justify-between text-xs font-semibold">
                 <span style={{ color: 'var(--text-secondary)' }}>{t('steps.games.visual.progress')}</span>
                 <span style={{ color: 'var(--accent-emerald)' }}>{t('steps.games.visual.progressValue')}</span>
               </div>
@@ -313,7 +313,7 @@ function GuideVisual() {
                   onClick={() => setActiveId(tabId)}
                   className="tab-btn !gap-1.5 !px-3 !py-2 !text-xs"
                 >
-                  <span className="font-extrabold">{tabIndex + 1}.</span>
+                  <span className="font-semibold">{tabIndex + 1}.</span>
                   <span>{t(`steps.guide.visual.tabs.${tabId}.title`)}</span>
                   <span className={`tab-badge ${done === GUIDE_ROW_IDS.length ? 'done' : ''}`}>
                     {done}/{GUIDE_ROW_IDS.length}
@@ -361,7 +361,7 @@ function GuideVisual() {
       </Reveal>
 
       <Reveal i={2} className="space-y-1.5">
-        <div className="text-xs font-extrabold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+        <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
           {t('steps.guide.visual.topicsHeading')}
         </div>
         <div className="flex flex-wrap gap-1.5" aria-hidden="true">
@@ -457,7 +457,7 @@ function LiveVisual() {
               style={{ border: `1.5px solid ${TROPHY_TIER_COLORS.Gold}`, boxShadow: `0 0 12px ${TROPHY_TIER_COLORS.Gold}55` }}
             >
               <IconTrophy size={14} style={{ color: TROPHY_TIER_COLORS.Gold }} />
-              <span className="h-1.5 flex-1 rounded-full bg-slate-500/70" />
+              <span className="h-1.5 flex-1 rounded-sm bg-slate-500/70" />
             </div>
           </motion.div>
         </div>
@@ -467,7 +467,7 @@ function LiveVisual() {
         {TIER_CHIPS.map((chip) => (
           <span
             key={chip.tier}
-            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-extrabold"
+            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold"
             style={{
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-subtle)',
@@ -475,7 +475,7 @@ function LiveVisual() {
             }}
           >
             <span
-              className="flex h-5 w-5 items-center justify-center rounded-full text-slate-950"
+              className="flex h-5 w-5 items-center justify-center rounded-sm text-slate-950"
               style={{ background: TROPHY_TIER_COLORS[chip.tier] }}
               aria-hidden="true"
             >
@@ -544,7 +544,7 @@ function StatsLoreVisual() {
       <Reveal i={1}>
         <div className="pv-card !p-4" style={{ minHeight: '10.5rem' }}>
           <div className="mb-2.5 flex items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-2 text-sm font-extrabold" style={{ color: 'var(--accent-crimson)' }}>
+            <span className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--accent-crimson)' }}>
               <IconBook size={17} aria-hidden="true" />
               {t('steps.stats.visual.loreTitle')}
             </span>
@@ -591,7 +591,7 @@ type RowState = 'done' | 'open' | 'loading' | 'unknown'
 function StatusMark({ state }: { state: RowState }) {
   const { t } = useTranslation('onboarding')
   const label = t(`steps.setup.visual.state.${state}`)
-  const base = 'flex h-7 w-7 shrink-0 items-center justify-center rounded-full'
+  const base = 'flex h-7 w-7 shrink-0 items-center justify-center rounded-sm'
   return (
     <span
       role="img"
@@ -636,7 +636,7 @@ function SetupRow({ i, title, optional = false, state, description, link, action
       <div className="pv-card flex min-h-[4.75rem] items-center gap-3 !p-2.5">
         <StatusMark state={state} />
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm font-extrabold" style={{ color: 'var(--text-primary)' }}>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
             <span>{title}</span>
             {optional && <span className="pv-badge pv-badge-b !py-0 !text-[10px]">{t('steps.setup.visual.optional')}</span>}
           </div>

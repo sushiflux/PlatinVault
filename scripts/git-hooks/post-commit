@@ -1,31 +1,28 @@
 #!/bin/sh
 # After a commit the prompt counter starts again at 0; version.txt and the changelog headings were already written into the commit
 # by the pre-commit hook.
-# When intern/ holds its own git repository (private notes, never part of this one), its changes are committed there with this
-# commit's version as the message and pushed in the background. This part may never fail or block the commit that ran the hook.
+# Backup of the git-ignored intern/ folder: when the local git config key "intern.sync" holds a command prefix (set per clone, never
+# part of this repository), "<command> save <repo root>" runs detached in the background and its output goes to .run/intern-sync.log.
+# Key not set = nothing happens. This hook never fails and never blocks the commit.
 
 repo_root=$(git rev-parse --show-toplevel) || exit 0
 mkdir -p "$repo_root/.run"
 printf '{\n  "prompts": 0\n}\n' > "$repo_root/.run/devbuild.json"
 
-intern="$repo_root/intern"
-if [ -d "$intern/.git" ]; then
+# Only this clone's own config file: a global/system key or "git -c" must never decide what runs here
+sync_cmd=$(git config --local --get intern.sync 2>/dev/null) || sync_cmd=""
+if [ -n "$sync_cmd" ]; then
     (
-        # The hook runs with GIT_DIR/GIT_INDEX_FILE of this repository - without unsetting them git would work on this repository
+        # The hook runs with this repository's git variables; the tool must not inherit them
         unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_PREFIX GIT_OBJECT_DIRECTORY GIT_COMMON_DIR
-        export GIT_TERMINAL_PROMPT=0
-        export GIT_SSH_COMMAND='ssh -o BatchMode=yes -o ConnectTimeout=10'
-        if [ -n "$(git -C "$intern" status --porcelain 2>/dev/null)" ]; then
-            message=$(sed -n '1p' "$repo_root/version.txt" 2>/dev/null | tr -d '\r')
-            [ -n "$message" ] || message="update"
-            if git -C "$intern" add -A >/dev/null 2>&1 && git -C "$intern" commit -q -m "$message" >/dev/null 2>&1; then
-                # Pushing needs the network: in the background, output discarded, so the commit returns at once
-                if [ -z "${PV_HOOK_NO_PUSH:-}" ]; then
-                    (git -C "$intern" push -q >/dev/null 2>&1 &)
-                fi
-            fi
-        fi
-    ) || true
+        log="$repo_root/.run/intern-sync.log"
+        {
+            printf '%s save\n' "$(date '+%Y-%m-%d %H:%M:%S')"
+            # The value is a shell command prefix with quoted words: eval splits it into words, the call itself needs no further eval
+            eval "set -- $sync_cmd" && "$@" save "$repo_root"
+            printf 'exit code %s\n' "$?"
+        } >> "$log" 2>&1
+    ) </dev/null >/dev/null 2>&1 &
 fi
 
 exit 0

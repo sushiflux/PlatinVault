@@ -1,5 +1,5 @@
 {
-  "_comment": "Data for scripts/build-notices.ts. templates: standard licence text (without copyright line) for packages that declare a licence but ship no licence file; textOverrides: verbatim licence file for packages that ship none; assets: bundled media/fonts that are no packages (mustExist = artifacts that have to be present, otherwise the entry is stale or the artifact is missing). All text files live in notices-data/texts/.",
+  "_comment": "Data for scripts/build-notices.ts. templates: standard licence text (without copyright line) for packages that declare a licence but ship no licence file; textOverrides: verbatim licence file for packages that ship none, or that ship only a short pointer as their licence file (the text is then added next to that file); assets: bundled media/fonts that are no packages (mustExist = artifacts that have to be present, otherwise the entry is stale or the artifact is missing). All text files live in notices-data/texts/.",
   "templates": {
     "MIT": "MIT.txt"
   },
@@ -16,23 +16,28 @@
     },
     "nuget:SQLitePCLRaw.core": {
       "file": "Apache-2.0-SQLitePCLRaw.txt",
-      "source": "https://github.com/ericsink/SQLitePCL.raw/blob/v2.1.12/LICENSE.TXT + NOTICE.TXT",
-      "why": "The NuGet packages declare Apache-2.0 by expression only and ship no licence file. Text: LICENSE.TXT plus NOTICE.TXT of the repository (tag v2.1.12 - there is no tag v2.1.13; LICENSE.TXT is identical on master, checked 2026-11-03). The NOTICE carries the licence of SQLite itself (public domain, the blessing), which lib.e_sqlite3 contains as native code."
+      "source": "https://github.com/ericsink/SQLitePCL.raw/blob/v3.0.5/LICENSE.TXT + NOTICE.TXT",
+      "why": "The NuGet packages declare Apache-2.0 by expression only and ship no licence file. Text: LICENSE.TXT plus NOTICE.TXT of the repository at tag v3.0.5 (the version EF Core 11 / Microsoft.Data.Sqlite 11 pull in; LICENSE.TXT is identical to v2.1.12, NOTICE.TXT no longer carries the SQLCipher and OpenSSL sections, checked 2026-11-10). The NOTICE carries the licence of SQLite itself (public domain, the blessing); the native SQLite comes in the separate package SQLite (e_sqlite3)."
     },
     "nuget:SQLitePCLRaw.bundle_e_sqlite3": {
       "file": "Apache-2.0-SQLitePCLRaw.txt",
-      "source": "https://github.com/ericsink/SQLitePCL.raw/blob/v2.1.12/LICENSE.TXT + NOTICE.TXT",
-      "why": "The NuGet packages declare Apache-2.0 by expression only and ship no licence file. Text: LICENSE.TXT plus NOTICE.TXT of the repository (tag v2.1.12 - there is no tag v2.1.13; LICENSE.TXT is identical on master, checked 2026-11-03). The NOTICE carries the licence of SQLite itself (public domain, the blessing), which lib.e_sqlite3 contains as native code."
+      "source": "https://github.com/ericsink/SQLitePCL.raw/blob/v3.0.5/LICENSE.TXT + NOTICE.TXT",
+      "why": "The NuGet packages declare Apache-2.0 by expression only and ship no licence file. Text: LICENSE.TXT plus NOTICE.TXT of the repository at tag v3.0.5 (the version EF Core 11 / Microsoft.Data.Sqlite 11 pull in; LICENSE.TXT is identical to v2.1.12, NOTICE.TXT no longer carries the SQLCipher and OpenSSL sections, checked 2026-11-10). The NOTICE carries the licence of SQLite itself (public domain, the blessing); the native SQLite comes in the separate package SQLite (e_sqlite3)."
     },
-    "nuget:SQLitePCLRaw.lib.e_sqlite3": {
+    "nuget:SQLitePCLRaw.config.e_sqlite3": {
       "file": "Apache-2.0-SQLitePCLRaw.txt",
-      "source": "https://github.com/ericsink/SQLitePCL.raw/blob/v2.1.12/LICENSE.TXT + NOTICE.TXT",
-      "why": "The NuGet packages declare Apache-2.0 by expression only and ship no licence file. Text: LICENSE.TXT plus NOTICE.TXT of the repository (tag v2.1.12 - there is no tag v2.1.13; LICENSE.TXT is identical on master, checked 2026-11-03). The NOTICE carries the licence of SQLite itself (public domain, the blessing), which lib.e_sqlite3 contains as native code."
+      "source": "https://github.com/ericsink/SQLitePCL.raw/blob/v3.0.5/LICENSE.TXT + NOTICE.TXT",
+      "why": "The NuGet packages declare Apache-2.0 by expression only and ship no licence file. Text: LICENSE.TXT plus NOTICE.TXT of the repository at tag v3.0.5 (the version EF Core 11 / Microsoft.Data.Sqlite 11 pull in; LICENSE.TXT is identical to v2.1.12, NOTICE.TXT no longer carries the SQLCipher and OpenSSL sections, checked 2026-11-10). The NOTICE carries the licence of SQLite itself (public domain, the blessing); the native SQLite comes in the separate package SQLite (e_sqlite3)."
     },
     "nuget:SQLitePCLRaw.provider.e_sqlite3": {
       "file": "Apache-2.0-SQLitePCLRaw.txt",
-      "source": "https://github.com/ericsink/SQLitePCL.raw/blob/v2.1.12/LICENSE.TXT + NOTICE.TXT",
-      "why": "The NuGet packages declare Apache-2.0 by expression only and ship no licence file. Text: LICENSE.TXT plus NOTICE.TXT of the repository (tag v2.1.12 - there is no tag v2.1.13; LICENSE.TXT is identical on master, checked 2026-11-03). The NOTICE carries the licence of SQLite itself (public domain, the blessing), which lib.e_sqlite3 contains as native code."
+      "source": "https://github.com/ericsink/SQLitePCL.raw/blob/v3.0.5/LICENSE.TXT + NOTICE.TXT",
+      "why": "The NuGet packages declare Apache-2.0 by expression only and ship no licence file. Text: LICENSE.TXT plus NOTICE.TXT of the repository at tag v3.0.5 (the version EF Core 11 / Microsoft.Data.Sqlite 11 pull in; LICENSE.TXT is identical to v2.1.12, NOTICE.TXT no longer carries the SQLCipher and OpenSSL sections, checked 2026-11-10). The NOTICE carries the licence of SQLite itself (public domain, the blessing); the native SQLite comes in the separate package SQLite (e_sqlite3)."
+    },
+    "nuget:SQLite": {
+      "file": "PublicDomain-SQLite.txt",
+      "source": "https://sqlite.org/copyright.html",
+      "why": "The package SQLite (native e_sqlite3, from SourceGear) declares <license type=\"file\">LICENSE.txt</license>, and that file only says \"SQLite is Public Domain\" plus the URL. Text: the section \"SQLite Is Public Domain\" of https://sqlite.org/copyright.html, verbatim, read 2026-11-10. Licence approved by the user on 2026-11-10 (licence-policy.json)."
     }
   },
   "licenseFileIds": {

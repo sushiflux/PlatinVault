@@ -16,6 +16,12 @@ interface CopyErrorButtonProps {
   inactive?: boolean
   /** Text colour of the button (default: the secondary text colour); for a fixed dark surface. */
   color?: string
+  /** "text": a frameless text button with a 48 px target (error blocks, dialogs); default "inline" sits within a line of text. */
+  variant?: 'inline' | 'text'
+  /** Language of the button labels and of the copied text; default: the interface language (status pages pass "en"). */
+  language?: string
+  /** Visible text of the button when it differs from the default ("Copy details" on the status pages). */
+  label?: string
 }
 
 /**
@@ -24,8 +30,10 @@ interface CopyErrorButtonProps {
  * inside a fixed slot (Copy / Copied / Copy not possible, stacked in one grid cell), so the button and everything around it keep their
  * size when the confirmation shows (rigid layout). A blocked clipboard says so instead of failing silently.
  */
-export function CopyErrorButton({ report, className = '', inactive = false, color = 'var(--text-secondary)' }: CopyErrorButtonProps) {
-  const { t } = useTranslation('errors')
+export function CopyErrorButton({ report, className = '', inactive = false, color = 'var(--text-secondary)', variant = 'inline', language, label }: CopyErrorButtonProps) {
+  const { t: translate } = useTranslation('errors')
+  // A fixed language (status pages are always English) is passed per call; without one the interface language decides
+  const t = ((key: string, options?: object) => translate(key as never, { ...options, lng: language } as never)) as typeof translate
   const [state, setState] = useState<'idle' | 'done' | 'failed'>('idle')
   const timer = useRef<number | undefined>(undefined)
 
@@ -33,7 +41,7 @@ export function CopyErrorButton({ report, className = '', inactive = false, colo
 
   const copy = async () => {
     const input = typeof report === 'function' ? report() : report
-    const ok = await copyText(buildErrorReport(input))
+    const ok = await copyText(buildErrorReport(language ? { ...input, language } : input))
     setState(ok ? 'done' : 'failed')
     window.clearTimeout(timer.current)
     timer.current = window.setTimeout(() => setState('idle'), ok ? 2500 : 5000)
@@ -47,9 +55,12 @@ export function CopyErrorButton({ report, className = '', inactive = false, colo
         disabled={inactive}
         tabIndex={inactive ? -1 : undefined}
         aria-label={t('copy.label')}
-        title={t('copy.label')}
-        className="inline-flex cursor-pointer items-center text-xs font-bold underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-crystal)]"
-        style={{ color }}
+        className={
+          variant === 'text'
+            ? 'pv-btn-text'
+            : 'pv-hit inline-flex cursor-pointer items-center text-sm font-medium underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]'
+        }
+        style={variant === 'text' ? undefined : { color }}
         data-testid="copy-error"
       >
         <StackedLabel
@@ -58,7 +69,7 @@ export function CopyErrorButton({ report, className = '', inactive = false, colo
           labels={[
             <span key="copy" className="inline-flex items-center gap-1">
               <IconCopy size={14} aria-hidden="true" />
-              {t('copy.button')}
+              {label ?? t('copy.button')}
             </span>,
             <span key="done" className="inline-flex items-center gap-1" style={{ color: 'var(--accent-emerald)' }}>
               <IconCheck size={14} aria-hidden="true" />

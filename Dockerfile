@@ -10,7 +10,7 @@ RUN cd frontend && npm ci --no-fund --no-audit --ignore-scripts
 COPY frontend ./frontend
 RUN cd frontend && npm run build
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS backend
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS backend
 WORKDIR /src
 COPY global.json Directory.Build.props Directory.Packages.props branding.json languages.json ./
 COPY src/Companion.Api/Companion.Api.csproj ./src/Companion.Api/
@@ -25,8 +25,8 @@ RUN dotnet publish src/Companion.Api/Companion.Api.csproj -c Release -o /app --n
 # Realtime bridge (Windows exe for the gaming PC), published for win-x64 from the Linux SDK image and shipped inside the
 # server image: users download it from the settings (ready-to-run ZIP) and a running bridge updates itself from /api/bridge/exe.
 # Self-contained / single-file / trimming come from the csproj; only the version is passed in (1.0.<n> from scripts/build-bridge.ps1
-# or the release workflow). EnableWindowsTargeting lets the Linux SDK build the net10.0-windows target.
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS bridge
+# or the release workflow). EnableWindowsTargeting lets the Linux SDK build the net11.0-windows target.
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS bridge
 ARG BRIDGE_VERSION=1.0.0
 WORKDIR /src
 COPY global.json Directory.Build.props Directory.Packages.props ./
@@ -48,7 +48,7 @@ RUN dotnet publish src/PlatinVault.Bridge/PlatinVault.Bridge.csproj -c Release -
 # /api/bridge/exe?platform=linux. It has its own version (1.0.<commits touching the Linux bridge, its shared core or the Steam readers>,
 # the release workflow passes it as BRIDGE_LINUX_VERSION; scripts/build-bridge-linux.sh --print-version computes it). The shared core
 # (src/PlatinVault.Bridge.Core) is compiled into the bridge, so only the Steam readers are a project reference to restore.
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS bridge-linux
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS bridge-linux
 ARG BRIDGE_LINUX_VERSION=1.0.0
 WORKDIR /src
 COPY global.json Directory.Build.props Directory.Packages.props ./
@@ -62,7 +62,7 @@ RUN dotnet publish src/PlatinVault.Bridge.Linux/PlatinVault.Bridge.Linux.csproj 
     && mkdir -p /bridge-linux/package \
     && cp -r src/PlatinVault.Bridge.Linux/package/. /bridge-linux/package/
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0 AS runtime
 ARG APP_VERSION=v0.0.0
 # Version of the tagged commit (line 1 of the repository's version.txt), its five-segment build id (line 2) and the channel. The app
 # writes them for people as "v2026.11.12.13.557 (β)" for "beta", "v2026.11.12.13.557 (α)" for "nightly" and "v2026.11.12.13.557" for

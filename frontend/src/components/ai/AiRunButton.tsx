@@ -7,6 +7,7 @@ import { StackedLabel } from '../ui/StackedLabel'
 import { Tooltip } from '../ui/Tooltip'
 import { AI_PROVIDERS, providersWithKey, useProviderStateText } from './aiProviders'
 import { useAiStatus } from './useAiStatus'
+import './ai.css'
 
 interface AiRunButtonProps {
   // The one-off choice for this action ("Mit Claude"), kept by the caller so its handler can use it; undefined = the settings decide
@@ -22,6 +23,8 @@ interface AiRunButtonProps {
   label: ReactNode
   // Colour of the button, e.g. "pv-btn-emerald"
   tone?: string
+  // The frameless text look for an action row (the AI part stays a connected second part, divided by a hairline)
+  quiet?: boolean
 }
 
 /** The text that says which AI an action would use right now, e.g. for tooltips ("Uses Claude."); null while nothing is known yet. */
@@ -41,7 +44,7 @@ export function useAiWhoText(oneOff?: AiProviderId): string | null {
  * no second part: the click opens the chooser dialog (the caller's handler asks with useAiPicker()). The second part reserves the
  * width of its longest name, so the button never changes size when another AI is picked.
  */
-export function AiRunButton({ oneOff, onOneOffChange, type = 'button', form, onClick, busy = false, disabled = false, icon, label, tone = '' }: AiRunButtonProps) {
+export function AiRunButton({ oneOff, onOneOffChange, type = 'button', form, onClick, busy = false, disabled = false, icon, label, tone = '', quiet = false }: AiRunButtonProps) {
   const { t } = useTranslation('ai')
   const { data: status } = useAiStatus()
   const [open, setOpen] = useState(false)
@@ -73,14 +76,14 @@ export function AiRunButton({ oneOff, onOneOffChange, type = 'button', form, onC
   }
 
   return (
-    <span ref={rootRef} className="relative inline-flex max-w-full">
+    <span ref={rootRef} className={`relative inline-flex max-w-full ${quiet ? 'pv-ai-run--quiet' : ''}`.trim()}>
       <button
         type={type}
         form={form}
         onClick={onClick}
         disabled={disabled || busy}
         aria-busy={busy || undefined}
-        className={`pv-btn ${tone} relative min-w-0 ${showSegment ? '!rounded-e-none' : ''}`.trim()}
+        className={quiet ? 'pv-btn-text pv-btn-text--calm relative min-w-0' : `pv-btn ${tone} relative min-w-0 ${showSegment ? '!rounded-e-none' : ''}`.trim()}
       >
         <span className={`inline-flex items-center gap-[inherit] ${busy ? 'invisible' : ''}`}>
           {icon}
@@ -111,7 +114,7 @@ export function AiRunButton({ oneOff, onOneOffChange, type = 'button', form, onC
                   setOpen(false)
                 }
               }}
-              className={`pv-btn ${tone} whitespace-nowrap !rounded-s-none !border-s-0 !gap-1 !ps-2.5 !pe-2`.trim()}
+              className={quiet ? 'pv-btn-text pv-btn-text--calm pv-ai-run__seg whitespace-nowrap !gap-1 !ps-2.5 !pe-2' : `pv-btn ${tone} whitespace-nowrap !rounded-s-none !border-s-0 !gap-1 !ps-2.5 !pe-2`.trim()}
             >
               <StackedLabel active={activeIndex} labels={names} />
               <IconChevronDown size={14} aria-hidden="true" className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -123,8 +126,8 @@ export function AiRunButton({ oneOff, onOneOffChange, type = 'button', form, onC
               id={menuId}
               role="menu"
               aria-label={t('button.menuLabel')}
-              className="absolute bottom-full end-0 z-50 mb-1.5 w-max min-w-[15rem] max-w-[min(22rem,90vw)] rounded-xl p-1.5"
-              style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-strong, var(--border-subtle))', boxShadow: '0 14px 36px -10px rgba(8, 13, 23, 0.45)' }}
+              className="absolute bottom-full end-0 z-50 mb-1.5 w-max min-w-[15rem] max-w-[min(22rem,90vw)] rounded-lg p-1.5"
+              style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-strong)', boxShadow: 'var(--shadow-pop)' }}
               onKeyDown={(event) => {
                 if (event.key === 'Escape') {
                   event.stopPropagation()
@@ -188,17 +191,17 @@ function MenuItem({
       role="menuitemradio"
       aria-checked={checked}
       onClick={onSelect}
-      className="flex w-full cursor-pointer items-start gap-2 rounded-lg px-2.5 py-2 text-start text-xs hover:bg-[var(--bg-elevated)] focus-visible:bg-[var(--bg-elevated)]"
+      className="pv-ai-run__item flex w-full cursor-pointer items-start gap-2 rounded-md px-2.5 py-2 text-start text-sm"
       style={{ color: 'var(--text-primary)' }}
     >
       <IconCheck size={14} aria-hidden="true" className={`mt-0.5 shrink-0 ${checked ? '' : 'invisible'}`} style={{ color: 'var(--accent-emerald)' }} />
       <span className="min-w-0 flex-1">
-        <span className="flex flex-wrap items-center gap-x-2 font-extrabold">
+        <span className="flex flex-wrap items-center gap-x-2 font-semibold">
           {title}
           {tag && <span className="pv-badge pv-badge-a !py-0 !text-[10px]">{tag}</span>}
         </span>
         {detail && (
-          <span className="mt-0.5 block font-semibold" style={{ color: warn ? 'var(--accent-gold-text)' : 'var(--text-muted)' }}>
+          <span className="mt-0.5 block text-xs" style={{ color: warn ? 'var(--accent-gold-text)' : 'var(--text-muted)' }}>
             {detail}
           </span>
         )}

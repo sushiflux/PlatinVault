@@ -23,7 +23,7 @@ interface GhostIconButtonProps {
   className?: string
 }
 
-// The quiet icon-only action of the app (note, refresh, ...): no border, a soft background on hover, our own tooltip.
+// The quiet icon-only action of the app (note, refresh, ...), drawn small with a 48 px touch target (.pv-hit): no border, a soft background on hover, our own tooltip.
 // One look everywhere, so the same kind of action never turns into a lookalike per page.
 export function GhostIconButton({
   label,
@@ -45,10 +45,10 @@ export function GhostIconButton({
         aria-label={label}
         aria-expanded={expanded}
         aria-disabled={disabled || undefined}
-        className={`relative inline-flex items-center justify-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--accent-crystal)] ${
-          disabled ? 'cursor-not-allowed opacity-55' : 'cursor-pointer hover:bg-[var(--bg-elevated)]'
+        className={`pv-hit relative inline-flex items-center justify-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--focus)] ${
+          disabled ? 'cursor-not-allowed opacity-55' : 'cursor-pointer hover:bg-[var(--bg-elevated)] hover:!text-[var(--link)]'
         } ${size === 'md' ? 'h-8 w-8' : 'h-6 w-6'}`}
-        style={{ borderRadius: 'var(--radius-sm)', color: tone === 'accent' ? 'var(--accent-crystal)' : 'var(--text-muted)' }}
+        style={{ borderRadius: 'var(--radius-sm)', color: tone === 'accent' ? 'var(--link)' : 'var(--text-muted)' }}
       >
         {children}
         {dot && (

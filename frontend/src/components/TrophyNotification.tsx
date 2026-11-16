@@ -7,7 +7,8 @@ import { useFormat } from '../i18n/format'
 import { ACHIEVEMENT_VISIBLE_MS } from '../utils/animationQueue'
 import { useUnlockStamp } from '../utils/unlockStamp'
 import { PopupCountdown } from './PopupCountdown'
-import { TierTrophy, tierGlow } from './platinum/TierTrophy'
+import { TierTrophy } from './platinum/TierTrophy'
+import '../styles/popup.css'
 
 interface TrophyNotificationProps {
   achievement: LiveAchievementItemDto | null
@@ -153,7 +154,8 @@ interface TrophyCardProps {
   countdownMs?: number
 }
 
-// The card itself: the dark trophy popup without any positioning, shared by the live overlay and the tour.
+// The card itself: the light trophy popup (surface, hairline frame, the thin tier line at the left edge and the thin time line along the
+// bottom) without any positioning, shared by the live overlay and the tour.
 // Its footprint never changes: the trophy slot, the icon and the four text lines (tier, name, description, unlock time) have fixed room.
 export function TrophyCard({ achievement, fluid = false, animated = true, countdownMs }: TrophyCardProps) {
   const { t } = useTranslation('live')
@@ -161,7 +163,6 @@ export function TrophyCard({ achievement, fluid = false, animated = true, countd
   const stamp = useUnlockStamp()(achievement)
   const reduce = useReducedMotion() ?? false
   const tier: RarityTier = achievement.rarityTier in TROPHY_TIER_COLORS ? achievement.rarityTier : 'Gold'
-  const accentColor = TROPHY_TIER_COLORS[tier] ?? '#fbbf24'
   const shiny = tier === 'Gold' || tier === 'Platinum'
   const percent =
     achievement.hasGlobalPercent !== false && achievement.globalPercent > 0 ? fmt.percent(achievement.globalPercent, 1) : null
@@ -178,38 +179,15 @@ export function TrophyCard({ achievement, fluid = false, animated = true, countd
 
   return (
     <div
-      className="relative flex items-center gap-3.5 rounded-2xl bg-slate-950/95 px-4 py-3 text-white backdrop-blur-xl"
+      className="pv-popup-card"
+      data-tier={tier}
       style={{
         // One fixed width for every tier and every text length, so nothing about the popup moves or resizes
         width: fluid ? undefined : 'min(420px, calc(100vw - 56px))',
-        minHeight: '5.75rem',
-        border: `1.5px solid ${accentColor}`,
-        boxShadow: `0 18px 40px rgba(0, 0, 0, 0.8), 0 0 25px ${accentColor}40`,
       }}
     >
-      {/* Gold and platinum get an extra sheen that glides over the card */}
-      {animated && !reduce && shiny && (
-        <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl" aria-hidden="true">
-          <motion.span
-            className="absolute inset-y-0 w-1/3"
-            style={{ left: '-33%', background: `linear-gradient(105deg, transparent, ${accentColor}33, transparent)` }}
-            initial={{ x: '0%' }}
-            animate={{ x: '420%' }}
-            transition={{ duration: 1.1, delay: 1.15, ease: 'easeInOut', repeat: 1, repeatDelay: 1.3 }}
-          />
-        </span>
-      )}
-
       {/* The trophy builds itself up in its own slot */}
       <div className="relative h-[3.6rem] w-[3.2rem] shrink-0">
-        <motion.span
-          className="pointer-events-none absolute -inset-3 rounded-full"
-          style={{ background: `radial-gradient(circle, ${tierGlow(tier)}55, transparent 68%)` }}
-          initial={animated ? { opacity: 0 } : false}
-          animate={animated ? { opacity: 1 } : undefined}
-          transition={{ duration: 0.8, delay: 0.5 }}
-          aria-hidden="true"
-        />
         <TierTrophy
           tier={tier}
           reveal={animated}
@@ -225,33 +203,26 @@ export function TrophyCard({ achievement, fluid = false, animated = true, countd
       <motion.img
         src={achievement.iconUrl}
         alt={achievement.displayName}
-        className="relative h-12 w-12 shrink-0 rounded-xl object-cover"
-        style={{ border: `2px solid ${accentColor}`, boxShadow: `0 0 15px ${accentColor}80` }}
+        className="pv-popup-icon"
         {...line(0.3)}
       />
 
       <div className="relative min-w-0 flex-1">
         <motion.div className="mb-0.5 flex items-baseline justify-between gap-2" {...line(0.45)}>
-          <span className="text-[11px] font-extrabold uppercase tracking-wider" style={{ color: accentColor }}>
-            {t('tierTrophy', { tier: t(`tiers.${tier}`) })}
-          </span>
-          {percent && <span className="shrink-0 text-[11px] font-semibold text-slate-300">{percent}</span>}
+          <span className="pv-popup-kicker">{t('tierTrophy', { tier: t(`tiers.${tier}`) })}</span>
+          {percent && <span className="shrink-0 text-sm text-[var(--text-muted)]">{percent}</span>}
         </motion.div>
-        <motion.div className="truncate text-base font-extrabold text-white" {...line(0.55)}>
+        <motion.div className="pv-popup-name" {...line(0.55)}>
           {achievement.displayName}
         </motion.div>
-        <motion.div className="mt-0.5 line-clamp-2 min-h-[2rem] text-xs text-slate-300" {...line(0.65)}>
+        <motion.div className="pv-popup-desc" {...line(0.65)}>
           {achievement.description}
         </motion.div>
         {/* When it was unlocked. The line always has its room (also without a time), so the card is the same height either way. */}
-        <motion.div
-          className="mt-1 flex h-4 items-center gap-1 text-[11px] font-medium tabular-nums text-slate-400"
-          data-unlock-stamp=""
-          {...line(0.75)}
-        >
+        <motion.div className="pv-popup-stamp h-5" data-unlock-stamp="" {...line(0.75)}>
           {stamp && (
             <>
-              <IconClock size={12} stroke={2} className="shrink-0" aria-hidden="true" />
+              <IconClock size={14} stroke={2} className="shrink-0" aria-hidden="true" />
               <span className="truncate">{stamp}</span>
             </>
           )}
@@ -262,8 +233,8 @@ export function TrophyCard({ achievement, fluid = false, animated = true, countd
         <PopupCountdown
           key={`${achievement.apiName}-${achievement.unlockTime ?? ''}-${countdownMs}`}
           durationMs={countdownMs}
-          color={accentColor}
-          style={{ insetInline: '1rem', insetBlockEnd: '0.3rem', blockSize: '3px' }}
+          color={`var(--tier-${tier.toLowerCase()})`}
+          style={{ insetInlineStart: '1.25rem', insetInlineEnd: '1rem', insetBlockEnd: 0, blockSize: '2px' }}
         />
       )}
     </div>

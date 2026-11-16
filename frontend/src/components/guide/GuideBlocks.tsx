@@ -9,13 +9,13 @@ import './guide.css'
 
 // The typed hints of a walkthrough: symbol per kind (the colour comes from the section's variant)
 const KIND_ICONS: Record<GuideAlertKind, ReactNode> = {
-  must_have: <IconStar size={20} />,
-  missable: <IconAlertTriangle size={20} />,
-  optional: <IconCompass size={20} />,
-  tip: <IconBulb size={20} />,
-  achievement: <IconTrophy size={20} />,
-  point_of_no_return: <IconDoorExit size={20} />,
-  side_quests: <IconListCheck size={20} />,
+  must_have: <IconStar size={18} />,
+  missable: <IconAlertTriangle size={18} />,
+  optional: <IconCompass size={18} />,
+  tip: <IconBulb size={18} />,
+  achievement: <IconTrophy size={18} />,
+  point_of_no_return: <IconDoorExit size={18} />,
+  side_quests: <IconListCheck size={18} />,
 }
 
 const KIND_VARIANT: Record<GuideAlertKind, string> = {
@@ -48,12 +48,14 @@ export function HintAlert({ section }: { section: GuideSectionDto }) {
   const items = (section.items ?? []).map((item) => item.trim()).filter((item) => item.length > 0)
   const apiName = kind === 'achievement' ? section.apiName?.trim() : undefined
   return (
-    <aside className={`pv-alert pv-alert-${variant} pv-hint pv-hint-${kind}`} data-hint-kind={kind}>
-      <div className="pv-hint-icon" aria-hidden="true">
-        {KIND_ICONS[kind]}
+    <aside className={`pv-hint pv-hint--${variant} pv-hint-${kind}`} data-hint-kind={kind}>
+      <div className="pv-hint-label">
+        <span className="pv-hint-icon" aria-hidden="true">
+          {KIND_ICONS[kind]}
+        </span>
+        {t(`hintKind.${kind}`)}
       </div>
       <div className="pv-hint-body">
-        <div className="pv-hint-label">{t(`hintKind.${kind}`)}</div>
         {apiName && <AchievementRef apiName={apiName} withDescription />}
         {section.title && <div className="pv-hint-title">{section.title}</div>}
         {section.htmlContent && <p className="pv-hint-text">{section.htmlContent}</p>}
@@ -63,7 +65,7 @@ export function HintAlert({ section }: { section: GuideSectionDto }) {
             <ul>
               {items.map((item, i) => (
                 <li key={i}>
-                  <IconCircleCheck size={15} aria-hidden="true" />
+                  <IconCircleCheck size={16} aria-hidden="true" />
                   <span>{item}</span>
                 </li>
               ))}
@@ -136,7 +138,7 @@ export function StepsStory({ section }: { section: GuideSectionDto }) {
   const { t } = useTranslation('game')
   const steps = section.paragraphs ?? (section.htmlContent ? [section.htmlContent] : [])
   return (
-    <article className="pv-card pv-steps-card">
+    <article className="pv-steps-card">
       {section.title && <h3 className="pv-steps-title">{section.title}</h3>}
       <ol className="pv-steps" aria-label={section.title ?? t('stepsList')}>
         {steps.map((step, i) => (

@@ -42,6 +42,8 @@ ebenfalls direkt liest – siehe Kapitel 13. **Auf Linux ist die Erkennung der T
 
 PlatinVault gibt es als Container-Image. Auf Unraid legst du es aus der Vorlage an, auf einem normalen Linux-Rechner (und auf NAS-Systemen mit Compose-Unterstützung) startest du es mit einer fertigen Compose-Datei. Die Abschnitte 3.1 bis 3.3 beschreiben die drei Wege; Windows hat ein eigenes Programm (Kapitel 11), und für den Linux-PC, auf dem Steam läuft, gibt es ein eigenes Paket (Kapitel 13).
 
+Der Rechner braucht einen 64-Bit-x86-Prozessor mit x86-64-v2-Unterstützung (praktisch jeder PC- oder Server-Prozessor ab etwa 2013).
+
 ## 3.1 Unraid
 
 PlatinVault gibt es als Container für Unraid. Eine Datenbank musst du nicht einrichten: PlatinVault bringt sie mit – eine Datei im
@@ -57,7 +59,8 @@ Appdata-Ordner.
 
 2. Container starten und PlatinVault im Browser öffnen: `http://<IP deines Unraid>:5233`.
 3. Beim ersten Öffnen wählst du zuerst auf einem Vollbild-Bildschirm deine **Sprache** (Deutsch oder English; vorausgewählt ist
-   die Sprache deines Browsers, ändern kannst du sie später jederzeit oben in der Kopfzeile). Danach führt dich eine kurze **Tour** durch die App. Du kannst sie jederzeit über das **?** oben rechts
+   die Sprache deines Browsers) und dein **Farbschema** (Hell oder Dunkel). Beides kannst du später jederzeit oben in der Kopfzeile ändern.
+   Danach führt dich eine kurze **Tour** durch die App. Du kannst sie jederzeit über das **?** oben rechts
    wieder starten.
 
 **Eigene Domain / Reverse-Proxy:** Rufst du PlatinVault über einen Namen mit eigener Domain auf (zum Beispiel `pv.example.com` über einen Reverse-Proxy, also einen vorgeschalteten Webserver), trage diesen Namen in der Vorlage unter „Show more settings“ bei `PLATINVAULT_ALLOWED_HOSTS` ein. Mehrere Namen trennst du mit `;`, `*.example.com` gilt für alle Namen darunter. Nötig ist das nicht für IP-Adressen, `localhost`, Namen ohne Punkt (zum Beispiel `tower`) und Namen auf `.local`, `.lan`, `.home.arpa`, `.internal` oder `.fritz.box`. Hintergrund: PlatinVault lehnt andere Namen ab, damit fremde Webseiten es nicht über eine Täuschung im Namenssystem (DNS-Rebinding) ansprechen können. Rufst du PlatinVault schon jetzt so auf, trage den Namen nach dem Update einmal ein. Schreibt dein Proxy den Namen um, kommt für die Live-Popups zusätzlich `PLATINVAULT_ALLOWED_ORIGINS=https://pv.example.com` dazu.
@@ -119,7 +122,7 @@ PlatinVault wurde mit Docker auf Linux getestet; auf einzelnen NAS-Modellen habe
 
 # 4 Erste Schritte
 
-Öffne die **Einstellungen** über das Zahnrad oben rechts (auf jeder Seite). Einstellungen, die nur an oder aus sind, haben einen
+Öffne die **Einstellungen** über den Eintrag **Einstellungen** unten in der Navigation links (auf jeder Seite; 5.1). Die Einstellungen sind eine eigene Seite mit Reitern; der gewählte Reiter steht in der Adresse, ein Neuladen bringt dich also an dieselbe Stelle zurück. Einstellungen, die nur an oder aus sind, haben einen
 Schalter: **grün mit Häkchen** heißt an, **rot mit Kreuz** heißt aus; er lässt sich anklicken (auch auf den Text daneben) oder
 mit der Tastatur umlegen (Leertaste). Gespeichert wird mit **Einstellungen speichern**.
 
@@ -205,39 +208,60 @@ Kapitel, wenn die Recherche bestätigt, dass das Spiel es wirklich hat – auch 
 Aufbauspiel ohne Kämpfe bekommt kein Bestiarium). Kleine, verwandte Themen fasst die KI zu einem Kapitel zusammen. Im Guide-Baukasten
 (6.2) steht oben, wie viele Kapitel vorgeschlagen sind; weitere passende Themen stehen unter **Weitere Themen**, nicht angehakt.
 
-# 5 Die Startseite
+# 5 Navigation und Übersicht
 
-## 5.1 Kopfzeile
+## 5.1 Navigation und Kopfzeile
 
-Links das PlatinVault-Logo, daneben dein **Trophäen-Fortschritt**, dein **Steam-Konto** (Name, Profilbild und mit
-Steam-Key die Zahl deiner Spiele; ein Klick öffnet dein Profil) und die Aktionen:
+PlatinVault hat auf jeder Seite denselben Rahmen: oben eine **Kopfzeile**, links eine **Navigation** und rechts davon der Inhalt der Seite.
+
+### Die Navigation links
+
+Die Navigation ist ein Baum. Von oben nach unten:
+
+- **Suche:** Das Feld „Spiel oder Kapitel suchen …“ filtert den Baum, während du tippst. Esc leert es.
+- **Übersicht:** deine Favoriten als Kacheln (5.2).
+- **Alle Spiele:** deine ganze Steam-Bibliothek (5.2). Der Eintrag erscheint erst, wenn PlatinVault deine Bibliothek lesen kann.
+- **Meine Spiele:** deine Favoriten (die Spiele mit Stern), jedes mit seinem Cover. Ein Klick öffnet die Spielseite. Das geöffnete Spiel klappt unter seinem Namen auf:
+  **Live-Trophäen**, **Statistiken**, die **Kapitel** des Guides unter ihren Gruppenüberschriften (hat ein Guide nur eine Gruppe, gibt es keine Überschriften) und
+  **Story & Lore**. Neben einem Kapitel zeigt eine Zahl, wie viel du davon abgehakt hast; ein Warnsymbol heißt, dass die Recherche des Kapitels fehlgeschlagen ist (6.2). Die Seite, auf der du bist, ist hervorgehoben.
+- **Trophäenschrank:** unter einer feinen Trennlinie, öffnet den Schrank mit allen Spielen auf 100 % (5.5).
+- **Einstellungen:** ganz unten (Kapitel 4).
+- **Benutzerzeile** ganz unten: dein Steam-Konto mit Profilbild, Name und – mit Steam-Key – der Zahl deiner Spiele. Ein Klick öffnet dein Steam-Profil.
+- **Info-Symbol** (ein „i“ im Kreis) neben der Benutzerzeile: öffnet die Seite **Über PlatinVault** (siehe unten).
+
+**Schmale Navigation.** Mit dem Knopf oben in der Navigation (Seitenleisten-Symbol) klappst du sie zu einer schmalen Leiste mit nur Symbolen ein, damit der Inhalt mehr Platz hat. In der Leiste nennt ein Hinweis beim Darüberfahren jeden Eintrag; das aufgeklappte Spiel mit seinen Kapiteln zeigt sie nicht. Ein zweiter Klick klappt sie wieder auf. PlatinVault merkt sich die Wahl in diesem Browser bzw. Programm.
+
+**Auf dem Handy.** Unter etwa 768 Pixel Breite ist die Navigation versteckt. In der Kopfzeile links öffnet ein **Menü-Knopf** sie als Schublade, die sich von links über die Seite schiebt. Sie schließt sich, sobald du einen Eintrag wählst, mit dem Knopf **Navigation schließen**, mit Esc oder mit einem Tipp neben die Schublade.
+
+**Über PlatinVault.** Diese Seite zeigt den Namen, die laufende **Version** (ein Klick öffnet **Version & Updates**: dort suchst du von Hand nach Updates, siehe Kapitel 12), **Neuerungen** (öffnet **Das ist neu in dieser Version**), „Mit ♥ gemacht“, die **Lizenz** mit dem Knopf **Lizenzen** und den Link zum **Quellcode**. Ein Copyright-Hinweis steht in der App nicht.
+
+### Die Kopfzeile
+
+Links das PlatinVault-Logo mit dem Namen; ein Klick führt zur Übersicht. Rechts stehen die Werkzeuge, auf jeder Seite dieselben:
 
 | Symbol | Aktion |
 |---|---|
-| Datei | **Guide importieren** – eine Guide-Datei aus einer anderen PlatinVault-Installation laden (legt das Spiel samt Guide an) |
-| Pokal-Abzeichen | **Trophäenschrank** – alle Spiele, die du auf 100 % hast (5.5) |
-| Aa | **Darstellungsgröße** – öffnet ein kleines Fenster: mit − und + oder direkt über die Stufen 80 / 90 / 100 / 110 / 125 % werden Schriften und Kästen kleiner oder größer, die Seitenbreite bleibt gleich; „Auf 100 % zurücksetzen“ stellt die Standardgröße wieder her. Das Fenster bleibt beim Umschalten an seinem Platz, du kannst also mehrfach hintereinander klicken. Weicht die Größe von 100 % ab, zeigt ein kleines Etikett am Symbol den Wert. Praktisch bei 4K-Monitoren mit hoher Windows-Skalierung. |
-| Weltkugel mit Kürzel (DE / EN) | **Sprache** – öffnet eine kleine Liste mit allen Sprachen, jede mit Flagge und ihrem Namen („Deutsch“, „English“); die gerade benutzte ist hervorgehoben und mit einem Häkchen markiert. Ein Klick schaltet die ganze App **sofort** um, ohne Neuladen, und merkt sich die Wahl. Die Sprache gilt für die Oberfläche, Datums- und Zahlenformate, die Steam-Erfolgstexte (Steams eigene Texte in dieser Sprache) und das Handbuch, das sich in der gewählten Sprache öffnet. Mit der Tastatur: Pfeiltasten wählen, Enter übernimmt, Esc schließt. Klappt das Speichern nicht, nennt eine Meldung unter der Kopfzeile den Grund und die bisherige Sprache bleibt. |
-| Sonne/Mond | Farbschema: wechselt zwischen hell und dunkel (beim ersten Start gilt die Einstellung deines Betriebssystems) |
-| Zahnrad | Einstellungen |
-| ? | Hilfe: zeigt die Hinweise für die aktuelle Seite |
+| Pfeil nach oben mit grünem Punkt | **Update verfügbar** – nur sichtbar, wenn es eine neue Version gibt (Kapitel 12). Die anderen Symbole rutschen dadurch nicht. |
+| Aa | **Darstellungsgröße** – öffnet ein kleines Fenster: mit − und + oder direkt über die Stufen 80 / 90 / 100 / 110 / 125 % werden Schriften und Kästen kleiner oder größer; „Auf 100 % zurücksetzen“ stellt die Standardgröße wieder her. Das Fenster bleibt beim Umschalten an seinem Platz, du kannst also mehrfach hintereinander klicken. Weicht die Größe von 100 % ab, zeigt ein kleines Etikett am Symbol den Wert. Praktisch bei 4K-Monitoren mit hoher Windows-Skalierung. |
+| Weltkugel mit Kürzel (DE / EN) | **Sprache** – öffnet eine kleine Liste mit allen Sprachen, jede mit Flagge und ihrem Namen („Deutsch“, „English“); die gerade benutzte ist hervorgehoben und mit einem Häkchen markiert. Ein Klick schaltet die ganze App **sofort** um, ohne Neuladen, und merkt sich die Wahl. Die Sprache gilt für die Oberfläche, Datums- und Zahlenformate, die Steam-Erfolgstexte (Steams eigene Texte in dieser Sprache) und das Handbuch, das sich in der gewählten Sprache öffnet. Mit der Tastatur: Pfeiltasten wählen, Enter übernimmt, Esc schließt. Klappt das Speichern nicht, nennt eine Meldung den Grund und die bisherige Sprache bleibt. |
+| Sonne/Mond | Farbschema: wechselt zwischen hell und dunkel (die erste Wahl triffst du auf dem Willkommensbildschirm) |
 | Buch | **Handbuch** – dieses Handbuch direkt in der App |
+| ? | Hilfe: zeigt die Hinweise für die aktuelle Seite noch einmal |
 
-Fährst du mit der Maus über ein Symbol, erklärt ein kurzer Hinweis, was es tut.
+Fährst du mit der Maus über ein Symbol, erklärt ein kurzer Hinweis, was es tut. Die Werkzeuge der einzelnen Seiten (zum Beispiel **Guide importieren** auf der Übersicht oder die Aktionen eines Spiels) stehen im Inhalt der jeweiligen Seite, nicht in der Kopfzeile.
 
 ## 5.2 Favoriten und alle Spiele
 
-Oben auf der Startseite steht ein schlankes **Übersichtsfeld**: links der Titel, rechts die Kennzahlen als kleine Abzeichen, darunter in einer Reihe die Suche, die Ansicht und der Regler für die
-Kachelgröße.
+Die Seite **Übersicht** und die Seite **Alle Spiele** sehen gleich aus und haben dieselben Werkzeuge. Oben steht der Seitentitel, rechts daneben der Knopf **Guide importieren** (eine Guide-Datei aus einer anderen PlatinVault-Installation laden; das legt das Spiel samt Guide an). Darunter folgen die Kennzahlen als kleine Abzeichen, dann in einer Reihe die Suche, der Umschalter zwischen Favoriten und allen Spielen und der Regler für die Kachelgröße.
 
-- **Favoriten** sind die Spiele, die du mit einem **Stern** markiert hast – sie stehen als Kacheln auf der Startseite.
-- **Alle Spiele** zeigt deine komplette Steam-Bibliothek (nur mit Steam-Key).
-- Die Zahlen oben rechts (Spiele, Trophäen, Spiele auf Platin) beziehen sich immer auf die gewählte Ansicht. Für
+- **Übersicht** zeigt deine **Favoriten**: die Spiele, die du mit einem **Stern** markiert hast, als Kacheln.
+- **Alle Spiele** zeigt deine komplette Steam-Bibliothek (nur mit Steam-Key). Du erreichst sie über die Navigation links oder über den Umschalter im Werkzeugfeld.
+- Die Zahlen (Spiele, Trophäen, Spiele auf Platin) beziehen sich immer auf die gewählte Seite. Für
   „Alle Spiele“ wertet PlatinVault deine Bibliothek im Hintergrund aus; solange das läuft, steht dort „Bibliothek wird
   ausgewertet“.
 - Mit dem Regler **Kachelgröße** wählst du zwischen Groß, Kompakt, Sehr kompakt, Liste und Nur Text.
 - Die **Suche** filtert die aktuelle Ansicht; unter der Reihe zeigt „Zeige x von y“, wie viele Spiele gerade zu sehen sind, und **Filter zurücksetzen** räumt die Suche wieder auf.
-  Scrollst du nach unten, übernimmt eine schmale Leiste unter der Kopfzeile Suche, Ansicht und Regler.
+  Scrollst du nach unten, übernimmt eine schmale Leiste unter der Kopfzeile Suche, Umschalter und Regler.
 - **Sortieren:** Rechts neben der Zählzeile wählst du die Reihenfolge der Kacheln – in beiden Ansichten. Zur Wahl stehen **Abschlussquote**
   (freigeschaltete Steam-Erfolge in Prozent), **Alphabetisch**, **Spielzeit**, **Zuletzt gespielt**, **Erscheinungsdatum**, **Größe**,
   **Metacritic-Wertung** und **Steam-Bewertungen**; bei den Favoriten kommt als erste **Eigene Reihenfolge** dazu. Der Knopf daneben dreht die Richtung um;
@@ -257,10 +281,10 @@ Deine Spiele kommen **ausschließlich aus deiner Steam-Bibliothek** – es gibt 
 Solange noch kein Spiel auf der Startseite liegt, zeigt PlatinVault statt der Kacheln drei Schritte; sie zeigen den echten Stand
 (Haken = erledigt) und ihre Schaltflächen öffnen direkt das Richtige:
 
-1. **Steam-Konto verbinden:** „Mit Steam anmelden“ (oder in den Einstellungen, Reiter Steam).
+1. **Steam-Konto verbinden:** „Mit Steam anmelden“ (oder unter Einstellungen, Reiter Steam). Danach landest du wieder im Reiter Steam der Einstellungen.
 2. **Steam-Web-API-Key eintragen:** Den Key holst du kostenlos bei Steam (der Link steht dabei), eingetragen wird er in den
    Einstellungen, Reiter Steam. Ohne ihn kann PlatinVault deine Bibliothek nicht lesen.
-3. **Mit dem Stern aufs Dashboard holen:** „Alle Spiele öffnen“, sortieren nach „Zuletzt gespielt“, „Meiste Spielzeit“ oder Name
+3. **Mit dem Stern aufs Dashboard holen:** „Alle Spiele öffnen“ (auch in der Navigation links), sortieren nach „Zuletzt gespielt“, „Meiste Spielzeit“ oder Name
    und bei einem Spiel auf den **Stern** tippen. Das Spiel erscheint sofort als Kachel – ohne KI-Kosten. Den Guide erstellst du
    danach auf der Spielseite (6.2), wann immer du willst.
 
@@ -297,46 +321,32 @@ streamt. Die Zahlen kommen im Hintergrund und aktualisieren sich alle paar Minut
 
 ## 5.5 Trophäenschrank
 
-Der Trophäenschrank zeigt alle Spiele, die du auf **100 %** gebracht hast, wie in einer Vitrine: Hinter dunklem Rauchglas
-stehen die Spiele auf Regalbrettern, jedes mit einer goldenen Plakette (Name, Datum und Uhrzeit der letzten Trophäe).
+Der Trophäenschrank zeigt alle Spiele, die du auf **100 %** gebracht hast, wie in einer Vitrine: Hinter Glastüren stehen die Spiele mit ihrem Cover auf Regalbrettern. Unter jedem Cover stehen der Name und das Datum der Platin-Trophäe, davor ein kleiner goldener Pokal; ein kurzer goldener Strich markiert den Platz auf dem Regalbrett.
 
-- **Öffnen:** Erst lädt der Schrank (eine dünne goldene Linie), dann gleiten die Glastüren zur Seite und das Licht geht an.
-- **Neue Spiele:** Hast du seit deinem letzten Besuch ein Spiel auf 100 % gebracht, liegt es nicht einfach da: Sein Platz bleibt zuerst frei (eine glasige Karte), dann wird das Spiel mit einem kleinen Glanz auf das Regal gesetzt. Mehrere neue Spiele kommen nacheinander an die Reihe (bei vielen etwas schneller, die Gesamtdauer bleibt bei rund fünf Sekunden). Ein goldenes **Neu** markiert sie, bis du den Schrank wieder schließt. Danach gelten sie als gezeigt; am selben Stand (Windows-Programm und Browser) wird nichts doppelt abgespielt. Beim allerersten Öffnen des Schranks werden die Spiele, die schon auf 100 % sind, ohne Animation einsortiert. Ist in Windows „Animationen reduzieren“ an, blenden die Spiele nur ruhig ein. Bildschirmleser erhalten einmal die Ansage „Neu im Schrank: …“.
-- **Türen:** Mit dem Tür-Symbol oben schließt und öffnest du die Glastüren wieder; ein Klick aufs geschlossene Glas öffnet sie.
-- **Ansicht:** Das Regler-Symbol oben öffnet ein kleines Fenster mit zwei Dingen, die PlatinVault sich merkt:
-  - **Beleuchtung:** **Spots** (eine Lampe über jedem Platz, mit weichem Lichtkegel) oder **LED-Leiste** (eine durchgehende Leiste
-    pro Regalbrett; die ganze Reihe geht gemeinsam an, die Regalbretter nacheinander von oben nach unten).
-  - **Leere Plätze zeigen:** Ist der Schalter an, stehen auf den noch freien Plätzen graue, glasige Platzhalter-Karten mit einem
-    leeren Schild, damit der Schrank wie eine Vitrine aussieht, die darauf wartet, gefüllt zu werden. Platzhalter sind nur
-    Dekoration (nicht anklickbar) und schieben deine Spiele nicht weg. Ausgeschaltet (Standard) bleiben die freien Plätze leer.
-- **Größe:** Der Regler oben macht die Spiele kleiner (mehr pro Regalbrett) oder größer.
+- **Öffnen:** Wähle in der Navigation links den Eintrag **Trophäenschrank**. Der Schrank ist eine Seite der App: Die Navigation bleibt sichtbar, mit einem anderen Eintrag verlässt du ihn wieder. Erst lädt der Schrank (eine dünne blaue Linie), dann gleiten die Glastüren zur Seite und das Licht geht an.
+- **Werkzeugleiste:** Oben im Schrank stehen nebeneinander die Größe, die Beleuchtung, der Schalter **Leere Plätze zeigen** und der Tür-Knopf. PlatinVault merkt sich deine Wahl.
+  - **Größe:** Der Regler macht die Spiele kleiner (mehr pro Regalbrett) oder größer. Er hat fünf Stufen von **Sehr klein** bis **Sehr groß**; vorgewählt ist **Klein**. In der kleinsten Stufe steht nur der Name unter dem Cover, ab **Klein** auch das Datum; in der größten Stufe kommt die Uhrzeit dazu. In jeder Stufe zeigt ein Hinweis beim Darüberfahren Name, Datum und Uhrzeit.
+  - **Beleuchtung:** Eine Auswahlleiste mit zwei Teilen. **Spots** (vorgewählt) hängt eine Lampe über jedes Spiel, mit weichem Lichtkegel. **LED** zieht eine durchgehende Leiste über jedes Regalbrett; die ganze Reihe geht gemeinsam an, die Regalbretter nacheinander von oben nach unten.
+  - **Leere Plätze zeigen:** Ist der Schalter an, stehen auf den noch freien Plätzen dünn umrandete Platzhalter, und (bei Spots) auch über ihnen brennt eine Lampe. So sieht der Schrank aus wie eine Vitrine, die darauf wartet, gefüllt zu werden. Platzhalter sind nur Dekoration (nicht anklickbar) und schieben deine Spiele nicht weg. Ausgeschaltet (Standard) bleiben die freien Plätze leer und dunkel.
+  - **Türen:** Mit dem Tür-Knopf schließt und öffnest du die Glastüren wieder; beim Schließen geht zuerst das Licht aus. Ein Klick aufs geschlossene Glas öffnet sie.
+- **Neue Spiele:** Hast du seit deinem letzten Besuch ein Spiel auf 100 % gebracht, liegt es nicht einfach da: Sein Platz bleibt zuerst frei (eine glasige Karte), dann wird das Spiel mit einem kleinen Glanz auf das Regal gesetzt. Mehrere neue Spiele kommen nacheinander an die Reihe (bei vielen etwas schneller, die Gesamtdauer bleibt bei rund fünf Sekunden). Ein goldenes **Neu** markiert sie, bis du den Schrank wieder verlässt. Danach gelten sie als gezeigt; am selben Stand (Windows-Programm und Browser) wird nichts doppelt abgespielt. Beim allerersten Öffnen des Schranks werden die Spiele, die schon auf 100 % sind, ohne Animation einsortiert. Ist in Windows „Animationen reduzieren“ an, blenden die Spiele nur ruhig ein. Bildschirmleser erhalten einmal die Ansage „Neu im Schrank: …“.
 - **Viele Spiele:** Haben nicht alle Spiele auf einmal Platz, scrollen die Regalbretter gemeinsam seitlich – in jeder Größe. Du kannst mit dem Mausrad scrollen, auf dem Touchpad oder Touchscreen wischen, mit den Links-/Rechts-Pfeiltasten von Spiel zu Spiel springen oder die **Pfeil-Tasten** am linken und rechten Rand anklicken (jeder Klick blättert etwa eine Seite weiter). Ein dunkler Verlauf am Rand zeigt, wo es weitergeht; ein abgeblendeter Pfeil heißt: in dieser Richtung ist nichts mehr. Passt alles auf einmal, sind Pfeile und Verläufe nicht zu sehen.
-- **Details:** Ein Klick auf ein Spiel zeigt Trophäen, Tage bis Platin, Spielzeit und die seltenste Trophäe – im Querformat von
-  rechts, im Hochformat von unten. Esc schließt erst die Details, dann den Schrank.
+- **Details:** Ein Klick auf ein Spiel zeigt Trophäen, Tage bis Platin, Spielzeit und die seltenste Trophäe – im Querformat von rechts, im Hochformat von unten. Ein zweiter Klick auf das Spiel, der Schließen-Knopf oder Esc schließt die Details wieder.
 
 # 6 Die Spielseite
 
 ## 6.1 Aufbau
 
-Oben Cover, Titel und die Aktionen, darunter eine Leiste mit deinem Trophäen-Fortschritt und – rechts – den Bereichen
-**Live-Trophäen**, **Statistiken** und **Story & Lore** (der aktive Bereich ist hervorgehoben).
+Oben stehen Cover, Titel, der Knopf **Spielen** und eine ruhige Reihe mit den Werkzeugen des Spiels (Symbole mit Hinweis beim Darüberfahren: Guide vervollständigen, Kapitel ergänzen, Exportieren, Twitch, Drucken/PDF, Fortschritt zurücksetzen). Darunter zeigt eine Zeile deinen Trophäen-Fortschritt mit den Stufen. Danach folgt der Inhalt der gewählten Seite.
 
-Die **Kapitel** des Guides stehen immer in einer **Seitenleiste links**. Sie bleibt beim Scrollen stehen und ordnet die Kapitel
-unter kleinen Überschriften wie **Einstieg**, **Story & Welt**, **Kampf & Taktik** oder **Fortschritt & Freischaltungen** (hat ein Guide nur eine Gruppe,
-gibt es keine Überschriften). Neben jedem Kapitel zeigt eine Zahl, wie viel du abgehakt hast; das gewählte Kapitel ist farbig
-markiert. Mit dem Pfeil oben in der Leiste klappst du sie zu schmalen Nummern ein, damit der Inhalt mehr Platz hat – PlatinVault
-merkt sich das. Mit den Pfeiltasten (hoch/runter, Pos1/Ende) springst du durch die Kapitel. Auf dem Handy öffnest du die
-Kapitel über den Knopf **Kapitel** in der Trophäenleiste: Sie schieben sich von links über die Seite und schließen sich wieder,
-sobald du ein Kapitel gewählt hast (oder mit Esc oder einem Tipp neben die Leiste).
+Welche Seite des Spiels du siehst, bestimmst du in der **Navigation links**: Klappe dort unter **Meine Spiele** das Spiel auf. Es hat diese Seiten:
 
-Ganz unten in der Kapitelleiste steht unter einer feinen Trennlinie ein kleines **Info-Symbol** (ein „i“ im Kreis), damit den Kapiteln der ganze Platz bleibt:
-Fährst du mit der Maus darüber, tippst oder klickst du es an oder erreichst du es mit der Tab-Taste, öffnet sich eine Karte mit dem Namen der App, der **Version**
-(als Knopf für **Version & Updates** und **Das ist neu in dieser Version**), „Mit ♥ gemacht“, dem Copyright und dem Knopf **Lizenzen** (auf der Startseite stehen
-dieselben Angaben im Fuß). Sie bleibt offen, solange der Mauszeiger auf ihr oder auf dem Symbol ist, und schließt sich mit Esc, einem Klick daneben oder wenn du
-die Maus wegbewegst.
+- **Live-Trophäen** – die Steam-Erfolge des Spiels (6.3),
+- **Statistiken** (6.4),
+- die **Kapitel** des Guides (6.2), geordnet unter kleinen Überschriften wie **Einstieg**, **Story & Welt**, **Kampf & Taktik** oder **Fortschritt & Freischaltungen** (hat ein Guide nur eine Gruppe, gibt es keine Überschriften). Neben jedem Kapitel zeigt eine Zahl, wie viel du abgehakt hast,
+- **Story & Lore** (6.5).
 
-Die drei Bereiche der Leiste haben je eine eigene Farbe: **Live-Trophäen** gold, **Statistiken** blau, **Story & Lore** violett. Der Bereich, in dem du gerade bist, ist
-in seiner Farbe ausgefüllt.
+Die gewählte Seite ist hervorgehoben und steht in der Adresse – ein Neuladen oder ein Lesezeichen bringt dich also genau dorthin zurück. Die Navigation selbst, ihre schmale Form und die Schublade auf dem Handy erklärt 5.1. Die Angaben zu Version, Lizenzen und „Mit ♥ gemacht“ findest du nicht mehr auf der Spielseite, sondern auf der Seite **Über PlatinVault** (Info-Symbol unten in der Navigation).
 
 **Spiel starten.** Mit dem Spielen-Knopf startest du das Spiel in Steam, ohne zum Gaming-PC zu gehen. Auf der Seite des Spiels steht an derselben Stelle **Spiel läuft** (grüner pulsierender Punkt, nicht klickbar), solange genau dieses Spiel läuft; danach ist es wieder **Spielen**. Der Knopf (und der Hinweis
 „Spiel läuft gerade“) erscheint nur, solange die Bridge verbunden ist oder PlatinVault direkt auf dem Gaming-PC läuft, und
@@ -505,7 +515,7 @@ gleich aus: ein **grünes Häkchen** in der Ecke des Symbols; offene Erfolge hab
 
 ### Im Blick: Erfolge, an denen du gerade arbeitest
 
-Mit dem **Stecknadel-Knopf** an einem Erfolg – er steht in allen vier Ansichten und im Detailfenster – behältst du bis zu **10 Erfolge pro Spiel** im Blick. Sind schon 10 angeheftet, nimm zuerst einen heraus. Die angehefteten Erfolge erscheinen auf **jedem Reiter** der Spielseite, also auch beim Lesen des Guides:
+Mit dem **Stecknadel-Knopf** an einem Erfolg – er steht in allen vier Ansichten und im Detailfenster – behältst du bis zu **10 Erfolge pro Spiel** im Blick. Sind schon 10 angeheftet, nimm zuerst einen heraus. Die angehefteten Erfolge erscheinen auf **jeder Seite** des Spiels, also auch beim Lesen des Guides:
 
 - **Breites Fenster im Querformat:** als einklappbare Spalte rechts neben dem Inhalt.
 - **Hochformat und schmale Fenster:** als einklappbare Leiste unten. Auf dem Handy startet sie eingeklappt als eine schlanke Zeile.
@@ -749,7 +759,7 @@ der Linux-Bridge. Hilft `status` nicht weiter, melde uns bitte, was es und das P
   Fassung anderen über ein Netzwerk anbietet, muss den Quellcode unter derselben Lizenz anbieten. Zum Nutzen musst du nichts
   akzeptieren. Der Quellcode steht unter `github.com/sushiflux/PlatinVault`.
 - **Lizenzen:** Die Lizenz von PlatinVault (mit dem Knopf **Quellcode**) und die Lizenztexte der enthaltenen Open-Source-Komponenten liest du
-  in der App: auf der Startseite unten auf **Lizenzen** klicken, auf einer Spielseite unten in der Kapitelleiste das **Info-Symbol** öffnen und dort **Lizenzen** wählen, oder in den Einstellungen, Reiter **System**, auf **Lizenzen öffnen**. Dasselbe liegt als `LICENSE` und `THIRD-PARTY-NOTICES.md` im Bridge-ZIP, im Programmordner der Bridge und im Programmordner des Windows-Programms (`docs`);
+  in der App: das **Info-Symbol** unten in der Navigation öffnen (Seite **Über PlatinVault**) und dort **Lizenzen** wählen, oder in den Einstellungen, Reiter **System**, auf **Lizenzen öffnen**. Dasselbe liegt als `LICENSE` und `THIRD-PARTY-NOTICES.md` im Bridge-ZIP, im Programmordner der Bridge und im Programmordner des Windows-Programms (`docs`);
   die Dateien lassen sich mit jedem Texteditor öffnen.
 
 # 10 Probleme lösen
@@ -813,7 +823,7 @@ Was das Programm zusätzlich kann:
 
 4. Beim ersten Öffnen wählst du die Sprache der App und verbindest dein Steam-Konto (Kapitel 4).
 
-Die Installation läuft nur auf Windows 10 oder 11 (64 Bit).
+Die Installation läuft nur auf Windows 10 oder 11 (64 Bit) mit einem Prozessor, der x86-64-v2 unterstützt (praktisch jeder ab etwa 2013).
 
 **Das Programmfenster.** Beim ersten Start öffnet PlatinVault **maximiert**; danach merkt es sich, wie du es verlassen hast
 (maximiert oder in deiner Größe und Position). Ist der Bildschirm von damals nicht mehr angeschlossen, öffnet es auf dem
@@ -986,17 +996,17 @@ veröffentlichten Versionen bei GitHub ab (ohne Anmeldung; nur ein paar Mal am T
 Klappt das nicht, steht der vollständige Grund dort, zum Beispiel keine Internetverbindung oder ein ausgeschöpftes Abfrage-Kontingent
 bei GitHub.
 
-Gibt es für deine Installation eine neuere Version, erscheint in der Kopfzeile jeder Seite ein kleines **Update-Symbol** (Pfeil nach oben mit grünem Punkt). Ein Klick zeigt die neue Version, die Release-Notizen und – im Windows-Programm – **Update installieren**; bei Unraid, Docker und NAS steht dort kurz, wie du den Container aktualisierst. Mit **Alle Update-Einstellungen** springst du zu diesem Abschnitt. Ist alles aktuell, die Prüfung nicht möglich oder dies ein lokaler Entwicklungsstand, siehst du kein Symbol; Fehler der Prüfung stehen nur hier in den Einstellungen.
+Gibt es für deine Installation eine neuere Version, erscheint in der Kopfzeile ein kleines **Update-Symbol** (Pfeil nach oben mit grünem Punkt). Ein Klick zeigt die neue Version, die Release-Notizen und – im Windows-Programm – **Update installieren**; bei Unraid, Docker und NAS steht dort kurz, wie du den Container aktualisierst. Mit **Alle Update-Einstellungen** springst du zu diesem Abschnitt. Ist alles aktuell, die Prüfung nicht möglich oder dies ein lokaler Entwicklungsstand, siehst du kein Symbol; Fehler der Prüfung stehen nur hier in den Einstellungen.
 
 **Das ist neu nach einem Update:** Startest du PlatinVault zum ersten Mal nach einem Update, öffnet sich von selbst das Fenster
 **Das ist neu in …** mit den Änderungen der Version, die jetzt läuft – in der Sprache der App. Ein Klick auf **Schließen**, die Taste
 **Esc** oder ein Klick neben das Fenster schließt es; danach kommt es für diese Version nicht wieder. Es erscheint nicht bei einer
 Neuinstallation, nicht bei einem lokalen Entwicklungsstand und erst, wenn die Einführungstour beim ersten Start beendet ist. Später liest du den Text
-jederzeit nach: Ein Klick auf die Versionsnummer unten auf der Startseite (oder in der Info-Karte des **Info-Symbols** unten in der Kapitelleiste auf der Spielseite)
+jederzeit nach: Ein Klick auf die Versionsnummer auf der Seite **Über PlatinVault** (Info-Symbol unten in der Navigation)
 öffnet **Version & Updates**, dort steht **Das ist neu in dieser Version**. Die Texte gehören zum Programm; dafür brauchst du keine
 Internetverbindung.
 
-Wie oft PlatinVault von selbst nach Updates sucht, stellst du in diesem Abschnitt unter **Nach Updates suchen** ein: **Bei jedem Start**, **Alle 4 Stunden**, **Täglich** (Standard), **Wöchentlich**, **Monatlich** oder **Nie (nur von Hand)**. Das gilt für jede Plattform, auch für das Windows-Programm. Von Hand suchst du mit **Jetzt nach Updates suchen** hier – oder über die Versionsnummer (unten auf der Startseite bzw. im **Info-Symbol** unten in der Kapitelleiste): ein Klick öffnet **Version & Updates** mit dem Knopf **Nach Updates suchen**, dem Zeitpunkt der letzten Prüfung und dem Ergebnis. Wird dabei eine neue Version gefunden, erscheint sofort das Update-Symbol in der Kopfzeile.
+Wie oft PlatinVault von selbst nach Updates sucht, stellst du in diesem Abschnitt unter **Nach Updates suchen** ein: **Bei jedem Start**, **Alle 4 Stunden**, **Täglich** (Standard), **Wöchentlich**, **Monatlich** oder **Nie (nur von Hand)**. Das gilt für jede Plattform, auch für das Windows-Programm. Von Hand suchst du mit **Jetzt nach Updates suchen** hier – oder über die Versionsnummer auf der Seite **Über PlatinVault** (Info-Symbol unten in der Navigation): ein Klick öffnet **Version & Updates** mit dem Knopf **Nach Updates suchen**, dem Zeitpunkt der letzten Prüfung und dem Ergebnis. Wird dabei eine neue Version gefunden, erscheint sofort das Update-Symbol in der Kopfzeile.
 
 ## 12.2 Windows-Programm
 
@@ -1045,7 +1055,7 @@ das nächste Release.
 
 Auf dem Linux-PC, auf dem Steam läuft (Desktop-Linux, Steam Deck im Desktop-Modus, Bazzite), installierst du PlatinVault als **Linux-Paket**.
 Es ist dieselbe App wie im Browser, mit eigener Datenbank, und liest Steam auf diesem Rechner selbst – eine Bridge brauchst du nicht.
-Bedient wird es im Browser. Voraussetzungen: 64-Bit-Linux (x86_64), ein Webbrowser, möglichst systemd (ohne startet das Menü-Symbol
+Bedient wird es im Browser. Voraussetzungen: 64-Bit-Linux (x86_64) mit einem Prozessor, der x86-64-v2 unterstützt (praktisch jeder ab etwa 2013), ein Webbrowser, möglichst systemd (ohne startet das Menü-Symbol
 PlatinVault selbst) und `libicu` (meist schon da; ohne sie nutzen Datum und Zahlen ein neutrales Format).
 
 > [!HINWEIS]

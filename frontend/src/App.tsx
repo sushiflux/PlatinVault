@@ -1,3 +1,4 @@
+import { THEME_EVENT } from './utils/themeEvent'
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
@@ -13,8 +14,13 @@ import { LanguageGate } from './components/onboarding/LanguageGate'
 import { AiChoiceProvider } from './components/ai/AiChoice'
 import { LaunchProvider } from './components/launch/LaunchProvider'
 import { ConfirmProvider } from './components/ui/ConfirmDialog'
+import { AppShell } from './components/shell/AppShell'
+import { AboutPage } from './pages/AboutPage'
+import { CabinetPage } from './pages/CabinetPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { GameGuidePage } from './pages/GameGuidePage'
+import { NotFoundPage } from './pages/NotFoundPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { ACHIEVEMENT_VISIBLE_MS, animationQueue } from './utils/animationQueue'
 import type { PlatinumData } from './utils/animationQueue'
 import { DEFAULT_SOUND_THEME, soundEngine } from './utils/audio'
@@ -177,6 +183,16 @@ export function App() {
     if (meta) meta.setAttribute('content', theme)
   }, [theme])
 
+  // The first-run screen (above the app) can change the scheme; App stays the one owner of the stored value
+  useEffect(() => {
+    const onTheme = (event: Event) => {
+      const next = (event as CustomEvent<string>).detail
+      if (next === 'light' || next === 'dark') setTheme(next)
+    }
+    window.addEventListener(THEME_EVENT, onTheme)
+    return () => window.removeEventListener(THEME_EVENT, onTheme)
+  }, [])
+
   const handleToggleTheme = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
   }
@@ -196,24 +212,16 @@ export function App() {
             <BrowserRouter>
               <GameStartSwitchBridge />
               <Routes>
-                <Route
-                  path="/"
-                  element={
-                    <DashboardPage
-                      theme={theme}
-                      onToggleTheme={handleToggleTheme}
-                    />
-                  }
-                />
-                <Route
-                  path="/games/:slug"
-                  element={
-                    <GameGuidePage
-                      theme={theme}
-                      onToggleTheme={handleToggleTheme}
-                    />
-                  }
-                />
+                {/* Every page lives in the app shell (header + tree navigation). /overlay never gets here (main.tsx renders it alone). */}
+                <Route element={<AppShell theme={theme} onToggleTheme={handleToggleTheme} />}>
+                  <Route path="/" element={<DashboardPage view="favorites" />} />
+                  <Route path="/library" element={<DashboardPage view="all" />} />
+                  <Route path="/games/:slug" element={<GameGuidePage />} />
+                  <Route path="/cabinet" element={<CabinetPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="*" element={<NotFoundPage />} />
+                </Route>
               </Routes>
             </BrowserRouter>
             </LaunchProvider>

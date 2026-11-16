@@ -97,14 +97,14 @@ export function GuideBuilderDialog({ slug, gameTitle, provider, onClose, onDone,
         >
           <div className="min-w-0">
             <h2 id="guide-builder-title" className="flex items-center gap-2 text-base font-extrabold" style={{ color: 'var(--text-primary)' }}>
-              <IconWand size={20} style={{ color: 'var(--accent-emerald)' }} />
+              <IconWand size={20} style={{ color: 'var(--accent-crystal)' }} />
               <span className="truncate">{t('game:builder.title', { game: gameTitle })}</span>
             </h2>
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
               {t('game:builder.intro')}
             </p>
           </div>
-          <button type="button" onClick={onClose} disabled={researching} className="pv-btn !p-1.5" aria-label={t('common:close')}>
+          <button type="button" onClick={onClose} disabled={researching} className="pv-btn pv-icon-btn" aria-label={t('common:close')}>
             <IconX size={18} />
           </button>
         </div>
@@ -121,9 +121,9 @@ export function GuideBuilderDialog({ slug, gameTitle, provider, onClose, onDone,
           )}
 
           {failure && (
-            <div className="pv-alert pv-alert-danger whitespace-pre-line break-words text-sm font-semibold" role="alert">
+            <div className="pv-note pv-note--danger whitespace-pre-line break-words text-sm font-semibold" role="alert">
               {failure.notice && (
-                <p className="mb-1.5 text-xs" style={{ color: 'var(--accent-crystal)' }}>
+                <p className="mb-1.5 text-sm" style={{ color: 'var(--accent-crystal)' }}>
                   {failure.notice}
                 </p>
               )}
@@ -131,7 +131,7 @@ export function GuideBuilderDialog({ slug, gameTitle, provider, onClose, onDone,
               <ErrorDetails title={failure.notice} message={failure.message} details={failure.details} />
               {onManual && (
                 <button type="button" className="pv-btn mt-2" onClick={onManual}>
-                  <IconClipboardText size={15} className="shrink-0" aria-hidden="true" />
+                  <IconClipboardText size={18} className="shrink-0" aria-hidden="true" />
                   <span>{t('ai:manual.entry.builder')}</span>
                 </button>
               )}
@@ -141,11 +141,11 @@ export function GuideBuilderDialog({ slug, gameTitle, provider, onClose, onDone,
           {plan && groups && (
             <>
               {switchNotice && (
-                <div className="pv-alert pv-alert-crystal text-xs font-semibold" role="status">
+                <div className="pv-note text-sm font-semibold" role="status">
                   {switchNotice}
                 </div>
               )}
-              <div className="flex flex-wrap items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+              <div className="flex flex-wrap items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
                 <span className="font-bold">{t('game:builder.genre')}</span>
                 {plan.profiles.length > 0 ? (
                   plan.profiles.map((p) => (
@@ -162,7 +162,7 @@ export function GuideBuilderDialog({ slug, gameTitle, provider, onClose, onDone,
               </div>
 
               {plan.budget && (
-                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }} data-testid="plan-budget">
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }} data-testid="plan-budget">
                   {t('ai:planBudget.note', { suggested: plan.budget.suggested, scope: t(`ai:planBudget.scope.${plan.budget.scope}`), min: plan.budget.min, max: plan.budget.max })}
                 </p>
               )}
@@ -183,7 +183,7 @@ export function GuideBuilderDialog({ slug, gameTitle, provider, onClose, onDone,
           <div className="flex flex-wrap gap-2">
             {onManual && (
               <button type="button" className="pv-btn" disabled={researching} onClick={onManual}>
-                <IconClipboardText size={15} className="shrink-0" aria-hidden="true" />
+                <IconClipboardText size={18} className="shrink-0" aria-hidden="true" />
                 <span>{t('ai:manual.entry.builder')}</span>
               </button>
             )}
@@ -204,16 +204,16 @@ export function GuideBuilderDialog({ slug, gameTitle, provider, onClose, onDone,
               {t('game:builder.onlyRecommended')}
             </button>
           </div>
-          <div className="flex w-full min-w-0 items-center justify-end gap-3 sm:w-auto sm:flex-1">
+          <div className="flex w-full min-w-0 items-center justify-end gap-3 sm:w-auto sm:flex-none">
             <AiRunButton
-              tone="pv-btn-emerald"
+              tone="pv-btn-primary"
               busy={researching}
               disabled={!plan || chosen.length === 0}
               oneOff={oneOff}
               onOneOffChange={setOneOff}
               onClick={() => void research()}
-              icon={<IconSparkles size={15} />}
-              label={<span>{t('game:builder.research', { count: chosen.length })}</span>}
+              icon={<IconSparkles size={18} />}
+              label={<span className="whitespace-nowrap">{t('game:builder.research', { count: chosen.length })}</span>}
             />
           </div>
         </div>

@@ -196,7 +196,7 @@ describe('HintAlert kinds', () => {
     expect(within(hint).getByText('Point of no Return')).toBeTruthy()
     expect(within(hint).getByText('Erledige das vorher')).toBeTruthy()
     expect(hint.querySelectorAll('.pv-hint-todo li')).toHaveLength(2)
-    expect(hint.className).toContain('pv-alert-danger')
+    expect(hint.className).toContain('pv-hint--danger')
   })
 
   it('shows no "do this first" box without items, and only for a point of no return', () => {
@@ -218,7 +218,7 @@ describe('HintAlert kinds', () => {
         <HintAlert section={{ type: 'alert', kind: 'tip', title: 'D' }} />
       </>
     )
-    expect(container.querySelectorAll('.pv-alert-gold, .pv-alert-danger, .pv-alert-emerald, .pv-alert-crystal')).toHaveLength(4)
+    expect(container.querySelectorAll('.pv-hint--gold, .pv-hint--danger, .pv-hint--emerald, .pv-hint--crystal')).toHaveLength(4)
   })
 })
 

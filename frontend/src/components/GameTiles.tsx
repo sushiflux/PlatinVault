@@ -1,4 +1,4 @@
-import { useMemo, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react'
+import { useId, useMemo, useState, type ReactNode } from 'react'
 import { useReducedMotion } from 'motion/react'
 import { Link } from 'react-router'
 import { useSortable } from '@dnd-kit/sortable'
@@ -22,17 +22,16 @@ import { fixedT } from '../i18n'
 import { useFormat } from '../i18n/format'
 import { sizeOf, type SizeSource } from '../utils/dashboardSort'
 import { useLiveCount } from '../utils/useTwitchLiveCounts'
-import { GuideBadge } from './GameCardParts'
-import { isPlatinumGame, PLATINUM_CARD_FRAME, PlatinumChip, PlatinumEdge } from './platinum/platinum'
+import { isPlatinumGame } from './platinum/platinum'
 import { PlayButton } from './launch/PlayButton'
 import type { LaunchTarget } from './launch/LaunchProvider'
 import { ClampedText } from './ui/ClampedText'
 import { LangStack } from './ui/LangStack'
 import { ProgressBar } from './ui/ProgressBar'
-import { TierIcon } from './ui/TierIcon'
 import { Tooltip } from './ui/Tooltip'
 import { TruncatedText } from './ui/TruncatedText'
 import { TwitchButton } from './TwitchButton'
+import '../styles/dashboard.css'
 
 // A game as the cards see it: the server will add Steam's store genres (in the UI language) as steamGenres; until the field is part
 // of GameSummaryDto it is declared here, optional - the cards show nothing for a missing field.
@@ -52,13 +51,12 @@ export function gameGenres(game: CardGame): string[] {
     .filter((genre) => genre !== '' && !/100\s*%|guide/i.test(genre))
 }
 
-// The calm genre line under a title: one line in the teal accent (--accent-emerald: 5.5:1 on the light card, 9.5:1 on the dark one; on the
-// always-dark cover overlay of the smallest size the fixed light variant #6ee7b7), cut off with our tooltip when it does not fit. Its height is ALWAYS
-// reserved (an empty line when a game has no genres), so cards in a row never differ in height because of it.
-function GenreLine({ game, className, style }: { game: CardGame; className: string; style?: CSSProperties }) {
+// The calm genre line under a title: one line in the muted text colour, cut off with our tooltip when it does not fit. Its height is
+// ALWAYS reserved (an empty line when a game has no genres), so cards in a row never differ in height because of it.
+function GenreLine({ game, className }: { game: CardGame; className: string }) {
   const genres = gameGenres(game).join(' · ')
   return (
-    <div data-genre-line className={`flex min-w-0 items-center ${className}`} style={style}>
+    <div data-genre-line className={`flex min-w-0 items-center ${className}`}>
       {genres ? <TruncatedText text={genres} wrapperClassName="flex min-w-0 flex-1" /> : <span aria-hidden="true">&nbsp;</span>}
     </div>
   )
@@ -70,16 +68,34 @@ export type TileDensity = 0 | 1 | 2 | 3 | 4
 // The key of each size's name in the "dashboard" namespace (tiles.size.<key>)
 const TILE_DENSITY_KEYS = { 0: 'textOnly', 1: 'list', 2: 'veryCompact', 3: 'compact', 4: 'large' } as const satisfies Record<TileDensity, string>
 
-// The segments of a card's action bar (Play, Favourite, Twitch; and of the small group at the end of a list row): icon + short label where the segment is wide
-// enough, icon only otherwise (.pv-bar-seg in index.css). Each one is a tooltip wrapper that is the cell of the bar; the buttons are never
-// inside a card link.
+// The segments of a card's action row (Play, Favourite, Twitch): frameless text buttons, icon + short label where the cell is wide
+// enough, icon only otherwise (.pv-bar-seg in styles/dashboard.css). Each one is a tooltip wrapper that is the cell of the row; the
+// buttons are never inside a card link.
 function FavoriteSegment({ label, favorite, busy = false, hint = false, onClick }: { label: string; favorite: boolean; busy?: boolean; hint?: boolean; onClick: () => void }) {
   const { t } = useTranslation('dashboard')
   return (
     <Tooltip label={label} className="pv-bar-cell">
       <button type="button" onClick={onClick} aria-pressed={favorite} aria-label={label} data-hint={hint ? 'dashboard-star' : undefined} className="pv-bar-seg pv-bar-seg--star">
-        {busy ? <IconLoader2 size={14} className="shrink-0 animate-spin" /> : favorite ? <IconStarFilled size={14} className="shrink-0" /> : <IconStar size={14} className="shrink-0" />}
+        {busy ? <IconLoader2 size={18} className="shrink-0 animate-spin" /> : favorite ? <IconStarFilled size={18} className="shrink-0" /> : <IconStar size={18} className="shrink-0" />}
         <span className="pv-bar-label">{t('card.favoriteShort')}</span>
+      </button>
+    </Tooltip>
+  )
+}
+
+// The same star as a boxless icon button for the first column of a list row
+function FavoriteStar({ label, favorite, busy = false, hint = false, onClick }: { label: string; favorite: boolean; busy?: boolean; hint?: boolean; onClick: () => void }) {
+  return (
+    <Tooltip label={label} className="pv-dl-starcell">
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={favorite}
+        aria-label={label}
+        data-hint={hint ? 'dashboard-star' : undefined}
+        className="pv-btn pv-icon-btn pv-icon-btn--ghost pv-dl-star"
+      >
+        {busy ? <IconLoader2 size={20} className="animate-spin" /> : favorite ? <IconStarFilled size={20} /> : <IconStar size={20} />}
       </button>
     </Tooltip>
   )
@@ -88,21 +104,7 @@ function FavoriteSegment({ label, favorite, busy = false, hint = false, onClick 
 function TwitchSegment({ name, appId }: { name: string; appId?: number | null }) {
   const { t } = useTranslation('dashboard')
   const liveCount = useLiveCount(appId)
-  return <TwitchButton name={name} size={14} className="pv-bar-seg" wrapperClassName="pv-bar-cell" labelText={t('card.twitchShort')} liveCount={liveCount} />
-}
-
-// True from the given window width on (the same breakpoints as the Tailwind classes of the grids)
-function useMinWidth(px: number): boolean {
-  const query = `(min-width: ${px}px)`
-  return useSyncExternalStore(
-    (notify) => {
-      const list = window.matchMedia(query)
-      list.addEventListener('change', notify)
-      return () => list.removeEventListener('change', notify)
-    },
-    () => window.matchMedia(query).matches,
-    () => false
-  )
+  return <TwitchButton name={name} size={18} className="pv-bar-seg" wrapperClassName="pv-bar-cell" labelText={t('card.twitchShort')} liveCount={liveCount} />
 }
 
 const DENSITY_KEY = 'pv_dashboard_density'
@@ -124,37 +126,56 @@ export function saveTileDensity(value: TileDensity) {
   }
 }
 
-// Container layout per size: card grids for 2-4, a list for 0-1 (two columns on wide screens)
-// Up to the 2xl breakpoint (1536 px) the column counts are fixed per window width. From there on the grid fills the page
-// width with as many columns as fit (auto-fill, minimum width in rem so it also follows the UI size): a wider page gets more
-// columns instead of stretched cards. The minimums reproduce the old counts at the old page width (1520 px): 4 / 6 / 8 / 2 / 3.
-export const TILE_CONTAINER: Record<TileDensity, string> = {
-  4: 'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-[repeat(auto-fill,minmax(20rem,1fr))]',
-  3: 'grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-[repeat(auto-fill,minmax(13.5rem,1fr))]',
-  2: 'grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-[repeat(auto-fill,minmax(10rem,1fr))]',
-  1: 'grid grid-cols-1 gap-2 lg:grid-cols-2 2xl:grid-cols-[repeat(auto-fill,minmax(40rem,1fr))]',
-  0: 'grid grid-cols-1 gap-1.5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[repeat(auto-fill,minmax(25rem,1fr))]',
+// The grid size of each card density (the columns fill the page width: a wider page gets more columns instead of stretched cards)
+const GRID_SIZE = { 4: 'large', 3: 'compact', 2: 'veryCompact' } as const
+
+/**
+ * The container of the tiles in the chosen size: a card grid for the sizes 2-4, one hairline list with a head row for 0-1 (text only
+ * and list). The tiles themselves are the children.
+ */
+export function TileContainer({ density, children }: { density: TileDensity; children: ReactNode }) {
+  const { t } = useTranslation('dashboard')
+  if (density <= 1) {
+    return (
+      <div className="pv-dl" data-text={density === 0 ? 'true' : undefined}>
+        {/* The column heads are for the eye; every value carries its own name for screen readers */}
+        <div className="pv-dl-head" aria-hidden="true">
+          <div className="pv-dl-grid">
+            <span />
+            <span>{t('list.title')}</span>
+            <span className="pv-dl-c-play">{t('list.playtime')}</span>
+            <span className="pv-dl-c-last">{t('list.lastPlayed')}</span>
+            <span className="pv-dl-c-trophy">{t('list.trophies')}</span>
+            <span className="pv-dl-c-size">{t('list.size')}</span>
+            <span className="pv-dl-c-act" />
+          </div>
+        </div>
+        {children}
+      </div>
+    )
+  }
+  return (
+    <div className="pv-tiles" data-size={GRID_SIZE[density as 2 | 3 | 4]}>
+      {children}
+    </div>
+  )
 }
 
 interface TileSizeSliderProps {
   value: TileDensity
   onChange: (value: TileDensity) => void
-  // The sticky bar shows a second slider: its own id, and the visible "Tile size" caption becomes an aria-label
-  compact?: boolean
 }
 
-export function TileSizeSlider({ value, onChange, compact = false }: TileSizeSliderProps) {
+export function TileSizeSlider({ value, onChange }: TileSizeSliderProps) {
   const { t } = useTranslation('dashboard')
   const label = t(`tiles.size.${TILE_DENSITY_KEYS[value]}`)
-  const id = compact ? 'dashboard-tile-size-sticky' : 'dashboard-tile-size'
+  const id = 'dashboard-tile-size'
   return (
-    <div className="flex items-center gap-3" data-hint={compact ? undefined : 'dashboard-size'}>
-      {!compact && (
-        <label htmlFor={id} className="shrink-0 text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>
-          {/* Both languages' captions are laid on top of each other: the slider next to it has the same width in either */}
-          <LangStack render={(language) => fixedT(language, 'dashboard')('tiles.sizeLabel')} />
-        </label>
-      )}
+    <div className="pv-size" data-hint="dashboard-size">
+      <label htmlFor={id} className="pv-size-label">
+        {/* Both languages' captions are laid on top of each other: the slider next to it has the same width in either */}
+        <LangStack render={(language) => fixedT(language, 'dashboard')('tiles.sizeLabel')} />
+      </label>
       <input
         id={id}
         type="range"
@@ -163,17 +184,13 @@ export function TileSizeSlider({ value, onChange, compact = false }: TileSizeSli
         step={1}
         value={value}
         onChange={(e) => onChange(Number(e.target.value) as TileDensity)}
-        aria-label={compact ? t('tiles.sizeLabel') : undefined}
         aria-valuetext={label}
-        className="pv-range min-w-0 flex-1"
+        className="pv-size-range"
       />
       {/* Fixed width: the longest label must fit, so switching sizes never moves the slider */}
-      <span
-        className={`${compact ? 'w-[5.25rem]' : 'w-[6.5rem]'} shrink-0 text-right text-xs font-extrabold`}
-        style={{ color: 'var(--accent-crystal)' }}
-      >
+      <output htmlFor={id} className="pv-size-value">
         {label}
-      </span>
+      </output>
     </div>
   )
 }
@@ -225,20 +242,12 @@ function useCardText() {
   }, [t, fmt])
 }
 
-function TrophyBar({ game }: { game: GameSummaryDto }) {
-  const { t } = useTranslation('dashboard')
-  return <ProgressBar percent={game.trophiesPercent} label={t('card.trophyProgress')} />
-}
-
-function Cover({ game, className }: { game: GameSummaryDto; className?: string }) {
+function Cover({ game, className }: { game: Pick<GameSummaryDto, 'coverUrl'>; className?: string }) {
   const [failed, setFailed] = useState(false)
   if (!game.coverUrl || failed) {
     return (
-      <div
-        className={`flex items-center justify-center ${className ?? ''}`}
-        style={{ background: 'radial-gradient(circle at top, var(--accent-crystal-bg), var(--bg-elevated))' }}
-      >
-        <IconDeviceGamepad2 size={22} style={{ color: 'var(--accent-crystal)' }} aria-hidden="true" />
+      <div className={`pv-cover-empty ${className ?? ''}`}>
+        <IconDeviceGamepad2 size={22} aria-hidden="true" />
       </div>
     )
   }
@@ -290,12 +299,11 @@ export function missingFacts(game: CardGame): Partial<Record<FactKey, MissingRea
 interface CardFact {
   key: FactKey
   Icon: Icon
-  color: string
   // Name of the fact (screen readers, tooltip title)
   label: string
   // The sentence of the large card ("7 h played"); '' while the fact is missing
   value: string
-  // The bare value for the dense compact card ("7 h"), complete; '' while the fact is missing
+  // The bare value for the dense compact card and the list rows ("7 h"), complete; '' while the fact is missing
   short: string
   // The reason (localized) while the fact has no value, else null: the row then shows a dash
   missing: string | null
@@ -303,15 +311,14 @@ interface CardFact {
   note: string | null
 }
 
-type FactRow = (key: FactKey, Icon: Icon, color: string, label: string, value: string, short: string, reason?: MissingReason, note?: string) => CardFact
+type FactRow = (key: FactKey, Icon: Icon, label: string, value: string, short: string, reason?: MissingReason, note?: string) => CardFact
 
 // The row builder of a card: a fact with a missing reason keeps its place (dash + reason), otherwise it carries its value
 function useFactRow(): FactRow {
   const { t } = useTranslation('dashboard')
-  return (key, Icon, color, label, value, short, reason, note) => ({
+  return (key, Icon, label, value, short, reason, note) => ({
     key,
     Icon,
-    color,
     label,
     value: reason ? '' : value,
     short: reason ? '' : short,
@@ -326,18 +333,18 @@ function useSizeFact(game: SizeSource, row: FactRow): CardFact {
   const { t } = useTranslation('dashboard')
   const fmt = useFormat()
   const size = sizeOf(game)
-  if (size.kind === 'none') return row('size', IconDatabase, 'var(--accent-crystal)', t('facts.size.label'), '', '', 'size')
+  if (size.kind === 'none') return row('size', IconDatabase, t('facts.size.label'), '', '', 'size')
   const formatted = fmt.bytes(size.bytes)
   if (size.kind === 'disk') {
-    return row('size', IconDatabase, 'var(--accent-crystal)', t('facts.size.label'), t('facts.size.onDisk', { size: formatted }), formatted)
+    return row('size', IconDatabase, t('facts.size.label'), t('facts.size.onDisk', { size: formatted }), formatted)
   }
   const approx = t('facts.size.approx', { size: formatted })
-  return row('size', IconDatabase, 'var(--accent-crystal)', t('facts.size.installLabel'), t('facts.size.install', { size: formatted }), approx, undefined, t('facts.size.installNote'))
+  return row('size', IconDatabase, t('facts.size.installLabel'), t('facts.size.install', { size: formatted }), approx, undefined, t('facts.size.installNote'))
 }
 
 // The facts of a game card, always all of them in the order of the large card. A fact without a value keeps its row (a dash instead of
 // the value, the reason as tooltip / screen reader text), so the cards of a row look the same. One source for the large card (a line per
-// fact) and the compact card (the same lines, denser).
+// fact), the compact card (the same lines, denser) and the list rows (the bare values).
 function useCardFacts(game: GameSummaryDto): CardFact[] {
   const { t } = useTranslation('dashboard')
   const fmt = useFormat()
@@ -359,12 +366,12 @@ function useCardFacts(game: GameSummaryDto): CardFact[] {
     hours = { value: t('facts.duration.estimate', { text: estimate }), short: estimate }
   }
   return [
-    row('played', IconPlayerPlay, 'var(--accent-emerald)', t('facts.played.label'), t('facts.played.value', { time: played }), played, missing.played),
-    row('last', IconHistory, 'var(--accent-crystal)', t('facts.lastPlayed.label'), t('facts.lastPlayed.value', { when }), when, missing.last),
-    row('rating', IconThumbUp, 'var(--accent-gold)', t('facts.rating.label'), rating, rating, missing.rating),
-    row('release', IconCalendar, 'var(--text-muted)', t('facts.released.label'), t('facts.released.value', { date: release }), release, missing.release),
+    row('played', IconPlayerPlay, t('facts.played.label'), t('facts.played.value', { time: played }), played, missing.played),
+    row('last', IconHistory, t('facts.lastPlayed.label'), t('facts.lastPlayed.value', { when }), when, missing.last),
+    row('rating', IconThumbUp, t('facts.rating.label'), rating, rating, missing.rating),
+    row('release', IconCalendar, t('facts.released.label'), t('facts.released.value', { date: release }), release, missing.release),
     useSizeFact(game, row),
-    row('hours', IconClock, 'var(--accent-purple)', t('facts.duration.label'), hours.value, hours.short, missing.hours),
+    row('hours', IconClock, t('facts.duration.label'), hours.value, hours.short, missing.hours),
   ]
 }
 
@@ -382,10 +389,10 @@ function useLibraryFacts(game: SteamOwnedGameDto): CardFact[] {
   const rating = text.libraryRating(game)
   const release = game.releaseAt ? fmt.date(game.releaseAt) : ''
   return [
-    row('played', IconPlayerPlay, 'var(--accent-emerald)', t('facts.played.label'), t('facts.played.value', { time: played }), played, neverPlayed ? 'notPlayed' : undefined),
-    row('last', IconHistory, 'var(--accent-crystal)', t('facts.lastPlayed.label'), t('facts.lastPlayed.value', { when }), when, when ? undefined : neverPlayed ? 'notPlayed' : 'steam'),
-    row('rating', IconThumbUp, 'var(--accent-gold)', t('facts.rating.label'), rating, rating, rating ? undefined : 'steam'),
-    row('release', IconCalendar, 'var(--text-muted)', t('facts.released.label'), t('facts.released.value', { date: release }), release, release ? undefined : 'steam'),
+    row('played', IconPlayerPlay, t('facts.played.label'), t('facts.played.value', { time: played }), played, neverPlayed ? 'notPlayed' : undefined),
+    row('last', IconHistory, t('facts.lastPlayed.label'), t('facts.lastPlayed.value', { when }), when, when ? undefined : neverPlayed ? 'notPlayed' : 'steam'),
+    row('rating', IconThumbUp, t('facts.rating.label'), rating, rating, rating ? undefined : 'steam'),
+    row('release', IconCalendar, t('facts.released.label'), t('facts.released.value', { date: release }), release, release ? undefined : 'steam'),
     useSizeFact(game, row),
   ]
 }
@@ -397,15 +404,13 @@ const MISSING_DASH = '–'
 // screen readers read the reason instead of the dash. A value with a note (an estimated size) has the note as tooltip.
 function CardFacts({ facts }: { facts: CardFact[] }) {
   return (
-    <ul className="space-y-1 text-xs">
+    <ul className="pv-facts">
       {facts.map((fact) => (
-        <li key={fact.key} className="min-w-0">
+        <li key={fact.key} className="pv-fact">
           {fact.missing ? (
-            <Tooltip label={fact.label} description={fact.missing} side="top" className="flex h-5 w-full min-w-0 items-center gap-2">
-              <span className="flex shrink-0 items-center" style={{ color: 'var(--text-muted)' }}>
-                <fact.Icon size={14} aria-hidden="true" />
-              </span>
-              <span aria-hidden="true" className="font-semibold" style={{ color: 'var(--text-muted)' }}>
+            <Tooltip label={fact.label} description={fact.missing} side="top" className="pv-fact-in">
+              <fact.Icon size={16} className="pv-fact-ic" aria-hidden="true" />
+              <span aria-hidden="true" className="pv-fact-none">
                 {MISSING_DASH}
               </span>
               <span className="sr-only">
@@ -413,13 +418,12 @@ function CardFacts({ facts }: { facts: CardFact[] }) {
               </span>
             </Tooltip>
           ) : (
-            <Tooltip label={fact.label} description={fact.note ?? undefined} disabled={!fact.note} side="top" className="flex h-5 w-full min-w-0 items-center gap-2">
-              <span className="flex shrink-0 items-center" style={{ color: fact.color }}>
-                <fact.Icon size={14} aria-hidden="true" />
-                <span className="sr-only">{fact.label}</span>
-              </span>
-              <span className="flex min-w-0 font-semibold" style={{ color: 'var(--text-secondary)' }}>
-                <TruncatedText text={fact.value} label={`${fact.label}: ${fact.value}`} />
+            <Tooltip label={fact.label} description={fact.note ?? undefined} disabled={!fact.note} side="top" className="pv-fact-in">
+              <fact.Icon size={16} className="pv-fact-ic" aria-hidden="true" />
+              {/* The icon and the tooltip name the fact on screen; screen readers get the sentence */}
+              <span className="sr-only">{fact.value}</span>
+              <span className="flex min-w-0" aria-hidden="true">
+                <TruncatedText text={fact.short} label={`${fact.label}: ${fact.short}`} />
               </span>
               {fact.note && <span className="sr-only">{fact.note}</span>}
             </Tooltip>
@@ -434,19 +438,16 @@ function CardFacts({ facts }: { facts: CardFact[] }) {
 // the line wraps inside its slot. Hovering a line names the fact in our tooltip (and the reason, where the value is missing: the row
 // then holds a muted dash). All lines are always there, so the list has the same height on every card.
 function CompactFacts({ facts }: { facts: CardFact[] }) {
-  // One line is 16 px (leading-4), the gap 4 px: the room of every line is kept even when a card shows dashes only
-  const minHeight = `${facts.length * 16 + (facts.length - 1) * 4}px`
+  // The room of every line is kept even when a card shows dashes only
   return (
-    <ul className="flex flex-col gap-1 text-[11px] font-semibold leading-4" style={{ color: 'var(--text-secondary)', minHeight }}>
+    <ul className="pv-facts pv-facts--compact" style={{ minBlockSize: `${facts.length * 1.25 + (facts.length - 1) * 0.25}rem` }}>
       {facts.map((fact) => (
-        <li key={fact.key} className="min-w-0">
-          <Tooltip label={fact.label} description={fact.missing ?? fact.note ?? fact.short} side="top" className="flex min-w-0 items-start gap-1.5">
-            <span className="mt-0.5 shrink-0" style={{ color: fact.missing ? 'var(--text-muted)' : fact.color }}>
-              <fact.Icon size={12} aria-hidden="true" />
-            </span>
+        <li key={fact.key} className="pv-fact">
+          <Tooltip label={fact.label} description={fact.missing ?? fact.note ?? fact.short} side="top" className="pv-fact-in">
+            <fact.Icon size={14} className="pv-fact-ic" aria-hidden="true" />
             {fact.missing ? (
               <>
-                <span aria-hidden="true" className="min-w-0" style={{ color: 'var(--text-muted)' }}>
+                <span aria-hidden="true" className="pv-fact-none">
                   {MISSING_DASH}
                 </span>
                 <span className="sr-only">
@@ -466,35 +467,68 @@ function CompactFacts({ facts }: { facts: CardFact[] }) {
   )
 }
 
-// The size on the dark cover overlay of the very compact card: the figure only ("~" before an estimate), light on dark
-function OverlaySize({ game }: { game: SizeSource }) {
-  const { t } = useTranslation('dashboard')
-  const fmt = useFormat()
-  const size = sizeOf(game)
-  if (size.kind === 'none') return null
+// A value cell of a list row: the bare value, or the muted dash with the reason for screen readers and the tooltip. Every value is
+// named for screen readers (the visible column heads are hidden from them).
+function FactCell({ fact, className }: { fact: CardFact | undefined; className: string }) {
+  if (!fact) return <span className={className} />
+  if (fact.missing) {
+    return (
+      <span className={className}>
+        <Tooltip label={fact.label} description={fact.missing} side="top">
+          <span aria-hidden="true" className="pv-dim">
+            {MISSING_DASH}
+          </span>
+          <span className="sr-only">
+            {fact.label}: {fact.missing}
+          </span>
+        </Tooltip>
+      </span>
+    )
+  }
   return (
-    <span className="shrink-0 font-semibold" style={{ color: '#cbd5e1' }}>
-      <span className="sr-only">{size.kind === 'disk' ? t('facts.size.label') : t('facts.size.installLabel')}: </span>
-      {size.kind === 'estimate' ? t('facts.size.approxShort', { size: fmt.bytes(size.bytes) }) : fmt.bytes(size.bytes)}
+    <span className={className}>
+      <span className="sr-only">{fact.label}: </span>
+      {fact.short}
     </span>
   )
 }
 
-// The size as one small cell of a list or text row (fixed width, so the columns of the rows line up; empty when the size is unknown).
-// An estimated install size carries "ca."; the name of the figure is there for screen readers.
-function SizeCell({ game, className = '' }: { game: SizeSource; className?: string }) {
+// The trophy cell of a list row: "Platin" in gold for a finished game, else the count with the share
+function TrophyCell({ platinum, text, percent }: { platinum: boolean; text: string; percent: string | null }) {
   const { t } = useTranslation('dashboard')
-  const fmt = useFormat()
-  const size = sizeOf(game)
   return (
-    <span className={`shrink-0 whitespace-nowrap text-right text-[11px] font-semibold tabular-nums ${className}`} style={{ color: 'var(--text-muted)' }}>
-      {size.kind !== 'none' && (
+    <span className="pv-dl-c-trophy">
+      <span className="sr-only">{t('list.trophies')}: </span>
+      {platinum ? (
+        <span className="pv-dl-plat">
+          <IconTrophy size={16} aria-hidden="true" />
+          {t('card.platinum')}
+        </span>
+      ) : (
         <>
-          <span className="sr-only">{size.kind === 'disk' ? t('facts.size.label') : t('facts.size.installLabel')}: </span>
-          {size.kind === 'estimate' ? t('facts.size.approx', { size: fmt.bytes(size.bytes) }) : fmt.bytes(size.bytes)}
+          {text}
+          {percent && <span className="pv-dim"> ({percent})</span>}
         </>
       )}
     </span>
+  )
+}
+
+// The trophy line of a card: label (gold trophy; "Platin" for a finished game), the count on the right, and the thin progress line below
+// In the compact cards (150-250 px wide) the label is left to the icon and screen readers (the line and the count say the rest).
+function TileProgress({ platinum, text, value, narrow = false }: { platinum: boolean; text: string; value: number; narrow?: boolean }) {
+  const { t } = useTranslation('dashboard')
+  return (
+    <div className="pv-tile-prog">
+      <div className="pv-tile-prog-row">
+        <span className="pv-tile-prog-k" data-platin={platinum ? 'true' : undefined}>
+          <IconTrophy size={16} aria-hidden="true" />
+          <span className={narrow ? 'sr-only' : 'truncate'}>{platinum ? t('card.platinum') : t('card.trophies')}</span>
+        </span>
+        <span className="pv-tile-prog-v">{text}</span>
+      </div>
+      <ProgressBar percent={value} label={t('card.trophyProgress')} />
+    </div>
   )
 }
 
@@ -505,18 +539,18 @@ interface GameTileProps {
 }
 
 // One game on the dashboard in the chosen size. The buttons are never inside the card's links (a button inside <a> is invalid): the
-// large and compact cards are a cover link, the action row, and a link around the text; the very compact card is a cover link and the
-// action row; list rows are a link and the buttons beside it.
+// cards are a cover link, a link around the text and the action row; list rows are a link and the buttons beside it.
 export function GameTile({ game, density, onToggleFavorite }: GameTileProps) {
   const { t } = useTranslation('dashboard')
   const fmt = useFormat()
   const text = useCardText()
   const platinum = isPlatinumGame(game)
   const facts = useCardFacts(game)
+  const titleId = useId()
   const favoriteLabel = game.isFavorite ? t('card.removeFavorite', { title: game.title }) : t('card.addFavorite', { title: game.title })
   const target: LaunchTarget = { kind: 'game', slug: game.slug }
-  const wideScreen = useMinWidth(1536)
-  // The segments in the order Spielen - Favorit - Twitch - Löschen; the Play segment is simply not there without bridge / local Steam
+  const trophyValue = game.trophiesTotal > 0 ? `${text.trophies(game)} (${fmt.percent(game.trophiesPercent)})` : text.trophies(game)
+  const href = `/games/${game.slug}`
   const segments = (
     <>
       <FavoriteSegment label={favoriteLabel} favorite={game.isFavorite} hint onClick={() => onToggleFavorite(game)} />
@@ -524,141 +558,67 @@ export function GameTile({ game, density, onToggleFavorite }: GameTileProps) {
     </>
   )
 
-  // List sizes: one row per game, the Play button and the icon buttons at its right end
+  // List sizes: one hairline row per game - star, title, the values, and the Play / Twitch icons at the right end
   if (density <= 1) {
+    const by = (key: FactKey) => facts.find((fact) => fact.key === key)
     return (
-      <div
-        className="group flex items-center gap-3 rounded-lg px-3 py-2"
-        style={{
-          background: 'var(--bg-surface)',
-          border: `1px solid ${platinum ? 'var(--accent-crystal-border)' : 'var(--border-subtle)'}`,
-        }}
-      >
-        <Link to={`/games/${game.slug}`} className="flex min-w-0 flex-1 items-center gap-3" style={{ textDecoration: 'none' }}>
-          {density === 1 && <Cover game={game} className="h-12 w-8 shrink-0 rounded" />}
-          {density === 1 ? (
-            <div className="flex min-w-0 flex-1 flex-col">
-              <ClampedText text={game.title} className="text-sm font-bold leading-5" style={{ color: 'var(--text-primary)' }} />
-              <GenreLine game={game} className="h-4 text-[11px] font-semibold leading-4" style={{ color: 'var(--accent-emerald)' }} />
-            </div>
-          ) : (
-            <TruncatedText text={game.title} className="text-sm font-bold" style={{ color: 'var(--text-primary)' }} wrapperClassName="flex min-w-0 flex-1" />
-          )}
-          {platinum && <TierIcon tier="Platinum" size={15} label={t('card.platinum')} />}
-          <span className="inline-flex shrink-0 items-center gap-1 text-xs font-extrabold tabular-nums" style={{ color: 'var(--accent-emerald)' }}>
-            <IconTrophy size={13} style={{ color: 'var(--accent-gold)' }} aria-hidden="true" />
-            {text.trophies(game)}
-            {game.trophiesTotal > 0 && <span style={{ color: 'var(--text-muted)' }}>({fmt.percent(game.trophiesPercent)})</span>}
-          </span>
-          {density === 1 && game.lastPlayedAt && game.playtimeMinutes !== 0 && (
-            <span className="hidden shrink-0 text-[11px] xl:inline" style={{ color: 'var(--text-muted)' }}>
-              {text.lastPlayed(game.lastPlayedAt)}
-            </span>
-          )}
-          <SizeCell game={game} className={density === 1 ? 'hidden w-[4.75rem] md:block lg:hidden 2xl:block' : 'hidden w-[4.75rem] 2xl:block'} />
-          {density === 1 && (
-            <span className="hidden w-24 shrink-0 sm:block">
-              <TrophyBar game={game} />
-            </span>
-          )}
-        </Link>
-        <div className="pv-bar-group">
-          <PlayButton variant="segment" target={target} gameName={game.title} unavailable={!game.steamAppId} showRunning steamAppId={game.steamAppId} />
-          {segments}
-        </div>
-      </div>
-    )
-  }
-
-  const frame: CSSProperties = {
-    background: 'var(--bg-surface)',
-    border: '1px solid var(--border-subtle)',
-    borderRadius: density === 2 ? 'var(--radius-md)' : 'var(--radius-lg)',
-    boxShadow: 'var(--shadow-card)',
-    ...(platinum ? PLATINUM_CARD_FRAME : null),
-  }
-
-  // Very compact: the cover with title and trophies on it, then a slim action row (the Play button only where the cards are wide enough)
-  if (density === 2) {
-    return (
-      <div className="group relative flex flex-col overflow-hidden transition-all duration-200 hover:-translate-y-0.5" style={frame}>
-        <Link to={`/games/${game.slug}`} className="relative block" style={{ textDecoration: 'none' }}>
-          <Cover game={game} className="aspect-[2/3] w-full" />
-          <div className="absolute inset-x-0 bottom-0 space-y-1 px-2 pb-2 pt-6" style={{ background: 'linear-gradient(transparent, rgba(2, 6, 23, 0.88))' }}>
-            <ClampedText text={game.title} className="text-[11px] font-bold leading-[14px] text-white" wrapperClassName="block min-h-7 min-w-0" />
-            <GenreLine game={game} className="h-3.5 text-[10px] font-semibold leading-[14px]" style={{ color: '#6ee7b7' }} />
-            <div className="flex items-center gap-1 whitespace-nowrap text-[10px] font-extrabold tabular-nums" style={{ color: '#fde68a' }}>
-              {platinum ? <TierIcon tier="Platinum" size={11} surface="dark" label={t('card.platinum')} /> : <IconTrophy size={11} aria-hidden="true" />}
-              {text.trophies(game)}
-            </div>
-            {/* The size has a line of its own (the room is always reserved): beside the trophies it would not fit the narrowest cards */}
-            <div className="flex min-h-3.5 items-center text-[10px] leading-[14px]">
-              <OverlaySize game={game} />
+      <div className="pv-dl-row" data-platin={platinum ? 'true' : undefined}>
+        <div className="pv-dl-grid">
+          <FavoriteStar label={favoriteLabel} favorite={game.isFavorite} hint onClick={() => onToggleFavorite(game)} />
+          <div className="pv-dl-c-title">
+            {density === 1 && <Cover game={game} className="pv-dl-cover" />}
+            <div className="flex min-w-0 flex-col">
+              <Link to={href} className="pv-dl-link">
+                <TruncatedText text={game.title} wrapperClassName="pv-dl-linktext" />
+              </Link>
+              {density === 1 && <GenreLine game={game} className="pv-dl-gen" />}
             </div>
           </div>
-        </Link>
-        <div className="pv-card-actions pv-card-actions--sm">
-          {wideScreen && <PlayButton variant="segment" target={target} gameName={game.title} unavailable={!game.steamAppId} showRunning steamAppId={game.steamAppId} />}
-          {segments}
+          <FactCell fact={by('played')} className="pv-dl-c-play" />
+          <FactCell fact={by('last')} className="pv-dl-c-last" />
+          <TrophyCell platinum={platinum} text={text.trophies(game)} percent={game.trophiesTotal > 0 ? fmt.percent(game.trophiesPercent) : null} />
+          <FactCell fact={by('size')} className="pv-dl-c-size" />
+          <div className="pv-dl-c-act">
+            <div className="pv-bar-group">
+              <PlayButton variant="segment" target={target} gameName={game.title} unavailable={!game.steamAppId} showRunning steamAppId={game.steamAppId} />
+              <TwitchSegment name={game.title} appId={game.steamAppId} />
+            </div>
+          </div>
         </div>
       </div>
     )
   }
 
-  // Large (4) and compact (3) cards: cover, action row, title + genres + facts + trophy meter
   const large = density === 4
   return (
-    <div className="group relative flex flex-col overflow-hidden transition-all duration-200 hover:-translate-y-1" style={frame}>
-      {/* Official vertical Steam cover (2:3); the link around it is a second way in for the mouse (the text link is the one for keyboard and screen readers) */}
-      <Link to={`/games/${game.slug}`} tabIndex={-1} aria-hidden="true" className="block" style={{ textDecoration: 'none' }}>
-        <div className="relative aspect-[2/3] w-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
-          {platinum && <PlatinumEdge />}
-          <Cover game={game} className="h-full w-full transition-transform duration-300 group-hover:scale-105" />
-          <div className="absolute inset-x-3 top-3 flex items-start justify-between gap-2">
-            {large ? <GuideBadge tabCount={game.tabCount} /> : <span />}
-            {platinum && <PlatinumChip />}
-          </div>
-        </div>
+    <div className="pv-tile" data-platin={platinum ? 'true' : undefined}>
+      {/* The cover is a second way in for the mouse (the text link is the one for keyboard and screen readers) */}
+      <Link to={href} tabIndex={-1} aria-hidden="true" className="pv-tile-cover">
+        <Cover game={game} className="h-full w-full" />
       </Link>
 
-      {/* The action bar: one strip of equal segments, Spielen - Favorit - Twitch - Löschen. Fixed height; without Play the three others
-          share the full width */}
-      <div className="pv-card-actions">
-        <PlayButton variant="segment" target={target} gameName={game.title} unavailable={!game.steamAppId} showRunning steamAppId={game.steamAppId} />
-        {segments}
-      </div>
-
-      <Link to={`/games/${game.slug}`} className={`flex flex-1 flex-col ${large ? 'space-y-3.5 p-4' : 'space-y-2.5 p-3'}`} style={{ textDecoration: 'none' }}>
+      <Link to={href} aria-labelledby={titleId} className="pv-tile-link">
         {/* Title first, then the genres as one calm line; both are one line, so every card has the same head */}
-        <div className="space-y-0.5">
-          {/* Two lines are reserved for the title on every card (same font size everywhere): a longer title is cut off at the end of
-              the second line, a shorter one leaves the room empty - so the genre line and the facts below start at the same place */}
-          <h3 className={`font-extrabold ${large ? 'min-h-12 text-base leading-6' : 'min-h-10 text-sm leading-5'}`} style={{ color: 'var(--text-primary)' }}>
+        <div className="pv-tile-head">
+          <h3 id={titleId} className="pv-tile-title">
             <ClampedText text={game.title} />
           </h3>
-          <GenreLine game={game} className={`h-4 font-semibold leading-4 ${large ? 'text-xs' : 'text-[11px]'}`} style={{ color: 'var(--accent-emerald)' }} />
+          {density !== 2 && <GenreLine game={game} className="pv-tile-gen" />}
         </div>
 
         {/* The facts start right under the head on every card (so they line up across a row); cards of a row are as tall as the
-            tallest one, and the meter below is pinned to the bottom edge */}
-        {large ? <CardFacts facts={facts} /> : <CompactFacts facts={facts} />}
+            tallest one, and the trophy line below is pinned to the bottom edge */}
+        {large ? <CardFacts facts={facts} /> : density === 3 ? <CompactFacts facts={facts} /> : null}
 
         {/* Trophy progress from Steam (the only meter on a card) */}
-        <div className="mt-auto pt-1">
-          {/* One line, whatever the card width: the label gives way (cut off), the figure never wraps - so the meter has the same
-              height on every card */}
-          <div className="mb-1 flex items-center justify-between gap-2 text-xs font-extrabold">
-            <span className="inline-flex min-w-0 items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
-              <IconTrophy size={13} className="shrink-0" style={{ color: 'var(--accent-gold)' }} aria-hidden="true" />
-              <span className="truncate">{t('card.trophies')}</span>
-            </span>
-            <span className="shrink-0 whitespace-nowrap tabular-nums" style={{ color: 'var(--accent-emerald)' }}>
-              {game.trophiesTotal > 0 ? `${text.trophies(game)} (${fmt.percent(game.trophiesPercent)})` : text.trophies(game)}
-            </span>
-          </div>
-          <TrophyBar game={game} />
-        </div>
+        <TileProgress platinum={platinum} text={density === 2 ? text.trophies(game) : trophyValue} value={game.trophiesPercent} narrow={density <= 3} />
       </Link>
+
+      {/* The action row: three equal cells, Spielen - Favorit - Twitch, fixed height; without Play the other two share the width */}
+      <div className="pv-tile-act">
+        <PlayButton variant="segment" target={target} gameName={game.title} unavailable={!game.steamAppId} showRunning steamAppId={game.steamAppId} />
+        {segments}
+      </div>
     </div>
   )
 }
@@ -720,8 +680,8 @@ interface LibraryTileProps {
 export function LibraryTile({ game, density, busy, onToggleFavorite }: LibraryTileProps) {
   const { t } = useTranslation('dashboard')
   const fmt = useFormat()
-  const text = useCardText()
   const facts = useLibraryFacts(game)
+  const titleId = useId()
   // Games without Steam achievements say so; while the library is still being evaluated there is nothing to show (null)
   const trophies =
     game.trophiesTotal == null
@@ -733,41 +693,19 @@ export function LibraryTile({ game, density, busy, onToggleFavorite }: LibraryTi
   const percent = game.trophiesTotal ? Math.floor(((game.trophiesUnlocked ?? 0) / game.trophiesTotal) * 100) : 0
   const label = game.isFavorite ? t('card.removeFromDashboard', { name: game.name }) : t('card.putOnDashboard', { name: game.name })
   const target: LaunchTarget = { kind: 'library', appId: game.appId }
-  const wideScreen = useMinWidth(1536)
+  const trophyValue = trophies ? ((game.trophiesTotal ?? 0) > 0 ? `${trophies} (${fmt.percent(percent)})` : trophies) : '…'
   const segments = (
     <>
       <FavoriteSegment label={label} favorite={game.isFavorite} busy={busy} onClick={() => onToggleFavorite(game)} />
       <TwitchSegment name={game.name} appId={game.appId} />
     </>
   )
-  const body = (
-    <>
-      {density === 1 && <Cover game={{ coverUrl: game.coverUrl } as GameSummaryDto} className="h-12 w-8 shrink-0 rounded" />}
-      {density === 1 ? (
-        <ClampedText text={game.name} className="text-sm font-bold leading-5" style={{ color: 'var(--text-primary)' }} wrapperClassName="block min-w-0 flex-1" />
-      ) : (
-        <TruncatedText text={game.name} className="text-sm font-bold" style={{ color: 'var(--text-primary)' }} wrapperClassName="flex min-w-0 flex-1" />
-      )}
-      {perfect && <TierIcon tier="Platinum" size={15} label={t('card.platinum')} />}
-      {trophies && (
-        <span className="inline-flex shrink-0 items-center gap-1 text-xs font-extrabold tabular-nums" style={{ color: 'var(--accent-emerald)' }}>
-          <IconTrophy size={13} style={{ color: 'var(--accent-gold)' }} aria-hidden="true" />
-          {trophies}
-        </span>
-      )}
-      {density === 1 && game.playtimeHours > 0 && (
-        <span className="hidden shrink-0 text-[11px] lg:inline" style={{ color: 'var(--text-muted)' }}>
-          {text.playtime(Math.round(game.playtimeHours * 60))}
-        </span>
-      )}
-      <SizeCell game={game} className={density === 1 ? 'hidden w-[4.75rem] md:block lg:hidden 2xl:block' : 'hidden w-[4.75rem] 2xl:block'} />
-    </>
-  )
+  const coverGame = { coverUrl: game.coverUrl }
 
   // The page of a game that is already in PlatinVault; for the others the same box without a link
-  const wrap = (className: string, children: ReactNode, hidden = false) =>
+  const wrap = (className: string, children: ReactNode, hidden = false, labelledBy?: string) =>
     game.existingSlug ? (
-      <Link to={`/games/${game.existingSlug}`} className={className} style={{ textDecoration: 'none' }} {...(hidden ? { tabIndex: -1, 'aria-hidden': true } : {})}>
+      <Link to={`/games/${game.existingSlug}`} className={className} {...(hidden ? { tabIndex: -1, 'aria-hidden': true } : {})} {...(labelledBy ? { 'aria-labelledby': labelledBy } : {})}>
         {children}
       </Link>
     ) : (
@@ -775,96 +713,63 @@ export function LibraryTile({ game, density, busy, onToggleFavorite }: LibraryTi
     )
 
   if (density <= 1) {
+    const by = (key: FactKey) => facts.find((fact) => fact.key === key)
     return (
-      <div
-        className="flex items-center gap-3 rounded-lg px-3 py-2"
-        style={{ background: 'var(--bg-surface)', border: `1px solid ${perfect ? 'var(--accent-crystal-border)' : 'var(--border-subtle)'}` }}
-      >
-        {wrap('flex min-w-0 flex-1 items-center gap-3', body)}
-        <div className="pv-bar-group">
-          <PlayButton variant="segment" target={target} gameName={game.name} showRunning steamAppId={game.appId} />
-          {segments}
-        </div>
-      </div>
-    )
-  }
-
-  // Card sizes: cover with the name and the trophies; very compact puts the size beside the trophies on the cover, the large and compact
-  // cards show the same fact rows as a favourite's (played, last played, rating, release date, size) and the trophy meter at the bottom
-  const cover = <Cover game={{ coverUrl: game.coverUrl } as GameSummaryDto} className="aspect-[2/3] w-full" />
-  const info =
-    density === 2 ? (
-      <div className="absolute inset-x-0 bottom-0 space-y-1 px-2 pb-2 pt-6" style={{ background: 'linear-gradient(transparent, rgba(2, 6, 23, 0.88))' }}>
-        {/* Two lines are reserved for the name on every card, like on the dashboard cards */}
-        <div className="flex min-h-7 min-w-0">
-          <ClampedText text={game.name} className="text-[11px] font-bold leading-[14px] text-white" wrapperClassName="block min-w-0 flex-1" />
-        </div>
-        <div className="flex min-h-3.5 items-center gap-1 whitespace-nowrap text-[10px] font-extrabold tabular-nums" style={{ color: '#fde68a' }}>
-          {trophies && (
-            <>
-              {perfect ? <TierIcon tier="Platinum" size={12} surface="dark" label={t('card.platinum')} /> : <IconTrophy size={12} aria-hidden="true" />}
-              {trophies}
-            </>
-          )}
-        </div>
-        <div className="flex min-h-3.5 items-center text-[10px] leading-[14px]">
-          <OverlaySize game={game} />
-        </div>
-      </div>
-    ) : (
-      <div className="flex flex-1 flex-col space-y-2.5 p-3">
-        <div className="flex min-h-10 min-w-0">
-          <ClampedText text={game.name} className="text-sm font-bold leading-5" style={{ color: 'var(--text-primary)' }} wrapperClassName="block min-w-0 flex-1" />
-        </div>
-        {density === 4 ? <CardFacts facts={facts} /> : <CompactFacts facts={facts} />}
-        {/* Trophy progress from Steam: the line and the meter are always there (the figure is "…" while the library is evaluated) */}
-        <div className="mt-auto pt-1">
-          <div className="mb-1 flex items-center justify-between gap-2 text-xs font-extrabold">
-            <span className="inline-flex min-w-0 items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
-              {perfect ? <TierIcon tier="Platinum" size={13} label={t('card.platinum')} /> : <IconTrophy size={13} className="shrink-0" style={{ color: 'var(--accent-gold)' }} aria-hidden="true" />}
-              <span className="truncate">{t('card.trophies')}</span>
-            </span>
-            <span className="shrink-0 whitespace-nowrap tabular-nums" style={{ color: 'var(--accent-emerald)' }}>
-              {trophies ? ((game.trophiesTotal ?? 0) > 0 ? `${trophies} (${fmt.percent(percent)})` : trophies) : '…'}
-            </span>
+      <div className="pv-dl-row" data-platin={perfect ? 'true' : undefined}>
+        <div className="pv-dl-grid">
+          <FavoriteStar label={label} favorite={game.isFavorite} busy={busy} onClick={() => onToggleFavorite(game)} />
+          <div className="pv-dl-c-title">
+            {density === 1 && <Cover game={coverGame} className="pv-dl-cover" />}
+            {game.existingSlug ? (
+              <Link to={`/games/${game.existingSlug}`} className="pv-dl-link">
+                <TruncatedText text={game.name} wrapperClassName="pv-dl-linktext" />
+              </Link>
+            ) : (
+              <span className="pv-dl-link pv-dl-link--plain">
+                <TruncatedText text={game.name} wrapperClassName="pv-dl-linktext" />
+              </span>
+            )}
           </div>
-          <ProgressBar percent={percent} label={t('card.trophyProgress')} />
-        </div>
-      </div>
-    )
-  const frame: CSSProperties = {
-    background: 'var(--bg-surface)',
-    border: `1px solid ${perfect ? 'var(--accent-crystal-border)' : 'var(--border-subtle)'}`,
-    borderRadius: density === 2 ? 'var(--radius-md)' : 'var(--radius-lg)',
-    boxShadow: 'var(--shadow-card)',
-  }
-
-  if (density === 2) {
-    return (
-      <div className="group relative flex flex-col overflow-hidden transition-all duration-200 hover:-translate-y-0.5" style={frame}>
-        {wrap(
-          'relative block',
-          <>
-            {cover}
-            {info}
-          </>
-        )}
-        <div className="pv-card-actions pv-card-actions--sm">
-          {wideScreen && <PlayButton variant="segment" target={target} gameName={game.name} showRunning steamAppId={game.appId} />}
-          {segments}
+          <FactCell fact={by('played')} className="pv-dl-c-play" />
+          <FactCell fact={by('last')} className="pv-dl-c-last" />
+          <TrophyCell platinum={perfect} text={trophies ?? '…'} percent={(game.trophiesTotal ?? 0) > 0 ? fmt.percent(percent) : null} />
+          <FactCell fact={by('size')} className="pv-dl-c-size" />
+          <div className="pv-dl-c-act">
+            <div className="pv-bar-group">
+              <PlayButton variant="segment" target={target} gameName={game.name} showRunning steamAppId={game.appId} />
+              <TwitchSegment name={game.name} appId={game.appId} />
+            </div>
+          </div>
         </div>
       </div>
     )
   }
 
+  // Card sizes: the cover, the name, the same fact rows as a favourite's (played, last played, rating, release date, size) and the
+  // thin trophy line at the bottom
+  const large = density === 4
   return (
-    <div className="group relative flex flex-col overflow-hidden transition-all duration-200 hover:-translate-y-0.5" style={frame}>
-      {wrap('block', cover, true)}
-      <div className="pv-card-actions">
+    <div className="pv-tile" data-platin={perfect ? 'true' : undefined}>
+      {wrap('pv-tile-cover', <Cover game={coverGame} className="h-full w-full" />, true)}
+      {wrap(
+        'pv-tile-link',
+        <>
+          <div className="pv-tile-head">
+            <h3 id={titleId} className="pv-tile-title">
+              <ClampedText text={game.name} />
+            </h3>
+          </div>
+          {large ? <CardFacts facts={facts} /> : density === 3 ? <CompactFacts facts={facts} /> : null}
+          {/* The line and the thin progress line are always there (the figure is "…" while the library is evaluated) */}
+          <TileProgress platinum={perfect} text={density === 2 ? (trophies ?? '…') : trophyValue} value={percent} narrow={density <= 3} />
+        </>,
+        false,
+        titleId
+      )}
+      <div className="pv-tile-act">
         <PlayButton variant="segment" target={target} gameName={game.name} showRunning steamAppId={game.appId} />
         {segments}
       </div>
-      {wrap('flex flex-1 flex-col', info)}
     </div>
   )
 }

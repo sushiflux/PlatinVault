@@ -150,7 +150,7 @@ export function FactsCard({ stats, order }: { stats: GameStatsDto; order?: numbe
   if (update && updateDate) {
     facts.push(
       <Fact key="update" label={t('facts.latestUpdate')}>
-        <a href={update.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 hover:underline">
+        <a href={update.url} target="_blank" rel="noreferrer" className="pv-hit inline-flex items-center gap-1.5 hover:underline">
           <span>{updateDate}</span>
           <IconExternalLink size={13} aria-hidden="true" />
         </a>

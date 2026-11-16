@@ -22,22 +22,13 @@ interface DashboardEmptyHelpProps {
   onShowLibrary: () => void
 }
 
-// The number of a step in a circle; a done step shows a check mark, a step that is being checked a spinner. The size is the same in
+// The number of a step in a small square; a done step shows a check mark, a step that is being checked a spinner. The size is the same in
 // every state, so a step turning "done" never moves anything.
 function StepMark({ n, state }: { n: number; state: StepState }) {
   const { t } = useTranslation('dashboard')
   return (
-    <span
-      role="img"
-      aria-label={`${n}: ${t(`empty.state.${state}`)}`}
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold"
-      style={
-        state === 'done'
-          ? { background: 'var(--accent-emerald-bg)', color: 'var(--accent-emerald)', border: '1.5px solid var(--accent-emerald-border)' }
-          : { border: '2px solid var(--border-strong)', color: 'var(--text-secondary)' }
-      }
-    >
-      {state === 'done' ? <IconCheck size={17} stroke={3} aria-hidden="true" /> : state === 'loading' ? <IconLoader2 size={15} className="animate-spin" aria-hidden="true" /> : n}
+    <span role="img" aria-label={`${n}: ${t(`empty.state.${state}`)}`} className="pv-step-mark" data-state={state}>
+      {state === 'done' ? <IconCheck size={18} aria-hidden="true" /> : state === 'loading' ? <IconLoader2 size={16} className="animate-spin" aria-hidden="true" /> : n}
     </span>
   )
 }
@@ -55,40 +46,29 @@ interface StepRowProps {
 
 function StepRow({ n, Icon, state, title, text, link, children }: StepRowProps) {
   return (
-    <li
-      className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2.5 rounded-xl p-3.5 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-x-4"
-      style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}
-    >
+    <li className="pv-step">
       <StepMark n={n} state={state} />
       <div className="min-w-0">
-        <div className="flex items-center gap-2 text-sm font-extrabold" style={{ color: 'var(--text-primary)' }}>
-          <Icon size={16} className="shrink-0" style={{ color: 'var(--accent-crystal)' }} aria-hidden="true" />
+        <div className="pv-step-title">
+          <Icon size={18} aria-hidden="true" />
           <span>{title}</span>
         </div>
-        <p className="mt-0.5 text-xs leading-snug" style={{ color: 'var(--text-secondary)' }}>
-          {text}
-        </p>
+        <p className="pv-step-text">{text}</p>
         {link && (
-          <a
-            href={link.href}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-1 inline-flex items-center gap-1 text-xs font-bold hover:underline"
-            style={{ color: 'var(--accent-crystal)' }}
-          >
+          <a href={link.href} target="_blank" rel="noreferrer" className="pv-step-link">
             {link.label}
-            <IconExternalLink size={12} aria-hidden="true" />
+            <IconExternalLink size={14} aria-hidden="true" />
           </a>
         )}
       </div>
       {/* On a phone the action sits under the text, aligned with it */}
-      <div className="col-start-2 flex min-h-9 items-center sm:col-start-3">{children}</div>
+      <div className="pv-step-act">{children}</div>
     </li>
   )
 }
 
 // Buttons of the steps: the same width in every state (the label changes with the state)
-const ACTION = 'pv-btn !py-1.5 !text-xs min-w-[10.5rem] justify-center'
+const ACTION = 'pv-btn pv-step-btn'
 
 /**
  * The calm help that takes the place of the tiles while no game is on the dashboard. Games come from the Steam library only, so
@@ -113,30 +93,24 @@ export function DashboardEmptyHelp({ hasLibrary, onOpenSettings, onShowLibrary }
     <motion.section
       aria-labelledby="dashboard-empty-title"
       data-dashboard-empty=""
-      className="pv-card mx-auto w-full max-w-3xl space-y-5 !p-5 sm:!p-7"
+      className="pv-card pv-empty"
       initial={reduceMotion ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
     >
-      <div className="flex items-start gap-3.5">
-        <span
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-          style={{ background: 'var(--accent-crystal-bg)', color: 'var(--accent-crystal)', border: '1px solid var(--accent-crystal-border)' }}
-          aria-hidden="true"
-        >
+      <div className="pv-empty-head">
+        <span className="pv-empty-ic" aria-hidden="true">
           <IconDeviceGamepad2 size={24} />
         </span>
         <div className="min-w-0">
-          <h2 id="dashboard-empty-title" className="text-lg font-extrabold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+          <h2 id="dashboard-empty-title" className="pv-empty-title">
             {t('empty.title')}
           </h2>
-          <p className="mt-0.5 text-sm leading-snug" style={{ color: 'var(--text-secondary)' }}>
-            {t('empty.intro')}
-          </p>
+          <p className="pv-empty-intro">{t('empty.intro')}</p>
         </div>
       </div>
 
-      <ol aria-label={t('empty.stepsLabel')} className="space-y-2.5">
+      <ol aria-label={t('empty.stepsLabel')} className="pv-empty-steps">
         <StepRow n={1} Icon={IconBrandSteam} state={accountState} title={t('empty.account.title')} text={t('empty.account.text')}>
           {settings?.steamUserId ? (
             <button type="button" className={buttonClass(1)} onClick={() => onOpenSettings('steam')}>
@@ -166,9 +140,7 @@ export function DashboardEmptyHelp({ hasLibrary, onOpenSettings, onShowLibrary }
               <button
                 type="button"
                 aria-disabled="true"
-                className={`${ACTION} cursor-not-allowed`}
-                // Locked, but still readable (no faded text): muted colour and a dashed edge say "not yet"
-                style={{ color: 'var(--text-muted)', background: 'transparent', borderStyle: 'dashed' }}
+                className={ACTION}
                 onClick={(e) => e.preventDefault()}
               >
                 {t('empty.star.action')}

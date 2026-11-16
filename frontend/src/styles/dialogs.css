@@ -1,0 +1,55 @@
+/* Own dialogs in the light look (confirm, handbook, licences, release notes, Steam link, achievement note): a card on a quiet overlay,
+   anchored near the top (so its height may change without moving the buttons' neighbours around), title 1.25 rem / 600, muted text,
+   actions at the right. Used together with .pv-modal-backdrop and .pv-modal of index.css. */
+
+.pv-modal-backdrop.pv-modal-backdrop--top {
+  align-items: flex-start;
+  padding-block-start: min(14vh, 7rem);
+}
+
+.pv-dialog-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+.pv-dialog-text {
+  margin: 0.625rem 0 0;
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.pv-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-block-start: 1.5rem;
+}
+
+/* A list of notes with a short straight line in front of each entry (release notes, what is deleted / what stays) */
+.pv-dialog-notes {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pv-dialog-notes > li {
+  position: relative;
+  padding-inline-start: 1rem;
+}
+
+.pv-dialog-notes > li::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: 0.7em;
+  inline-size: 6px;
+  block-size: 2px;
+  background: var(--ind);
+}

@@ -562,8 +562,10 @@ cd frontend; npm run typecheck; npm run lint; npm test
 sh scripts/test-version-display.sh; sh scripts/test-changelog-hooks.sh
 ```
 
-Versions and changelog: the git hooks in `scripts/git-hooks/` (enabled by `.\start.ps1` via `core.hooksPath`) write `version.txt`
-into every commit. There is one customer changelog per channel, each in English and German: `CHANGELOG.md` (releases),
+Versions and changelog: the git hooks in `scripts/git-hooks/` write `version.txt`
+into every commit. They are copied into the repository's own hooks folder (first setup by `.\start.ps1`) and never run straight
+from the working tree, so a hook changed upstream does not run on `git pull`: `.\start.ps1` only warns about differing hooks,
+and `.\scripts\install-hooks.ps1` takes them over after you have reviewed them. There is one customer changelog per channel, each in English and German: `CHANGELOG.md` (releases),
 `CHANGELOG.beta.md` (betas) and `CHANGELOG.nightly.md` (nightlies). A new entry is written with the heading `## vNEXT`
 (release), `## vNEXT β` (beta) or `## vNEXT α` (nightly), optionally followed by ` · <platforms>`, and the pre-commit hook
 replaces it with the readable version of the commit: all five segments, then the channel symbol in parentheses, a release

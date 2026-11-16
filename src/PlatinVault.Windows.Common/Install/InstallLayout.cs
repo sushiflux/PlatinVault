@@ -64,7 +64,10 @@ public sealed class InstallLayout
         return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(sid)))[..12];
     }
 
-    public DataLayout Data => new(DataDir, BackupsDir);
+    // Built once: DataDir and BackupsDir are init-only, so the parts of the data folder never change for this layout
+    public DataLayout Data => _data ??= new(DataDir, BackupsDir);
+
+    private DataLayout? _data;
 
     /// <summary>The program folder of the current installation, if there is one.</summary>
     public string? InstalledDir => Registry.GetString(AppKeyPath, "InstallDir") is { Length: > 0 } dir ? dir : null;

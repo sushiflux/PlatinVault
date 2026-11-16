@@ -1,0 +1,82 @@
+/* "Spielen" and the "running" state (components/launch/PlayButton.tsx), variant "Kristall".
+   The compact form (a cell of a card's action row, the icon in a list row) is .pv-bar-seg--play in styles/dashboard.css; this file has
+   the stand-alone button of the game page and the pulsing live dot both forms share. */
+
+/* Play on its own (game page): emerald-tinted, thin emerald line, icon + label, 48 px high */
+.pv-play-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-block-size: 3rem;
+  padding-inline: 1.125rem;
+  border: 1px solid var(--accent-emerald);
+  border-radius: var(--radius-md);
+  background: var(--accent-emerald-bg);
+  color: var(--accent-emerald);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.pv-play-button:hover {
+  background: color-mix(in srgb, var(--accent-emerald-bg) 78%, var(--accent-emerald));
+}
+
+.pv-play-button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.pv-play-button[aria-busy='true'] {
+  cursor: progress;
+}
+
+/* "Game running": the same box as Play, but a calm status look (surface, thin line) with a pulsing dot. Not clickable. Both labels
+   are stacked in one grid cell (the hidden one only holds the width), so the button never changes its size. */
+.pv-play-button--running {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  cursor: default;
+}
+
+.pv-play-button--running:hover {
+  background: var(--bg-surface);
+}
+
+.pv-play-stack {
+  display: inline-grid;
+}
+
+.pv-play-stack > * {
+  grid-area: 1 / 1;
+}
+
+/* The pulsing dot of a running game (emerald, like the Play label; the pulse is decoration, "Läuft" says it in words) */
+.pv-live-dot {
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: 50%;
+  background: var(--accent-emerald);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-emerald) 60%, transparent);
+  animation: pv-live-pulse 1.8s ease-out infinite;
+}
+
+@keyframes pv-live-pulse {
+  70% {
+    box-shadow: 0 0 0 0.45rem transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-live-dot {
+    animation: none;
+  }
+}

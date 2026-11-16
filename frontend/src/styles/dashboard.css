@@ -1,0 +1,1223 @@
+/* Overview ("/") and all games ("/library"), variant "Kristall": page head, the three calm figures, one row of controls, the sort
+   control, the tiles (five sizes) and the hairline list. Only tokens of index.css, so light and dark both follow. Accent lines are
+   thin and straight; weights are 500 / 600; radii come from the small scale. */
+
+/* ---------------------------------------------------------------- page */
+.pv-dash {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  align-content: start;
+  min-inline-size: 0;
+}
+
+.pv-dash-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+}
+
+.pv-dash-head > .pv-page-title {
+  min-inline-size: 0;
+}
+
+/* The game that is running right now: a calm note with its thin line on the left */
+.pv-dash-running {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+}
+
+.pv-dash-running-t {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-inline-size: 0;
+}
+
+.pv-dash-running-t strong {
+  display: block;
+  font-weight: 600;
+}
+
+.pv-dash-running-t span.pv-dash-running-s {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+/* ---------------------------------------------------------------- figures */
+.pv-dfigs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pv-dfig {
+  min-inline-size: 0;
+  padding: 2px 1.5rem;
+  border-inline-start: 1px solid var(--border-subtle);
+}
+
+.pv-dfig:first-child {
+  padding-inline-start: 0;
+  border-inline-start: 0;
+}
+
+.pv-dfig-v {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 500;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-dfig-v svg {
+  flex: none;
+  color: var(--accent-gold-text);
+}
+
+.pv-dfig-l {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.75rem;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+.pv-dfig .pv-pbar {
+  max-inline-size: 14rem;
+  margin-block-start: 0.5rem;
+}
+
+/* The "library is being evaluated" hint at the end of the trophy label: a spinner and the count */
+.pv-dfig-scan > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 639px) {
+  .pv-dfigs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pv-dfig,
+  .pv-dfig:first-child {
+    padding: 0.5rem 0;
+    border-inline-start: 0;
+    border-block-start: 1px solid var(--border-subtle);
+  }
+
+  .pv-dfig:first-child {
+    border-block-start: 0;
+  }
+}
+
+/* ---------------------------------------------------------------- controls row: search | view | tile size */
+.pv-dash-ctl {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+}
+
+.pv-dash-search {
+  position: relative;
+  flex: 1 1 16rem;
+  min-inline-size: 0;
+}
+
+.pv-dash-search > svg {
+  position: absolute;
+  inset-inline-start: 0.75rem;
+  inset-block-start: 50%;
+  margin-block-start: -9px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.pv-dash .pv-dash-search .pv-input {
+  inline-size: 100%;
+  padding-inline-start: 2.5rem;
+}
+
+/* The place of the view switch while the library answer is on its way: as big as the switch, so its arrival shifts nothing */
+.pv-dash-switch-slot {
+  flex: 0 0 auto;
+  inline-size: 18.5rem;
+  block-size: 3rem;
+}
+
+.pv-dash-switch {
+  flex: 0 0 auto;
+}
+
+/* Tile size: caption, slider, the chosen size in words (fixed width, so switching sizes never moves the slider) */
+.pv-size {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-inline-size: 0;
+}
+
+.pv-size-label {
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  white-space: nowrap;
+}
+
+.pv-size-range {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 0 1 8.5rem;
+  inline-size: 8.5rem;
+  min-inline-size: 5rem;
+  block-size: 3rem;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.pv-size-range::-webkit-slider-runnable-track {
+  block-size: 3px;
+  background: var(--track);
+}
+
+.pv-size-range::-moz-range-track {
+  block-size: 3px;
+  background: var(--track);
+}
+
+.pv-size-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  inline-size: 0.75rem;
+  block-size: 1.375rem;
+  margin-block-start: -0.59rem;
+  border: 0;
+  border-radius: 2px;
+  background: var(--act);
+}
+
+.pv-size-range::-moz-range-thumb {
+  inline-size: 0.75rem;
+  block-size: 1.375rem;
+  border: 0;
+  border-radius: 2px;
+  background: var(--act);
+}
+
+.pv-size-range:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.pv-size-value {
+  flex: none;
+  min-inline-size: 6.5rem;
+  text-align: end;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+@media (max-width: 639px) {
+  .pv-dash-switch,
+  .pv-dash-switch-slot {
+    flex: 1 1 100%;
+    inline-size: auto;
+  }
+
+  .pv-dash-switch > button {
+    flex: 1 1 0;
+    padding-inline: 0.5rem;
+  }
+
+  .pv-size {
+    flex: 1 1 100%;
+  }
+
+  .pv-size-range {
+    flex: 1 1 auto;
+    inline-size: auto;
+  }
+}
+
+/* ---------------------------------------------------------------- count line and sort */
+.pv-dash-count {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+}
+
+.pv-dash-count-l {
+  flex: 1 1 20rem;
+  min-inline-size: 0;
+}
+
+/* The count, the drag hint and the reset link are always in the line (the link is invisible without a filter): nothing re-wraps */
+.pv-dash-countline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.75rem;
+  min-block-size: 1.5rem;
+}
+
+.pv-dash-hint {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* The reset link keeps its 48 px target but adds only a text line to the layout */
+.pv-dash-reset {
+  margin-block: -0.75rem;
+}
+
+.pv-dash-reset[data-hidden='true'] {
+  visibility: hidden;
+}
+
+.pv-dash-sortnote {
+  margin-block-start: 2px;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.5rem;
+}
+
+/* The sort control: a bordered button with the order in use (it opens a menu of all orders) and a boxless direction button */
+.pv-sort {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.pv-sort-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  box-sizing: border-box;
+  inline-size: 16rem;
+  min-block-size: 3rem;
+  padding: 0 0.75rem 0 0.875rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-align: start;
+  cursor: pointer;
+}
+
+.pv-sort-select:hover,
+.pv-sort-select[aria-expanded='true'] {
+  background: var(--bg-elevated);
+}
+
+.pv-sort-select:focus-visible,
+.pv-sort-dir:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.pv-sort-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  color: var(--text-muted);
+}
+
+.pv-sort-label {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.pv-sort-chevron {
+  flex: none;
+  color: var(--text-muted);
+}
+
+.pv-sort-dir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  inline-size: 3rem;
+  block-size: 3rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.pv-sort-dir:hover:not(:disabled) {
+  background: var(--bg-elevated);
+  color: var(--link);
+}
+
+.pv-sort-dir:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@media (max-width: 639px) {
+  .pv-sort {
+    inline-size: 100%;
+  }
+
+  .pv-sort-select {
+    flex: 1 1 0;
+    inline-size: auto;
+  }
+}
+
+/* The menu of the orders (a portal in <body>; rem, so it follows the display size like the page) */
+.pv-sortmenu {
+  position: fixed;
+  z-index: 85;
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: 0.25rem 0;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-pop);
+}
+
+.pv-sortmenu-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr) 1rem;
+  align-items: center;
+  gap: 0.75rem;
+  inline-size: 100%;
+  min-block-size: 3rem;
+  padding: 0.375rem 1rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.9375rem;
+  text-align: start;
+  cursor: pointer;
+}
+
+.pv-sortmenu-item:hover {
+  background: var(--bg-elevated);
+  color: var(--link);
+}
+
+.pv-sortmenu-item:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.pv-sortmenu-icon {
+  color: var(--text-muted);
+}
+
+.pv-sortmenu-text {
+  display: grid;
+  min-inline-size: 0;
+}
+
+.pv-sortmenu-name {
+  font-weight: 500;
+}
+
+.pv-sortmenu-hint {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.pv-sortmenu-check {
+  visibility: hidden;
+  color: var(--link);
+}
+
+/* The order in use: weight, the thin line on the left and a check - never colour alone */
+.pv-sortmenu-item[aria-checked='true'] .pv-sortmenu-name {
+  font-weight: 600;
+}
+
+.pv-sortmenu-item[aria-checked='true']::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block: 0.5rem;
+  inline-size: 2px;
+  background: var(--ind);
+}
+
+.pv-sortmenu-item[aria-checked='true'] .pv-sortmenu-check {
+  visibility: visible;
+}
+
+/* ---------------------------------------------------------------- tiles (sizes Groß, Kompakt, Sehr kompakt) */
+.pv-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1rem;
+}
+
+.pv-tiles[data-size='compact'] {
+  grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+  gap: 0.875rem;
+}
+
+.pv-tiles[data-size='veryCompact'] {
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 639px) {
+  .pv-tiles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pv-tiles[data-size='compact'],
+  .pv-tiles[data-size='veryCompact'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* The sorting wrapper of dnd-kit only carries the sorting; the tile keeps its own look (the rest of its rules: index.css) */
+.pv-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  background: var(--bg-surface);
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: border-color 0.15s ease;
+}
+
+.pv-tile:hover,
+.pv-tile:focus-within {
+  border-color: var(--border-subtle);
+}
+
+/* A finished game: one thin straight gold line along the top of the cover, inset from the corners */
+.pv-tile[data-platin='true']::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0.75rem;
+  inset-block-start: 0;
+  block-size: 2px;
+  background: var(--accent-gold);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.pv-tile-cover {
+  display: block;
+  position: relative;
+  aspect-ratio: 2 / 3;
+  background: var(--bg-elevated);
+  overflow: hidden;
+  text-decoration: none;
+}
+
+.pv-cover-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+}
+
+.pv-tile-link {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.625rem;
+  min-inline-size: 0;
+  padding: 0.75rem 1rem 0.75rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.pv-tile-link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+/* The head keeps the room of two title lines and the genre line, title and genre sit at its top: the facts below start at the same place on every card */
+.pv-tile-head {
+  min-block-size: 4.15rem;
+}
+
+.pv-tiles[data-size='compact'] .pv-tile-head {
+  min-block-size: 3.8rem;
+}
+
+.pv-tiles[data-size='veryCompact'] .pv-tile-head {
+  min-block-size: 2.3rem;
+}
+
+.pv-tile-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.pv-tile-link:hover .pv-tile-title {
+  color: var(--link);
+}
+
+.pv-tile-gen {
+  min-block-size: 1.25rem;
+  margin-block-start: 0.125rem;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+.pv-tiles[data-size='compact'] .pv-tile-title {
+  font-size: 0.9375rem;
+}
+
+.pv-tiles[data-size='compact'] .pv-tile-gen {
+  font-size: 0.8125rem;
+}
+
+.pv-tiles[data-size='compact'] .pv-tile-link {
+  padding-inline: 0.75rem;
+}
+
+.pv-tiles[data-size='veryCompact'] .pv-tile-title {
+  font-size: 0.875rem;
+}
+
+.pv-tiles[data-size='veryCompact'] .pv-tile-link {
+  gap: 0.375rem;
+  padding: 0.5rem 0.625rem 0.5rem;
+}
+
+/* ---- the fact rows ---- */
+.pv-facts {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pv-fact {
+  min-inline-size: 0;
+}
+
+.pv-fact-in {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 1.75rem;
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+}
+
+.pv-fact-ic {
+  flex: none;
+  color: var(--text-muted);
+}
+
+.pv-fact-none {
+  color: var(--text-muted);
+}
+
+.pv-facts--compact {
+  gap: 0.25rem;
+}
+
+.pv-facts--compact .pv-fact-in {
+  align-items: flex-start;
+  gap: 0.4rem;
+  min-block-size: 0;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+}
+
+.pv-facts--compact .pv-fact-ic {
+  margin-block-start: 0.2rem;
+}
+
+/* ---- the trophy line: label + count, and the thin progress line below ---- */
+.pv-tile-prog {
+  margin-block-start: auto;
+  padding-block-start: 0.25rem;
+}
+
+.pv-tile-prog-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-block-end: 0.375rem;
+  font-size: 0.9375rem;
+}
+
+.pv-tile-prog-k {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-inline-size: 0;
+  font-weight: 500;
+}
+
+.pv-tile-prog-k svg {
+  flex: none;
+  color: var(--accent-gold-text);
+}
+
+.pv-tile-prog-k[data-platin='true'] {
+  color: var(--accent-gold-text);
+}
+
+.pv-tile-prog-v {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-tiles[data-size='compact'] .pv-tile-prog-row,
+.pv-tiles[data-size='veryCompact'] .pv-tile-prog-row {
+  font-size: 0.8125rem;
+}
+
+/* ---- the action row: three equal cells, frameless text buttons ---- */
+.pv-tile-act {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  border-block-start: 1px solid var(--border-subtle);
+}
+
+.pv-tile-act > .pv-bar-cell {
+  display: flex;
+  flex: 1 1 0;
+  min-inline-size: 0;
+  container-type: inline-size;
+  container-name: pv-bar-seg;
+}
+
+/* The same cells as a small icon group at the end of a list row */
+.pv-bar-group {
+  display: inline-flex;
+  align-items: stretch;
+  flex-shrink: 0;
+}
+
+.pv-bar-group > .pv-bar-cell {
+  display: flex;
+  flex: 0 0 3rem;
+  container-type: inline-size;
+  container-name: pv-bar-seg;
+}
+
+.pv-bar-seg {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 3rem;
+  padding-inline: 0.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.pv-bar-seg:hover {
+  background: var(--bg-elevated);
+}
+
+/* Inside the row the focus ring sits inside the cell */
+.pv-bar-seg:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -3px;
+}
+
+.pv-bar-label {
+  display: none;
+  overflow: hidden;
+}
+
+/* The label shows from a cell of 76 px; the cell is tight there, so icon and text sit a little closer (the longest label, "Favourite", must not be cut) */
+@container pv-bar-seg (min-width: 4.75rem) {
+  .pv-bar-seg {
+    gap: 0.25rem;
+    padding-inline: 0.125rem;
+  }
+
+  .pv-bar-label {
+    display: inline;
+  }
+}
+
+@container pv-bar-seg (min-width: 6.5rem) {
+  .pv-bar-seg {
+    gap: 0.375rem;
+    padding-inline: 0.25rem;
+  }
+}
+
+/* Play carries the one accent of the row; the star is gold only while the game IS a favourite; Twitch shows its violet on hover */
+.pv-bar-seg--play {
+  color: var(--accent-emerald);
+}
+
+.pv-bar-seg--star {
+  color: var(--text-secondary);
+}
+
+.pv-bar-seg--star[aria-pressed='true'] svg {
+  color: var(--accent-gold-text);
+}
+
+.pv-bar-seg--twitch:hover .pv-bar-seg-icon,
+.pv-bar-seg--twitch:focus-visible .pv-bar-seg-icon {
+  color: var(--brand-twitch);
+}
+
+/* "Running": the same cell, only the content changes - the pulsing dot and "Läuft". Not clickable, so no hover wash. */
+.pv-bar-seg--play.pv-bar-seg--running:hover {
+  background: transparent;
+  cursor: default;
+}
+
+.pv-bar-seg--play[aria-busy='true'] {
+  cursor: progress;
+}
+
+/* The count of live streams on the Twitch cell: a small tag over its top-right corner. It is absolutely placed, so it appearing,
+   changing ("12" to "300+") or going away moves and resizes nothing. */
+.pv-bar-live {
+  position: absolute;
+  inset-block-start: 0.25rem;
+  inset-inline-end: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0 0.3rem;
+  min-block-size: 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.pv-bar-live-dot {
+  inline-size: 0.375rem;
+  block-size: 0.375rem;
+  border-radius: 50%;
+  background: var(--brand-twitch);
+}
+
+/* Room for the badge: from a cell wide enough for icon + label + badge the Twitch segment keeps a little space on its right, for every card alike */
+@container pv-bar-seg (min-width: 6.5rem) {
+  .pv-bar-seg--live {
+    padding-inline-end: 2.1rem;
+  }
+}
+
+/* No room for the dot (an icon-only cell, the icon group of a list row): the tag is a compact corner mark */
+@container pv-bar-seg (max-width: 4.74rem) {
+  .pv-bar-live {
+    inset-block-start: 0.125rem;
+    inset-inline-end: 0.125rem;
+    padding: 0 0.2rem;
+    font-size: 0.625rem;
+  }
+
+  .pv-bar-live-dot {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------- hairline list (sizes Nur Text and Liste) */
+.pv-dl {
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* Head and row are size containers: the columns that fit are shown (the head, the rows and the copy under the pointer while dragging agree) */
+.pv-dl-head,
+.pv-dl-row {
+  container-type: inline-size;
+  container-name: pv-dl;
+}
+
+.pv-dl-head {
+  border-block-end: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.pv-dl-row {
+  position: relative;
+  background: var(--bg-surface);
+  border-block-end: 1px solid var(--border-subtle);
+}
+
+.pv-dl > .pv-dl-row:last-child,
+.pv-dl > .pv-sortable:last-child .pv-dl-row {
+  border-block-end: 0;
+}
+
+.pv-dl-row:hover {
+  background: var(--bg-elevated);
+}
+
+.pv-dl-grid {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr) 6.75rem;
+  align-items: center;
+  column-gap: 0.75rem;
+  min-block-size: 3.5rem;
+  padding-inline: 0.5rem;
+}
+
+.pv-dl-head .pv-dl-grid {
+  min-block-size: 2.5rem;
+}
+
+.pv-dl-grid > * {
+  min-inline-size: 0;
+}
+
+.pv-dl-c-play,
+.pv-dl-c-last,
+.pv-dl-c-size,
+.pv-dl-c-act {
+  display: none;
+}
+
+.pv-dl-c-play,
+.pv-dl-c-last,
+.pv-dl-c-size,
+.pv-dl-c-trophy {
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pv-dl-head .pv-dl-c-play,
+.pv-dl-head .pv-dl-c-last,
+.pv-dl-head .pv-dl-c-size,
+.pv-dl-head .pv-dl-c-trophy {
+  font-size: 0.875rem;
+}
+
+.pv-dl-c-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-inline-size: 0;
+  padding-block: 0.375rem;
+}
+
+.pv-dl-cover {
+  flex: none;
+  inline-size: 2rem;
+  block-size: 2.75rem;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
+.pv-dl-link {
+  display: flex;
+  min-inline-size: 0;
+  color: var(--text-primary);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+/* The whole row opens the game: the link stretches over the row; the star and the action cells sit above it */
+.pv-dl-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.pv-dl-link:hover {
+  color: var(--link);
+}
+
+.pv-dl-link:focus-visible {
+  outline: none;
+}
+
+.pv-dl-link:focus-visible::after {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.pv-dl-link--plain {
+  cursor: default;
+}
+
+.pv-dl-link--plain::after {
+  content: none;
+}
+
+.pv-dl-gen {
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.pv-dl-starcell,
+.pv-dl-c-act {
+  position: relative;
+  z-index: 2;
+}
+
+.pv-dl-star[aria-pressed='true'] {
+  color: var(--accent-gold-text);
+}
+
+.pv-dl-plat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--accent-gold-text);
+  font-weight: 500;
+}
+
+.pv-dim {
+  color: var(--text-muted);
+}
+
+@container pv-dl (min-width: 34rem) {
+  .pv-dl-grid {
+    grid-template-columns: 3rem minmax(0, 1fr) 8.5rem 6rem;
+  }
+
+  .pv-dl-c-act {
+    display: block;
+  }
+}
+
+@container pv-dl (min-width: 44rem) {
+  .pv-dl-grid {
+    grid-template-columns: 3rem minmax(0, 1fr) 6rem 8.5rem 6rem;
+  }
+
+  .pv-dl-c-play {
+    display: block;
+  }
+}
+
+@container pv-dl (min-width: 54rem) {
+  .pv-dl-grid {
+    grid-template-columns: 3rem minmax(0, 1fr) 6rem 9rem 8.5rem 6rem;
+  }
+
+  .pv-dl-c-last {
+    display: block;
+  }
+}
+
+@container pv-dl (min-width: 62rem) {
+  .pv-dl-grid {
+    grid-template-columns: 3rem minmax(0, 1fr) 6rem 9rem 8.5rem 6rem 6rem;
+  }
+
+  .pv-dl-c-size {
+    display: block;
+  }
+}
+
+/* ---------------------------------------------------------------- empty dashboard help */
+.pv-empty {
+  inline-size: 100%;
+  max-inline-size: 48rem;
+  margin-inline: auto;
+}
+
+.pv-empty-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+}
+
+.pv-empty-ic {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border-radius: var(--radius-md);
+  background: var(--sel-bg);
+  color: var(--link);
+}
+
+.pv-empty-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.pv-empty-intro {
+  margin: 0.125rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+.pv-empty-steps {
+  display: grid;
+  gap: 0;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pv-step {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding-block: 0.875rem;
+  border-block-start: 1px solid var(--border-subtle);
+}
+
+.pv-step-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.pv-step-mark[data-state='done'] {
+  border-color: var(--accent-emerald);
+  background: var(--accent-emerald-bg);
+  color: var(--accent-emerald);
+}
+
+.pv-step-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.pv-step-title svg {
+  flex: none;
+  color: var(--text-muted);
+}
+
+.pv-step-text {
+  margin: 0.125rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+.pv-step-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-block-start: 0.125rem;
+  color: var(--link);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.pv-step-link:hover {
+  text-decoration: underline;
+}
+
+.pv-step-act {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+}
+
+.pv-step-btn {
+  min-inline-size: 11rem;
+  justify-content: center;
+}
+
+.pv-step-btn[aria-disabled='true'] {
+  color: var(--text-muted);
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+@media (min-width: 640px) {
+  .pv-step {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .pv-step-act {
+    grid-column: 3;
+  }
+}
+
+/* While the tiles load: a calm panel with a spinner */
+.pv-card.pv-dash-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding-block: 4rem;
+  color: var(--text-muted);
+}
+
+/* The title text of a list row sits above the stretched link, so its tooltip (shown while the title is cut off) can be reached */
+.pv-dl-linktext {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-inline-size: 0;
+}
+
+.pv-card.pv-empty {
+  padding: 1.5rem;
+}

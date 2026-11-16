@@ -18,6 +18,7 @@ const settings = {
     save: 'Einstellungen speichern',
     saved: 'Einstellungen und API-Keys verschlüsselt gespeichert.',
     saveFailed: 'Fehler beim Speichern.',
+    steamLinkFailed: 'Steam-Anmeldung fehlgeschlagen',
   },
 
   // Tab "Live & Sound"
@@ -35,6 +36,11 @@ const settings = {
     },
     volume: 'Lautstärke: {{percent}}',
     volumeRecommended: 'Empfohlen: 12% – 25%',
+    volumeLabel: 'Lautstärke',
+    previewTitle: 'Ausprobieren',
+    previewHint: 'Hör dir den Sound an oder sieh dir den Platin-Moment an, mit den Einstellungen von oben.',
+    positionLabel: 'Popup-Position',
+    positionHint: 'Klicken zum Auswählen & Testen.',
     playSounds: 'Freischalt-Sounds bei neuen Trophäen abspielen',
     autoTranslate: 'Englische Steam-Erfolge automatisch ins Deutsche übersetzen',
     position: 'Popup-Position (Klicken zum Auswählen & Testen):',
@@ -248,6 +254,7 @@ const settings = {
       modelLabel: '{{provider}} Modell auswählen',
       budgetTip: '{{model}} · Spar-Tipp',
       probeFailed: 'Verbindungsprüfung fehlgeschlagen.',
+      failedTitle: '{{provider}}: Verbindung fehlgeschlagen',
     },
     diagnose: {
       intro: 'Prüft mit zwei Mini-Anfragen, ob dein Key mit „{{model}}“ antwortet – ohne und mit Google-Suche.',
@@ -260,6 +267,7 @@ const settings = {
 
   // Tab "PlatinVault Bridge"
   bridge: {
+    errorTitle: 'Aktion fehlgeschlagen',
     title: 'PlatinVault Bridge – Echtzeit von deinem Gaming-PC',
     tokenActive: 'Token aktiv',
     tokenActiveHint: 'Token aktiv ({{hint}})',

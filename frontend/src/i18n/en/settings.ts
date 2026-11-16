@@ -20,6 +20,7 @@ const settings = {
     save: 'Save settings',
     saved: 'Settings and API keys saved (encrypted).',
     saveFailed: 'Saving failed.',
+    steamLinkFailed: 'Sign-in with Steam failed',
   },
 
 
@@ -37,6 +38,11 @@ const settings = {
     },
     volume: 'Volume: {{percent}}',
     volumeRecommended: 'Recommended: 12% – 25%',
+    volumeLabel: 'Volume',
+    previewTitle: 'Try it out',
+    previewHint: 'Listen to the sound or watch the platinum moment, with the settings above.',
+    positionLabel: 'Popup position',
+    positionHint: 'Click to select & test.',
     playSounds: 'Play unlock sounds for new trophies',
     autoTranslate: 'Automatically translate English Steam achievements into German',
     position: 'Popup position (click to select & test):',
@@ -240,6 +246,7 @@ const settings = {
       modelLabel: 'Select {{provider}} model',
       budgetTip: '{{model}} · budget tip',
       probeFailed: 'Connection check failed.',
+      failedTitle: '{{provider}}: connection failed',
     },
     diagnose: {
       intro: 'Checks with two tiny requests whether your key answers with “{{model}}” – without and with Google Search.',
@@ -251,6 +258,7 @@ const settings = {
   },
 
   bridge: {
+    errorTitle: 'Action failed',
     title: 'PlatinVault Bridge – real time from your gaming PC',
     tokenActive: 'Token active',
     tokenActiveHint: 'Token active ({{hint}})',

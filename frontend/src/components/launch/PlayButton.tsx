@@ -5,15 +5,16 @@ import { IconLoader2, IconPlayerPlayFilled } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { useSteamReach } from '../../utils/useSteamReach'
 import { Tooltip } from '../ui/Tooltip'
+import '../../styles/play.css'
 import { launchKey, useLauncher } from './LaunchProvider'
 import type { LaunchTarget } from './LaunchProvider'
 import { isRunningGame } from './running'
 
 /**
  * The forms of the Play button:
- *  - "segment": (quiet surface, emerald icon and label) a segment of a card's action bar or of the group at the end of a list row (.pv-bar-seg in index.css): icon, and the label
+ *  - "segment": (frameless, emerald icon and label) a cell of a card's action row or of the icon group at the end of a list row (.pv-bar-seg in styles/dashboard.css): icon, and the label
  *               "Spielen" / "Play" where the segment is wide enough. Equal width with its neighbours.
- *  - "button":  emerald-filled, icon + label at natural width - for the game page and anywhere it stands alone.
+ *  - "button":  emerald-tinted, icon + label at natural width - for the game page and anywhere it stands alone.
  */
 export type PlayVariant = 'segment' | 'button'
 
@@ -73,7 +74,7 @@ export function PlayButton({ target, gameName, variant = 'button', unavailable =
             event.stopPropagation()
           }}
         >
-          <span className="inline-flex size-[14px] shrink-0 items-center justify-center" aria-hidden="true">
+          <span className="inline-flex size-[18px] shrink-0 items-center justify-center" aria-hidden="true">
             <span className="pv-live-dot" />
           </span>
           <span className="pv-bar-label">
@@ -143,7 +144,7 @@ export function PlayButton({ target, gameName, variant = 'button', unavailable =
       >
         {/* The spinner lies over the content: the button keeps its size while it starts */}
         <span className={`inline-flex min-w-0 items-center ${segment ? 'gap-[0.35rem]' : 'gap-[0.45rem]'} ${busy ? 'invisible' : ''}`}>
-          <IconPlayerPlayFilled size={segment ? 14 : 16} className="shrink-0" aria-hidden="true" />
+          <IconPlayerPlayFilled size={18} className="shrink-0" aria-hidden="true" />
           {showRunning && !segment ? (
             // Holds the width of the longer "Game running" label, so the button does not resize when the state changes
             <span className="pv-play-stack pv-play-label">
@@ -154,7 +155,7 @@ export function PlayButton({ target, gameName, variant = 'button', unavailable =
             <span className={segment ? 'pv-bar-label' : 'pv-play-label'}>{label}</span>
           )}
         </span>
-        {busy && <IconLoader2 size={segment ? 16 : 18} className="absolute animate-spin" aria-hidden="true" />}
+        {busy && <IconLoader2 size={18} className="absolute animate-spin" aria-hidden="true" />}
       </button>
     </Tooltip>
   )

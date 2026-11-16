@@ -7,6 +7,30 @@
 <a name="english"></a>
 ## English
 
+## v2026.11.24.13.28980 (α)
+
+### 🔄 Changed
+
+- **New, light design:** fine lines instead of heavy frames and a calm typeface. Crystal blue shows what you can click and
+  where you are; gold now belongs only to trophies and platinum.
+- **A navigation on the left for everything:** Overview, All games, your favourite games and the trophy cabinet. The open
+  game unfolds there and shows live trophies, statistics, all guide chapters by group and Story & Lore. The separate chapter
+  bar of the game page is gone.
+- The navigation can be collapsed to a slim icon bar, and PlatinVault remembers your choice. On a phone you open it with the
+  menu icon at the top left.
+- **Settings are now a page of their own**, which you open at the bottom of the navigation. The selected tab stays when you
+  reload the page.
+- Version, "What's new" and the licences are on the new page **About PlatinVault** behind the info icon at the bottom of the
+  navigation. The page footer is gone.
+- When you reload the page, the handbook, the licences and "What's new" stay open.
+- The scrollbar now lies over the content and only appears when there is something to scroll, so the page always uses the
+  full width.
+- Buttons and icons are larger and easier to hit, and all texts are easy to read in the light and the dark theme.
+- The first start welcomes you with a new page: on the left you choose language and colour scheme, on the right you see what
+  PlatinVault can do.
+- **PlatinVault now needs a processor with x86-64-v2 support**, which is practically every PC or server processor from about
+  2013 onwards. This applies to Windows, Linux and the container on Unraid or a NAS.
+
 ## v2026.11.23.2.530 (α)
 
 ### 🔄 Changed
@@ -80,6 +104,30 @@
 
 <a name="deutsch"></a>
 ## Deutsch
+
+## v2026.11.24.13.28980 (α)
+
+### 🔄 Geändert
+
+- **Neues, leichtes Design:** feine Linien statt schwerer Rahmen und eine ruhige Schrift. Kristallblau zeigt, was du
+  anklicken kannst und wo du gerade bist; Gold gehört nur noch den Trophäen und Platin.
+- **Links gibt es jetzt eine Navigation für alles:** Übersicht, Alle Spiele, deine Lieblingsspiele und den Trophäenschrank.
+  Das geöffnete Spiel klappt dort auf und zeigt Live-Trophäen, Statistiken, alle Guide-Kapitel nach Gruppen und Story & Lore.
+  Die eigene Kapitelleiste der Spielseite gibt es nicht mehr.
+- Die Navigation lässt sich zu einer schmalen Symbolleiste einklappen, PlatinVault merkt sich das. Auf dem Handy öffnest du
+  sie über das Menü-Symbol oben links.
+- **Die Einstellungen sind jetzt eine eigene Seite**, du öffnest sie unten in der Navigation. Der gewählte Reiter bleibt beim
+  Neuladen erhalten.
+- Version, „Das ist neu“ und die Lizenzen findest du auf der neuen Seite **Über PlatinVault** hinter dem Info-Symbol unten in
+  der Navigation. Den Seitenfuß gibt es nicht mehr.
+- Lädst du die Seite neu, bleiben Handbuch, Lizenzen und „Das ist neu“ geöffnet.
+- Die Scrollleiste liegt jetzt über dem Inhalt und erscheint nur, wenn es etwas zu scrollen gibt. So nutzt die Seite immer
+  die ganze Breite.
+- Knöpfe und Symbole sind größer und leichter zu treffen, und alle Texte sind im hellen und im dunklen Modus gut lesbar.
+- Der erste Start begrüßt dich mit einer neuen Seite: Links wählst du Sprache und Farbschema, rechts siehst du, was
+  PlatinVault kann.
+- **PlatinVault braucht jetzt einen Prozessor mit x86-64-v2-Unterstützung**, das ist praktisch jeder PC- oder
+  Server-Prozessor ab etwa 2013. Das gilt für Windows, Linux und den Container auf Unraid oder einem NAS.
 
 ## v2026.11.23.2.530 (α)
 

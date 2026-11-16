@@ -194,20 +194,20 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, chapters
         <div className="flex items-center justify-between gap-3 px-4 py-4 sm:px-6" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border-subtle)' }}>
           <div className="min-w-0">
             <h2 id="manual-guide-title" className="flex items-center gap-2 text-base font-extrabold" style={{ color: 'var(--text-primary)' }}>
-              <IconClipboardText size={20} className="shrink-0" style={{ color: 'var(--accent-emerald)' }} aria-hidden="true" />
+              <IconClipboardText size={20} className="shrink-0" style={{ color: 'var(--accent-crystal)' }} aria-hidden="true" />
               <span className="truncate">{single ? t('ai:manual.chapterTitle') : t('ai:manual.title')} · {gameTitle}</span>
             </h2>
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
               {single ? t('ai:manual.step.single') : fixed ? t('ai:manual.step.list') : step === 'plan' ? t('ai:manual.step.plan') : t('ai:manual.step.chapters')}
             </p>
           </div>
-          <button type="button" onClick={onClose} className="pv-btn !p-1.5" aria-label={t('common:close')}>
+          <button type="button" onClick={onClose} className="pv-btn pv-icon-btn" aria-label={t('common:close')}>
             <IconX size={18} />
           </button>
         </div>
 
         <div className="flex-1 space-y-5 overflow-y-auto px-4 py-5 sm:px-6">
-          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }} data-testid="manual-intro">
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }} data-testid="manual-intro">
             {t('ai:manual.intro')}
           </p>
 
@@ -245,7 +245,7 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, chapters
               )}
 
               {topicsFailure && (
-                <div className="pv-alert pv-alert-danger whitespace-pre-line break-words text-xs font-semibold" role="alert">
+                <div className="pv-note pv-note--danger whitespace-pre-line break-words text-sm font-semibold" role="alert">
                   {topicsFailure.message}
                   <ErrorDetails message={topicsFailure.message} details={topicsFailure.details} />
                 </div>
@@ -282,7 +282,7 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, chapters
               ) : (
                 <>
                   {rows.length > 1 && (
-                    <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                    <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                       {t('ai:manual.chapters.intro')}
                     </p>
                   )}
@@ -311,7 +311,7 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, chapters
                   </button>
                 )}
                 {!plan && (
-                  <p id="manual-skip-hint" className="mt-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                  <p id="manual-skip-hint" className="mt-1 text-[0.8125rem]" style={{ color: 'var(--text-muted)' }}>
                     {t('ai:manual.plan.skipHint')}
                   </p>
                 )}
@@ -321,14 +321,14 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, chapters
                       {t('game:builder.all')}
                     </button>
                     {chosen.length === 0 && (
-                      <span className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>
+                      <span className="text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>
                         {t('ai:manual.plan.noneChosen')}
                       </span>
                     )}
                   </div>
                 )}
               </div>
-              <button type="button" className="pv-btn pv-btn-emerald" disabled={!plan || chosen.length === 0} onClick={toChapters}>
+              <button type="button" className="pv-btn pv-btn-primary" disabled={!plan || chosen.length === 0} onClick={toChapters}>
                 <span>{t('ai:manual.plan.next', { count: chosen.length })}</span>
               </button>
             </>
@@ -341,12 +341,12 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, chapters
                   </button>
                 )}
                 {rows.length > 1 && (
-                  <span className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }} data-testid="manual-progress">
+                  <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }} data-testid="manual-progress">
                     {t('ai:manual.chapters.progress', { done: saved.size, total: rows.length })}
                   </span>
                 )}
               </div>
-              <button type="button" className="pv-btn pv-btn-emerald" onClick={onClose}>
+              <button type="button" className="pv-btn pv-btn-primary" onClick={onClose}>
                 <span>{saved.size > 0 ? t('ai:manual.chapters.finished') : t('ai:manual.close')}</span>
               </button>
             </>
@@ -392,7 +392,7 @@ function ChapterRow({ slug, row, done, startOpen, onSaved }: { slug: string; row
             {row.seed.title}
           </span>
         </div>
-        <span className="text-xs font-bold" style={{ color: done ? 'var(--accent-emerald)' : 'var(--text-muted)' }}>
+        <span className="text-sm font-bold" style={{ color: done ? 'var(--accent-emerald)' : 'var(--text-muted)' }}>
           {done ? (dropped ? t('manual.row.dropped') : t('manual.row.done')) : row.seed.tabId ? t('manual.row.replaces') : t('manual.row.open')}
         </span>
       </div>
@@ -407,7 +407,7 @@ function ChapterRow({ slug, row, done, startOpen, onSaved }: { slug: string; row
                   <span>{open ? t('manual.row.hidePaste') : t('manual.row.paste')}</span>
                 </button>
                 {open && (
-                  <button type="button" className="pv-btn pv-btn-emerald relative" disabled={!ready || saving} onClick={() => void save()}>
+                  <button type="button" className="pv-btn pv-btn-primary relative" disabled={!ready || saving} onClick={() => void save()}>
                     <span className={saving ? 'invisible' : ''}>{t('manual.row.save')}</span>
                     {saving && (
                       <span className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
@@ -420,7 +420,7 @@ function ChapterRow({ slug, row, done, startOpen, onSaved }: { slug: string; row
             }
           />
           {failure && (
-            <div className="pv-alert pv-alert-danger whitespace-pre-line break-words text-xs font-semibold" role="alert">
+            <div className="pv-note pv-note--danger whitespace-pre-line break-words text-sm font-semibold" role="alert">
               {t('manual.row.saveFailed', { reason: failure.message })}
               <ErrorDetails message={t('manual.row.saveFailed', { reason: failure.message })} details={failure.details} />
             </div>

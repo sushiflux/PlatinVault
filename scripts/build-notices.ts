@@ -441,6 +441,12 @@ function nugetComponent(id: string, version: string, packageDir: string, usedIn:
       copyright.push(...extractCopyright(normalizeText(text)))
       texts.push(registerText(text, 'license', `${license} - ${extractCopyright(normalizeText(text))[0] ?? id}`, label))
     }
+    // A licence file that is only a pointer (e.g. "SQLite is Public Domain" + URL): the full text from sources.json goes next to it
+    const pointed = sources.textOverrides[`nuget:${id}`]
+    if (pointed) {
+      texts.push(registerText(readDataText(pointed.file), 'license', `${license} - ${pointed.source}`, label))
+      note = `Die Lizenzdatei des Pakets verweist nur auf die Quelle; Text aus ${pointed.source}.`
+    }
   } else {
     const override = sources.textOverrides[`nuget:${id}`]
     const template = sources.templates[license]
@@ -490,7 +496,7 @@ const RUNTIMES: RuntimeDefinition[] = [
   {
     name: '.NET Runtime (Microsoft.NETCore.App)',
     packId: 'Microsoft.NETCore.App.Runtime.win-x64',
-    usedIn: 'Windows-Programm und Installer (eigenständig enthalten), Bridge (eigenständig in PlatinVault.Bridge.exe enthalten) und Docker-Image (offizielles Basis-Image mcr.microsoft.com/dotnet/aspnet:10.0)',
+    usedIn: 'Windows-Programm und Installer (eigenständig enthalten), Bridge (eigenständig in PlatinVault.Bridge.exe enthalten) und Docker-Image (offizielles Basis-Image mcr.microsoft.com/dotnet/aspnet:11.0)',
     source: 'https://github.com/dotnet/runtime',
   },
   {
@@ -502,7 +508,7 @@ const RUNTIMES: RuntimeDefinition[] = [
   {
     name: 'ASP.NET Core Runtime (Microsoft.AspNetCore.App)',
     packId: 'Microsoft.AspNetCore.App.Runtime.win-x64',
-    usedIn: 'Windows-Programm (eigenständig enthalten, Server im Programm) und Docker-Image (Server, offizielles Basis-Image mcr.microsoft.com/dotnet/aspnet:10.0)',
+    usedIn: 'Windows-Programm (eigenständig enthalten, Server im Programm) und Docker-Image (Server, offizielles Basis-Image mcr.microsoft.com/dotnet/aspnet:11.0)',
     source: 'https://github.com/dotnet/aspnetcore',
   },
 ]
@@ -517,7 +523,7 @@ function ensureRuntimePack(cache: string, packId: string, version: string, scrat
   mkdirSync(helper, { recursive: true })
   writeFileSync(
     join(helper, 'pack-restore.csproj'),
-    `<Project Sdk="Microsoft.NET.Sdk.Web"><PropertyGroup><TargetFramework>net10.0</TargetFramework><RuntimeIdentifier>win-x64</RuntimeIdentifier><SelfContained>true</SelfContained></PropertyGroup></Project>`,
+    `<Project Sdk="Microsoft.NET.Sdk.Web"><PropertyGroup><TargetFramework>net11.0</TargetFramework><RuntimeIdentifier>win-x64</RuntimeIdentifier><SelfContained>true</SelfContained></PropertyGroup></Project>`,
   )
   log(`   Lade ${packId} ${version} in den NuGet-Cache ...`)
   run('dotnet', ['restore', join(helper, 'pack-restore.csproj')], helper)
@@ -807,7 +813,7 @@ function buildDocument(npm: Component[], dotnet: DotnetResult, assets: Component
   out.push(
     '### Linux-Basis-Image des Docker-Images',
     '',
-    '- Das Docker-Image baut auf dem offiziellen Image `mcr.microsoft.com/dotnet/aspnet:10.0` auf (zuletzt geprüft: Ubuntu 24.04). Die Betriebssystem-Pakete dieses Images bringen ihre eigenen Lizenzhinweise mit; sie liegen im Image unter `/usr/share/doc/<Paket>/copyright`, die der .NET-Laufzeit unter `/usr/share/dotnet/`.',
+    '- Das Docker-Image baut auf dem offiziellen Image `mcr.microsoft.com/dotnet/aspnet:11.0` auf (zuletzt geprüft: Ubuntu 26.04). Die Betriebssystem-Pakete dieses Images bringen ihre eigenen Lizenzhinweise mit; sie liegen im Image unter `/usr/share/doc/<Paket>/copyright`, die der .NET-Laufzeit unter `/usr/share/dotnet/`.',
     '- Die Datenbank ist SQLite (gemeinfrei) und steckt in der App selbst (NuGet-Paket SQLitePCLRaw.lib.e_sqlite3, siehe oben); es gibt keinen eigenen Datenbank-Container.',
     '',
   )

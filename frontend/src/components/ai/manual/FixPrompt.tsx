@@ -24,15 +24,15 @@ export function FixPromptBar({ prompt }: { prompt: string }) {
 
   return (
     <div className="space-y-1.5" data-testid="fix-prompt">
-      <button type="button" className="pv-btn !px-2.5 !py-1 !text-xs" onClick={() => void copy(prompt)} aria-describedby={hintId}>
+      <button type="button" className="pv-btn !px-2.5 !py-1 !text-sm" onClick={() => void copy(prompt)} aria-describedby={hintId}>
         <IconClipboardCopy size={14} className="shrink-0" aria-hidden="true" />
         <span>{t('manual.fix.button')}</span>
       </button>
-      <p id={hintId} className="text-[11px] leading-snug" style={{ color: 'var(--text-muted)' }}>
+      <p id={hintId} className="text-[0.8125rem] leading-snug" style={{ color: 'var(--text-muted)' }}>
         {t('manual.fix.hint')}
       </p>
       <ReservedText
-        className="text-[11px] font-semibold"
+        className="text-[0.8125rem] font-semibold"
         style={{ color: state === 'selected' ? 'var(--accent-gold-text)' : 'var(--accent-emerald)' }}
         candidates={[t('manual.fix.copied'), t('manual.fix.selected')]}
         role="status"
@@ -48,7 +48,7 @@ export function FixPromptBar({ prompt }: { prompt: string }) {
           value={prompt}
           aria-label={t('manual.fix.promptLabel')}
           rows={6}
-          className="block max-h-40 w-full resize-y rounded-lg p-2 font-mono text-[11px] leading-relaxed"
+          className="block max-h-40 w-full resize-y rounded-lg p-2 font-mono text-[0.8125rem] leading-relaxed"
           style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)' }}
         />
       )}

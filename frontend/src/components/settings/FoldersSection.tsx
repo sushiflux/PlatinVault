@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { CopyErrorButton } from '../ui/CopyErrorButton'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { IconCheck, IconCopy, IconFolder, IconFolderOpen, IconLoader2 } from '@tabler/icons-react'
+import { IconCheck, IconCopy, IconFolderOpen, IconLoader2 } from '@tabler/icons-react'
 import { fetchDesktopFolders, openDesktopFolder } from '../../api/client'
 import type { DesktopFolderKind } from '../../api/types'
 import { copyText } from '../../utils/clipboard'
@@ -70,12 +70,9 @@ function FoldersCard() {
   ])
 
   return (
-    <div className="pv-card space-y-3" data-testid="folders-section">
-      <div className="flex items-center gap-2 text-sm font-extrabold" style={{ color: 'var(--accent-crystal)' }}>
-        <IconFolder size={18} aria-hidden="true" />
-        <span>{t('folders.title')}</span>
-      </div>
-      <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+    <div className="pv-set-section" data-testid="folders-section">
+      <h3 className="pv-eyebrow">{t('folders.title')}</h3>
+      <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
         {t('folders.intro')}
       </p>
 
@@ -95,18 +92,18 @@ function FoldersCard() {
                   <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
                     {label(kind)}
                   </span>
-                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
                     {t(`folders.kinds.${kind}.hint`)}
                   </span>
                 </div>
-                <code className="mt-0.5 block break-all text-xs leading-relaxed" style={{ color: path ? 'var(--text-primary)' : 'var(--text-muted)' }} data-testid={`folder-path-${kind}`}>
+                <code className="mt-0.5 block break-all text-sm leading-relaxed" style={{ color: path ? 'var(--text-primary)' : 'var(--text-muted)' }} data-testid={`folder-path-${kind}`}>
                   {path ?? (folders.error ? '–' : t('folders.pathLoading'))}
                 </code>
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
                 <button
                   type="button"
-                  className="pv-btn !px-3 !py-1 !text-xs"
+                  className="pv-btn-text"
                   aria-label={t('folders.openLabel', { folder: label(kind) })}
                   disabled={!path || open.isPending}
                   onClick={() => open.mutate(kind)}
@@ -125,7 +122,7 @@ function FoldersCard() {
 
       <ReservedText
         role={shown?.tone === 'error' ? 'alert' : 'status'}
-        className="text-xs font-semibold leading-relaxed"
+        className="text-sm font-semibold leading-relaxed"
         style={{ color: shown ? TONE_COLOR[shown.tone] : undefined }}
         candidates={[...candidates, shown?.text ?? '']}
       >
@@ -133,7 +130,7 @@ function FoldersCard() {
         {shown?.tone === 'error' && <CopyErrorButton className="ms-2 align-middle" report={{ message: shown.text }} />}
       </ReservedText>
 
-      <p className="border-t pt-3 text-xs leading-relaxed" style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-muted)' }}>
+      <p className="border-t pt-3 text-sm leading-relaxed" style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-muted)' }}>
         {t('folders.programHint')}
       </p>
     </div>

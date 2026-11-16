@@ -3,14 +3,8 @@ import type de from '../de/cabinet'
 
 // Namespace "cabinet": English texts, typed against the German source file.
 const cabinet = {
-  tool: {
-    group: 'Collection',
-    label: 'Trophy cabinet',
-    description: 'Every game at 100% in a display case, with key figures for each game',
-  },
   title: 'Trophy cabinet',
   subtitle: 'All your games at 100%',
-  close: 'Close the trophy cabinet',
   stats: {
     games_one: '{{count, number}} platinum game',
     games_other: '{{count, number}} platinum games',
@@ -23,6 +17,13 @@ const cabinet = {
     playtime: '{{time}} playtime',
     playtimeHint: 'Total playtime in these games.',
     playtimeTotal: '{{time}} total playtime',
+  },
+  figure: {
+    games_one: 'platinum game',
+    games_other: 'platinum games',
+    trophies_one: 'trophy',
+    trophies_other: 'trophies',
+    playtime: 'Playtime',
   },
   hours: '{{value}} h',
   size: {
@@ -37,12 +38,10 @@ const cabinet = {
     },
   },
   view: {
-    label: 'View',
-    description: 'Lighting and empty places',
     lighting: 'Lighting',
-    spots: { name: 'Spotlights', hint: 'One lamp above every game' },
-    led: { name: 'LED strip', hint: 'One continuous strip per shelf' },
-    showEmpty: { name: 'Show empty places', hint: 'Grey placeholders with an empty plate' },
+    spots: { name: 'Spots', hint: 'One lamp above every game' },
+    led: { name: 'LED', hint: 'One continuous strip per shelf' },
+    showEmpty: { name: 'Show empty places', hint: 'Thinly outlined placeholders for the places that are still free' },
   },
   doors: {
     close: { label: 'Close doors', description: 'The light goes out and the glass doors close.' },

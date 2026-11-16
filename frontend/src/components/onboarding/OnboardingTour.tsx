@@ -9,8 +9,6 @@ import type { TourSettingsTab } from './steps'
 
 interface OnboardingTourProps {
   open: boolean
-  // Hidden (progress kept) while another modal opened from the tour, e.g. the settings, is on screen
-  paused?: boolean
   // Called for "Skip", Esc and "Let's go" - the caller remembers that the tour has been seen
   onClose: () => void
   // The checklist in the last step says which settings tab fits the clicked row
@@ -19,7 +17,7 @@ interface OnboardingTourProps {
 
 // Same focus ring everywhere in the tour (token colour instead of the browser default)
 const FOCUS_RING =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-crystal)]'
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]'
 
 const FOCUSABLE =
   'a[href], button:not(:disabled), textarea:not(:disabled), input:not(:disabled), select:not(:disabled), [tabindex]:not([tabindex="-1"])'
@@ -32,14 +30,14 @@ const slide: Variants = {
 }
 
 // Six-step walkthrough in a fixed-size modal, so no step ever resizes or moves the frame around it.
-export function OnboardingTour({ open, paused = false, onClose, onOpenSettings }: OnboardingTourProps) {
+export function OnboardingTour({ open, onClose, onOpenSettings }: OnboardingTourProps) {
   const { t } = useTranslation('onboarding')
   const tourSteps = useTourSteps()
   const [index, setIndex] = useState(0)
   const [direction, setDirection] = useState(1)
   const panelRef = useRef<HTMLDivElement>(null)
 
-  const visible = open && !paused
+  const visible = open
   const last = tourSteps.length - 1
   const step = tourSteps[index]!
 
@@ -113,7 +111,7 @@ export function OnboardingTour({ open, paused = false, onClose, onOpenSettings }
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="pv-modal-backdrop">
+      <div className="pv-modal-backdrop pv-modal-backdrop--top" style={{ paddingBlockStart: 0, alignItems: 'center' }}>
         <motion.div
           ref={panelRef}
           role="dialog"
@@ -127,18 +125,16 @@ export function OnboardingTour({ open, paused = false, onClose, onOpenSettings }
         >
           <header
             className="flex items-center justify-between gap-3 px-5 py-3 sm:px-6"
-            style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border-subtle)' }}
+            style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)' }}
           >
             <div className="flex items-center gap-3">
-              <img src="/favicon.svg" alt="" className="h-8 w-8 rounded-lg shadow-sm" />
-              <span className="pv-badge pv-badge-a">
-                {t('tour.stepOf', { current: index + 1, total: tourSteps.length })}
-              </span>
+              <img src="/favicon.svg" alt="" className="h-8 w-8" />
+              <span className="pv-eyebrow">{t('tour.stepOf', { current: index + 1, total: tourSteps.length })}</span>
             </div>
             <Tooltip label={t('tour.skipHint')} description="Esc" side="bottom">
-              <button type="button" className={`pv-btn !py-1.5 ${FOCUS_RING}`} onClick={finish}>
+              <button type="button" className={`pv-btn-text ${FOCUS_RING}`} onClick={finish}>
                 <span>{t('tour.skip')}</span>
-                <IconX size={15} aria-hidden="true" />
+                <IconX size={17} aria-hidden="true" />
               </button>
             </Tooltip>
           </header>
@@ -160,23 +156,16 @@ export function OnboardingTour({ open, paused = false, onClose, onOpenSettings }
                 className="grid min-h-full grid-cols-1 gap-5 p-5 sm:p-6 md:h-full md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:gap-7"
               >
                 <div className="flex min-w-0 flex-col gap-3.5 md:justify-start md:pt-6">
-                  <span
-                    className="flex h-11 w-11 items-center justify-center rounded-xl"
-                    style={{
-                      background: `var(--accent-${accent}-bg)`,
-                      color: `var(--accent-${accent})`,
-                      border: `1px solid var(--accent-${accent}-border)`,
-                    }}
-                  >
-                    <StepIcon size={22} aria-hidden="true" />
+                  <span className="flex h-11 w-11 items-center justify-center" style={{ color: `var(--accent-${accent})` }}>
+                    <StepIcon size={28} aria-hidden="true" />
                   </span>
-                  <h2 className="text-xl font-extrabold tracking-tight sm:text-2xl" style={{ color: 'var(--text-primary)' }}>
+                  <h2 className="text-xl font-semibold tracking-tight sm:text-2xl" style={{ color: 'var(--text-primary)' }}>
                     {step.title}
                   </h2>
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                  <p className="leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                     {step.intro}
                   </p>
-                  <ul className="space-y-2 text-sm">
+                  <ul className="space-y-2">
                     {step.points.map((point) => (
                       <li key={point.lead} className="flex items-start gap-2.5 leading-snug" style={{ color: 'var(--text-secondary)' }}>
                         <IconCheck
@@ -210,7 +199,7 @@ export function OnboardingTour({ open, paused = false, onClose, onOpenSettings }
 
           <footer
             className="flex items-center justify-between gap-3 px-5 py-3 sm:px-6"
-            style={{ background: 'var(--bg-elevated)', borderTop: '1px solid var(--border-subtle)' }}
+            style={{ background: 'var(--bg-surface)', borderTop: '1px solid var(--border-subtle)' }}
           >
             <button
               type="button"
@@ -230,13 +219,13 @@ export function OnboardingTour({ open, paused = false, onClose, onOpenSettings }
                   onClick={() => goTo(i)}
                   aria-label={t('tour.stepDot', { n: i + 1, title: s.title })}
                   aria-current={i === index ? 'step' : undefined}
-                  className={`flex h-6 items-center justify-center rounded px-1 cursor-pointer ${FOCUS_RING}`}
+                  className={`flex h-12 items-center justify-center px-1 cursor-pointer ${FOCUS_RING}`}
                 >
                   <span
-                    className="block h-2.5 rounded-full transition-all duration-200"
+                    className="block h-0.5 transition-all duration-200"
                     style={{
-                      width: i === index ? '1.5rem' : '0.625rem',
-                      background: i === index ? 'var(--accent-crystal)' : 'var(--border-strong)',
+                      width: i === index ? '1.75rem' : '1rem',
+                      background: i === index ? 'var(--ind)' : 'var(--border-strong)',
                     }}
                   />
                 </button>
@@ -246,7 +235,7 @@ export function OnboardingTour({ open, paused = false, onClose, onOpenSettings }
             {isLast ? (
               <button
                 type="button"
-                className={`pv-btn pv-btn-emerald min-w-[7.75rem] justify-center ${FOCUS_RING}`}
+                className={`pv-btn pv-btn-primary min-w-[7.75rem] justify-center ${FOCUS_RING}`}
                 onClick={finish}
                 data-autofocus
               >

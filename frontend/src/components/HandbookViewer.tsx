@@ -101,11 +101,11 @@ function HandbookDialog({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="pv-doc-actions">
-          <a className="pv-btn" href={href} download aria-label={t('handbook.downloadLabel')}>
+          <a className="pv-btn-text" href={href} download aria-label={t('handbook.downloadLabel')}>
             <IconDownload size={15} aria-hidden="true" />
             <span className="max-sm:hidden">{t('handbook.download')}</span>
           </a>
-          <a className="pv-btn" href={href} target="_blank" rel="noreferrer" aria-label={t('handbook.openTabLabel')}>
+          <a className="pv-btn-text" href={href} target="_blank" rel="noreferrer" aria-label={t('handbook.openTabLabel')}>
             <IconExternalLink size={15} aria-hidden="true" />
             <span className="max-sm:hidden">{t('handbook.openTab')}</span>
           </a>
@@ -129,7 +129,7 @@ function HandbookDialog({ onClose }: { onClose: () => void }) {
                 <IconExternalLink size={15} aria-hidden="true" />
                 <span>{t('handbook.openTab')}</span>
               </a>
-              <a className="pv-btn" href={href} download>
+              <a className="pv-btn-text" href={href} download>
                 <IconDownload size={15} aria-hidden="true" />
                 <span>{t('handbook.download')}</span>
               </a>

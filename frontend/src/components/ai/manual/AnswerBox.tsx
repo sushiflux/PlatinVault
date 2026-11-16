@@ -102,16 +102,16 @@ export function AnswerBox<T extends Checked>({ check, onResult, renderOk, disabl
   return (
     <div className="space-y-2" data-testid="answer-box">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <label id={labelId} htmlFor={`${labelId}-field`} className="text-xs font-extrabold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+        <label id={labelId} htmlFor={`${labelId}-field`} className="text-sm font-extrabold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
           {t('manual.answer.label')}
         </label>
         <div className="flex gap-2">
           <input ref={fileInput} type="file" accept=".txt,.md,.json,text/plain,text/markdown,application/json" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => { void loadFile(e.target.files?.[0]); e.target.value = '' }} />
-          <button type="button" className="pv-btn !px-2.5 !py-1 !text-xs" disabled={disabled} onClick={() => fileInput.current?.click()}>
+          <button type="button" className="pv-btn !px-2.5 !py-1 !text-sm" disabled={disabled} onClick={() => fileInput.current?.click()}>
             <IconFileImport size={14} className="shrink-0" aria-hidden="true" />
             <span>{t('manual.answer.loadFile')}</span>
           </button>
-          <button type="button" className="pv-btn !px-2.5 !py-1 !text-xs" disabled={disabled || empty} onClick={() => { setText(''); setFileError(null) }}>
+          <button type="button" className="pv-btn !px-2.5 !py-1 !text-sm" disabled={disabled || empty} onClick={() => { setText(''); setFileError(null) }}>
             <IconTrash size={14} className="shrink-0" aria-hidden="true" />
             <span>{t('manual.answer.clear')}</span>
           </button>
@@ -127,12 +127,12 @@ export function AnswerBox<T extends Checked>({ check, onResult, renderOk, disabl
         rows={6}
         placeholder={t('manual.answer.placeholder')}
         aria-invalid={!empty && result !== null && !result.ok ? true : undefined}
-        className="block max-h-64 min-h-[8rem] w-full resize-y rounded-lg p-2.5 font-mono text-xs leading-relaxed"
+        className="block max-h-64 min-h-[8rem] w-full resize-y rounded-lg p-2.5 font-mono text-sm leading-relaxed"
         style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}
       />
 
       <div
-        className="h-40 space-y-2 overflow-y-auto rounded-lg p-2.5 text-xs"
+        className="h-40 space-y-2 overflow-y-auto rounded-lg p-2.5 text-sm"
         style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
         role="status"
         aria-live="polite"
@@ -194,7 +194,7 @@ export function IssueList({ tone, heading, issues, copyable = tone === 'error' }
             {issue.message}
             {issue.examples && issue.examples.length > 0 && (
               <div className="mt-1 space-y-0.5" data-testid="issue-examples">
-                <div className="text-[11px] font-extrabold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                <div className="text-[0.8125rem] font-extrabold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                   {t('manual.answer.examples')}
                 </div>
                 <ul className="space-y-0.5 font-normal italic" style={{ color: 'var(--text-secondary)' }}>

@@ -20,10 +20,10 @@ export function RarityNotice({ rarity }: { rarity: LiveRarityDto }) {
   const stand = rarity.state === 'stale' && rarity.fetchedAt ? t('rarity.updatedAt', { date: fmt.date(rarity.fetchedAt, 'dateTime') }) : null
 
   return (
-    <div className="pv-alert pv-alert-gold items-start !gap-3 !px-4 !py-3" role="status" data-testid="rarity-notice" data-state={rarity.state}>
+    <div className="pv-note pv-note--warn flex items-start gap-3" role="status" data-testid="rarity-notice" data-state={rarity.state}>
       <IconInfoCircle size={20} className="mt-0.5 shrink-0" style={{ color: 'var(--accent-gold-text)' }} aria-hidden="true" />
       <div className="min-w-0 flex-1 text-sm">
-        <p className="font-bold">{title}</p>
+        <p className="font-semibold">{title}</p>
         <p className="break-words leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
           {message}
         </p>

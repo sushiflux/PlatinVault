@@ -235,9 +235,9 @@ describe('walkthrough blocks', () => {
 
   it('uses the colour of the variant the server set and falls back to the kind\'s own colour', () => {
     const { container, rerender } = render(<HintAlert section={{ type: 'alert', kind: 'missable', variant: 'danger', title: 'x' }} />)
-    expect(container.querySelector('.pv-alert-danger')).toBeTruthy()
+    expect(container.querySelector('.pv-hint--danger')).toBeTruthy()
     rerender(<HintAlert section={{ type: 'alert', kind: 'must_have', title: 'x' }} />)
-    expect(container.querySelector('.pv-alert-gold')).toBeTruthy()
+    expect(container.querySelector('.pv-hint--gold')).toBeTruthy()
   })
 
   it('renders a sub-heading with its lead and the steps as a numbered list', () => {

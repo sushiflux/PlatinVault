@@ -8,8 +8,8 @@
 #     "## vNEXT α" (CHANGELOG.nightly.md) become the readable version of this commit ("## v2026.11.12.13.557" / "## v2026.11.12.13.557 (β)" /
 #     "## v2026.11.12.13.557 (α)"); a suffix such as " · Unraid, Windows" is kept. Headings stamped earlier are never touched; before
 #     2026-11-08 they were written "## v2026.11.12 (13.557)" / "## v2026.11.12 (13.557 β)" and are still found by release-notes.sh.
-#   - intern/CHANGELOG.dev.md (private developer changelog in its own git repository, optional): the newest "## v..." heading of each
-#     language section gets the version and the commit time. Missing file = nothing happens.
+#   - intern/CHANGELOG.dev.md (private developer changelog, git-ignored, optional): in each language section a heading that is exactly
+#     "## vNEXT" becomes "## <version> - YYYY-MM-DD HH:MM". No placeholder or no file = nothing happens.
 
 set -e
 
@@ -84,32 +84,22 @@ stamp_customer_changelog "CHANGELOG.md" "$release_display"
 stamp_customer_changelog "CHANGELOG.beta.md" "$beta_display"
 stamp_customer_changelog "CHANGELOG.nightly.md" "$nightly_display"
 
-# ---- private developer changelog (intern/, its own git repository, never part of this one) ----------------------------------------
+# ---- private developer changelog (intern/, git-ignored, never part of this repository) -----------------------------------------------
+# Like the customer files it works with a placeholder: only a heading that is exactly "## vNEXT" (a trailing CR is allowed) is stamped,
+# once per language section. No placeholder or no file = nothing happens, so an older entry is never renamed to this commit.
 dev_changelog="$repo_root/intern/CHANGELOG.dev.md"
 if [ -f "$dev_changelog" ]; then
-    # Only a changed file gets the stamp (otherwise the previous entry would be renamed to this commit). Without a git repository in
-    # intern/ there is nothing to compare with, so the newest heading is stamped every time.
-    changed=1
-    if [ -d "$repo_root/intern/.git" ]; then
-        # The hook runs with GIT_DIR/GIT_INDEX_FILE of this repository - unset them, or git would look at this repository instead
-        if [ -z "$(unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_PREFIX GIT_OBJECT_DIRECTORY GIT_COMMON_DIR; \
-                   git -C "$repo_root/intern" status --porcelain -- CHANGELOG.dev.md 2>/dev/null)" ]; then
-            changed=0
-        fi
-    fi
-    if [ "$changed" = 1 ]; then
-        stamp=$(date "+%Y-%m-%d %H:%M")
-        tmp=$(mktemp)
-        awk -v ver="$version" -v stamp="$stamp" '
-            /^<a (id|name)="(english|deutsch)"/ { stamped = 0 }
-            !stamped && /^## v/ {
-                print "## " ver " - " stamp (/\r$/ ? "\r" : "")
-                stamped = 1
-                next
-            }
-            { print }
-        ' "$dev_changelog" > "$tmp"
-        cat "$tmp" > "$dev_changelog"
-        rm -f "$tmp"
-    fi
+    stamp=$(date "+%Y-%m-%d %H:%M")
+    tmp=$(mktemp)
+    awk -v ver="$version" -v stamp="$stamp" '
+        /^<a (id|name)="(english|deutsch)"/ { stamped = 0 }
+        !stamped && /^## vNEXT\r?$/ {
+            print "## " ver " - " stamp (/\r$/ ? "\r" : "")
+            stamped = 1
+            next
+        }
+        { print }
+    ' "$dev_changelog" > "$tmp"
+    cat "$tmp" > "$dev_changelog"
+    rm -f "$tmp"
 fi

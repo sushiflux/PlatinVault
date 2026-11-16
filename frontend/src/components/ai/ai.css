@@ -1,0 +1,141 @@
+/* Shared look of the AI parts in the light "Kristall" variant (the chooser button, progress, dialogs). Tokens only; weights 500/600; thin straight lines. */
+
+/* The "Claude ▾" part of an AI button inside a frameless action row: divided from the action by a hairline, same target height */
+.pv-ai-run--quiet .pv-ai-run__seg {
+  position: relative;
+  margin-inline-start: 0.125rem;
+}
+
+.pv-ai-run--quiet .pv-ai-run__seg::before {
+  content: '';
+  position: absolute;
+  inset-block: 0.875rem;
+  inset-inline-start: -0.125rem;
+  inline-size: 1px;
+  background: var(--border-strong);
+}
+
+/* The menu rows of the one-off AI choice: hover and focus tint, the checked one has the check */
+.pv-ai-run__item {
+  background: transparent;
+  color: var(--text-primary);
+  min-block-size: 3rem;
+}
+
+.pv-ai-run__item:hover,
+.pv-ai-run__item:focus-visible {
+  background: var(--bg-elevated);
+}
+
+.pv-ai-run__item:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+/* The chooser dialog: the AI choices as ONE connected vertical list (they carry a second line, so they do not fit a bar). The chosen row is
+   filled and carries the thin line on its left edge; a radio dot repeats it, so colour is never the only carrier. */
+.pv-ai-choice {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-input);
+}
+
+.pv-ai-choice__row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-block-size: 3rem;
+  padding: 0.5rem 0.875rem 0.5rem 1rem;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.pv-ai-choice__row + .pv-ai-choice__row {
+  border-block-start: 1px solid var(--border-strong);
+}
+
+.pv-ai-choice__row:hover {
+  background: var(--bg-elevated);
+}
+
+.pv-ai-choice__row[data-selected] {
+  background: var(--sel-bg);
+  color: var(--sel-text);
+}
+
+.pv-ai-choice__row[data-selected]::before {
+  content: '';
+  position: absolute;
+  inset-block: 0.5rem;
+  inset-inline-start: 0;
+  inline-size: 2px;
+  background: var(--ind);
+}
+
+.pv-ai-choice__row:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: -3px;
+}
+
+.pv-ai-choice__dot {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  inline-size: 1rem;
+  block-size: 1rem;
+  border: 2px solid var(--border-strong);
+  border-radius: 50%;
+}
+
+.pv-ai-choice__row[data-selected] .pv-ai-choice__dot {
+  border-color: var(--ind);
+}
+
+.pv-ai-choice__row[data-selected] .pv-ai-choice__dot::after {
+  content: '';
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: 50%;
+  background: var(--ind);
+}
+
+/* One topic of the guide plan (builder and subscription flow): a checkbox row on a quiet surface; the chosen one is filled and carries the thin line */
+.pv-topic {
+  position: relative;
+  display: flex;
+  inline-size: 100%;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-block-size: 3rem;
+  padding: 0.75rem 0.875rem 0.75rem 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+
+.pv-topic:hover {
+  background: var(--bg-elevated);
+}
+
+.pv-topic[data-selected] {
+  background: var(--sel-bg);
+  border-color: var(--border-subtle);
+}
+
+.pv-topic[data-selected]::before {
+  content: '';
+  position: absolute;
+  inset-block: 0.5rem;
+  inset-inline-start: 0;
+  inline-size: 2px;
+  background: var(--ind);
+}
+
+.pv-topic:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}

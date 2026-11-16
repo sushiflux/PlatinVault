@@ -64,7 +64,7 @@ $packageSource = Join-Path $script:RootDir 'src\PlatinVault.Bridge\package'
 
 Write-Step 'Pruefe dotnet ...'
 if (-not (Get-Command 'dotnet' -ErrorAction SilentlyContinue)) {
-    throw 'dotnet wurde nicht gefunden. Bitte das .NET 10 SDK installieren: https://dotnet.microsoft.com/download/dotnet/10.0'
+    throw 'dotnet wurde nicht gefunden. Bitte das .NET 11 SDK installieren: https://dotnet.microsoft.com/download/dotnet/11.0'
 }
 
 # Start from an empty folder so files of an earlier build can never end up next to the new exe.

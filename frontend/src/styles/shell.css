@@ -1,0 +1,587 @@
+/* The app shell of variant "Kristall" (components/shell): header, tree navigation (icon rail, phone drawer), content area, overlay
+   scrollbar thumb, settings page frame. The document scrolls; header and navigation stick. All colours are tokens (index.css). */
+
+:root {
+  /* Where sticky things inside the content start: right under the shell header (--pv-header-h is published by the header itself).
+     The game page's pins column, the walkthrough's table of contents and the chapter anchors use it. */
+  --pv-gbar-bottom: var(--pv-header-h, 60px);
+  --pv-nav-w: 20rem;
+  --pv-rail-w: 4.5rem;
+}
+
+.pv-shell {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100dvh;
+  background: var(--bg-primary);
+}
+
+.pv-skip-link {
+  position: absolute;
+  inset-inline-start: 0.5rem;
+  inset-block-start: -10rem;
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--act);
+  color: var(--act-on);
+  font-weight: 600;
+}
+
+.pv-skip-link:focus {
+  inset-block-start: 0.5rem;
+}
+
+/* ---------- header ---------- */
+.pv-shell-header {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-block-size: 3.75rem;
+  padding: 0 0.625rem 0 1.25rem;
+  background: var(--bg-frame);
+  border-block-end: 1px solid var(--border-subtle);
+}
+
+.pv-shell-menu {
+  margin-inline: -0.625rem 0.125rem;
+}
+
+.pv-shell-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-block-size: 3rem;
+  min-inline-size: 3rem;
+  margin-inline-end: auto;
+  color: var(--text-primary);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+}
+
+.pv-shell-brand:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.pv-shell-logo {
+  inline-size: 2.375rem;
+  block-size: 2.375rem;
+  flex: none;
+  display: block;
+}
+
+.pv-shell-word {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.pv-shell-utils {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+@media (max-width: 429px) {
+  .pv-shell-word {
+    display: none;
+  }
+
+  .pv-shell-header {
+    padding-inline: 0.625rem 0.25rem;
+  }
+}
+
+/* ---------- body: navigation + content ---------- */
+.pv-shell-body {
+  display: flex;
+  align-items: flex-start;
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.pv-shell-navwrap {
+  position: sticky;
+  inset-block-start: var(--pv-header-h, 3.75rem);
+  z-index: 30;
+  flex: none;
+  block-size: calc(100dvh - var(--pv-header-h, 3.75rem));
+}
+
+.pv-shell-main {
+  flex: 1;
+  min-inline-size: 0;
+  padding: 1.5rem 1.75rem 3rem;
+  outline: none;
+}
+
+/* ---------- tree navigation ---------- */
+.pv-snav {
+  display: flex;
+  flex-direction: column;
+  inline-size: var(--pv-nav-w);
+  block-size: 100%;
+  background: var(--bg-frame);
+  border-inline-end: 1px solid var(--border-subtle);
+}
+
+.pv-snav[data-rail] {
+  inline-size: var(--pv-rail-w);
+}
+
+.pv-snav ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pv-snav-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.pv-snav[data-rail] .pv-snav-top {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.pv-snav-search {
+  position: relative;
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.pv-snav-search-icon {
+  position: absolute;
+  inset-inline-start: 0.625rem;
+  inset-block-start: 50%;
+  translate: 0 -50%;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.pv-input.pv-snav-search-input {
+  inline-size: 100%;
+  padding-inline: 2.25rem 2.5rem;
+  font-size: 0.875rem;
+  text-overflow: ellipsis;
+}
+
+/* Empty field: no clear button, so the placeholder gets that room */
+.pv-input.pv-snav-search-input:placeholder-shown {
+  padding-inline-end: 0.75rem;
+}
+
+.pv-snav-search-input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.pv-snav-search-clear {
+  position: absolute;
+  inset-inline-end: 0.25rem;
+  inset-block-start: 50%;
+  translate: 0 -50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 3rem;
+  block-size: 3rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.pv-snav-search-clear:hover {
+  color: var(--link);
+}
+
+.pv-snav-search-clear:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.pv-snav-list {
+  flex: 1;
+  min-block-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.25rem 0 0.75rem;
+}
+
+.pv-snav-empty {
+  margin: 0;
+  padding: 0.25rem 1rem 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+/* One entry: 48 px target, the active one has a thin straight line on the left and the link colour */
+.pv-ni {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  inline-size: 100%;
+  min-block-size: 3rem;
+  padding: 0.375rem 1rem;
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.25;
+  text-decoration: none;
+}
+
+.pv-ni:hover {
+  color: var(--link);
+}
+
+.pv-ni:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.pv-ni[aria-current='page'] {
+  color: var(--link);
+  font-weight: 600;
+}
+
+.pv-ni[aria-current='page']::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block: 0.5rem;
+  inline-size: 3px;
+  background: var(--ind);
+}
+
+.pv-ni-tip {
+  display: flex;
+}
+
+.pv-ni-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.5rem;
+}
+
+.pv-ni-label {
+  flex: 1;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.pv-ni-cover {
+  display: block;
+  inline-size: 1.5rem;
+  block-size: 2.25rem;
+  object-fit: cover;
+  border-radius: 3px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+}
+
+.pv-ni-chev {
+  display: inline-flex;
+  flex: none;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.pv-ni[aria-expanded='true'] .pv-ni-chev {
+  transform: rotate(90deg);
+}
+
+.pv-ni-count {
+  flex: none;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-ni-count[data-done='true'] {
+  color: var(--accent-emerald);
+}
+
+.pv-ni-failed {
+  display: inline-flex;
+  flex: none;
+  color: var(--accent-crimson);
+}
+
+/* Small-caps group label (same look as .pv-eyebrow) */
+.pv-glabel {
+  padding: 0.875rem 1rem 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pv-nsep {
+  margin: 0.5rem 1rem;
+  border-block-start: 1px solid var(--border-subtle);
+}
+
+/* The open game: indented on a 1 px guide line; the active child's line sits on that guide line */
+/* Beats the reset of .pv-snav ul */
+.pv-snav .pv-subtree {
+  margin: 0 0 0.375rem 1.6875rem;
+  border-inline-start: 1px solid var(--border-subtle);
+}
+
+.pv-subtree .pv-ni {
+  padding-inline-start: 1rem;
+  font-weight: 500;
+}
+
+.pv-subtree .pv-ni[aria-current='page'] {
+  font-weight: 600;
+}
+
+.pv-subtree .pv-ni[aria-current='page']::before {
+  inset-inline-start: -1px;
+  inline-size: 2px;
+}
+
+.pv-subtree .pv-glabel {
+  padding: 0.75rem 1rem 0.125rem;
+}
+
+/* Placeholder rows while a list loads: the same 48 px as a real entry, a faint bar where the label will be */
+.pv-snav-skel {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pv-snav-skel > li {
+  display: flex;
+  align-items: center;
+  min-block-size: 3rem;
+  padding-inline: 1rem;
+}
+
+.pv-ni-skel {
+  display: block;
+  inline-size: 60%;
+  block-size: 0.625rem;
+  background: var(--track);
+  border-radius: var(--radius-sm);
+}
+
+.pv-snav .pv-snav-skel.pv-subtree {
+  margin-block-end: 0.375rem;
+}
+
+.pv-snav-foot {
+  flex: none;
+  border-block-start: 1px solid var(--border-subtle);
+}
+
+.pv-snav-inforow {
+  display: flex;
+  align-items: center;
+  padding-inline-end: 0.25rem;
+}
+
+.pv-user-tip {
+  display: flex;
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.pv-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-inline-size: 0;
+  min-block-size: 3.5rem;
+  padding: 0.25rem 0.25rem 0.25rem 1rem;
+  color: var(--text-primary);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+}
+
+a.pv-user:hover .pv-user-name {
+  color: var(--link);
+}
+
+.pv-user:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.pv-user--empty {
+  min-block-size: 3.5rem;
+}
+
+.pv-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
+.pv-avatar--empty {
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+}
+
+.pv-user-text {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  line-height: 1.25;
+}
+
+.pv-user-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pv-user-sub {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+/* ---------- icon rail (desktop, collapsed) ---------- */
+.pv-snav[data-rail] .pv-ni {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.pv-snav[data-rail] :is(.pv-ni-label, .pv-ni-chev, .pv-ni-count, .pv-user-text) {
+  display: none;
+}
+
+.pv-snav[data-rail] .pv-glabel {
+  block-size: 0;
+  margin: 0.5rem 1rem;
+  padding: 0;
+  overflow: hidden;
+  border-block-start: 1px solid var(--border-subtle);
+  font-size: 0;
+}
+
+.pv-snav[data-rail] .pv-snav-inforow {
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 0 0.25rem;
+}
+
+.pv-snav[data-rail] .pv-user-tip {
+  inline-size: 100%;
+  flex: none;
+}
+
+.pv-snav[data-rail] .pv-user {
+  justify-content: center;
+  padding: 0.5rem 0 0;
+}
+
+/* ---------- phone: the tree is a drawer under the header ---------- */
+.pv-shell[data-drawer] .pv-shell-navwrap {
+  position: fixed;
+  inset-block: var(--pv-header-h, 3.75rem) 0;
+  inset-inline-start: 0;
+  z-index: 45;
+  inline-size: min(var(--pv-nav-w), 86vw);
+  block-size: auto;
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition: transform 0.2s ease, visibility 0s linear 0.2s;
+}
+
+.pv-shell[data-drawer] .pv-shell-navwrap[data-open='true'] {
+  transform: none;
+  visibility: visible;
+  transition: transform 0.2s ease;
+}
+
+.pv-shell[data-drawer] .pv-snav {
+  inline-size: 100%;
+}
+
+.pv-shell-drawer-backdrop {
+  position: fixed;
+  inset: var(--pv-header-h, 3.75rem) 0 0 0;
+  z-index: 44;
+  background: var(--overlay);
+}
+
+.pv-shell[data-drawer] .pv-shell-main {
+  padding: 1rem 1rem 2.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-shell[data-drawer] .pv-shell-navwrap,
+  .pv-shell[data-drawer] .pv-shell-navwrap[data-open='true'],
+  .pv-ni-chev {
+    transition: none;
+  }
+}
+
+/* ---------- overlay scrollbar thumb (components/shell/OverlayScrollbars.tsx) ---------- */
+.pv-osb {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: 2147483000;
+  inline-size: 6px;
+  translate: -100% 0;
+  border-radius: 2px;
+  background: var(--pv-scroll-thumb);
+  opacity: 0;
+  pointer-events: none;
+  touch-action: none;
+  transition: opacity 0.2s ease, inline-size 0.1s ease;
+}
+
+.pv-osb[data-on='true'] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.pv-osb:hover,
+.pv-osb[data-drag='true'] {
+  inline-size: 9px;
+  background: var(--pv-scroll-thumb-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-osb {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .pv-osb {
+    background: CanvasText;
+  }
+}
+
+@media print {
+  .pv-shell-main {
+    padding: 0;
+  }
+}

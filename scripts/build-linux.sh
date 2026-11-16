@@ -8,7 +8,7 @@
 # <tag> is the technical form of the version, the same string as the git tag: v2026.11.12 (release) or v2026.11.12.13.557-beta /
 # v2026.11.12.13.557-nightly (scripts/version-display.sh is the single definition, version.txt of the repository the source).
 #
-# Runs on Linux (CI: ubuntu-latest; locally in a container such as mcr.microsoft.com/dotnet/sdk:10.0). Needs the .NET SDK (global.json),
+# Runs on Linux (CI: ubuntu-latest; locally in a container such as mcr.microsoft.com/dotnet/sdk:11.0). Needs the .NET SDK (global.json),
 # bash, GNU tar, gzip, sha256sum and - unless --frontend-dist is given - Node.js with npm.
 #
 #   scripts/build-linux.sh [--channel release|beta|nightly] [--product-version "<readable version>"] [--frontend-dist <dir>] [--skip-frontend]

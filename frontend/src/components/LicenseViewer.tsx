@@ -127,20 +127,20 @@ function LicenseDialog({ onClose, initial }: { onClose: () => void; initial: Lic
         <div className="pv-doc-actions">
           {sourceUrl && (
             <Tooltip label={t('licenses.source')} description={t('licenses.sourceHint', { url: sourceUrl })}>
-              <a className="pv-btn" href={sourceUrl} target="_blank" rel="noreferrer" aria-label={t('licenses.sourceLabel')}>
+              <a className="pv-btn-text" href={sourceUrl} target="_blank" rel="noreferrer" aria-label={t('licenses.sourceLabel')}>
                 <IconBrandGithub size={15} aria-hidden="true" />
                 <span className="max-sm:hidden">{t('licenses.source')}</span>
               </a>
             </Tooltip>
           )}
           <Tooltip label={t('licenses.download')} description={t('licenses.downloadHint', { fileName: currentFileName })}>
-            <a className="pv-btn" href={href} download={currentFileName} aria-label={t('licenses.downloadLabel', { document: currentLabel })}>
+            <a className="pv-btn-text" href={href} download={currentFileName} aria-label={t('licenses.downloadLabel', { document: currentLabel })}>
               <IconDownload size={15} aria-hidden="true" />
               <span className="max-sm:hidden">{t('licenses.download')}</span>
             </a>
           </Tooltip>
           <Tooltip label={t('licenses.openTab')} description={t('licenses.openTabHint')}>
-            <a className="pv-btn" href={href} target="_blank" rel="noreferrer" aria-label={t('licenses.openTabLabel', { document: currentLabel })}>
+            <a className="pv-btn-text" href={href} target="_blank" rel="noreferrer" aria-label={t('licenses.openTabLabel', { document: currentLabel })}>
               <IconExternalLink size={15} aria-hidden="true" />
               <span className="max-sm:hidden">{t('licenses.openTab')}</span>
             </a>
@@ -169,7 +169,7 @@ function LicenseDialog({ onClose, initial }: { onClose: () => void; initial: Lic
                     reason: error instanceof Error ? error.message : t('common:noServerResponse'),
                   })}
                 </p>
-                <button type="button" className="pv-btn !py-1 !px-3 !text-xs" onClick={() => void refetch()} disabled={isFetching}>
+                <button type="button" className="pv-btn" onClick={() => void refetch()} disabled={isFetching}>
                   <IconRefresh size={14} className={isFetching ? 'animate-spin' : ''} aria-hidden="true" />
                   <span>{t('licenses.retry')}</span>
                 </button>

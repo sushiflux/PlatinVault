@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { IconAlertTriangle, IconChevronDown, IconCircleCheck, IconLoader2, IconX } from '@tabler/icons-react'
-import { GhostIconButton } from './GhostIconButton'
+import { IconButton } from './IconButton'
 import { CopyErrorButton } from './CopyErrorButton'
 
 // The one floating notice of the app: a failed action, a result, a long-running job. It lies over the page (fixed, never part of
@@ -93,16 +93,17 @@ export function FloatingNotice({ tone, title, message, details, actions, onClose
         backgroundImage: `linear-gradient(var(--accent-${accent}-bg), var(--accent-${accent}-bg))`,
         color: 'var(--text-primary)',
         border: `1px solid var(--accent-${accent}-border)`,
-        borderInlineStart: `4px solid var(--accent-${accent})`,
         borderRadius: 'var(--radius-md)',
-        boxShadow: '0 18px 44px -10px rgba(8, 13, 23, 0.45), 0 4px 14px rgba(8, 13, 23, 0.22)',
+        boxShadow: 'var(--shadow-pop)',
       }}
       initial={reduce ? { opacity: 0 } : { opacity: 0, y: 18, scale: 0.98 }}
       animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
       exit={reduce ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.98 }}
       transition={reduce ? { duration: 0.12 } : { type: 'spring', stiffness: 460, damping: 36, mass: 0.8 }}
     >
-      <div className="flex items-start gap-3 py-3 ps-3.5" style={{ paddingInlineEnd: onClose ? '2.75rem' : '0.875rem' }}>
+      {/* The tone as a thin straight line at the left edge (inset from the rounded corners), never a thick border */}
+      <span aria-hidden="true" className="absolute start-0 inset-y-3 w-[3px]" style={{ background: `var(--accent-${accent})` }} />
+      <div className="flex items-start gap-3 py-3 ps-4" style={{ paddingInlineEnd: onClose ? '3.25rem' : '0.875rem' }}>
         <Icon
           size={20}
           aria-hidden="true"
@@ -114,11 +115,11 @@ export function FloatingNotice({ tone, title, message, details, actions, onClose
           tabIndex={0}
           className="max-h-[min(45vh,20rem)] min-w-0 flex-1 overflow-y-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-crystal)]"
         >
-          <p className="text-sm font-extrabold leading-snug" style={{ color: 'var(--text-primary)' }}>
+          <p className="font-semibold leading-snug" style={{ color: 'var(--text-primary)' }}>
             {title}
           </p>
           {message && (
-            <div ref={messageRef} className="mt-1 whitespace-pre-line break-words text-[0.8125rem] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            <div ref={messageRef} className="mt-1 whitespace-pre-line break-words text-[0.9375rem] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               {message}
             </div>
           )}
@@ -133,7 +134,7 @@ export function FloatingNotice({ tone, title, message, details, actions, onClose
                     aria-expanded={showDetails}
                     aria-controls={detailsId}
                     onClick={() => setShowDetails((open) => !open)}
-                    className="inline-flex cursor-pointer items-center gap-1 text-xs font-bold underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-crystal)]"
+                    className="inline-flex cursor-pointer items-center gap-1 text-sm font-medium underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-crystal)]"
                     style={{ color: 'var(--text-secondary)' }}
                   >
                     <IconChevronDown size={14} aria-hidden="true" className={`transition-transform ${showDetails ? 'rotate-180' : ''}`} />
@@ -165,7 +166,7 @@ export function FloatingNotice({ tone, title, message, details, actions, onClose
           {actions && actions.length > 0 && (
             <div className="mt-2.5 flex flex-wrap gap-2">
               {actions.map((action) => (
-                <button key={action.label} type="button" className="pv-btn !px-2.5 !py-1 !text-xs" onClick={action.onClick}>
+                <button key={action.label} type="button" className="pv-btn-text" onClick={action.onClick}>
                   {action.label}
                 </button>
               ))}
@@ -175,10 +176,10 @@ export function FloatingNotice({ tone, title, message, details, actions, onClose
       </div>
 
       {onClose && (
-        <div className="absolute end-1.5 top-1.5">
-          <GhostIconButton label={t('common:close')} size="md" onClick={onClose}>
-            <IconX size={17} aria-hidden="true" />
-          </GhostIconButton>
+        <div className="absolute end-0 top-0">
+          <IconButton label={t('common:close')} onClick={onClose}>
+            <IconX size={20} aria-hidden="true" />
+          </IconButton>
         </div>
       )}
     </motion.div>

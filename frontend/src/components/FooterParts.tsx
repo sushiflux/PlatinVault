@@ -5,9 +5,8 @@ import { fetchBranding } from '../api/client'
 import { LicenseViewer } from './LicenseViewer'
 import { Tooltip } from './ui/Tooltip'
 
-// The pieces of the app's footer block, shared by the dashboard footer (AppFooter) and the info card at the bottom of the game
-// page's side navigation (gamenav/NavInfo.tsx), so both show the same texts, the same tooltips and the same licence viewer.
-// "Made with <heart>" is MadeWith.tsx and is shared the same way.
+// The version, the licences button and the branding query of the app (the about page /about uses them, the version also the update
+// popover). "Made with <heart>" is MadeWith.tsx. There is no copyright line in the UI.
 
 /** The branding answer (name, company, version). One query key for the whole app, so the three call sites share one request. */
 export function useBranding() {
@@ -41,13 +40,6 @@ export function AppVersion({ className = '' }: { className?: string }) {
     )
   }
   return <span className={classes}>{branding.version}</span>
-}
-
-/** "© 2026 SushiFlux": the year of today, the company from the branding. */
-export function AppCopyright() {
-  const { t } = useTranslation('shell')
-  const { data: branding } = useBranding()
-  return <span>{t('footer.copyright', { year: new Date().getFullYear(), company: branding?.company ?? 'SushiFlux' })}</span>
 }
 
 interface LicensesButtonProps {

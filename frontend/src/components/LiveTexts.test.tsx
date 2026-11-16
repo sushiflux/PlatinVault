@@ -45,25 +45,24 @@ const data = {
 } as unknown as LiveGameAchievementsDto
 
 describe('live texts follow the language', () => {
-  it('tier pills: Silber / Silver', async () => {
+  it('tier figures: Silber / Silver', async () => {
     await applyLanguage('de')
     render(<TrophyTierPills data={data} />)
-    expect(screen.getByText(/Silber:/)).toBeTruthy()
+    expect(screen.getByText('Silber')).toBeTruthy()
     cleanup()
     await applyLanguage('en')
     render(<TrophyTierPills data={data} />)
-    expect(screen.getByText(/Silver:/)).toBeTruthy()
-    expect(screen.getByText(/Platinum:/)).toBeTruthy()
+    expect(screen.getByText('Silver')).toBeTruthy()
+    expect(screen.getByText('Platinum')).toBeTruthy()
   })
 
-  it('tier pills keep the tier name in the DOM (read out when the bar shows compact pills) next to the count', async () => {
+  it('tier figures show the tier name under the count, in a fixed order, and name their tier for the CSS that colours them', async () => {
     await applyLanguage('en')
     const { container } = render(<TrophyTierPills data={data} />)
-    const pills = [...container.querySelectorAll('.stat-pill')]
-    expect(pills.map((p) => p.querySelector('.pv-tier-name')?.textContent?.trim())).toEqual(['Platinum:', 'Gold:', 'Silver:', 'Bronze:'])
-    // The order is fixed and every pill names its tier for the CSS that tints the compact icons
-    expect(pills.map((p) => p.getAttribute('data-tier'))).toEqual(['Platinum', 'Gold', 'Silver', 'Bronze'])
-    expect(pills.map((p) => p.querySelector('.pv-tier-text')?.textContent)).toEqual(['Platinum: 0/1', 'Gold: 3/5', 'Silver: 4/9', 'Bronze: 5/9'])
+    const figures = [...container.querySelectorAll('.pv-fig')]
+    expect(figures.map((f) => f.querySelector('.pv-fig-name')?.textContent)).toEqual(['Platinum', 'Gold', 'Silver', 'Bronze'])
+    expect(figures.map((f) => f.getAttribute('data-tier'))).toEqual(['Platinum', 'Gold', 'Silver', 'Bronze'])
+    expect(figures.map((f) => f.querySelector('.pv-fig-count')?.textContent)).toEqual(['0 / 1', '3 / 5', '4 / 9', '5 / 9'])
   })
 
   it('popup card: tier headline and the share in the language of the app', async () => {

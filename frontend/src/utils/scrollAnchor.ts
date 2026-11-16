@@ -14,8 +14,8 @@ const NOOP: ScrollAnchor = { restore: () => undefined }
 
 function stickyBottom(): number {
   let bottom = 0
-  // The header, the game page's trophy bar and the dashboard's sub-bar (the side nav is a column, not a bar across the top)
-  for (const selector of ['.top-header', '.pv-gbar', '.pv-subbar']) {
+  // The header, the settings page's save row and the dashboard's sub-bar (the side nav is a column, not a bar across the top)
+  for (const selector of ['.pv-shell-header', '.pv-set-head', '.pv-subbar']) {
     const element = document.querySelector<HTMLElement>(selector)
     if (!element) continue
     const rect = element.getBoundingClientRect()

@@ -13,6 +13,26 @@ const onboarding = {
     saveFailed: 'Die Sprache konnte nicht gespeichert werden: {{reason}}',
   },
 
+  // First-run screen, left part (language + colour scheme) and right part (brand panel). Read with a fixed language, like the block above.
+  first: {
+    title: 'Willkommen bei {{name}}',
+    lead: 'Wähle, wie {{name}} für dich aussieht. Beides kannst du später jederzeit ändern.',
+    languageLabel: 'Sprache',
+    themeLabel: 'Farbschema',
+    themeLight: 'Hell',
+    themeDark: 'Dunkel',
+    note: 'PlatinVault hat keine Anmeldung: Es gibt genau einen Benutzer. Dein Steam-Konto verbindest du danach in den Einstellungen.',
+    saveFailedTitle: 'Sprache nicht gespeichert',
+    brandLabel: 'Was PlatinVault kann',
+    features: {
+      live: { title: 'Live-Trophäen in Echtzeit', text: 'Neue Steam-Erfolge erscheinen sofort als Popup.' },
+      overlay: { title: 'Platin-Overlay über dem Spiel', text: 'Das Popup erscheint auch direkt im Spiel.' },
+      guides: { title: 'KI-Guides für 100 %', text: 'Komplettlösung, Rätsel und Verpassbares in einem Guide.' },
+      stats: { title: 'Statistiken', text: 'Seltenheit, Tempo und Spielerzahlen je Spiel.' },
+      cabinet: { title: 'Trophäenschrank', text: 'Alle Spiele auf 100 % im Schaukasten.' },
+    },
+  },
+
   tour: {
     ariaLabel: 'PlatinVault kennenlernen',
     stepOf: 'Schritt {{current}} von {{total}}',
@@ -270,7 +290,7 @@ const onboarding = {
     },
     dashboardCabinet: {
       title: 'Trophäenschrank',
-      text: 'Alle Spiele, die du komplett auf 100 % hast, stehen hier im Schaukasten – mit Datum und Eckdaten.',
+      text: 'In der Navigation: Alle Spiele, die du komplett auf 100 % hast, stehen hier im Schaukasten – mit Datum und Eckdaten.',
     },
     headerLanguage: {
       title: 'Sprache',
@@ -282,12 +302,12 @@ const onboarding = {
     },
     gameNav: {
       title: 'Kapitel',
-      text: 'Hier wechselst du zwischen den Kapiteln des Guides. Deine Häkchen merkt sich PlatinVault.',
+      text: 'Das geöffnete Spiel klappt in der Navigation links auf: Live-Trophäen, Statistiken, die Kapitel des Guides und Story & Lore. Deine Häkchen merkt sich PlatinVault.',
     },
-    // The same hint on a phone (under 768 px), where the chapters are a list opened by the "Kapitel" button of the trophy bar instead of a panel
+    // The same hint on a phone (under 768 px), where the tree navigation is a drawer opened by the menu button in the header
     gameNavPhone: {
       title: 'Kapitel',
-      text: 'Dieser Knopf öffnet die Liste der Kapitel des Guides. Deine Häkchen merkt sich PlatinVault.',
+      text: 'Dieser Knopf öffnet die Navigation – darin die Kapitel des Guides, Live-Trophäen und Statistiken. Deine Häkchen merkt sich PlatinVault.',
     },
     gameLive: {
       title: 'Live-Trophäen',
@@ -299,7 +319,7 @@ const onboarding = {
     },
     settings: {
       title: 'Einstellungen',
-      text: 'Hier trägst du Steam-ID und Schlüssel ein, stellst Popups ein und schaltest Funktionen an oder aus.',
+      text: 'Unten in der Navigation: Hier trägst du Steam-ID und Schlüssel ein, stellst Popups ein und schaltest Funktionen an oder aus.',
     },
   },
 } as const

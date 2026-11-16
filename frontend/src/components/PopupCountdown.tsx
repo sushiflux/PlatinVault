@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from 'react'
 import type { CSSProperties } from 'react'
 
-// The thin time bar of a trophy popup: full when the popup appears, gliding smoothly and linearly down to nothing
+// The thin time line of a trophy popup (a straight 2-3 px line with square ends): full when the popup appears, gliding smoothly and linearly down to nothing
 // exactly when the queue removes it (utils/animationQueue.ts: the popup's whole visible time, slide-in and fade-out included).
 // One component for the card, the full-screen popup and the in-game overlay page, which all render the same popup components.
 //
@@ -14,13 +14,15 @@ import type { CSSProperties } from 'react'
 interface PopupCountdownProps {
   // The popup's total visible time; the bar needs exactly this long to run out
   durationMs: number
-  // Colour of the bar (the tier's accent colour); the track behind it is the same colour, faint
+  // Colour of the line (the tier's colour, any CSS colour or var()); the track behind it is the calm --track colour unless one is given
   color: string
+  // Colour of the track behind the line (a popup on a fixed dark stage passes a faint tint of its own)
+  track?: string
   // Positions the bar inside the popup (the component itself is absolute)
   style?: CSSProperties
 }
 
-export function PopupCountdown({ durationMs, color, style }: PopupCountdownProps) {
+export function PopupCountdown({ durationMs, color, track = 'var(--track)', style }: PopupCountdownProps) {
   const barRef = useRef<HTMLSpanElement | null>(null)
 
   useLayoutEffect(() => {
@@ -38,8 +40,8 @@ export function PopupCountdown({ durationMs, color, style }: PopupCountdownProps
       aria-hidden="true"
       data-popup-countdown=""
       data-duration-ms={durationMs}
-      className="pointer-events-none absolute overflow-hidden rounded-full"
-      style={{ ...style, background: `${color}33` }}
+      className="pointer-events-none absolute overflow-hidden"
+      style={{ ...style, background: track }}
     >
       <span
         ref={barRef}
@@ -47,8 +49,7 @@ export function PopupCountdown({ durationMs, color, style }: PopupCountdownProps
         className="pv-countdown-bar block h-full w-full"
         style={
           {
-            background: `linear-gradient(90deg, ${color}cc 0%, ${color} 88%, #ffffff 100%)`,
-            boxShadow: `0 0 12px ${color}99`,
+            background: color,
             transformOrigin: '0% 50%',
             willChange: 'transform',
             '--pv-countdown': `${durationMs}ms`,

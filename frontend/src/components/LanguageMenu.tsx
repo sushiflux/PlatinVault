@@ -172,7 +172,7 @@ export function LanguageMenu() {
           ref={buttonRef}
           type="button"
           data-hint="header-language"
-          className={iconButtonClass()}
+          className={`${iconButtonClass()} pv-langbtn`}
           aria-label={t('header.language.labelCurrent', { current: LANGUAGE_NAMES[language] })}
           aria-haspopup="menu"
           aria-expanded={open}
@@ -182,7 +182,7 @@ export function LanguageMenu() {
           <span className="inline-flex items-center justify-center">
             <IconWorld size={18} />
           </span>
-          <span className="pv-hlang-badge" aria-hidden="true">
+          <span className="pv-langbtn-code" aria-hidden="true">
             {language.toUpperCase()}
           </span>
         </button>

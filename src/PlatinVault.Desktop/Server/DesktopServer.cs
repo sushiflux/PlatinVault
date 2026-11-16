@@ -86,7 +86,9 @@ internal sealed class DesktopServer : IAsyncDisposable
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             await App.StopAsync(timeout.Token);
         }
-        catch (Exception ex) when (ex is OperationCanceledException or InvalidOperationException)
+        // Since .NET 11, StopAsync also rethrows the exception of a background service that failed earlier: log it like any other
+        // unclean stop, the server is still disposed below
+        catch (Exception ex)
         {
             DesktopLog.Warn($"Server wurde nicht sauber beendet: {ex.Message}");
         }

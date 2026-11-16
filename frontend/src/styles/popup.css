@@ -1,0 +1,98 @@
+/* The card trophy popup (components/TrophyNotification.tsx, also the in-game overlay page and the tour): the light look of variant "Kristall".
+   One surface with a hairline frame, the thin straight tier line at the left edge (inset from the corners), the tier word, the name, the
+   description and the unlock time; the thin time line (PopupCountdown) runs along the bottom edge. The popup floats over other content,
+   so it is the one place with the pop shadow token. Light and dark follow the tokens; the tier colours are the --tier-* tokens, each one
+   >= 3:1 on the surface (index.css), the tier words use the --tier-*-text tokens (>= 4.5:1). */
+
+.pv-popup-card {
+  --pv-tier: var(--tier-gold);
+  --pv-tier-text: var(--tier-gold-text);
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  min-block-size: 5.75rem;
+  padding: 0.875rem 1rem 1rem 1.25rem;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+}
+
+.pv-popup-card[data-tier='Platinum'] {
+  --pv-tier: var(--tier-platinum);
+  --pv-tier-text: var(--tier-platinum-text);
+}
+
+.pv-popup-card[data-tier='Silver'] {
+  --pv-tier: var(--tier-silver);
+  --pv-tier-text: var(--tier-silver-text);
+}
+
+.pv-popup-card[data-tier='Bronze'] {
+  --pv-tier: var(--tier-bronze);
+  --pv-tier-text: var(--tier-bronze-text);
+}
+
+/* The thin tier line at the left edge */
+.pv-popup-card::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block: 0.625rem;
+  inline-size: 3px;
+  background: var(--pv-tier);
+  pointer-events: none;
+}
+
+.pv-popup-icon {
+  position: relative;
+  flex: none;
+  inline-size: 3rem;
+  block-size: 3rem;
+  object-fit: cover;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.pv-popup-kicker {
+  color: var(--pv-tier-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.pv-popup-name {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pv-popup-desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  min-block-size: 2.625rem;
+  margin-block-start: 0.125rem;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+
+.pv-popup-stamp {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  block-size: 1.25rem;
+  margin-block-start: 0.25rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}

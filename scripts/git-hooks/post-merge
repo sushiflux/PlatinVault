@@ -1,0 +1,23 @@
+#!/bin/sh
+# After a merge or pull: when the local git config key "intern.sync" holds a command prefix (set per clone, never part of this
+# repository), "<command> restore <repo root>" runs and finishes before git returns, so the restored files are there when the user
+# starts working. Output goes to .run/intern-sync.log. Key not set = nothing happens. This hook never fails the merge.
+
+repo_root=$(git rev-parse --show-toplevel) || exit 0
+
+# Only this clone's own config file: a global/system key or "git -c" must never decide what runs here
+sync_cmd=$(git config --local --get intern.sync 2>/dev/null) || sync_cmd=""
+if [ -n "$sync_cmd" ]; then
+    (
+        unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_PREFIX GIT_OBJECT_DIRECTORY GIT_COMMON_DIR
+        mkdir -p "$repo_root/.run"
+        log="$repo_root/.run/intern-sync.log"
+        {
+            printf '%s restore\n' "$(date '+%Y-%m-%d %H:%M:%S')"
+            eval "set -- $sync_cmd" && "$@" restore "$repo_root"
+            printf 'exit code %s\n' "$?"
+        } >> "$log" 2>&1
+    ) </dev/null || true
+fi
+
+exit 0

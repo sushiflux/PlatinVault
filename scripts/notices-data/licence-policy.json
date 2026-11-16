@@ -28,5 +28,7 @@
     "EPL-1.0",
     "EPL-2.0"
   ],
-  "approved": {}
+  "approved": {
+    "SQLite@3.53.4": "Native e_sqlite3 library (NuGet package SQLite, pulled in by SQLitePCLRaw 3 / EF Core 11): the same SQLite code as before, formerly shipped inside SQLitePCLRaw.lib.e_sqlite3. Public domain per https://sqlite.org/copyright.html. Approved by the user on 2026-11-10."
+  }
 }

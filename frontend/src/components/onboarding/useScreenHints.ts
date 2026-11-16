@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useWhatsNewOpen } from '../updates/whatsNewState'
+import { SHOW_HINTS_EVENT } from '../shell/ShellContext'
 
 // Fired when the seen-flags were cleared (Settings > System), so a page can show its hints again right away
 export const HINTS_RESET_EVENT = 'pv-hints-reset'
@@ -83,14 +84,21 @@ export function resetSeenHints(): void {
   window.dispatchEvent(new Event(HINTS_RESET_EVENT))
 }
 
+/** The visible control of a hint: the first element with its data-hint that has a size and is not hidden (the tree navigation and the
+ *  phone menu button may both carry one; only one of them is shown at a time). */
+export function findHintElement(target: string): HTMLElement | null {
+  for (const element of document.querySelectorAll<HTMLElement>(`[data-hint="${target}"]`)) {
+    const rect = element.getBoundingClientRect()
+    if (rect.width <= 0 || rect.height <= 0) continue
+    if (typeof element.checkVisibility === 'function' && !element.checkVisibility({ visibilityProperty: true })) continue
+    return element
+  }
+  return null
+}
+
 /** Hints of this screen whose control is on the page right now (visible, with a size). */
 export function findHintTargets(screen: HintScreen): HintDefinition[] {
-  return HINTS[screen].filter((hint) => {
-    const element = document.querySelector<HTMLElement>(`[data-hint="${hint.target}"]`)
-    if (!element) return false
-    const rect = element.getBoundingClientRect()
-    return rect.width > 0 && rect.height > 0
-  })
+  return HINTS[screen].filter((hint) => findHintElement(hint.target) !== null)
 }
 
 /**
@@ -135,6 +143,18 @@ export function useScreenHints(screen: HintScreen, suspendedByPage: boolean) {
     }
   }, [screen])
   const close = useCallback(() => setOpen(false), [])
+
+  // The shell's "?" button: show the hints of this screen when it has any on the page right now (otherwise the shell starts the intro)
+  useEffect(() => {
+    const onShowHints = (event: Event) => {
+      if (findHintTargets(screen).length === 0) return
+      event.preventDefault()
+      markSeen(screen)
+      setOpen(true)
+    }
+    window.addEventListener(SHOW_HINTS_EVENT, onShowHints)
+    return () => window.removeEventListener(SHOW_HINTS_EVENT, onShowHints)
+  }, [screen])
 
   return { screen, open: open && !suspended, show, close }
 }

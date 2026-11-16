@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter } from 'react-router'
+import { MemoryRouter, Route, Routes } from 'react-router'
 import { applyLanguage } from '../i18n'
 import type { GameSummaryDto, SteamOwnedGameDto } from '../api/types'
 import { ConfirmProvider } from '../components/ui/ConfirmDialog'
@@ -100,7 +100,11 @@ function renderPage() {
         <ConfirmProvider>
           <AiChoiceProvider>
             <LaunchProvider>
-              <DashboardPage theme="light" onToggleTheme={() => undefined} />
+              {/* The view switch navigates between the two routes of the dashboard */}
+              <Routes>
+                <Route path="/" element={<DashboardPage view="favorites" />} />
+                <Route path="/library" element={<DashboardPage view="all" />} />
+              </Routes>
             </LaunchProvider>
           </AiChoiceProvider>
         </ConfirmProvider>

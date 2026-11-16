@@ -32,6 +32,7 @@ const ai = {
 
   // Settings > AI research > "AI selection"
   selection: {
+    errorTitle: 'Status der KI-Anbieter',
     title: 'KI-Auswahl',
     intro:
       'Legt fest, welche KI deine Aktionen übernimmt: neuen Guide recherchieren, Guide vervollständigen, Kapitel ergänzen, Story & Lore und das Übersetzen von Guides.',

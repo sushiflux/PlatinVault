@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { cubicBezier, useReducedMotion } from 'motion/react'
-import { Link, useNavigate, useSearchParams } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -27,12 +27,10 @@ import {
   IconTrophy,
 } from '@tabler/icons-react'
 import {
-  fetchBranding,
   fetchGames,
   fetchLiveStatus,
   fetchLibrarySummary,
   fetchSteamLibrary,
-  fetchSteamProfile,
   importGuide,
   reorderGames,
   setFavorite,
@@ -40,10 +38,8 @@ import {
 } from '../api/client'
 import type { GameSummaryDto, SteamOwnedGameDto } from '../api/types'
 import { localeFor, useFormat } from '../i18n/format'
-import { AppFooter } from '../components/AppFooter'
 import { DashboardSortControl } from '../components/DashboardSortControl'
-import { CabinetToolGroup } from '../components/cabinet/CabinetToolGroup'
-import { DashboardFigures, DashboardSubBar, ViewSwitch } from '../components/DashboardControls'
+import { DashboardFigures, ViewSwitch } from '../components/DashboardControls'
 import {
   gameGenres,
   GameTile,
@@ -51,25 +47,19 @@ import {
   SortableGameTile,
   loadTileDensity,
   saveTileDensity,
-  TILE_CONTAINER,
+  TileContainer,
   TileSizeSlider,
   type TileDensity,
 } from '../components/GameTiles'
 import { DashboardEmptyHelp } from '../components/DashboardEmptyHelp'
-import { HeaderUtilities } from '../components/HeaderUtilities'
 import { HintTour } from '../components/onboarding/HintTour'
 import { useScreenHints } from '../components/onboarding/useScreenHints'
-import { SteamAccountChip } from '../components/SteamAccountChip'
+import { useOpenSettings, useShell } from '../components/shell/ShellContext'
 import { FloatingNotice, FloatingNoticeStack } from '../components/ui/FloatingNotice'
 import { IconButton } from '../components/ui/IconButton'
-import { ProgressBar } from '../components/ui/ProgressBar'
 import { ReservedText } from '../components/ui/ReservedText'
 import { Tooltip } from '../components/ui/Tooltip'
-import { UiScaleControl } from '../components/ui/UiScaleControl'
-import { OnboardingTour } from '../components/onboarding/OnboardingTour'
-import { useOnboardingTour } from '../components/onboarding/useOnboardingTour'
 import { isPlatinumGame } from '../components/platinum/platinum'
-import { SettingsModal, type SettingsTab } from '../components/SettingsModal'
 import { describeError } from '../utils/apiErrorText'
 import {
   ORDERS_BY_VIEW,
@@ -82,12 +72,11 @@ import {
 import { useDashboardSort } from '../utils/useDashboardSort'
 import { LiveCountProvider, useTwitchLiveCounts } from '../utils/useTwitchLiveCounts'
 import { useSteamReach } from '../utils/useSteamReach'
-import { useScrolledPast } from '../utils/useScrolledPast'
-import { useStickyHeaderHeight } from '../utils/useStickyHeaderHeight'
+import '../styles/dashboard.css'
 
 interface DashboardPageProps {
-  theme: string
-  onToggleTheme: () => void
+  // Which view the route shows: "/" = the favourites (Übersicht), "/library" = the whole Steam library (Alle Spiele)
+  view: 'favorites' | 'all'
 }
 
 // Drop of a dragged card (see settleDroppedCard): the glide into the slot takes DROP_MS (position, tilt, scale and shadow
@@ -166,70 +155,24 @@ const settleDroppedCard: DropAnimationFunction = ({ active, dragOverlay }) =>
   })
 
 // Startseite (Home) displaying the clean 100% Pastel Game Cards Grid. Clicking any game card opens its dedicated Game Page.
-export function DashboardPage({ theme, onToggleTheme }: DashboardPageProps) {
+export function DashboardPage({ view: routeView }: DashboardPageProps) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { t } = useTranslation('dashboard')
+  const { t } = useTranslation(['dashboard', 'shell'])
   const fmt = useFormat()
 
   const [search, setSearch] = useState('')
   const [density, setDensity] = useState<TileDensity>(loadTileDensity)
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  // Tab the settings open on when a specific entry asked for it (tour checklist); otherwise the last used tab
-  const [settingsTab, setSettingsTab] = useState<SettingsTab | undefined>(undefined)
-  const [settingsNotice, setSettingsNotice] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+  // The settings are a page of the shell (/settings?tab=...)
+  const openSettings = useOpenSettings()
   // The failure of the last action (reorder, favourite, delete, import) as a floating notice: what failed, why, the raw text
   const [failure, setFailure] = useState<{ title: string; message: string; details: string | null } | null>(null)
   const fail = (title: string, err: unknown) => setFailure({ title, ...describeError(err, t('notice.unknown')) })
   const [importing, setImporting] = useState(false)
   const importInputRef = useRef<HTMLInputElement>(null)
-  // The sticky sub-bar takes over the hero's controls once the hero has scrolled out of view; the header publishes its
-  // real height (--pv-header-h) so the sub-bar sits exactly under it
-  const headerRef = useStickyHeaderHeight<HTMLElement>()
-  const heroRef = useRef<HTMLElement>(null)
-  const heroGone = useScrolledPast(heroRef)
-  const [searchParams, setSearchParams] = useSearchParams()
-  // Onboarding tour: opens by itself on the first visit, the "?" button in the header reopens it
-  const tour = useOnboardingTour()
-  // Coach marks of this page: the first time it is seen (and while no intro / dialog is up), and on "?" any time
-  const hints = useScreenHints('dashboard', tour.open || settingsOpen)
-  // "Restart the introduction" in the settings closes the settings first, then the tour opens
-  useEffect(() => {
-    const close = () => setSettingsOpen(false)
-    window.addEventListener('pv-start-tour', close)
-    return () => window.removeEventListener('pv-start-tour', close)
-  }, [])
-
-  const { data: branding } = useQuery({
-    queryKey: ['branding'],
-    queryFn: fetchBranding,
-  })
-  // The branding file carries one tagline (German); the English page uses the translated one instead of showing German
-  const tagline = (fmt.language === 'de' ? branding?.tagline : undefined) ?? t('header.tagline')
-
-  // Result of the "Sign in with Steam" round trip (backend redirects to /?steamLink=ok|error&reason=...)
-  useEffect(() => {
-    const steamLink = searchParams.get('steamLink')
-    if (!steamLink) return
-    setSettingsNotice(
-      steamLink === 'ok'
-        ? { type: 'ok', text: t('notice.steamLinked') }
-        : {
-            type: 'err',
-            text: t('notice.steamLinkFailed', { reason: searchParams.get('reason') ?? t('notice.unknownReason') }),
-          }
-    )
-    setSettingsOpen(true)
-    setSearchParams({}, { replace: true })
-    void queryClient.invalidateQueries({ queryKey: ['settings'] })
-    void queryClient.invalidateQueries({ queryKey: ['steam-profile'] })
-  }, [searchParams, setSearchParams, queryClient, t])
-
-  const { data: steamProfile } = useQuery({
-    queryKey: ['steam-profile'],
-    queryFn: fetchSteamProfile,
-    staleTime: 5 * 60_000,
-  })
+  // The one onboarding tour lives in the shell; the coach marks of this page wait while it is open
+  const shell = useShell()
+  const hints = useScreenHints('dashboard', shell.tourOpen)
 
   const { data: liveStatus } = useQuery({
     queryKey: ['live-status'],
@@ -254,32 +197,24 @@ export function DashboardPage({ theme, onToggleTheme }: DashboardPageProps) {
     refetchInterval: (query) => (query.state.data?.scanning ? 5000 : 60_000),
   })
   const hasLibrary = Boolean(librarySummary)
-  // While the answer is on its way the view switch keeps its place in the overview panel (an empty cell), so it arriving shifts nothing
+  // While the answer is on its way the view switch keeps its place in the controls row (an empty cell), so it arriving shifts nothing
   const reserveViewSwitch = !hasLibrary && librarySummaryPending
 
-  // "Favourites" = the starred games as tiles (default), "All games" = the whole Steam library; remembered per browser
+  // "Favourites" = the starred games as tiles (route /), "All games" = the whole Steam library (route /library, needs the Steam key)
   const favoriteGames = games.filter((g) => g.isFavorite)
-  const [viewChoice, setViewChoice] = useState<'favorites' | 'all'>(() => {
-    try {
-      return localStorage.getItem('pv_dashboard_view') === 'all' ? 'all' : 'favorites'
-    } catch {
-      return 'favorites'
-    }
-  })
-  const view = hasLibrary ? viewChoice : 'favorites'
-  const selectView = (next: 'favorites' | 'all') => {
-    setViewChoice(next)
-    try {
-      localStorage.setItem('pv_dashboard_view', next)
-    } catch {
-      // Storage unavailable (private mode) - the view just isn't remembered
-    }
-  }
+  // A reload on /library keeps the "All games" view while the library answer is still on its way (a loading card, never the favourites)
+  const waitingForLibrary = routeView === 'all' && !hasLibrary && librarySummaryPending
+  const view = routeView === 'all' && (hasLibrary || waitingForLibrary) ? 'all' : 'favorites'
+  const selectView = (next: 'favorites' | 'all') => void navigate(next === 'all' ? '/library' : '/')
+  // /library without a readable library (no Steam key): back to the overview, once the answer is in
+  useEffect(() => {
+    if (routeView === 'all' && !hasLibrary && !librarySummaryPending) void navigate('/', { replace: true })
+  }, [routeView, hasLibrary, librarySummaryPending, navigate])
 
   const { data: library, isLoading: libraryLoading } = useQuery({
     queryKey: ['steam-library'],
     queryFn: () => fetchSteamLibrary(),
-    enabled: view === 'all',
+    enabled: view === 'all' && hasLibrary,
     staleTime: 5 * 60_000,
     refetchInterval: librarySummary?.scanning ? 15_000 : false,
   })
@@ -491,13 +426,9 @@ export function DashboardPage({ theme, onToggleTheme }: DashboardPageProps) {
   const overallPercent =
     totalTrophiesAllGames > 0 ? Math.floor((unlockedTrophiesAllGames / totalTrophiesAllGames) * 100) : 0
   const completedGamesCount = showLibraryFigures ? librarySummary.perfectGames : favoriteGames.filter(isPlatinumGame).length
-  const gamesCountText = showLibraryFigures
-    ? t('figures.library', { count: librarySummary.libraryGameCount })
-    : t('figures.favorites', { count: favoriteGames.length })
-  const gamesCountTextShort = showLibraryFigures ? t('figures.libraryShort', { count: librarySummary.libraryGameCount }) : gamesCountText
   const figures = {
-    gamesText: gamesCountText,
-    gamesTextShort: gamesCountTextShort,
+    mode: showLibraryFigures ? ('library' as const) : ('favorites' as const),
+    games: showLibraryFigures ? librarySummary.libraryGameCount : favoriteGames.length,
     unlocked: unlockedTrophiesAllGames,
     total: totalTrophiesAllGames,
     percent: overallPercent,
@@ -542,236 +473,139 @@ export function DashboardPage({ theme, onToggleTheme }: DashboardPageProps) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Sticky Top Header (100% Guide Design) */}
-      <header ref={headerRef} className="top-header">
-        <div className="pv-hbar pv-hbar--dash">
-          {/* Brand */}
-          <div className="pv-hbrand">
-            <img
-              src="/favicon.svg"
-              alt={t('header.logoAlt')}
-              className="h-10 w-10 rounded-xl shadow-md shrink-0"
-            />
-            <div className="min-w-0">
-              <h1
-                className="truncate text-lg font-extrabold leading-tight tracking-tight"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {branding?.productName ?? 'PlatinVault'}
-              </h1>
-              {/* Shown or hidden by the header's container queries (index.css, .pv-htagline), not by viewport breakpoints */}
-              <p
-                className="pv-htagline truncate text-xs font-medium"
-                style={{ color: 'var(--text-muted)' }}
-              >
-                {tagline}
-              </p>
+    <div className="pv-dash">
+      {/* Page head: the title of the view and the guide import */}
+      <div className="pv-dash-head">
+        <h1 className="pv-page-title">{view === 'all' ? t('shell:nav.library') : t('hero.title')}</h1>
+        {/* Games come from the Steam library only (the star in "All games"); what is added here is a guide file */}
+        <IconButton
+          label={t('header.importGuide.label')}
+          description={t('header.importGuide.description')}
+          busy={importing}
+          onClick={() => importInputRef.current?.click()}
+        >
+          <IconFileImport size={20} />
+        </IconButton>
+        <input
+          ref={importInputRef}
+          type="file"
+          accept=".json,application/json"
+          className="hidden"
+          onChange={(e) => void handleImportFile(e.target.files?.[0])}
+        />
+      </div>
+
+      {/* The game that is running right now (only while a bridge or a local Steam says so) */}
+      {runningVaultGame && (
+        <div className="pv-note pv-note--ok pv-dash-running">
+          <div className="pv-dash-running-t">
+            <span className="pv-live-dot shrink-0" aria-hidden="true" />
+            <div>
+              <strong>{t('live.title', { title: runningVaultGame.title })}</strong>
+              <span className="pv-dash-running-s">{t('live.text')}</span>
             </div>
           </div>
-
-          {/* Tools: overall trophy progress (fills the free width), Steam account | actions */}
-          <div className="pv-htools">
-            <Tooltip
-              label={t('header.overall.label')}
-              description={t('header.overall.description')}
-              className="pv-hprogress"
-            >
-              <div className="progress-widget">
-                <div className="progress-info">
-                  <IconTrophy size={16} style={{ color: 'var(--accent-gold)' }} />
-                  <span>
-                    {t('header.overall.text', {
-                      unlocked: fmt.number(unlockedTrophiesAllGames),
-                      total: fmt.number(totalTrophiesAllGames),
-                      percent: fmt.percent(overallPercent),
-                    })}
-                  </span>
-                </div>
-                <ProgressBar percent={overallPercent} label={t('header.overall.progress')} />
-              </div>
-            </Tooltip>
-
-            <SteamAccountChip profile={steamProfile} />
-
-            <span className="pv-hdivider" aria-hidden="true" />
-
-            {/* Games come from the Steam library only (the star in "All games"); what is added here is a guide file */}
-            <div className="pv-hgroup" role="toolbar" aria-label={t('header.importGroup')}>
-              <IconButton
-                label={t('header.importGuide.label')}
-                description={t('header.importGuide.description')}
-                busy={importing}
-                onClick={() => importInputRef.current?.click()}
-              >
-                <IconFileImport size={18} />
-              </IconButton>
-            </div>
-
-            <CabinetToolGroup />
-
-            <span className="pv-hdivider" aria-hidden="true" />
-            <UiScaleControl />
-            <input
-              ref={importInputRef}
-              type="file"
-              accept=".json,application/json"
-              className="hidden"
-              onChange={(e) => void handleImportFile(e.target.files?.[0])}
-            />
-          </div>
-
-          {/* Utilities: the same four, in the same place, on every page */}
-          <HeaderUtilities theme={theme} onToggleTheme={onToggleTheme} onOpenSettings={(tab) => { setSettingsTab(tab); setSettingsOpen(true) }} onShowHints={hints.show} />
+          <Link to={`/games/${runningVaultGame.slug}`} className="pv-btn pv-btn-emerald shrink-0">
+            <IconTrophy size={18} aria-hidden="true" />
+            <span>{t('live.open')}</span>
+          </Link>
         </div>
-      </header>
+      )}
 
-      {/* Sticky sub-bar: search, view switch, figures and tile size once the hero's controls are out of view */}
-      <DashboardSubBar
-        open={heroGone}
-        search={search}
-        onSearchChange={setSearch}
-        hasLibrary={hasLibrary}
-        view={view}
-        onSelectView={selectView}
-        favoritesCount={favoriteGames.length}
-        libraryCount={librarySummary?.libraryGameCount}
-        figures={figures}
-        density={density}
-        onDensityChange={handleDensityChange}
-      />
+      {/* The figures follow the chosen view: favourites or the whole library */}
+      <DashboardFigures {...figures} />
 
-      {/* Main Content */}
-      <LiveCountProvider counts={liveCounts}>
-      <main className="max-w-[var(--pv-page-max)] w-full mx-auto px-4 sm:px-6 py-7 flex-1 space-y-6">
-        {/* Compact Live Running Game Notice (if a Steam game is currently running) */}
-        {runningVaultGame && (
-          <div className="pv-alert pv-alert-emerald flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <span
-                className="h-3 w-3 rounded-full animate-pulse shrink-0"
-                style={{ backgroundColor: 'var(--accent-emerald)' }}
-              />
-              <div>
-                <div className="font-extrabold text-sm">
-                  {t('live.title', { title: runningVaultGame.title })}
-                </div>
-                <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  {t('live.text')}
-                </div>
-              </div>
-            </div>
-            <Link
-              to={`/games/${runningVaultGame.slug}`}
-              className="pv-btn pv-btn-emerald shrink-0"
-            >
-              <IconTrophy size={15} />
-              <span>{t('live.open')}</span>
-            </Link>
-          </div>
+      {/* One row of controls: search | favourites / all games | tile size */}
+      <div className="pv-dash-ctl">
+        <div className="pv-dash-search">
+          <label htmlFor="dashboard-game-search" className="sr-only">
+            {t('hero.searchLabel')}
+          </label>
+          <IconSearch size={18} aria-hidden="true" />
+          <input
+            id="dashboard-game-search"
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('hero.searchPlaceholder')}
+            className="pv-input pv-input-icon"
+          />
+        </div>
+        {/* Favourites = the starred tiles; "All games" = the whole Steam library (needs the Steam key) */}
+        {hasLibrary && (
+          <ViewSwitch
+            view={view}
+            onSelect={selectView}
+            favoritesCount={favoriteGames.length}
+            libraryCount={librarySummary?.libraryGameCount}
+          />
         )}
+        {reserveViewSwitch && <div className="pv-dash-switch-slot" aria-hidden="true" />}
+        <TileSizeSlider value={density} onChange={handleDensityChange} />
+      </div>
 
-        {/* The overview panel at the top, in the language of the chapter navigation: a slim head (small caps title, the library figures
-            as compact chips), one calm row of controls (search, view, tile size) and a count line. It is what the sub-bar takes over
-            from once it has scrolled out of view. */}
-        <section ref={heroRef} className="pv-dhub">
-          <div className="pv-dhub-head">
-            <h2 className="pv-dhub-title">{t('hero.title')}</h2>
-            <div className="pv-dhub-figures">
-              <DashboardFigures {...figures} compact />
-            </div>
-          </div>
-
-          <div className="pv-dhub-body" data-library={hasLibrary || reserveViewSwitch ? 'true' : 'false'}>
-            <div className="relative">
-              <label htmlFor="dashboard-game-search" className="sr-only">
-                {t('hero.searchLabel')}
-              </label>
-              <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
-              <input
-                id="dashboard-game-search"
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t('hero.searchPlaceholder')}
-                className="pv-input pv-input-icon w-full"
-              />
-            </div>
-            {/* Favourites = the starred tiles; "All games" = the whole Steam library (needs the Steam key) */}
-            {hasLibrary && (
-              <ViewSwitch
-                view={view}
-                onSelect={selectView}
-                favoritesCount={favoriteGames.length}
-                libraryCount={librarySummary?.libraryGameCount}
-              />
-            )}
-            {reserveViewSwitch && <div className="pv-dhub-switch-slot" aria-hidden="true" />}
-            <div className="pv-dhub-slider">
-              <TileSizeSlider value={density} onChange={handleDensityChange} />
-            </div>
-            <div className="pv-dhub-meta">
-              <div className="pv-dhub-count">
-                <div className="pv-dhub-countline">
-                  <span className="inline-flex items-center gap-1.5">
-                    {view === 'all'
-                      ? t('hero.showingLibrary', { shown: fmt.number(filteredLibrary.length), count: library?.games.length ?? 0 })
-                      : t('hero.showingFavorites', { shown: fmt.number(filteredGames.length), count: favoriteGames.length })}
-                    {view === 'favorites' && favoriteGames.length > 1 && (
-                      <Tooltip
-                        label={sortDisabled ? (dragOffByOrder ? t('hero.sortOffOrder.label') : t('hero.sortOff.label')) : t('hero.sortOn.label')}
-                        description={
-                          sortDisabled ? (dragOffByOrder ? t('hero.sortOffOrder.description') : t('hero.sortOff.description')) : t('hero.sortOn.description')
-                        }
-                      >
-                        <span
-                          tabIndex={0}
-                          aria-label={sortDisabled ? (dragOffByOrder ? t('hero.sortOffOrder.aria') : t('hero.sortOff.aria')) : t('hero.sortOn.aria')}
-                          className="inline-flex"
-                          style={{ color: sortDisabled ? 'var(--text-muted)' : 'var(--accent-crystal)', opacity: sortDisabled ? 0.6 : 1 }}
-                        >
-                          <IconArrowsSort size={14} />
-                        </span>
-                      </Tooltip>
-                    )}
-                  </span>
-                  {/* Always in the row (invisible while nothing is filtered), so it appearing never re-wraps the count beside it */}
-                  <button
-                    type="button"
-                    onClick={() => setSearch('')}
-                    className={`shrink-0 font-bold underline cursor-pointer ${search ? '' : 'invisible'}`}
-                    style={{ color: 'var(--accent-crystal)' }}
-                    tabIndex={search ? 0 : -1}
+      {/* The count line (with the drag hint and the reset link, always in the line and invisible without a filter), the sentence that
+          says how the cards are sorted (its room is reserved), and the sort control */}
+      <div className="pv-dash-count">
+        <div className="pv-dash-count-l">
+          <div className="pv-dash-countline">
+            <span className="pv-dash-hint">
+              {view === 'all'
+                ? t('hero.showingLibrary', { shown: fmt.number(filteredLibrary.length), count: library?.games.length ?? 0 })
+                : t('hero.showingFavorites', { shown: fmt.number(filteredGames.length), count: favoriteGames.length })}
+              {view === 'favorites' && favoriteGames.length > 1 && (
+                <Tooltip
+                  label={sortDisabled ? (dragOffByOrder ? t('hero.sortOffOrder.label') : t('hero.sortOff.label')) : t('hero.sortOn.label')}
+                  description={
+                    sortDisabled ? (dragOffByOrder ? t('hero.sortOffOrder.description') : t('hero.sortOff.description')) : t('hero.sortOn.description')
+                  }
+                >
+                  <span
+                    tabIndex={0}
+                    aria-label={sortDisabled ? (dragOffByOrder ? t('hero.sortOffOrder.aria') : t('hero.sortOff.aria')) : t('hero.sortOn.aria')}
+                    className="ml-1.5 inline-flex"
+                    style={{ color: sortDisabled ? 'var(--text-muted)' : 'var(--link)' }}
                   >
-                    {t('hero.resetFilter')}
-                  </button>
-                </div>
-                {/* How the cards are sorted, and what is still missing for it; the room of the tallest possible text is reserved */}
-                <ReservedText className="pv-dhub-sortnote" candidates={sortLineCandidates} aria-live="polite">
-                  {sortSentence(activeOrder, activeChoice.direction)}
-                  {sortStatus ? ` ${sortStatus}` : ''}
-                </ReservedText>
-              </div>
-              <DashboardSortControl
-                key={view}
-                view={view}
-                choice={activeChoice}
-                loading={sortLoading}
-                onChange={(next) => dashboardSort.setChoice(view, next)}
-              />
-            </div>
+                    <IconArrowsSort size={16} />
+                  </span>
+                </Tooltip>
+              )}
+            </span>
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="pv-btn-text pv-dash-reset"
+              data-hidden={search ? undefined : 'true'}
+              tabIndex={search ? 0 : -1}
+            >
+              {t('hero.resetFilter')}
+            </button>
           </div>
-        </section>
+          {/* How the cards are sorted, and what is still missing for it; the room of the tallest possible text is reserved */}
+          <ReservedText className="pv-dash-sortnote" candidates={sortLineCandidates} aria-live="polite">
+            {sortSentence(activeOrder, activeChoice.direction)}
+            {sortStatus ? ` ${sortStatus}` : ''}
+          </ReservedText>
+        </div>
+        <DashboardSortControl
+          key={view}
+          view={view}
+          choice={activeChoice}
+          loading={sortLoading}
+          onChange={(next) => dashboardSort.setChoice(view, next)}
+        />
+      </div>
 
-        {/* Game tiles in the chosen size (slider in the overview panel) */}
+      {/* Game tiles in the chosen size (slider in the controls row) */}
+      <LiveCountProvider counts={liveCounts}>
         {view === 'all' ? (
-          libraryLoading ? (
-            <div className="pv-card flex items-center justify-center gap-2 py-16 text-sm" style={{ color: 'var(--text-muted)' }}>
+          libraryLoading || waitingForLibrary ? (
+            <div className="pv-card pv-dash-loading">
               <IconLoader2 size={18} className="animate-spin" />
               {t('loading.library')}
             </div>
           ) : (
-            <div className={TILE_CONTAINER[density]}>
+            <TileContainer density={density}>
               {filteredLibrary.map((game) => (
                 <LibraryTile
                   key={game.appId}
@@ -781,21 +615,16 @@ export function DashboardPage({ theme, onToggleTheme }: DashboardPageProps) {
                   onToggleFavorite={(g) => void handleToggleLibraryFavorite(g)}
                 />
               ))}
-            </div>
+            </TileContainer>
           )
         ) : isLoading ? (
-          <div className="pv-card py-16 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
-            {t('loading.games')}
-          </div>
+          <div className="pv-card pv-dash-loading">{t('loading.games')}</div>
         ) : favoriteGames.length === 0 ? (
           // Games come from the Steam library only: no game yet = where they come from and what to do first
           <div data-hint={hasLibrary ? undefined : 'dashboard-add'}>
             <DashboardEmptyHelp
               hasLibrary={hasLibrary}
-              onOpenSettings={(tab) => {
-                setSettingsTab(tab)
-                setSettingsOpen(true)
-              }}
+              onOpenSettings={(tab) => openSettings(tab)}
               onShowLibrary={() => selectView('all')}
             />
           </div>
@@ -814,7 +643,7 @@ export function DashboardPage({ theme, onToggleTheme }: DashboardPageProps) {
             }}
           >
             <SortableContext items={favoriteSlugs} strategy={rectSortingStrategy}>
-              <div className={TILE_CONTAINER[density]}>
+              <TileContainer density={density}>
                 {filteredGames.map((game) => (
                   <SortableGameTile
                     key={game.id}
@@ -826,12 +655,12 @@ export function DashboardPage({ theme, onToggleTheme }: DashboardPageProps) {
                     onToggleFavorite={(g) => void handleToggleFavorite(g)}
                   />
                 ))}
-              </div>
+              </TileContainer>
             </SortableContext>
             <DragOverlay dropAnimation={dropAnimation}>
               {draggingGame ? (
                 <div className="pv-drag-overlay">
-                  <div className="pv-drag-lift" style={density === 2 ? { borderRadius: 'var(--radius-md)' } : undefined}>
+                  <div className="pv-drag-lift">
                     <GameTile game={draggingGame} density={density} onToggleFavorite={() => undefined} />
                   </div>
                 </div>
@@ -839,10 +668,7 @@ export function DashboardPage({ theme, onToggleTheme }: DashboardPageProps) {
             </DragOverlay>
           </DndContext>
         )}
-      </main>
       </LiveCountProvider>
-
-      <AppFooter sticky />
 
       <FloatingNoticeStack>
         {failure && (
@@ -863,38 +689,7 @@ export function DashboardPage({ theme, onToggleTheme }: DashboardPageProps) {
         onClose={hints.close}
         onShowIntro={() => {
           hints.close()
-          tour.start()
-        }}
-      />
-
-      <OnboardingTour
-        open={tour.open}
-        paused={settingsOpen}
-        onClose={tour.finish}
-        onOpenSettings={(tab) => {
-          setSettingsTab(tab)
-          setSettingsOpen(true)
-        }}
-      />
-
-      <SettingsModal
-        open={settingsOpen}
-        notice={settingsNotice}
-        initialTab={settingsTab}
-        onClose={() => {
-          setSettingsOpen(false)
-          setSettingsNotice(null)
-          setSettingsTab(undefined)
-        }}
-        onSaved={() => {
-          void queryClient.invalidateQueries({ queryKey: ['settings'] })
-          void queryClient.invalidateQueries({ queryKey: ['steam-profile'] })
-          void queryClient.invalidateQueries({ queryKey: ['live-status'] })
-          void queryClient.invalidateQueries({ queryKey: ['live-achievements'] })
-          // A new Steam key / account makes the library readable: the empty-dashboard help and "All games" pick it up at once
-          void queryClient.invalidateQueries({ queryKey: ['library-summary'] })
-          void queryClient.invalidateQueries({ queryKey: ['steam-library'] })
-          void queryClient.invalidateQueries({ queryKey: ['steam-profile'] })
+          shell.startTour()
         }}
       />
     </div>

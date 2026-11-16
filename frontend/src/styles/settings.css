@@ -1,0 +1,460 @@
+/* Settings page (variant "Kristall"): header with the save button, one connected tab bar, one light card of hairline rows.
+   Components: components/SettingsModal.tsx and components/settings/SettingsParts.tsx. Only tokens of index.css are used, so light
+   and dark both follow. Imported by SettingsParts.tsx. */
+
+.pv-set {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.375rem;
+  min-inline-size: 0;
+}
+
+/* ---------- head: title left, save status + button right; stays in reach while the page scrolls ---------- */
+.pv-set-head {
+  position: sticky;
+  inset-block-start: var(--pv-header-h, 0px);
+  z-index: 6;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding-block: 0.25rem 0.5rem;
+  background: var(--bg-primary);
+}
+
+.pv-set-head > :first-child {
+  flex: 1 1 18rem;
+}
+
+.pv-set-head .pv-page-sub {
+  margin-block-start: 0.125rem;
+}
+
+/* Status and button sit in one row while there is room; in a narrow content area (the navigation is still a column) they wrap
+   under each other instead of leaving the page. The room of the status is reserved, so this never changes while a message appears. */
+.pv-set-save {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  max-inline-size: 100%;
+}
+
+/* The status keeps its room (ReservedText draws every possible text invisibly, so the line is as tall as the longest one at this width)
+   and only the text appears: the button and everything below never move, in both languages */
+.pv-set-status {
+  inline-size: min(17rem, 100%);
+  line-height: 1.3;
+  color: var(--accent-emerald);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-align: end;
+}
+
+@media (max-width: 639px) {
+  /* Phone: the button first, the confirmation in its own full-width line below it (reserved for the longest text) */
+  .pv-set-save {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    inline-size: 100%;
+    gap: 0.25rem 0.75rem;
+  }
+
+  .pv-set-save > .pv-btn {
+    order: 1;
+  }
+
+  .pv-set-status {
+    order: 2;
+    flex: 1 1 100%;
+    inline-size: 100%;
+    text-align: start;
+  }
+}
+
+/* ---------- tab bar: ONE connected bar, equal parts; when it does not fit a connected vertical list (never cut, never scrolled sideways) ---------- */
+.pv-set-tabs {
+  display: flex;
+  inline-size: 100%;
+}
+
+/* Equal parts while they fit; when they do not (useFitSegments adds .pv-segmented--stack) the generic vertical list of the bar takes over */
+.pv-set-tabs:not(.pv-segmented--stack) > button {
+  flex: 1 1 0;
+  padding-inline: 0.5rem;
+}
+
+/* ---------- card and rows ---------- */
+.pv-set-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 0.25rem 1.25rem;
+  min-inline-size: 0;
+}
+
+/* Several topics in one tab: a quiet small-caps heading starts each one */
+.pv-set-topic {
+  margin: 0;
+  padding-block: 1.125rem 0.125rem;
+}
+
+.pv-set-topic:first-child {
+  padding-block-start: 0.875rem;
+}
+
+.pv-set-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.5rem 2rem;
+  align-items: center;
+  padding-block: 0.875rem;
+  border-block-end: 1px solid var(--border-subtle);
+}
+
+.pv-set-row:last-child {
+  border-block-end: 0;
+}
+
+.pv-set-row__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.35;
+}
+
+.pv-set-row__help {
+  margin: 0.125rem 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.pv-set-row__ctl {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  min-inline-size: 0;
+}
+
+.pv-set-row__ctl > :is(input, select, .pv-input, .pv-select, .pv-segmented) {
+  flex: 1 1 14rem;
+  min-inline-size: 0;
+}
+
+.pv-set-row__ctl > .pv-segmented {
+  flex: 1 1 auto;
+}
+
+/* The control takes the whole row (position grid, bars, long blocks): text above, control below */
+.pv-set-row--wide {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.pv-set-row--wide > .pv-set-row__ctl {
+  justify-content: flex-start;
+}
+
+/* On/off row: label and hint left, the switch on the right; the switch button is the whole row, so a click anywhere toggles it */
+.pv-set-row--toggle {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  padding-block: 0.25rem;
+}
+
+.pv-set-toggle {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  inline-size: 100%;
+  min-block-size: 3rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.pv-set-row--toggle > .pv-set-row__help {
+  margin: -0.5rem 0 0.625rem;
+  padding-inline-end: 4rem;
+}
+
+@media (max-width: 767px) {
+  .pv-set-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pv-set-row__ctl {
+    justify-content: flex-start;
+  }
+
+  .pv-set-card {
+    padding-inline: 1rem;
+  }
+}
+
+/* A value beside a slider: fixed width, so nothing moves while it changes */
+.pv-set-range {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  inline-size: 100%;
+}
+
+.pv-set-range > input[type='range'] {
+  block-size: 3rem;
+  flex: 1 1 10rem;
+  min-inline-size: 0;
+}
+
+.pv-set-range > output {
+  min-inline-size: 4rem;
+  text-align: end;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- popup position: a 3 x 3 connected grid of squares, plus "fullscreen" as its own connected bar ---------- */
+.pv-set-pos-wrap {
+  display: grid;
+  gap: 0.5rem;
+  inline-size: 100%;
+  max-inline-size: 24rem;
+}
+
+.pv-set-pos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-input);
+}
+
+.pv-set-pos > .pv-set-pos__cell {
+  display: flex;
+  border-inline-end: 1px solid var(--border-strong);
+  border-block-end: 1px solid var(--border-strong);
+}
+
+.pv-set-pos > .pv-set-pos__cell:nth-child(3n) {
+  border-inline-end: 0;
+}
+
+.pv-set-pos > .pv-set-pos__cell:nth-child(n + 7) {
+  border-block-end: 0;
+}
+
+.pv-set-pos button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  inline-size: 100%;
+  min-block-size: 3rem;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.pv-set-pos button:hover {
+  background: var(--bg-elevated);
+}
+
+.pv-set-pos button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -3px;
+}
+
+.pv-set-pos button[aria-pressed='true'] {
+  background: var(--sel-bg);
+  color: var(--sel-text);
+}
+
+.pv-set-pos button[aria-pressed='true']::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0.625rem;
+  inset-block-end: 0;
+  block-size: 2px;
+  background: var(--ind);
+}
+
+.pv-set-pos__dot {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  border: 1px solid var(--text-muted);
+  border-radius: 2px;
+}
+
+.pv-set-pos button[aria-pressed='true'] .pv-set-pos__dot {
+  border-color: var(--sel-text);
+  background: var(--sel-text);
+}
+
+/* ---------- guide boxes under a row ("where does the key come from"): a light hairline panel with a thin line on the left ---------- */
+.pv-set-guide {
+  position: relative;
+  padding: 0.75rem 1rem 0.75rem 1.25rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  --pv-accent: var(--accent-crystal);
+}
+
+.pv-set-guide::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block: 0.5rem;
+  inline-size: 2px;
+  background: var(--pv-accent);
+}
+
+.pv-set-guide > :is(h4, .pv-set-guide__title) {
+  margin: 0 0 0.375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pv-set-guide ol {
+  margin: 0;
+  padding-inline-start: 1.25rem;
+  list-style: decimal;
+}
+
+.pv-set-guide li + li {
+  margin-block-start: 0.25rem;
+}
+
+.pv-set-guide a,
+.pv-set a.pv-set-link {
+  color: var(--link);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pv-set-guide p {
+  margin: 0.375rem 0 0;
+  color: var(--text-muted);
+}
+
+/* ---------- a status chip beside a title ("Active: ...abcd"): quiet text with a small square, not a pill ---------- */
+.pv-set-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--accent-emerald);
+}
+
+/* ---------- save problem: laid over the content (never inserted in the flow, nothing moves) ---------- */
+/* Laid over the content at the bottom edge: the save button, the title and the tab bar stay reachable and nothing moves */
+.pv-set-banner {
+  position: fixed;
+  inset-inline-end: 1.25rem;
+  inset-block-end: 1.25rem;
+  z-index: 40;
+  inline-size: min(36rem, calc(100vw - 2.5rem));
+  max-block-size: min(60vh, 28rem);
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-pop);
+  padding-inline-end: 3rem;
+}
+
+.pv-set-banner > .pv-set-banner__close {
+  position: absolute;
+  inset-inline-end: 0.25rem;
+  inset-block-start: 0.25rem;
+}
+
+/* ---------- inner sections of the other settings components (AI, updates, folders, status, bridge, research blocks) ---------- */
+.pv-set-section {
+  padding-block: 1rem;
+  border-block-end: 1px solid var(--border-subtle);
+  display: grid;
+  gap: 0.875rem;
+  min-inline-size: 0;
+}
+
+.pv-set-section:last-child {
+  border-block-end: 0;
+}
+
+.pv-set-section__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+}
+
+.pv-set-section__title > :first-child {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pv-set-muted {
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+/* Hairline list inside a section (folders, checks): label left, frameless action right */
+.pv-set-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pv-set-list > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  min-block-size: 3rem;
+  padding-block: 0.25rem;
+  border-block-end: 1px solid var(--border-subtle);
+}
+
+.pv-set-list > li:last-child {
+  border-block-end: 0;
+}
+
+.pv-set-mono {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- settings inside the old dialog frame (tests / non-page use) ---------- */
+.pv-set--dialog {
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.pv-set--dialog .pv-set-head {
+  position: static;
+}

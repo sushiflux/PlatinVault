@@ -1,16 +1,9 @@
-// Namespace "cabinet": German texts (source of truth) of the trophy cabinet - the header button, the display case with its
-// controls, the plaques and the detail panel. Add keys here first; src/i18n/en/cabinet.ts must get the same keys (TypeScript and
+// Namespace "cabinet": German texts (source of truth) of the trophy cabinet page - the header figures, the display wall with its
+// controls, the captions and the detail panel. Add keys here first; src/i18n/en/cabinet.ts must get the same keys (TypeScript and
 // vitest check it).
 const cabinet = {
-  // The button in the header tool row
-  tool: {
-    group: 'Sammlung',
-    label: 'Trophäenschrank',
-    description: 'Alle Spiele auf 100 % im Schaukasten, mit Eckdaten zu jedem Spiel',
-  },
   title: 'Trophäenschrank',
   subtitle: 'Alle deine Spiele auf 100 %',
-  close: 'Trophäenschrank schließen',
   // The three figures in the cabinet header
   stats: {
     games_one: '{{count, number}} Spiel auf Platin',
@@ -25,6 +18,14 @@ const cabinet = {
     playtimeHint: 'Gesamte Spielzeit in diesen Spielen.',
     playtimeTotal: '{{time}} Spielzeit insgesamt',
   },
+  // The label under each figure in the header (the number stands above it)
+  figure: {
+    games_one: 'Spiel auf Platin',
+    games_other: 'Spiele auf Platin',
+    trophies_one: 'Trophäe',
+    trophies_other: 'Trophäen',
+    playtime: 'Spielzeit',
+  },
   hours: '{{value}} Std.',
   // The size slider; steps 0..4 from left (smaller) to right (larger)
   size: {
@@ -38,15 +39,14 @@ const cabinet = {
       veryL: 'Sehr groß',
     },
   },
-  // Popover "View": lighting and empty places
+  // The view choices in the header: the lighting (a connected two-part bar) and the switch for the empty places
   view: {
-    label: 'Ansicht',
-    description: 'Beleuchtung und leere Plätze',
     lighting: 'Beleuchtung',
     spots: { name: 'Spots', hint: 'Eine Lampe über jedem Spiel' },
-    led: { name: 'LED-Leiste', hint: 'Eine durchgehende Leiste je Regalbrett' },
-    showEmpty: { name: 'Leere Plätze zeigen', hint: 'Graue Platzhalter mit leerem Schild' },
+    led: { name: 'LED', hint: 'Eine durchgehende Leiste je Regalbrett' },
+    showEmpty: { name: 'Leere Plätze zeigen', hint: 'Dünn umrandete Platzhalter für die noch freien Plätze' },
   },
+  // The glass doors of the cabinet (the button in the header)
   doors: {
     close: { label: 'Türen schließen', description: 'Das Licht geht aus, die Glastüren schließen sich.' },
     open: { label: 'Türen öffnen', description: 'Die Glastüren öffnen sich, dann geht das Licht an.' },

@@ -42,6 +42,8 @@ reads Steam directly – see chapter 13. **On Linux, trophy detection is still e
 
 PlatinVault comes as a container image. On Unraid you create it from the template; on a normal Linux machine (and on NAS systems that support Compose files) you start it with a ready-made Compose file. Sections 3.1 to 3.3 describe the three ways; Windows has its own program (chapter 11), and for the Linux PC where Steam runs there is a package of its own (chapter 13).
 
+The computer needs a 64-bit x86 processor with x86-64-v2 support (practically every PC or server processor from about 2013 onwards).
+
 ## 3.1 Unraid
 
 PlatinVault is available as a container for Unraid. There is no database to set up: PlatinVault brings its own – one file in the
@@ -56,7 +58,7 @@ appdata folder.
    | PUID / PGID (advanced) | User and group that own the appdata folder and that PlatinVault runs as. Default 99 / 100 – the owner Unraid gives a new appdata folder; only change it if your folder belongs to another user. |
 
 2. Start the container and open PlatinVault in the browser: `http://<IP of your Unraid>:5233`.
-3. The first time, you first choose your **language** on a full-screen page (Deutsch or English; the language of your browser is preselected, and you can change it at any time later in the top bar). Then a short **tour** guides you through the app. Start it again any time with the **?** at the top right.
+3. The first time, you first choose your **language** on a full-screen page (Deutsch or English; the language of your browser is preselected) and your **colour scheme** (light or dark). You can change both at any time later in the header. Then a short **tour** guides you through the app. Start it again any time with the **?** at the top right.
 
 **Own domain / reverse proxy:** if you open PlatinVault under a name of your own domain (for example `pv.example.com` through a reverse proxy, a web server placed in front), enter that name in the template under "Show more settings" at `PLATINVAULT_ALLOWED_HOSTS`. Separate several names with `;`; `*.example.com` covers every name below it. You need nothing for IP addresses, `localhost`, names without a dot (for example `tower`) and names ending in `.local`, `.lan`, `.home.arpa`, `.internal` or `.fritz.box`. Background: PlatinVault refuses other names so that foreign web pages cannot reach it by a trick with the name system (DNS rebinding). If you already open PlatinVault this way, enter the name once after the update. If your proxy rewrites the name, the live popups also need `PLATINVAULT_ALLOWED_ORIGINS=https://pv.example.com`.
 
@@ -115,7 +117,7 @@ PlatinVault was tested with Docker on Linux; we have not tried it on individual 
 
 # 4 First steps
 
-Open the **settings** with the gear at the top right (on every page). Settings that are
+Open the **settings** with the entry **Settings** at the bottom of the navigation on the left (on every page; 5.1). The settings are a page of their own with tabs; the chosen tab is part of the address, so a reload brings you back to the same place. Settings that are
 simply on or off have a switch: **green with a check mark** means on, **red with a cross** means off; click it (or the text
 next to it) or flip it with the keyboard (space bar). Save with **Save settings**.
 
@@ -198,34 +200,55 @@ research confirms that the game really has it – even when it normally belongs 
 combat gets no bestiary). The AI merges small related topics into one chapter. At the top of the guide builder (6.2) you see how many
 chapters are suggested; other fitting topics are listed under **More topics**, not ticked.
 
-# 5 The start page
+# 5 Navigation and overview
 
-## 5.1 Header
+## 5.1 Navigation and header
 
-On the left the PlatinVault logo, next to it your **trophy progress**, your **Steam account** (name, avatar and – with a
-Steam key – the number of your games; a click opens your profile) and the actions:
+Every page has the same frame: a **header** at the top, a **navigation** on the left and, next to it, the content of the page.
+
+### The navigation on the left
+
+The navigation is a tree. From top to bottom:
+
+- **Search:** the field "Search game or chapter …" filters the tree while you type. Esc clears it.
+- **Overview:** your favourites as tiles (5.2).
+- **All games:** your whole Steam library (5.2). The entry appears once PlatinVault can read your library.
+- **My games:** your favourites (the games with a star), each with its cover. A click opens the game page. The open game unfolds below its name:
+  **Live trophies**, **Statistics**, the guide's **chapters** under their group headings (a guide with only one group has no headings) and
+  **Story & Lore**. A number next to a chapter shows how much of it you have ticked off; a warning symbol means that researching the chapter failed (6.2). The page you are on is highlighted.
+- **Trophy cabinet:** below a fine dividing line, opens the cabinet with all your games at 100 % (5.5).
+- **Settings:** at the very bottom (chapter 4).
+- **User row** at the bottom: your Steam account with avatar, name and – with a Steam key – the number of your games. A click opens your Steam profile.
+- **Info symbol** (an "i" in a circle) next to the user row: opens the page **About PlatinVault** (see below).
+
+**Narrow navigation.** The button at the top of the navigation (sidebar symbol) collapses it to a narrow rail with symbols only, so the content has more room. In the rail a hint on hover names each entry; the unfolded game with its chapters is not shown there. A second click unfolds it again. PlatinVault remembers your choice in this browser or program.
+
+**On a phone.** Below about 768 pixels of width the navigation is hidden. A **menu button** at the left of the header opens it as a drawer that slides in over the page from the left. It closes as soon as you choose an entry, with the button **Close navigation**, with Esc, or with a tap next to the drawer.
+
+**About PlatinVault.** This page shows the name, the running **version** (a click opens **Version & updates**, where you check for updates by hand, see chapter 12), **News** (opens **What’s new in this version**), "Made with ♥", the **licence** with the **Licences** button and the link to the **source code**. The app shows no copyright notice.
+
+### The header
+
+On the left the PlatinVault logo with the name; a click leads to the overview. On the right are the tools, the same on every page:
 
 | Icon | Action |
 |---|---|
-| File | **Import guide** – load a guide file from another PlatinVault installation (creates the game together with its guide) |
-| Trophy badge | **Trophy cabinet** – all games you completed to 100 % (5.5) |
+| Arrow up with a green dot | **Update available** – only visible when there is a new version (chapter 12). The other icons do not move because of it. |
 | Aa | **Display size** – opens a small window: with − and + or directly through the steps 80 / 90 / 100 / 110 / 125 % fonts and boxes become smaller or larger while the page width stays the same; "Reset to 100 %" restores the standard size. The window stays where it is while the page changes, so you can click several times in a row. When the size is not 100 %, a small badge on the icon shows the value. Handy on 4K monitors with high Windows scaling. |
 | Globe with code (DE / EN) | **Language** – opens a small list of all languages, each with its flag and its own name ("Deutsch", "English"); the one in use is highlighted and marked with a check. A click switches the whole app **at once**, without reloading, and remembers your choice. The language applies to the interface, date and number formats, the Steam achievement texts (Steam's own texts in that language) and the handbook, which opens in the chosen language. With the keyboard: arrow keys choose, Enter confirms, Esc closes. If saving fails, a message below the header names the reason and the previous language stays. |
-| Sun/moon | Colour scheme: switches between light and dark (the first start follows your operating system) |
-| Gear | Settings |
-| ? | Help: shows the hints for the current page |
+| Sun/moon | Colour scheme: switches between light and dark (you make the first choice on the welcome screen) |
 | Book | **Handbook** – this handbook right inside the app |
+| ? | Help: shows the hints for the current page again |
 
-Hover over an icon and a short hint explains what it does.
+Hover over an icon and a short hint explains what it does. The tools of a single page (for example **Import guide** on the overview or the actions of a game) are part of that page's content, not of the header.
 
 ## 5.2 Favourites and all games
 
-At the top of the start page there is a slim **overview panel**: the title on the left, the figures as small badges on the right, and below them in one row the search, the view and the
-slider for the tile size.
+The page **Overview** and the page **All games** look the same and have the same tools. At the top is the page title, with the button **Import guide** next to it (load a guide file from another PlatinVault installation; it creates the game together with its guide). Below come the figures as small badges, then in one row the search, the switch between favourites and all games, and the slider for the tile size.
 
-- **Favourites** are the games you marked with a **star** - they are the tiles on the start page.
-- **All games** shows your complete Steam library (needs the Steam key).
-- The figures at the top right (games, trophies, platinum games) always refer to the chosen view. For "All games" PlatinVault evaluates your library in the background; while that runs it says
+- **Overview** shows your **favourites**: the games you marked with a **star**, as tiles.
+- **All games** shows your complete Steam library (needs the Steam key). You reach it through the navigation on the left or through the switch in the tool panel.
+- The figures (games, trophies, platinum games) always refer to the chosen page. For "All games" PlatinVault evaluates your library in the background; while that runs it says
   "Library is being evaluated".
 - With the **Tile size** slider you choose between Large, Compact, Very compact, List and Text only.
 - The **search** filters the current view; under the row "Showing x of y" says how many games you see right now, and **Reset filter** clears the search again. When you scroll down,
@@ -247,10 +270,10 @@ Your games come **only from your Steam library** – there is no Steam Store sea
 on the start page, PlatinVault shows three steps instead of the tiles; they show the real state (tick = done) and their buttons
 open the right place directly:
 
-1. **Connect your Steam account:** "Sign in with Steam" (or in the settings, Steam tab).
+1. **Connect your Steam account:** "Sign in with Steam" (or in the settings, Steam tab). Afterwards you land on the Steam tab of the settings again.
 2. **Enter your Steam Web API key:** you get the key from Steam for free (the link is right there), and you enter it in the
    settings, Steam tab. Without it PlatinVault cannot read your library.
-3. **Bring a game onto the dashboard with the star:** "Open all games", sort by "last played", "most playtime" or name and tap
+3. **Bring a game onto the dashboard with the star:** "Open all games" (also in the navigation on the left), sort by "last played", "most playtime" or name and tap
    the **star** on a game. The game appears as a tile right away – without AI costs. You create its guide afterwards on the game
    page (6.2) whenever you like.
 
@@ -285,44 +308,32 @@ credentials the field stays as it was.
 
 ## 5.5 Trophy cabinet
 
-The trophy cabinet shows every game you brought to **100 %**, like a display case: behind dark smoked glass the games stand on
-shelves, each with a golden plaque (name, date and time of the last trophy).
+The trophy cabinet shows every game you brought to **100 %**, like a display case: behind glass doors the games stand on shelves with their covers. Under each cover are the name and the date of the platinum trophy, preceded by a small golden trophy; a short golden line marks the place on the shelf.
 
-- **Opening:** the cabinet loads first (a thin golden line), then the glass doors slide aside and the lights come on.
-- **New games:** if you brought a game to 100 % since your last visit, it does not simply appear: its place stays free first (a glassy card), then the game is set onto the shelf with a small flash. Several new games take their turn one after the other (faster when there are many, the whole show stays around five seconds). A golden **New** marks them until you close the cabinet again. After that they count as shown; on the same data (Windows program and browser) nothing is played twice. The first time you ever open the cabinet, games that are already at 100 % are put in without any animation. With "reduce animations" switched on in Windows the games just fade in calmly. Screen readers get one announcement, "New in the cabinet: …".
-- **Doors:** the door icon at the top closes and opens the glass doors again; a click on the closed glass opens them.
-- **View:** the sliders icon at the top opens a small window with two things PlatinVault remembers:
-  - **Lighting:** **Spots** (one lamp above every place, with a soft cone of light) or **LED strip** (one continuous strip per
-    shelf; the whole row switches on together, the shelves one after the other from top to bottom).
-  - **Show empty places:** when the switch is on, the places that are still free hold grey, glassy placeholder cards with an
-    empty plaque, so the cabinet looks like a display case waiting to be filled. Placeholders are decoration only (not
-    clickable) and never push your games around. Off (the default), the free places stay empty.
-- **Size:** the slider at the top makes the games smaller (more per shelf) or larger.
+- **Opening:** choose the entry **Trophy cabinet** in the navigation on the left. The cabinet is a page of the app: the navigation stays visible, and you leave the cabinet by choosing another entry. The cabinet loads first (a thin blue line), then the glass doors slide aside and the lights come on.
+- **Tool row:** at the top of the cabinet, side by side, are the size, the lighting, the switch **Show empty places** and the door button. PlatinVault remembers your choices.
+  - **Size:** the slider makes the games smaller (more per shelf) or larger. It has five steps from **Very small** to **Very large**; **Small** is preselected. In the smallest step only the name is shown under the cover, from **Small** on the date as well; the time of day is added in the largest step. In every step a hint on hover shows name, date and time.
+  - **Lighting:** a connected bar with two parts. **Spots** (preselected) hangs one lamp above every game, with a soft cone of light. **LED** runs one continuous strip above every shelf; the whole row switches on together, the shelves one after the other from top to bottom.
+  - **Show empty places:** when the switch is on, the places that are still free hold thinly outlined placeholders, and (with Spots) a lamp burns above them as well. So the cabinet looks like a display case waiting to be filled. Placeholders are decoration only (not clickable) and never push your games around. Off (the default), the free places stay empty and dark.
+  - **Doors:** the door button closes and opens the glass doors again; when closing, the lights go out first. A click on the closed glass opens them.
+- **New games:** if you brought a game to 100 % since your last visit, it does not simply appear: its place stays free first (a glassy card), then the game is set onto the shelf with a small flash. Several new games take their turn one after the other (faster when there are many, the whole show stays around five seconds). A golden **New** marks them until you leave the cabinet. After that they count as shown; on the same data (Windows program and browser) nothing is played twice. The first time you ever open the cabinet, games that are already at 100 % are put in without any animation. With "reduce animations" switched on in Windows the games just fade in calmly. Screen readers get one announcement, "New in the cabinet: …".
 - **Many games:** if not all games fit at once, the shelves scroll sideways together - in every size. Scroll with the mouse wheel, swipe on the touchpad or touchscreen, step from game to game with the left and right arrow keys, or click the **arrow buttons** at the left and right edge (each click moves about one page). A dark fade at the edge shows where there is more; a dimmed arrow means there is nothing more in that direction. When everything fits at once, the arrows and fades are not shown.
-- **Details:** a click on a game shows trophies, days to platinum, playtime and the rarest trophy – from the right in landscape,
-  from the bottom in portrait. Esc closes the details first, then the cabinet.
+- **Details:** a click on a game shows trophies, days to platinum, playtime and the rarest trophy – from the right in landscape, from the bottom in portrait. A second click on the game, the close button or Esc closes the details again.
 
 # 6 The game page
 
 ## 6.1 Layout
 
-At the top cover, title and the actions, below them a bar with your trophy progress and - on the right - the areas
-**Live trophies**, **Statistics** and **Story & Lore** (the active area is highlighted).
+At the top are the cover, the title, the **Play** button and a calm row with the game's tools (icons with a hint on hover: complete guide, add chapter, export, Twitch, print/PDF, reset progress). Below it a line shows your trophy progress with the tiers. The content of the chosen page follows.
 
-The guide's **chapters** always stand in a **sidebar on the left**. It stays in place while you scroll and sorts the chapters
-under small headings such as **Getting started**, **Story & world**, **Combat & tactics** or **Progression & unlocks** (a guide with only one group
-has no headings). A number next to each chapter shows how much you have ticked off; the chosen chapter is highlighted in colour.
-With the arrow at the top of the sidebar you collapse it to narrow numbers so the content has more room - PlatinVault remembers
-that. The arrow keys (up/down, Home/End) jump through the chapters. On a phone you open the chapters with the **Chapters**
-button in the trophy bar: they slide in over the page from the left and close again as soon as you have chosen a chapter (or
-with Esc or a tap next to the panel).
+Which page of the game you see is chosen in the **navigation on the left**: unfold the game there under **My games**. It has these pages:
 
-At the very bottom of the chapter sidebar, under a fine dividing line, sits a small **info symbol** (an "i" in a circle) so the chapters keep the full height:
-when you move the mouse over it, tap or click it, or reach it with the Tab key, a card opens with the name of the app, the **version** (a button for **Version & updates**
-and **What’s new in this version**), "Made with ♥", the copyright and the **Licences** button (the start page shows the same details in its footer). It stays open while
-the mouse pointer is on it or on the symbol, and closes with Esc, a click next to it or when you move the mouse away.
+- **Live trophies** – the game's Steam achievements (6.3),
+- **Statistics** (6.4),
+- the guide's **chapters** (6.2), sorted under small headings such as **Getting started**, **Story & world**, **Combat & tactics** or **Progression & unlocks** (a guide with only one group has no headings). A number next to each chapter shows how much you have ticked off,
+- **Story & Lore** (6.5).
 
-The three areas of the bar each have their own colour: **Live trophies** gold, **Statistics** blue, **Story & Lore** purple. The area you are in is filled with its colour.
+The chosen page is highlighted and stored in the address, so a reload or a bookmark brings you back to exactly that page. 5.1 explains the navigation itself, its narrow form and the phone drawer. Version, licences and "Made with ♥" are no longer on the game page; you find them on the page **About PlatinVault** (info symbol at the bottom of the navigation).
 
 **Start a game.** The Play button starts the game in Steam without walking over to the gaming PC. On the game page the same spot reads **Game running** (a pulsing green dot, not clickable) while exactly this game is running, and goes back to **Play** afterwards. The button (and the "game is
 running" hint) only shows while the bridge is connected or PlatinVault runs directly on the gaming PC, and it disappears by
@@ -479,7 +490,7 @@ in the corner of its icon; locked achievements have a grey icon.
 
 ### In View: achievements you are working on
 
-With the **pin button** on an achievement – it is in all four views and in the detail window – you keep up to **10 achievements per game** in view. If 10 are pinned already, remove one first. Pinned achievements appear on **every tab** of the game page, also while you read the guide:
+With the **pin button** on an achievement – it is in all four views and in the detail window – you keep up to **10 achievements per game** in view. If 10 are pinned already, remove one first. Pinned achievements appear on **every page** of the game, also while you read the guide:
 
 - **Wide window in landscape:** as a collapsible column on the right beside the content.
 - **Portrait and narrow windows:** as a collapsible bar at the bottom. On a phone it starts collapsed as one slim line.
@@ -717,7 +728,7 @@ bridge. If `status` does not help, please tell us what it and the log show.
   to others over a network must offer the source code under the same licence. There is nothing to accept to use it. The
   source code is at `github.com/sushiflux/PlatinVault`.
 - **Licences:** You can read PlatinVault's licence (with the **Source code** button) and the licence texts of the bundled open-source components in the
-  app: on the start page click **Licences** at the bottom; on a game page open the **info symbol** at the bottom of the chapter sidebar and click **Licences**; or open the settings, tab **System**, and click **Open licences**. The same texts are in the bridge ZIP, in the bridge's program folder and in the Windows program's folder (`docs`) as `LICENSE` and
+  app: open the **info symbol** at the bottom of the navigation (page **About PlatinVault**) and click **Licences**; or open the settings, tab **System**, and click **Open licences**. The same texts are in the bridge ZIP, in the bridge's program folder and in the Windows program's folder (`docs`) as `LICENSE` and
   `THIRD-PARTY-NOTICES.md`; any text editor opens them.
 
 # 10 Troubleshooting
@@ -778,7 +789,7 @@ What the program adds:
 
 4. When you open PlatinVault the first time, choose the app's language and connect your Steam account (chapter 4).
 
-The program runs on Windows 10 or 11 (64-bit).
+The program runs on Windows 10 or 11 (64-bit) with a processor that supports x86-64-v2 (practically any from about 2013 onwards).
 
 **The program window.** On its first start PlatinVault opens **maximised**; after that it remembers how you left it (maximised or in
 your size and position). If the screen it was on is no longer connected, it opens on the main screen. The bar at the top is
@@ -949,10 +960,10 @@ If a newer version exists for your installation, a small **update icon** (arrow 
 itself. It shows the changes of the version that is running now, in the language of the app. A click on **Close**, the **Esc** key or a
 click beside the window closes it; it does not come back for that version. It does not appear after a fresh installation, in a local development
 version, or while the introduction tour of the first start is still running. You can read the text again at any time: a click on the version
-number at the bottom of the start page (or in the info card of the **info symbol** at the bottom of the chapter bar on a game page) opens **Version & updates**, where
+number on the page **About PlatinVault** (info symbol at the bottom of the navigation) opens **Version & updates**, where
 **What’s new in this version** is. The texts are part of the program, so you need no internet connection for them.
 
-How often PlatinVault looks for updates by itself is set in this section under **Look for updates**: **At every start**, **Every 4 hours**, **Daily** (default), **Weekly**, **Monthly** or **Never (by hand only)**. It applies to every platform, including the Windows program. You check by hand with **Check for updates now** here - or via the version number (at the bottom of the start page or inside the **info symbol** at the bottom of the chapter bar): a click opens **Version & updates** with the button **Check for updates**, the time of the last check and the result. If a new version is found, the update icon appears in the header at once.
+How often PlatinVault looks for updates by itself is set in this section under **Look for updates**: **At every start**, **Every 4 hours**, **Daily** (default), **Weekly**, **Monthly** or **Never (by hand only)**. It applies to every platform, including the Windows program. You check by hand with **Check for updates now** here - or via the version number on the page **About PlatinVault** (info symbol at the bottom of the navigation): a click opens **Version & updates** with the button **Check for updates**, the time of the last check and the result. If a new version is found, the update icon appears in the header at once.
 
 ## 12.2 Windows program
 
@@ -997,7 +1008,7 @@ in the Windows program in its own window). Install that version (or a newer one)
 
 On the Linux PC where Steam runs (desktop Linux, Steam Deck in Desktop Mode, Bazzite) you install PlatinVault as the **Linux package**.
 It is the same app as in the browser, with its own database, and reads Steam on this computer itself – you do not need a bridge. You use
-it in the web browser. Requirements: 64-bit Linux (x86_64), a web browser, preferably systemd (without it the menu entry starts
+it in the web browser. Requirements: 64-bit Linux (x86_64) with a processor that supports x86-64-v2 (practically any from about 2013 onwards), a web browser, preferably systemd (without it the menu entry starts
 PlatinVault itself) and `libicu` (usually present; without it dates and numbers use a neutral format).
 
 > [!NOTE]

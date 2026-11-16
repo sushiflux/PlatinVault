@@ -117,7 +117,7 @@ function UpdatePanel({ anchor, panelId, data, offer, installing, message, onInst
       exit={{ opacity: 0, transition: { duration: 0.1 } }}
       transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
     >
-      <div className="flex items-center gap-2 font-extrabold" style={{ color: 'var(--accent-crystal)' }}>
+      <div className="flex items-center gap-2 font-semibold" style={{ color: 'var(--accent-crystal)' }}>
         <IconCircleArrowUp size={18} aria-hidden="true" />
         <span>{offer.isNightly ? t('header.update.titleNightly') : offer.isBeta ? t('header.update.titleBeta') : t('header.update.titleRelease')}</span>
       </div>

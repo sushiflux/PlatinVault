@@ -1,73 +1,56 @@
 import type { ReactNode } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { IconClock, IconHourglassLow, IconInfoCircle, IconTrophy } from '@tabler/icons-react'
+import { IconInfoCircle } from '@tabler/icons-react'
 import type { PlayerGameStatsDto } from '../../api/types'
 import { ProgressBar } from '../ui/ProgressBar'
-import { TierIcon } from '../ui/TierIcon'
-import { Tooltip } from '../ui/Tooltip'
+import { IconButton } from '../ui/IconButton'
 import { Reveal, useStatsFormat, type StatsFormat } from './chartKit'
 import type { ExclusivityBound, PlatinumEstimate } from './statsData'
 
+// One figure of the row on top: the value, its label (with an optional info button) and a short hint. No card: the figures are
+// columns separated by thin lines (stats.css .pv-figs).
 function Tile({
-  icon,
   label,
   info,
-  hero = false,
   order,
   children,
+  below,
   hint,
 }: {
-  icon: ReactNode
   label: string
   // Explanation shown in our own tooltip behind a small info button
   info?: { title: string; text: string }
-  hero?: boolean
   order: number
+  // The value itself
   children: ReactNode
+  // Between label and hint (the progress line)
+  below?: ReactNode
   hint?: ReactNode
 }) {
   return (
     <Reveal order={order} className="min-w-0">
-      <section className={`pv-card pv-viz-tile h-full ${hero ? 'pv-viz-tile--hero' : ''}`} aria-label={label}>
-        <div className="pv-viz-tile-label">
-          <span className="pv-viz-tile-chip" aria-hidden="true">
-            {icon}
-          </span>
+      <section className="pv-fig" aria-label={label}>
+        {children}
+        <div className="pv-fig-label">
           <span>{label}</span>
           {info && (
-            <span className="ml-auto">
-              <Tooltip label={info.title} description={info.text} side="bottom">
-                <button
-                  type="button"
-                  aria-label={`${info.title}: ${info.text}`}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--radius-sm)] hover:bg-[var(--bg-elevated)]"
-                  style={{ color: 'var(--viz-ink-3)' }}
-                >
-                  <IconInfoCircle size={17} />
-                </button>
-              </Tooltip>
-            </span>
+            <IconButton label={info.title} description={info.text}>
+              <IconInfoCircle size={17} />
+            </IconButton>
           )}
         </div>
-        {children}
-        {hint && <div className="pv-viz-tile-hint">{hint}</div>}
+        {below}
+        {hint && <div className="pv-fig-hint">{hint}</div>}
       </section>
     </Reveal>
   )
 }
 
-// Balanced rows for every number of visible tiles (container queries, so the sidebar layout counts too):
-// 4 tiles = one row of 4 or 2 x 2 (never 3 + 1), 3 = three columns, 2 = two columns, 1 = full width; narrow = one column.
-const HERO_GRID: Record<number, string> = {
-  1: 'grid-cols-1',
-  2: 'grid-cols-1 @[30rem]:grid-cols-2',
-  3: 'grid-cols-1 @[44rem]:grid-cols-3',
-  4: 'grid-cols-1 @[30rem]:grid-cols-2 @[60rem]:grid-cols-4',
-}
-
-export function heroGridClass(count: number): string {
-  return `grid gap-4 ${HERO_GRID[Math.min(4, Math.max(1, count))]}`
+// The row has one column per figure: 4 = one row of 4 or 2 x 2 (never 3 + 1), 3 = three columns, 2 = two columns, 1 = full width
+// (container queries in stats.css, so the sidebar layout counts too; narrow = stacked with lines between).
+export function heroGridProps(count: number): { className: string; 'data-count': number } {
+  return { className: 'pv-figs', 'data-count': Math.min(4, Math.max(1, count)) }
 }
 
 interface Props {
@@ -127,15 +110,14 @@ export function HeroTiles({ unlocked, total, platinumDone, bound, projection, pr
     tiles.push(
       <Tile
         key="progress"
-        icon={<IconTrophy size={16} />}
         label={t('hero.progress.label')}
         order={order++}
+        below={<ProgressBar percent={percent} label={t('hero.progress.barLabel')} />}
         hint={left === 0 ? t('hero.progress.hintDone', { percent: shownPercent }) : t('hero.progress.hintOpen', { percent: shownPercent, open: fmt.int(left) })}
       >
-        <div className="pv-viz-tile-value">
-          {fmt.int(unlocked)} <span style={{ color: 'var(--viz-ink-3)', fontWeight: 700 }}>/ {fmt.int(total)}</span>
+        <div className="pv-fig-value">
+          {fmt.int(unlocked)} <small>/ {fmt.int(total)}</small>
         </div>
-        <ProgressBar percent={percent} label={t('hero.progress.barLabel')} className="mt-3" />
       </Tile>
     )
   }
@@ -146,8 +128,6 @@ export function HeroTiles({ unlocked, total, platinumDone, bound, projection, pr
     tiles.push(
       <Tile
         key="exclusive"
-        hero
-        icon={<TierIcon tier="Platinum" size={16} />}
         label={t('hero.exclusive.label')}
         info={{
           title: t('hero.exclusive.infoTitle'),
@@ -162,10 +142,9 @@ export function HeroTiles({ unlocked, total, platinumDone, bound, projection, pr
           </>
         }
       >
-        <div className="mt-2 text-sm font-extrabold" style={{ color: 'var(--viz-ink-2)' }}>
-          {t('hero.exclusive.atMost')}
+        <div className="pv-fig-value">
+          <small>{t('hero.exclusive.atMost')}</small> {fmt.pct(bound.percent)}
         </div>
-        <div className="pv-viz-hero-figure">{fmt.pct(bound.percent)}</div>
       </Tile>
     )
   }
@@ -178,12 +157,11 @@ export function HeroTiles({ unlocked, total, platinumDone, bound, projection, pr
       tiles.push(
         <Tile
           key="done"
-          icon={<TierIcon tier="Platinum" size={16} />}
           label={t('hero.done.label')}
           order={order++}
           hint={days !== null ? t('hero.done.hint', { count: days, from: fmt.dateLong(first), to: fmt.dateLong(last) }) : undefined}
         >
-          <div className="pv-viz-tile-value">
+          <div className="pv-fig-value">
             {player?.playtimeHours != null ? t('hero.done.after', { time: fmt.hours(player.playtimeHours) }) : t('hero.done.inDays', { count: days ?? 0 })}
           </div>
         </Tile>
@@ -191,8 +169,8 @@ export function HeroTiles({ unlocked, total, platinumDone, bound, projection, pr
     }
   } else if (projectionPending) {
     tiles.push(
-      <Tile key="projection" icon={<IconHourglassLow size={16} />} label={t('hero.projection.label')} order={order++}>
-        <div className="pv-viz-skel animate-pulse mt-3" style={{ blockSize: '2rem', inlineSize: '55%', opacity: 0.5 }} aria-hidden="true" />
+      <Tile key="projection" label={t('hero.projection.label')} order={order++}>
+        <div className="pv-viz-skel animate-pulse" style={{ blockSize: '1.9rem', inlineSize: '55%', opacity: 0.5 }} aria-hidden="true" />
       </Tile>
     )
   } else if (projection) {
@@ -200,13 +178,12 @@ export function HeroTiles({ unlocked, total, platinumDone, bound, projection, pr
     tiles.push(
       <Tile
         key="projection"
-        icon={<IconHourglassLow size={16} />}
         label={t('hero.projection.label')}
         info={{ title: t('hero.projection.infoTitle'), text: basis.info }}
         order={order++}
         hint={<Trans t={t} i18nKey="hero.projection.hint" values={{ title: basis.title, detail: basis.detail }} components={{ strong }} />}
       >
-        <div className="pv-viz-tile-value">{t('hero.projection.value', { time: fmt.hours(projection.shownHours) })}</div>
+        <div className="pv-fig-value">{t('hero.projection.value', { time: fmt.hours(projection.shownHours) })}</div>
       </Tile>
     )
   }
@@ -217,7 +194,6 @@ export function HeroTiles({ unlocked, total, platinumDone, bound, projection, pr
     tiles.push(
       <Tile
         key="playtime"
-        icon={<IconClock size={16} />}
         label={t('hero.playtime.label')}
         order={order++}
         hint={
@@ -227,11 +203,11 @@ export function HeroTiles({ unlocked, total, platinumDone, bound, projection, pr
           </>
         }
       >
-        <div className="pv-viz-tile-value">{fmt.hours(player.playtimeHours)}</div>
+        <div className="pv-fig-value">{fmt.hours(player.playtimeHours)}</div>
       </Tile>
     )
   }
 
   if (tiles.length === 0) return null
-  return <div className={heroGridClass(tiles.length)}>{tiles}</div>
+  return <div {...heroGridProps(tiles.length)}>{tiles}</div>
 }

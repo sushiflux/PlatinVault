@@ -5,7 +5,7 @@
     autostart) and the install/uninstall engine. No package references: plain .NET + Windows Forms.
   -->
   <PropertyGroup>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>net11.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>PlatinVault.Windows</RootNamespace>
     <AssemblyName>PlatinVault.Windows.Common</AssemblyName>

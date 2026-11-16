@@ -8,8 +8,8 @@ interface TooltipProps {
   label: string
   // Optional second line with more detail
   description?: string
-  // Preferred side; it flips by itself when there is no room
-  side?: 'top' | 'bottom'
+  // Preferred side; it flips by itself when there is no room. 'right' / 'left' for an icon rail (collapsed side navigation).
+  side?: TooltipSide
   // Milliseconds of hovering before the tooltip appears
   delay?: number
   // Switches the tooltip off without unmounting the child (e.g. a title that only needs it while it is cut off)
@@ -19,7 +19,9 @@ interface TooltipProps {
   children: ReactNode
 }
 
-const GAP = 10
+export type TooltipSide = 'top' | 'bottom' | 'right' | 'left'
+
+const GAP = 8
 const MARGIN = 8
 
 function clamp(value: number, min: number, max: number): number {
@@ -37,11 +39,11 @@ function Bubble({
   anchor: HTMLElement
   label: string
   description?: string
-  side: 'top' | 'bottom'
+  side: TooltipSide
 }) {
   const reduce = useReducedMotion() ?? false
   const ref = useRef<HTMLDivElement>(null)
-  const [placement, setPlacement] = useState<{ left: number; top: number; side: 'top' | 'bottom'; arrow: number } | null>(null)
+  const [placement, setPlacement] = useState<{ left: number; top: number; side: TooltipSide } | null>(null)
 
   useLayoutEffect(() => {
     const bubble = ref.current
@@ -52,6 +54,17 @@ function Bubble({
     const viewportHeight = window.innerHeight
 
     let chosen = side
+    if (chosen === 'right' || chosen === 'left') {
+      const fitsRight = a.right + GAP + b.width <= viewportWidth - MARGIN
+      const fitsLeft = a.left - GAP - b.width >= MARGIN
+      if (chosen === 'right' && !fitsRight && fitsLeft) chosen = 'left'
+      else if (chosen === 'left' && !fitsLeft && fitsRight) chosen = 'right'
+      const middle = a.top + a.height / 2
+      const top = clamp(middle - b.height / 2, MARGIN, viewportHeight - b.height - MARGIN)
+      const left = chosen === 'right' ? a.right + GAP : a.left - GAP - b.width
+      setPlacement({ left: clamp(left, MARGIN, viewportWidth - b.width - MARGIN), top, side: chosen })
+      return
+    }
     const fitsBelow = a.bottom + GAP + b.height <= viewportHeight - MARGIN
     const fitsAbove = a.top - GAP - b.height >= MARGIN
     if (chosen === 'bottom' && !fitsBelow && fitsAbove) chosen = 'top'
@@ -60,10 +73,12 @@ function Bubble({
     const center = a.left + a.width / 2
     const left = clamp(center - b.width / 2, MARGIN, viewportWidth - b.width - MARGIN)
     const top = chosen === 'bottom' ? a.bottom + GAP : a.top - GAP - b.height
-    setPlacement({ left, top, side: chosen, arrow: clamp(center - left, 14, b.width - 14) })
+    setPlacement({ left, top, side: chosen })
   }, [anchor, label, description, side])
 
   const shown = placement?.side ?? side
+  // Small slide from the anchor towards the tooltip's side (none with reduced motion); flat bubble without an arrow
+  const offset = shown === 'bottom' ? { y: -4 } : shown === 'top' ? { y: 4 } : shown === 'right' ? { x: -4 } : { x: 4 }
   return createPortal(
     <motion.div
       ref={ref}
@@ -74,19 +89,12 @@ function Bubble({
         top: placement?.top ?? 0,
         visibility: placement ? 'visible' : 'hidden',
       }}
-      initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: shown === 'bottom' ? -4 : 4 }}
-      animate={reduce ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: 0.14, ease: 'easeOut' }}
+      initial={reduce ? { opacity: 0 } : { opacity: 0, ...offset }}
+      animate={reduce ? { opacity: 1 } : { opacity: 1, x: 0, y: 0 }}
+      transition={{ duration: 0.12, ease: 'easeOut' }}
     >
       <span className="pv-tooltip-label">{label}</span>
       {description && <span className="pv-tooltip-description">{description}</span>}
-      <span
-        className="pv-tooltip-arrow"
-        style={{
-          left: (placement?.arrow ?? 14) - 4,
-          [shown === 'bottom' ? 'top' : 'bottom']: -4,
-        }}
-      />
     </motion.div>,
     document.body
   )

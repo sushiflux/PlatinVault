@@ -5,9 +5,9 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { IconBook2, IconRoute } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { HandbookViewer } from '../HandbookViewer'
-import { DRAWER_QUERY } from '../gamenav/ChapterSidebar'
+import { DRAWER_QUERY } from '../shell/useShellNav'
 import { useMediaQuery } from '../../utils/useMediaQuery'
-import { findHintTargets, type HintDefinition, type HintId, type HintScreen } from './useScreenHints'
+import { findHintElement, findHintTargets, type HintDefinition, type HintId, type HintScreen } from './useScreenHints'
 
 const SPOT_PADDING = 6
 const GAP = 14
@@ -23,7 +23,7 @@ function useTargetRect(target: string | null): DOMRect | null {
     }
     let frame = 0
     const tick = () => {
-      const element = document.querySelector<HTMLElement>(`[data-hint="${target}"]`)
+      const element = findHintElement(target)
       const next = element?.getBoundingClientRect() ?? null
       setRect((previous) => {
         if (!next) return null
@@ -124,7 +124,7 @@ export function HintTour({ screen, open, onClose, onShowIntro }: HintTourProps) 
   // Bring a control that is off screen into view, then move the keyboard focus into the card
   useEffect(() => {
     if (!step) return
-    const element = document.querySelector<HTMLElement>(`[data-hint="${step.target}"]`)
+    const element = findHintElement(step.target)
     const bounds = element?.getBoundingClientRect()
     if (element && bounds && (bounds.top < 80 || bounds.bottom > window.innerHeight - 20)) {
       element.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' })

@@ -59,7 +59,7 @@ export function SideQuestsAlert({ section }: { section: GuideSectionDto }) {
   return (
     <aside className="pv-quests" data-hint-kind="side_quests" aria-label={heading}>
       <header className="pv-quests-head">
-        <IconListCheck size={16} aria-hidden="true" />
+        <IconListCheck size={18} aria-hidden="true" />
         <span className="pv-quests-title">{heading}</span>
         {target && quests.length > 0 && (
           <a
@@ -71,7 +71,7 @@ export function SideQuestsAlert({ section }: { section: GuideSectionDto }) {
             }}
           >
             {t('sideQuests.goTo', { title: target.title })}
-            <IconArrowRight size={13} aria-hidden="true" />
+            <IconArrowRight size={14} aria-hidden="true" />
           </a>
         )}
       </header>
@@ -86,14 +86,15 @@ export function SideQuestsAlert({ section }: { section: GuideSectionDto }) {
             return (
               <li key={`${quest.title}-${i}`} className="pv-quest" data-quest-ref={ref ?? undefined}>
                 {bound && links && (
-                  <input
-                    type="checkbox"
-                    className="pv-quest-check"
-                    checked={links.isChecked(ref!)}
-                    onChange={(event) => void links.toggle(ref!, event.target.checked)}
-                    aria-label={t('sideQuests.doneFor', { quest: quest.title.trim() })}
-                    style={{ accentColor: 'var(--accent-emerald)' }}
-                  />
+                  <label className="pv-quest-check-hit">
+                    <input
+                      type="checkbox"
+                      className="pv-check pv-quest-check"
+                      checked={links.isChecked(ref!)}
+                      onChange={(event) => void links.toggle(ref!, event.target.checked)}
+                      aria-label={t('sideQuests.doneFor', { quest: quest.title.trim() })}
+                    />
+                  </label>
                 )}
                 {target ? (
                   <a

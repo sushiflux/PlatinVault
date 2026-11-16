@@ -2,7 +2,7 @@ import { useEffect, useId, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { IconCheck, IconDeviceDesktop, IconLoader2, IconRestore } from '@tabler/icons-react'
+import { IconCheck, IconLoader2, IconRestore } from '@tabler/icons-react'
 import { checkSteamRoot, fetchSettings, updateSettings } from '../../api/client'
 import type { SettingsResponseDto, SteamLocalSettingsDto, SteamRootCandidateDto, SteamRootCheckResponse } from '../../api/types'
 import { ReservedText } from '../ui/ReservedText'
@@ -130,28 +130,25 @@ export function SteamFolderSection() {
   const saveCandidates = [t('steamLocal.cleared'), t('steamLocal.saved', { path: shownPath })]
 
   return (
-    <div className="space-y-2 rounded-xl p-3" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }} data-testid="steam-folder-section">
-      <div className="flex items-center gap-2 text-xs font-extrabold" style={{ color: 'var(--text-primary)' }}>
-        <IconDeviceDesktop size={16} aria-hidden="true" style={{ color: 'var(--accent-crystal)' }} />
-        <span>{t('steamLocal.title')}</span>
-      </div>
+    <div className="pv-set-section" data-testid="steam-folder-section">
+      <h3 className="pv-eyebrow">{t('steamLocal.title')}</h3>
 
-      <ReservedText className="text-xs" style={{ color: local.found ? 'var(--text-secondary)' : 'var(--text-muted)' }} candidates={foundCandidates} role="status">
+      <ReservedText className="text-sm" style={{ color: local.found ? 'var(--text-secondary)' : 'var(--text-muted)' }} candidates={foundCandidates} role="status">
         {foundLine}
       </ReservedText>
       {local.experimental && (
-        <p className="text-xs font-semibold" style={{ color: 'var(--accent-gold)' }}>
+        <p className="text-sm font-semibold" style={{ color: 'var(--accent-gold)' }}>
           {t('steamLocal.experimental')}
         </p>
       )}
       {local.configuredRoot && (
-        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
           {t('steamLocal.configured', { path: local.configuredRoot })}
         </p>
       )}
 
       <div>
-        <label htmlFor={id} className="mb-1 block text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>
+        <label htmlFor={id} className="mb-1 block text-sm font-bold" style={{ color: 'var(--text-secondary)' }}>
           {t('steamLocal.label')}
         </label>
         <div className="flex flex-wrap gap-2">
@@ -190,7 +187,7 @@ export function SteamFolderSection() {
         {/* Hint and every check result share one reserved line: nothing below moves while typing */}
         <ReservedText
           id={`${id}-msg`}
-          className="mt-1 text-[11px] font-semibold leading-snug"
+          className="mt-1 text-sm font-semibold leading-snug"
           style={{ color: fieldMessage ? toneColor[fieldMessage.tone] : 'var(--text-muted)' }}
           candidates={fieldCandidates}
           aria-live="polite"
@@ -198,7 +195,7 @@ export function SteamFolderSection() {
           {fieldMessage?.text ?? t('steamLocal.hint')}
         </ReservedText>
         <ReservedText
-          className="mt-1 text-xs font-semibold"
+          className="mt-1 text-sm font-semibold"
           style={{ color: saveMessage?.tone === 'error' ? 'var(--accent-crimson)' : 'var(--accent-emerald)' }}
           candidates={saveCandidates}
           role="status"
@@ -220,8 +217,7 @@ export function SteamCandidateList({ candidates }: { candidates: SteamRootCandid
     <div className="mt-1">
       <button
         type="button"
-        className="text-[11px] font-bold hover:underline"
-        style={{ color: 'var(--accent-crystal)' }}
+        className="pv-btn-text"
         aria-expanded={open}
         aria-controls={listId}
         onClick={() => setOpen(!open)}
@@ -229,7 +225,7 @@ export function SteamCandidateList({ candidates }: { candidates: SteamRootCandid
         {open ? t('steamLocal.candidates.hide') : t('steamLocal.candidates.show', { count: candidates.length })}
       </button>
       {open && (
-        <ul id={listId} className="mt-1 space-y-0.5 text-[11px] leading-snug" style={{ color: 'var(--text-secondary)' }}>
+        <ul id={listId} className="mt-1 space-y-0.5 text-sm leading-snug" style={{ color: 'var(--text-secondary)' }}>
           {candidates.map((candidate, index) => {
             const state = candidate.chosen
               ? t('steamLocal.candidates.chosen')

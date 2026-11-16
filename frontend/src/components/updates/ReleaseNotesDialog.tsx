@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import '../../styles/dialogs.css'
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
@@ -183,7 +184,7 @@ function NotesDialog({ release, onClose, restoreFocusRef, intro = false }: Dialo
 
   return (
     <motion.div
-      className="pv-modal-backdrop"
+      className="pv-modal-backdrop pv-modal-backdrop--top"
       style={{ zIndex: 70 }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}

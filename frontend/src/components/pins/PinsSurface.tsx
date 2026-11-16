@@ -13,6 +13,7 @@ import { PinCard } from './PinCard'
 import { usePins, type PinsApi } from './pinsContext'
 import { usePinsCollapsed, usePinsPlacement, type PinsPlacement } from './pinsLayout'
 import { usePinList, type PinEntry } from './usePinList'
+import '../../styles/gameframe.css'
 import './pins.css'
 
 interface PinsSurfaceProps {
@@ -114,7 +115,7 @@ function ClearDoneButton({ doneCount, onClear }: { doneCount: number; onClear: (
         aria-label={t('pins.clearDone.label')}
         onClick={onClear}
       >
-        <IconChecks size={15} aria-hidden="true" />
+        <IconChecks size={18} aria-hidden="true" />
         <span>{t('pins.clearDone.label')}</span>
       </button>
     </Tooltip>
@@ -125,7 +126,7 @@ function TitleLine({ pins }: { pins: PinsApi }) {
   const { t } = useTranslation('live')
   return (
     <span className="pv-pins-title">
-      <IconPinFilled size={16} aria-hidden="true" />
+      <IconPinFilled size={18} aria-hidden="true" />
       <span>{t('pins.title')}</span>
       <span className="pv-pins-count" aria-label={t('pins.countLabel', { n: pins.names.length, max: pins.max })}>
         {pins.names.length}/{pins.max}
@@ -239,8 +240,8 @@ function Column({ entries, pins, collapsed, onToggle, doneCount, onClear, onOpen
           <TitleLine pins={pins} />
         )}
         <Tooltip label={toggleLabel} side="bottom">
-          <button type="button" className="pv-gnav-icon-btn" aria-label={toggleLabel} aria-expanded={!collapsed} onClick={onToggle}>
-            {collapsed ? <IconChevronLeft size={16} aria-hidden="true" /> : <IconChevronRight size={16} aria-hidden="true" />}
+          <button type="button" className="pv-btn pv-icon-btn pv-icon-btn--ghost" aria-label={toggleLabel} aria-expanded={!collapsed} onClick={onToggle}>
+            {collapsed ? <IconChevronLeft size={18} aria-hidden="true" /> : <IconChevronRight size={18} aria-hidden="true" />}
           </button>
         </Tooltip>
       </div>

@@ -1,0 +1,78 @@
+/* About PlatinVault (route /about, pages/AboutPage.tsx), variant "Kristall": logo and name on top, one light list of hairline rows. */
+.pv-about {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-inline-size: 46rem;
+}
+
+.pv-about-head {
+  display: flex;
+  align-items: center;
+  gap: 1.125rem;
+}
+
+.pv-about-logo {
+  flex: none;
+  inline-size: 4.5rem;
+  block-size: 4.5rem;
+}
+
+.pv-about-head .pv-page-title {
+  font-size: 1.75rem;
+}
+
+.pv-about-list {
+  padding: 0 1.25rem;
+}
+
+.pv-about-row {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  min-block-size: 3.5rem;
+  padding-block: 0.25rem;
+}
+
+/* The label of a row: quiet, normal case (the value is what matters) */
+.pv-about-k {
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.pv-about-v {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem 0.75rem;
+  min-inline-size: 0;
+  color: var(--text-primary);
+}
+
+/* A frameless action at the right end of a row sits flush with the value column */
+.pv-about-v > .pv-btn-text,
+.pv-about-v > a.pv-btn-text {
+  margin-inline-end: -0.75rem;
+}
+
+.pv-about-mono {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+@media (max-width: 639px) {
+  .pv-about-head {
+    gap: 0.875rem;
+  }
+
+  .pv-about-logo {
+    inline-size: 3.5rem;
+    block-size: 3.5rem;
+  }
+
+  .pv-about-v {
+    justify-content: flex-start;
+  }
+}

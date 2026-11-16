@@ -2,8 +2,10 @@
 # Tests the changelog part of the git hooks and scripts/release-notes.sh in a throw-away git repository (never this one):
 #   - "## vNEXT" / "## vNEXT β" in a staged CHANGELOG.md become this commit's readable version (suffix " · ..." kept)
 #   - the changed-lines counter in version.txt equals the real size of the commit (stamping never changes it)
-#   - intern/CHANGELOG.dev.md gets version + time in its newest heading per language, only when it changed, and intern/ (its own git
-#     repository) is committed by post-commit with the version as message
+#   - intern/CHANGELOG.dev.md (no git repository needed): only a "## vNEXT" heading per language gets version + time, older headings and
+#     files without a placeholder stay untouched
+#   - post-commit / post-merge call the command of the git config key intern.sync with "save <root>" / "restore <root>" (a fake command
+#     here); only the clone's local key counts (global file or "git -c" = ignored); no key = nothing happens; a failing or missing command never fails the commit or the merge
 #   - release-notes.sh prints exactly the entry of one version (English, rule, German) and fails for a missing one; it finds entries under
 #     the notation of 2026-11-08 (v2026.11.12.13.557 (β)) and under the old one (v2026.11.12 (13.557 β)), which stamped headings keep
 #
@@ -25,13 +27,13 @@ dot=$(printf '\302\267')
 
 # The hooks run with this repository's git variables when the test itself is started from a hook - never touch this repository
 unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_PREFIX GIT_OBJECT_DIRECTORY GIT_COMMON_DIR
-export PV_HOOK_NO_PUSH=1 GIT_TERMINAL_PROMPT=0
+export GIT_TERMINAL_PROMPT=0
 
 repo="$work/repo"
 mkdir -p "$repo/scripts/git-hooks" "$repo/.run"
-cp "$src/scripts/git-hooks/pre-commit" "$src/scripts/git-hooks/post-commit" "$repo/scripts/git-hooks/"
+cp "$src/scripts/git-hooks/pre-commit" "$src/scripts/git-hooks/post-commit" "$src/scripts/git-hooks/post-merge" "$repo/scripts/git-hooks/"
 cp "$src/scripts/version-display.sh" "$src/scripts/release-notes.sh" "$repo/scripts/"
-chmod +x "$repo/scripts/git-hooks/pre-commit" "$repo/scripts/git-hooks/post-commit"
+chmod +x "$repo/scripts/git-hooks/pre-commit" "$repo/scripts/git-hooks/post-commit" "$repo/scripts/git-hooks/post-merge"
 cd "$repo"
 git init -q
 git config user.name Test
@@ -216,16 +218,15 @@ check "old notation as the argument still works" "$(sh scripts/release-notes.sh 
 if sh scripts/release-notes.sh CHANGELOG.beta.md "v2026.11.19.2.40" >/dev/null 2>&1; then bad "the release form picked a beta entry (old notation)"; else ok "old-notation beta is not found as a release"; fi
 if sh scripts/release-notes.sh CHANGELOG.beta.md "v2026.11.18.9.72630" >/dev/null 2>&1; then bad "a longer counter matched a shorter one"; else ok "counters are matched exactly"; fi
 
-# ---- 4. private developer changelog in intern/ (its own git repository) --------------------------------------------------------
+# ---- 4. private developer changelog in intern/ (git-ignored, no git repository of its own needed) ----------------------------------
 mkdir -p intern
-(cd intern && git init -q && git config core.autocrlf false && git config user.name Test && git config user.email test@example.invalid && git config commit.gpgsign false)
-cat > intern/CHANGELOG.dev.md <<'EOF'
+cat > intern/CHANGELOG.dev.md <<'EOT'
 # Dev changelog
 
 <a name="english"></a>
 ## English
 
-## vNEXT - draft
+## vNEXT
 
 - Something.
 
@@ -236,32 +237,134 @@ cat > intern/CHANGELOG.dev.md <<'EOF'
 <a name="deutsch"></a>
 ## Deutsch
 
-## vNEXT - Entwurf
+## vNEXT
 
 - Etwas.
-EOF
-(cd intern && git add -A && git commit -q -m start)
+
+## vNEXT - Entwurf
+
+- Not the exact placeholder, stays as it is.
+EOT
 printf 'x\n' > file.txt
-printf '\n## v2026.2.2 - 2026-02-02 10:00\n' >> intern/CHANGELOG.dev.md
 git add file.txt
 git commit -q -m three
 version3=$(sed -n '1p' version.txt)
+check "no intern/.git exists" "$([ -e intern/.git ] && echo yes || echo no)" "no"
 first_en=$(grep '^## v' intern/CHANGELOG.dev.md | sed -n '1p')
 case "$first_en" in
-    "## $version3 - "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]" "[0-9][0-9]:[0-9][0-9]) ok "intern heading EN stamped" ;;
-    *) bad "intern heading EN stamped: got [$first_en]" ;;
+    "## $version3 - "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]" "[0-9][0-9]:[0-9][0-9]) ok "intern placeholder EN stamped" ;;
+    *) bad "intern placeholder EN stamped: got [$first_en]" ;;
 esac
 check "intern older entry untouched" "$(grep '^## v' intern/CHANGELOG.dev.md | sed -n '2p')" "## v2026.1.1 - 2026-01-01 10:00"
-check "intern heading DE stamped" "$(grep '^## v' intern/CHANGELOG.dev.md | sed -n '3p' | cut -d' ' -f2)" "$version3"
-check "intern committed by post-commit with the version" "$(git -C intern log -1 --format=%s)" "$version3"
-check "intern working tree clean afterwards" "$(git -C intern status --porcelain)" ""
+check "intern placeholder DE stamped" "$(grep '^## v' intern/CHANGELOG.dev.md | sed -n '3p' | cut -d' ' -f2)" "$version3"
+check "intern non-exact placeholder untouched" "$(grep '^## v' intern/CHANGELOG.dev.md | sed -n '4p')" "## vNEXT - Entwurf"
 check "outer repository does not contain intern/" "$(git ls-files intern | wc -l | tr -d ' ')" "0"
 
+# No placeholder = nothing changes, the newest entry is not restamped by the next commit
+sum_before=$(cksum < intern/CHANGELOG.dev.md)
 printf 'y\n' >> file.txt
 git add file.txt
 git commit -q -m four
-check "unchanged intern changelog is not restamped" "$(grep '^## v' intern/CHANGELOG.dev.md | sed -n '1p' | cut -d' ' -f2)" "$version3"
-check "nothing to commit in intern" "$(git -C intern log -1 --format=%s)" "$version3"
+check "no placeholder: changelog unchanged" "$(cksum < intern/CHANGELOG.dev.md)" "$sum_before"
+
+# A placeholder with CRLF line endings is stamped too (whether the CR survives depends on the awk build: msys awk strips it on input)
+printf '<a name="english"></a>\r\n## English\r\n\r\n## vNEXT\r\n\r\n- Crlf.\r\n' > intern/CHANGELOG.dev.md
+printf 'z\n' >> file.txt
+git add file.txt
+git commit -q -m four-crlf
+check "CRLF placeholder carries the version" "$(grep '^## v' intern/CHANGELOG.dev.md | tr -d '\r' | cut -d' ' -f2)" "$(sed -n '1p' version.txt)"
+
+# ---- 5. intern.sync: post-commit calls "save <root>", post-merge calls "restore <root>" (fake command, nothing real, no push) ------
+root=$(git rev-parse --show-toplevel)
+tooldir="$work/Some Path"
+mkdir -p "$tooldir"
+out="$work/sync.out"
+cat > "$tooldir/fake sync.sh" <<'EOT'
+#!/bin/sh
+# Records its arguments; the exit code comes from FAKE_SYNC_EXIT (default 0)
+printf '%s\n' "$*" >> "$FAKE_SYNC_OUT"
+echo "tool output line"
+exit "${FAKE_SYNC_EXIT:-0}"
+EOT
+export FAKE_SYNC_OUT="$out"
+lines_in_out() { if [ -f "$out" ]; then wc -l < "$out" | tr -d ' '; else echo 0; fi; }
+# save runs detached: wait until the expected number of lines appeared
+wait_for_lines() {
+    n=0
+    while [ "$(lines_in_out)" -lt "$1" ] && [ $n -lt 100 ]; do sleep 0.1; n=$((n + 1)); done
+}
+wait_for_log() {
+    n=0
+    while ! grep -q "$1" .run/intern-sync.log 2>/dev/null && [ $n -lt 100 ]; do sleep 0.1; n=$((n + 1)); done
+}
+
+# no key: nothing happens
+git config --unset intern.sync 2>/dev/null || true
+printf '1\n' >> file.txt; git add file.txt; git commit -q -m s0
+sleep 1
+check "no intern.sync: tool never called" "$([ -e "$out" ] && echo yes || echo no)" "no"
+
+# only the clone's own (local) key counts: the same key in a global config file or passed with "git -c" never runs anything
+global_config="$work/global.gitconfig"
+git config --file "$global_config" intern.sync "sh \"$tooldir/fake sync.sh\""
+printf '1g\n' >> file.txt; git add file.txt
+GIT_CONFIG_GLOBAL="$global_config" git commit -q -m s0-global
+git -c intern.sync="sh \"$tooldir/fake sync.sh\"" commit -q --allow-empty -m s0-cli
+git checkout -q -b side-global
+printf 'g\n' > side-global.txt; git add side-global.txt; git commit -q -m side-global
+git checkout -q -
+GIT_CONFIG_GLOBAL="$global_config" git merge -q --no-ff -m merged-global side-global
+git checkout -q -b side-cli
+printf 'c\n' > side-cli.txt; git add side-cli.txt; git commit -q -m side-cli
+git checkout -q -
+git -c intern.sync="sh \"$tooldir/fake sync.sh\"" merge -q --no-ff -m merged-cli side-cli
+sleep 1
+check "intern.sync outside the local config: tool never called" "$([ -e "$out" ] && echo yes || echo no)" "no"
+
+# key with a quoted path containing a space
+git config intern.sync "sh \"$tooldir/fake sync.sh\""
+printf '2\n' >> file.txt; git add file.txt; git commit -q -m s1
+wait_for_lines 1
+check "post-commit calls: save <root>" "$(sed -n '1p' "$out")" "save $root"
+wait_for_log 'exit code'
+check "post-commit log has the tool output" "$(grep -c 'tool output line' .run/intern-sync.log)" "1"
+check "post-commit log has a timestamp line" "$(grep -c '^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9:]* save$' .run/intern-sync.log)" "1"
+
+# post-merge: restore <root>, synchronous
+git checkout -q -b side
+printf 'side\n' > side.txt; git add side.txt; git commit -q -m side
+wait_for_log 'exit code'
+sleep 1
+git checkout -q -
+: > "$out"
+git merge -q --no-ff -m merged side
+check "post-merge calls: restore <root>" "$(sed -n '1p' "$out")" "restore $root"
+check "post-merge log has a restore line" "$(grep -c ' restore$' .run/intern-sync.log)" "1"
+
+# a failing command never fails the commit or the merge
+export FAKE_SYNC_EXIT=3
+printf '3\n' >> file.txt; git add file.txt
+if git commit -q -m s2; then ok "failing tool does not fail the commit"; else bad "failing tool failed the commit"; fi
+sleep 1
+git checkout -q -b side2
+printf 'side2\n' > side2.txt; git add side2.txt; git commit -q -m side2
+sleep 1
+git checkout -q -
+if git merge -q --no-ff -m merged2 side2; then ok "failing tool does not fail the merge"; else bad "failing tool failed the merge"; fi
+check "the failing exit code is logged" "$(grep -c 'exit code 3' .run/intern-sync.log | awk '{ print ($1 >= 1) }')" "1"
+unset FAKE_SYNC_EXIT
+
+# a command that does not exist at all
+git config intern.sync "/nonexistent/tool"
+printf '4\n' >> file.txt; git add file.txt
+if git commit -q -m s3; then ok "missing tool does not fail the commit"; else bad "missing tool failed the commit"; fi
+sleep 1
+git checkout -q -b side3
+printf 'side3\n' > side3.txt; git add side3.txt; git commit -q -m side3
+sleep 1
+git checkout -q -
+if git merge -q --no-ff -m merged3 side3; then ok "missing tool does not fail the merge"; else bad "missing tool failed the merge"; fi
+git config --unset intern.sync
 
 # Without intern/ nothing happens and the commit still works
 rm -rf intern

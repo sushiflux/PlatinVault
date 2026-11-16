@@ -1,5 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { CopyErrorButton } from './ui/CopyErrorButton'
+import { ErrorBlock } from './ui/ErrorBlock'
+import { GhostIconButton } from './ui/GhostIconButton'
+import { IconButton } from './ui/IconButton'
+import { SettingsCard, SettingsGuide, SettingsRow, SettingsToggle, SettingsTopic } from './settings/SettingsParts'
 import type { KeyboardEvent, ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -8,23 +12,15 @@ import type { TFunction } from 'i18next'
 import {
   IconAlertTriangle,
   IconArrowsMaximize,
-  IconBooks,
-  IconBrandTwitch,
   IconCheck,
   IconCopy,
-  IconDeviceGamepad2,
   IconDownload,
-  IconKey,
   IconLoader2,
   IconLogin2,
   IconMusic,
-  IconNote,
-  IconPin,
-  IconHeartbeat,
   IconPlugConnected,
   IconPlus,
   IconRefresh,
-  IconSparkles,
   IconTrash,
   IconVolume,
   IconX,
@@ -62,6 +58,9 @@ import { animationQueue } from '../utils/animationQueue'
 import { DEFAULT_SOUND_THEME, normalizeSoundTheme, SOUND_THEMES, soundEngine } from '../utils/audio'
 import { defaultBridgeOs } from '../utils/bridgeOs'
 import { copyText } from '../utils/clipboard'
+import { errorCodeOf } from '../utils/errorReport'
+import { useFitSegments } from '../utils/useFitSegments'
+import '../styles/dialogs.css'
 import { DEFAULT_POPUP_SECONDS, MAX_POPUP_SECONDS, MIN_POPUP_SECONDS, normalizePopupSeconds } from '../utils/popupSeconds'
 import { DEFAULT_POPUP_TARGET, normalizePopupTarget, POPUP_TARGETS } from '../utils/popupTarget'
 import { steamClientUrl, useOpenInSteamClient } from '../utils/steamClient'
@@ -76,24 +75,14 @@ import { SteamFolderSection } from './settings/SteamFolderSection'
 import { useReadsSteamLocally } from '../utils/useReadsSteamLocally'
 import { useIsDesktopHost } from './FooterParts'
 import { ReservedText } from './ui/ReservedText'
-import { Switch } from './ui/Switch'
 import { TierIcon } from './ui/TierIcon'
 import { Tooltip } from './ui/Tooltip'
 
 export type SettingsTab = 'live' | 'steam' | 'ki' | 'twitch' | 'bridge' | 'system'
 
 // Names and hints of the tabs are texts: settings:tabs.<id>.label / .hint
-const SETTINGS_TABS: { id: SettingsTab; icon: typeof IconKey }[] = [
-  { id: 'live', icon: IconVolume },
-  { id: 'steam', icon: IconBooks },
-  { id: 'ki', icon: IconSparkles },
-  { id: 'twitch', icon: IconBrandTwitch },
-  { id: 'bridge', icon: IconPlugConnected },
-  { id: 'system', icon: IconHeartbeat },
-]
+const SETTINGS_TABS: { id: SettingsTab }[] = [{ id: 'steam' }, { id: 'ki' }, { id: 'live' }, { id: 'twitch' }, { id: 'bridge' }, { id: 'system' }]
 const LAST_TAB_KEY = 'pv_settings_tab'
-// Row of a simple on/off setting: the shared Switch (track + label), the whole row is clickable
-const SWITCH_ROW = 'flex w-full items-center gap-2.5 text-xs font-semibold text-[color:var(--text-secondary)]'
 
 interface SettingsModalProps {
   open: boolean
@@ -103,6 +92,10 @@ interface SettingsModalProps {
   notice?: { type: 'ok' | 'err'; text: string } | null
   onClose: () => void
   onSaved?: (settings: SettingsResponseDto) => void
+  // Page mode (route /settings): no backdrop, no close button, the content area of the app shell is the frame. The tab then comes
+  // from the URL (initialTab) and every tab change is reported through onTabChange, so a reload stays on the same tab.
+  page?: boolean
+  onTabChange?: (tab: SettingsTab) => void
 }
 
 interface ProviderConnectionState {
@@ -134,13 +127,16 @@ const POSITIONS: Exclude<NotificationPosition, 'fullscreen'>[] = [
 ]
 
 // Unified Settings Modal in Pastel 100% design with live-probed AI model dropdowns (only shown once an API key connects).
-export function SettingsModal({ open, notice = null, initialTab, onClose, onSaved }: SettingsModalProps) {
+export function SettingsModal({ open, notice = null, initialTab, onClose, onSaved, page = false, onTabChange }: SettingsModalProps) {
   const { t } = useTranslation('settings')
   const { t: tc } = useTranslation()
   const { language } = useUiLanguage()
   const format = useFormat()
   const queryClient = useQueryClient()
-  const [activeTab, setActiveTab] = useState<SettingsTab>('live')
+  const formRef = useRef<HTMLFormElement>(null)
+  // A choice bar that does not fit becomes a connected vertical list
+  useFitSegments(formRef)
+  const [activeTab, setActiveTab] = useState<SettingsTab>('steam')
   const openInSteamClient = useOpenInSteamClient()
   // Whether a game start can be noticed at all (bridge connected or Steam on the server itself)
   const reach = useSteamReach()
@@ -159,11 +155,12 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
       remembered = null
     }
     // A notice comes from the Steam account linking round trip, so it belongs to the Steam tab
-    const wanted = initialTab ?? (notice ? 'steam' : (remembered ?? 'live'))
-    setActiveTab(desktopHost && wanted === 'bridge' ? 'live' : wanted)
+    const wanted = initialTab ?? (notice ? 'steam' : (remembered ?? 'steam'))
+    setActiveTab(desktopHost && wanted === 'bridge' ? 'steam' : wanted)
   }, [open, initialTab, notice, desktopHost])
   const selectTab = (tab: SettingsTab) => {
     setActiveTab(tab)
+    onTabChange?.(tab)
     try {
       localStorage.setItem(LAST_TAB_KEY, tab)
     } catch {
@@ -233,6 +230,9 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
   const [statusMsg, setStatusMsg] = useState<{
     type: 'ok' | 'err'
     text: string
+    // Headline and error code of a problem (the text is the explanation that unfolds below it)
+    title?: string
+    code?: string | null
   } | null>(null)
 
   const checkProvider = async (
@@ -300,7 +300,7 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
   useEffect(() => {
     if (!open) return
     setLoading(true)
-    setStatusMsg(notice)
+    setStatusMsg(notice ? { ...notice, title: notice.type === 'err' ? t('footer.steamLinkFailed') : undefined } : null)
     fetchSettings()
       .then((data) => {
         setSettings(data)
@@ -416,6 +416,17 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
     return () => clearTimeout(timer)
   }, [openAiKey, clearOpenAi, open])
 
+  // Esc closes a save problem (it lies over the page; the page behind stays usable)
+  const hasError = statusMsg?.type === 'err'
+  useEffect(() => {
+    if (!hasError) return
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') setStatusMsg(null)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [hasError])
+
   if (!open) return null
 
   const handleTestPosition = (pos: NotificationPosition) => {
@@ -530,751 +541,534 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
       setStatusMsg({
         type: 'err',
         text: err instanceof Error ? err.message : t('footer.saveFailed'),
+        title: t('footer.saveFailed'),
+        code: errorCodeOf(err),
       })
     } finally {
       setSaving(false)
     }
   }
 
-  return (
-    <div
-      className="pv-modal-backdrop"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="settings-modal-title"
-    >
-      <div className="pv-modal flex h-[min(90dvh,860px)] w-full max-w-5xl flex-col overflow-hidden">
-        {/* Header */}
-        <div
-          className="flex items-center justify-between px-6 py-4"
-          style={{
-            background: 'var(--bg-elevated)',
-            borderBottom: '1px solid var(--border-subtle)',
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <div
-              className="flex h-10 w-10 items-center justify-center rounded-xl"
-              style={{
-                background: 'var(--accent-crystal-bg)',
-                color: 'var(--accent-crystal)',
-                border: '1px solid var(--accent-crystal-border)',
-              }}
-            >
-              <IconKey size={20} />
-            </div>
-            <div>
-              <h2
-                id="settings-modal-title"
-                className="text-base sm:text-lg font-extrabold"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {t('title')}
-              </h2>
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                {t('subtitle')}
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="pv-btn !p-1.5"
-            aria-label={tc('close')}
+  const tabTitleId = 'settings-modal-title'
+  const panelId = 'settings-tabpanel'
+  const volumeText = format.percent(Math.round(soundVolume * 100))
+
+  // One title, one save button, one connected tab bar, one light card: the same inside the page (route /settings) and the old dialog frame
+  const content = (
+    <form ref={formRef} onSubmit={handleSave} className={`pv-set ${page ? '' : 'pv-set--dialog'}`.trim()}>
+      <div className="pv-set-head">
+        <div className="min-w-0">
+          <h1 id={tabTitleId} className="pv-page-title">
+            {t('title')}
+          </h1>
+          <p className="pv-page-sub">{t('subtitle')}</p>
+        </div>
+        <div className="pv-set-save">
+          {/* Fixed room for the confirmation: it appears in place, the button never moves */}
+          <ReservedText
+            className="pv-set-status"
+            role="status"
+            candidates={[t('footer.saved'), ...(notice?.type === 'ok' ? [notice.text] : [])]}
           >
-            <IconX size={20} />
+            {statusMsg?.type === 'ok' ? statusMsg.text : ''}
+          </ReservedText>
+          {!page && (
+            <button type="button" onClick={onClose} className="pv-btn">
+              {tc('close')}
+            </button>
+          )}
+          {/* Busy state: the label stays (invisible) and a spinner covers it, so the button keeps its size in both languages */}
+          <button type="submit" disabled={saving || loading} aria-busy={saving || undefined} className="pv-btn pv-btn-primary relative">
+            <BridgeBusyLabel busy={saving}>
+              <IconCheck size={17} />
+              <span>{t('footer.save')}</span>
+            </BridgeBusyLabel>
           </button>
         </div>
+      </div>
 
-        <form onSubmit={handleSave} className="flex min-h-0 flex-1 flex-col">
-          <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-            <nav
-              className="flex shrink-0 gap-1 overflow-x-auto p-2 md:w-60 md:flex-col md:overflow-x-visible md:p-3"
-              style={{ borderRight: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)' }}
-              role="tablist"
-              aria-label={t('tabsLabel')}
-            >
-              {visibleTabs.map((tab) => {
-                const Icon = tab.icon
-                const selected = activeTab === tab.id
-                return (
+      {/* A problem lies over the content (never inside the flow): headline with code, an arrow for the details, copy */}
+      {statusMsg?.type === 'err' && (
+        <div className="pv-set-banner" data-testid="settings-error">
+          <ErrorBlock title={statusMsg.title ?? t('footer.saveFailed')} code={statusMsg.code} message={statusMsg.text} defaultOpen />
+          <div className="pv-set-banner__close">
+            <GhostIconButton label={tc('close')} size="md" onClick={() => setStatusMsg(null)}>
+              <IconX size={17} aria-hidden="true" />
+            </GhostIconButton>
+          </div>
+        </div>
+      )}
+
+      <div className="pv-segmented pv-set-tabs" role="tablist" aria-label={t('tabsLabel')}>
+        {visibleTabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            aria-controls={panelId}
+            onClick={() => selectTab(tab.id)}
+          >
+            {t(`tabs.${tab.id}.label`)}
+          </button>
+        ))}
+      </div>
+
+      <div id={panelId} role="tabpanel" aria-labelledby={tabTitleId} className="min-w-0">
+        {loading ? (
+          <p className="pv-set-muted py-12 text-center">{t('loading')}</p>
+        ) : (
+          <>
+            {/* Tab "Live & Sound": trophy popups, sound & position (applies to every game with achievements enabled) */}
+            {activeTab === 'live' && (
+              <SettingsCard>
+                <SettingsRow title={t('live.previewTitle')} help={t('live.previewHint')}>
                   <button
-                    key={tab.id}
                     type="button"
-                    role="tab"
-                    aria-selected={selected}
-                    onClick={() => selectTab(tab.id)}
-                    className="flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2.5 text-left cursor-pointer md:w-full"
-                    style={{
-                      background: selected ? 'var(--accent-crystal-bg)' : 'transparent',
-                      color: selected ? 'var(--accent-crystal)' : 'var(--text-secondary)',
-                      border: `1px solid ${selected ? 'var(--accent-crystal-border)' : 'transparent'}`,
+                    onClick={() => {
+                      soundEngine.setTheme(soundTheme)
+                      soundEngine.setVolume(soundVolume)
+                      soundEngine.setEnabled(true)
+                      soundEngine.playTrophyUnlock('Gold')
                     }}
+                    className="pv-btn"
                   >
-                    <Icon size={18} className="shrink-0" />
-                    <span className="min-w-0">
-                      <span className="block whitespace-nowrap text-sm font-bold">{t(`tabs.${tab.id}.label`)}</span>
-                      <span className="hidden truncate text-[11px] md:block" style={{ color: 'var(--text-muted)' }}>
-                        {t(`tabs.${tab.id}.hint`)}
-                      </span>
-                    </span>
+                    <IconVolume size={17} aria-hidden="true" />
+                    <span>{t('live.previewSound')}</span>
                   </button>
-                )
-              })}
-            </nav>
+                  {/* Same local queue the live 100% event uses, so this shows the real platinum moment */}
+                  <Tooltip label={t('live.platinumTest')} description={t('live.platinumTestHint')}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        soundEngine.setTheme(soundTheme)
+                        soundEngine.setVolume(soundVolume)
+                        soundEngine.setEnabled(playSounds)
+                        animationQueue.clearQueue()
+                        animationQueue.enqueuePlatinum(t('live.exampleGame'), 40)
+                      }}
+                      className="pv-btn"
+                    >
+                      <TierIcon tier="Platinum" size={17} />
+                      <span>{t('live.platinumTest')}</span>
+                    </button>
+                  </Tooltip>
+                </SettingsRow>
 
-          <div className="min-h-0 flex-1 overflow-y-auto p-6 space-y-5" role="tabpanel">
-          {loading ? (
-            <div
-              className="py-12 text-center text-sm"
-              style={{ color: 'var(--text-muted)' }}
-            >
-              {t('loading')}
-            </div>
-          ) : (
-            <>
-              {/* Tab "Live & Sound": trophy popups, sound & position (applies to every game with achievements enabled) */}
-              {activeTab === 'live' && (
-                <div className="space-y-4">
-                  <div className="pv-card space-y-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div
-                        className="flex items-center gap-2 text-sm font-extrabold"
-                        style={{ color: 'var(--accent-gold)' }}
+                {/* 3x3 position grid (one connected square) and the tenth way "fullscreen" as its own connected bar */}
+                <SettingsRow wide title={t('live.positionLabel')} help={t('live.positionHint')} titleId="pv-popup-position-label">
+                  <div className="pv-set-pos-wrap">
+                    <div className="pv-set-pos" role="group" aria-labelledby="pv-popup-position-label">
+                      {POSITIONS.map((pos) => (
+                        <Tooltip key={pos} label={t(`live.positions.${pos}`)} className="pv-set-pos__cell">
+                          <button
+                            type="button"
+                            aria-pressed={popupPosition === pos}
+                            aria-label={t(`live.positions.${pos}`)}
+                            onClick={() => handleTestPosition(pos)}
+                          >
+                            <span className="pv-set-pos__dot" aria-hidden="true" />
+                          </button>
+                        </Tooltip>
+                      ))}
+                    </div>
+                    {/* The tenth way: the whole window, for a few seconds */}
+                    <div className="pv-segmented" role="group">
+                      <button
+                        type="button"
+                        onClick={() => handleTestPosition('fullscreen')}
+                        aria-pressed={popupPosition === 'fullscreen'}
+                        data-position="fullscreen"
                       >
-                        <IconVolume size={18} />
-                        <span>{t('live.popupsTitle')}</span>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
+                        <IconArrowsMaximize size={17} aria-hidden="true" />
+                        <span>{t('live.positions.fullscreen')}</span>
+                      </button>
+                    </div>
+                    <p className="pv-set-row__help" style={{ margin: 0 }}>
+                      {t('live.positionFullscreenHint')}
+                    </p>
+                  </div>
+                </SettingsRow>
+
+                {/* "Anzeigedauer der Trophäen-Popups" (live.popup_seconds): a native range input (keyboard: arrows, Home, End) with a
+                    fixed-width value, so nothing moves while it is changed. The test popups use the chosen value. */}
+                <SettingsRow
+                  title={t('live.duration.label')}
+                  labelFor="pv-popup-seconds"
+                  help={<span id="pv-popup-seconds-hint">{t('live.duration.hint', { min: MIN_POPUP_SECONDS, max: MAX_POPUP_SECONDS })}</span>}
+                >
+                  <div className="pv-set-range" data-popup-seconds="">
+                    <input
+                      id="pv-popup-seconds"
+                      type="range"
+                      min={MIN_POPUP_SECONDS}
+                      max={MAX_POPUP_SECONDS}
+                      step="1"
+                      value={popupSeconds}
+                      onChange={(e) => setPopupSeconds(normalizePopupSeconds(Number(e.target.value)))}
+                      aria-valuetext={t('live.duration.value', { seconds: popupSeconds })}
+                      aria-describedby="pv-popup-seconds-hint"
+                      className="pv-range"
+                    />
+                    <output htmlFor="pv-popup-seconds" className="inline-block min-w-[4rem] text-right tabular-nums" data-popup-seconds-value="">
+                      {t('live.duration.value', { seconds: popupSeconds })}
+                    </output>
+                  </div>
+                </SettingsRow>
+
+                {/* "Trophäen-Popup anzeigen" (live.popup_target). Without the Windows program there is no overlay: those two choices stay
+                    visible but disabled, the effect is "in the app". */}
+                <SettingsRow
+                  title={t('live.target.label')}
+                  titleId="pv-popup-target-label"
+                  help={<span id="pv-popup-target-hint">{desktopHost ? t('live.target.hintDesktop') : t('live.target.onlyDesktop')}</span>}
+                >
+                  <div className="pv-segmented" role="group" aria-labelledby="pv-popup-target-label">
+                    {POPUP_TARGETS.map((target) => {
+                      const unavailable = !desktopHost && target !== 'app'
+                      const selected = desktopHost ? popupTarget === target : target === 'app'
+                      return (
+                        <button
+                          key={target}
+                          type="button"
+                          data-popup-target={target}
+                          aria-pressed={selected}
+                          disabled={unavailable}
+                          aria-describedby="pv-popup-target-hint"
+                          onClick={() => setPopupTarget(target)}
+                        >
+                          {t(`live.target.${target}`)}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </SettingsRow>
+
+                {/* Own sounds from real instrument recordings (CC0); a click selects and previews the theme */}
+                <SettingsRow
+                  title={t('live.soundTheme').replace(/:$/, '')}
+                  titleId="pv-sound-theme-label"
+                  help={
+                    <ReservedText candidates={SOUND_THEMES.map((theme) => t(`live.soundThemes.${theme.id}.description`))} aria-live="polite">
+                      {t(`live.soundThemes.${soundTheme}.description`)}
+                    </ReservedText>
+                  }
+                >
+                  <div className="pv-segmented" role="group" aria-labelledby="pv-sound-theme-label">
+                    {SOUND_THEMES.map((theme) => (
+                      <Tooltip key={theme.id} label={t(`live.soundThemes.${theme.id}.label`)} description={t(`live.soundThemes.${theme.id}.description`)} className="pv-seg-tip">
                         <button
                           type="button"
+                          aria-pressed={soundTheme === theme.id}
                           onClick={() => {
-                            soundEngine.setTheme(soundTheme)
+                            setSoundTheme(theme.id)
                             soundEngine.setVolume(soundVolume)
-                            soundEngine.setEnabled(true)
-                            soundEngine.playTrophyUnlock('Gold')
+                            soundEngine.preview(theme.id, 'Gold')
                           }}
-                          className="pv-btn pv-btn-gold !py-1 !px-3 !text-xs"
                         >
-                          {t('live.previewSound')}
+                          <IconMusic size={17} aria-hidden="true" />
+                          <span>{t(`live.soundThemes.${theme.id}.label`)}</span>
                         </button>
-                        {/* Same local queue the live 100% event uses, so this shows the real platinum moment */}
-                        <Tooltip label={t('live.platinumTest')} description={t('live.platinumTestHint')}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              soundEngine.setTheme(soundTheme)
-                              soundEngine.setVolume(soundVolume)
-                              soundEngine.setEnabled(playSounds)
-                              animationQueue.clearQueue()
-                              animationQueue.enqueuePlatinum(t('live.exampleGame'), 40)
-                            }}
-                            className="pv-btn !py-1 !px-3 !text-xs"
-                          >
-                            <TierIcon tier="Platinum" size={13} />
-                            <span>{t('live.platinumTest')}</span>
-                          </button>
-                        </Tooltip>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-3">
-                        <label
-                          className="block text-xs font-bold"
-                          style={{ color: 'var(--text-secondary)' }}
-                        >
-                          {t('live.soundTheme')}
-                        </label>
-                        {/* Own sounds from real instrument recordings (CC0); a click selects and previews the theme */}
-                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                          {SOUND_THEMES.map((theme) => (
-                            <Tooltip key={theme.id} label={t(`live.soundThemes.${theme.id}.label`)} description={t(`live.soundThemes.${theme.id}.description`)} className="flex">
-                              <button
-                                type="button"
-                                aria-pressed={soundTheme === theme.id}
-                                onClick={() => {
-                                  setSoundTheme(theme.id)
-                                  soundEngine.setVolume(soundVolume)
-                                  soundEngine.preview(theme.id, 'Gold')
-                                }}
-                                className={`pv-btn w-full justify-center !px-2 ${soundTheme === theme.id ? 'pv-btn-primary' : ''}`}
-                              >
-                                <IconMusic size={15} />
-                                <span>{t(`live.soundThemes.${theme.id}.label`)}</span>
-                              </button>
-                            </Tooltip>
-                          ))}
-                        </div>
-                        <p className="min-h-[2.5em] text-[11px] leading-snug" style={{ color: 'var(--text-muted)' }}>
-                          {t(`live.soundThemes.${soundTheme}.description`)}
-                        </p>
-
-                        <div>
-                          <div
-                            className="flex justify-between text-xs font-semibold mb-1"
-                            style={{ color: 'var(--text-secondary)' }}
-                          >
-                            <span>{t('live.volume', { percent: format.percent(Math.round(soundVolume * 100)) })}</span>
-                            <span style={{ color: 'var(--text-muted)' }}>{t('live.volumeRecommended')}</span>
-                          </div>
-                          <input
-                            type="range"
-                            min="0"
-                            max="0.6"
-                            step="0.01"
-                            value={soundVolume}
-                            onChange={(e) =>
-                              setSoundVolume(parseFloat(e.target.value))
-                            }
-                            className="pv-range w-full"
-                            style={{ accentColor: 'var(--accent-gold)' }}
-                          />
-                        </div>
-
-                        <Switch checked={playSounds} onChange={setPlaySounds} className={SWITCH_ROW}>
-                          {t('live.playSounds')}
-                        </Switch>
-
-                        {/* Only German needs this: in English Steam delivers its own English texts, there is nothing to translate */}
-                        {language === 'de' && (
-                          <Switch checked={autoTranslate} onChange={setAutoTranslate} className={SWITCH_ROW}>
-                            {t('live.autoTranslate')}
-                          </Switch>
-                        )}
-                      </div>
-
-                      {/* 3x3 Position Grid */}
-                      <div>
-                        <label
-                          className="block text-xs font-bold mb-1.5"
-                          style={{ color: 'var(--text-secondary)' }}
-                        >
-                          {t('live.position')}
-                        </label>
-                        <div
-                          className="grid grid-cols-3 gap-1.5 rounded-xl p-2"
-                          style={{
-                            background: 'var(--bg-elevated)',
-                            border: '1px solid var(--border-subtle)',
-                          }}
-                        >
-                          {POSITIONS.map((pos) => {
-                            const isSelected = popupPosition === pos
-                            return (
-                              <button
-                                key={pos}
-                                type="button"
-                                onClick={() => handleTestPosition(pos)}
-                                className={`pv-btn justify-center !py-2 !px-1.5 !text-[11px] ${
-                                  isSelected ? 'pv-btn-primary' : ''
-                                }`}
-                              >
-                                {t(`live.positions.${pos}`)}
-                              </button>
-                            )
-                          })}
-                          {/* The tenth way: the whole window, for a few seconds */}
-                          <button
-                            type="button"
-                            onClick={() => handleTestPosition('fullscreen')}
-                            aria-pressed={popupPosition === 'fullscreen'}
-                            className={`pv-btn col-span-3 justify-center !py-2 !px-1.5 !text-[11px] ${
-                              popupPosition === 'fullscreen' ? 'pv-btn-primary' : ''
-                            }`}
-                            data-position="fullscreen"
-                          >
-                            <IconArrowsMaximize size={14} aria-hidden="true" />
-                            <span>{t('live.positions.fullscreen')}</span>
-                          </button>
-                        </div>
-                        <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                          {t('live.positionFullscreenHint')}
-                        </p>
-
-                        {/* "Anzeigedauer der Trophäen-Popups" (live.popup_seconds): a native range input (keyboard: arrows, Home, End) with
-                            a fixed-width value, so nothing moves while it is changed. The test popups above use the chosen value. */}
-                        <div className="mt-3" data-popup-seconds="">
-                          <div
-                            className="mb-1 flex items-baseline justify-between gap-3 text-xs font-bold"
-                            style={{ color: 'var(--text-secondary)' }}
-                          >
-                            <label htmlFor="pv-popup-seconds">{t('live.duration.label')}</label>
-                            <output
-                              htmlFor="pv-popup-seconds"
-                              className="inline-block min-w-[3.5rem] text-right tabular-nums"
-                              data-popup-seconds-value=""
-                            >
-                              {t('live.duration.value', { seconds: popupSeconds })}
-                            </output>
-                          </div>
-                          <input
-                            id="pv-popup-seconds"
-                            type="range"
-                            min={MIN_POPUP_SECONDS}
-                            max={MAX_POPUP_SECONDS}
-                            step="1"
-                            value={popupSeconds}
-                            onChange={(e) => setPopupSeconds(normalizePopupSeconds(Number(e.target.value)))}
-                            aria-valuetext={t('live.duration.value', { seconds: popupSeconds })}
-                            aria-describedby="pv-popup-seconds-hint"
-                            className="pv-range w-full"
-                            style={{ accentColor: 'var(--accent-gold)' }}
-                          />
-                          <p
-                            id="pv-popup-seconds-hint"
-                            className="mt-1 text-xs leading-relaxed"
-                            style={{ color: 'var(--text-muted)' }}
-                          >
-                            {t('live.duration.hint', { min: MIN_POPUP_SECONDS, max: MAX_POPUP_SECONDS })}
-                          </p>
-                        </div>
-
-                        {/* "Trophäen-Popup anzeigen" (live.popup_target): same button look as the positions above. Without the Windows
-                            program there is no overlay: those two choices stay visible but disabled, the effect is "in the app". */}
-                        <div className="mt-3" role="group" aria-labelledby="pv-popup-target-label">
-                          <span
-                            id="pv-popup-target-label"
-                            className="block text-xs font-bold mb-1.5"
-                            style={{ color: 'var(--text-secondary)' }}
-                          >
-                            {t('live.target.label')}
-                          </span>
-                          <div
-                            className="grid grid-cols-3 gap-1.5 rounded-xl p-2"
-                            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}
-                          >
-                            {POPUP_TARGETS.map((target) => {
-                              const unavailable = !desktopHost && target !== 'app'
-                              const selected = desktopHost ? popupTarget === target : target === 'app'
-                              return (
-                                <button
-                                  key={target}
-                                  type="button"
-                                  data-popup-target={target}
-                                  aria-pressed={selected}
-                                  disabled={unavailable}
-                                  aria-describedby="pv-popup-target-hint"
-                                  onClick={() => setPopupTarget(target)}
-                                  className={`pv-btn justify-center !py-2 !px-1.5 !text-[11px] ${selected ? 'pv-btn-primary' : ''}`}
-                                  style={unavailable ? { opacity: 0.55, cursor: 'not-allowed' } : undefined}
-                                >
-                                  {t(`live.target.${target}`)}
-                                </button>
-                              )
-                            })}
-                          </div>
-                          <p
-                            id="pv-popup-target-hint"
-                            className="mt-1.5 text-xs leading-relaxed"
-                            style={{ color: 'var(--text-muted)' }}
-                          >
-                            {desktopHost ? t('live.target.hintDesktop') : t('live.target.onlyDesktop')}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                      </Tooltip>
+                    ))}
                   </div>
+                </SettingsRow>
 
-                  {/* Game start: every open window switches to the game page (switch "features.auto_switch_game") */}
-                  <div className="pv-card space-y-2">
-                    <div className="flex items-center gap-2 text-sm font-extrabold" style={{ color: 'var(--accent-crystal)' }}>
-                      <IconDeviceGamepad2 size={18} />
-                      <span>{t('live.gameStartTitle')}</span>
-                    </div>
-                    <Switch checked={autoSwitchGame} onChange={setAutoSwitchGame} className={SWITCH_ROW}>
-                      {t('live.gameStartSwitch')}
-                    </Switch>
-                    <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                      {t('live.gameStartText')}
-                    </p>
-                    {/* Where the start is noticed from, or why nothing can be noticed now; the room is reserved for the longest of the three */}
-                    <ReservedText
-                      role="status"
-                      className="text-xs font-semibold leading-relaxed"
-                      style={{ color: 'var(--text-secondary)' }}
-                      candidates={[t('live.gameStartSourceLocal'), t('live.gameStartSourceBridge'), t('live.gameStartNoSource')]}
-                    >
-                      {reach.local ? t('live.gameStartSourceLocal') : reach.bridgeConnected ? t('live.gameStartSourceBridge') : t('live.gameStartNoSource')}
-                    </ReservedText>
+                <SettingsRow title={t('live.volumeLabel')} labelFor="pv-sound-volume" help={t('live.volumeRecommended')}>
+                  <div className="pv-set-range">
+                    <input
+                      id="pv-sound-volume"
+                      type="range"
+                      min="0"
+                      max="0.6"
+                      step="0.01"
+                      value={soundVolume}
+                      onChange={(e) => setSoundVolume(parseFloat(e.target.value))}
+                      aria-valuetext={volumeText}
+                      className="pv-range"
+                    />
+                    <output htmlFor="pv-sound-volume" className="inline-block min-w-[4rem] text-right tabular-nums">
+                      {volumeText}
+                    </output>
                   </div>
+                </SettingsRow>
 
-                  {/* Trophy list: personal notes on achievements (switch "features.achievement_notes"); off hides them everywhere */}
-                  <div className="pv-card space-y-2">
-                    <div className="flex items-center gap-2 text-sm font-extrabold" style={{ color: 'var(--accent-crystal)' }}>
-                      <IconNote size={18} />
-                      <span>{t('live.notesTitle')}</span>
-                    </div>
-                    <Switch checked={achievementNotes} onChange={setAchievementNotes} className={SWITCH_ROW}>
-                      {t('live.notesSwitch')}
-                    </Switch>
-                    <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                      {t('live.notesText')}
-                    </p>
-                  </div>
+                <SettingsToggle checked={playSounds} onChange={setPlaySounds} title={t('live.playSounds')} />
 
-                  {/* "Im Blick" (pinned achievements): what happens to a pin once its achievement is unlocked (setting pins.after_unlock) */}
-                  <div className="pv-card space-y-2">
-                    <div className="flex items-center gap-2 text-sm font-extrabold" style={{ color: 'var(--accent-crystal)' }}>
-                      <IconPin size={18} />
-                      <span>{t('live.pinsTitle')}</span>
-                    </div>
-                    <Switch checked={pinsRemoveOnUnlock} onChange={setPinsRemoveOnUnlock} className={SWITCH_ROW}>
-                      {t('live.pinsSwitch')}
-                    </Switch>
-                    <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                      {t('live.pinsText')}
-                    </p>
-                  </div>
-                </div>
-              )}
+                {/* Only German needs this: in English Steam delivers its own English texts, there is nothing to translate */}
+                {language === 'de' && <SettingsToggle checked={autoTranslate} onChange={setAutoTranslate} title={t('live.autoTranslate')} />}
 
-              {/* Tab "Steam": account (OpenID linking) + Steam Web API key */}
-              {activeTab === 'steam' && (
-              <div className="pv-card space-y-3">
-                <div className="flex items-center justify-between">
-                  <div
-                    className="flex items-center gap-2 text-sm font-extrabold"
-                    style={{ color: 'var(--accent-crystal)' }}
+                {/* Game start: every open window switches to the game page (switch "features.auto_switch_game") */}
+                <SettingsToggle checked={autoSwitchGame} onChange={setAutoSwitchGame} title={t('live.gameStartSwitch')} help={t('live.gameStartText')}>
+                  {/* Where the start is noticed from, or why nothing can be noticed now; the room is reserved for the longest of the three */}
+                  <ReservedText
+                    role="status"
+                    className="pv-set-row__help"
+                    style={{ margin: '0 0 0.625rem', paddingInlineEnd: '4rem', color: 'var(--text-secondary)' }}
+                    candidates={[t('live.gameStartSourceLocal'), t('live.gameStartSourceBridge'), t('live.gameStartNoSource')]}
                   >
-                    <IconBooks size={18} />
-                    <span>{t('steam.title')}</span>
-                  </div>
-                  {settings?.hasSteamKey && !clearSteam && (
-                    <span className="pv-badge pv-badge-ok">
-                      <IconCheck size={13} /> {t('steam.active', { hint: settings.steamKeyHint })}
-                    </span>
-                  )}
-                </div>
+                    {reach.local ? t('live.gameStartSourceLocal') : reach.bridgeConnected ? t('live.gameStartSourceBridge') : t('live.gameStartNoSource')}
+                  </ReservedText>
+                </SettingsToggle>
 
-                <div
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl p-3"
-                  style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}
+                {/* Trophy list: personal notes on achievements (switch "features.achievement_notes"); off hides them everywhere */}
+                <SettingsToggle checked={achievementNotes} onChange={setAchievementNotes} title={t('live.notesSwitch')} help={t('live.notesText')} />
+
+                {/* "Im Blick" (pinned achievements): what happens to a pin once its achievement is unlocked (setting pins.after_unlock) */}
+                <SettingsToggle checked={pinsRemoveOnUnlock} onChange={setPinsRemoveOnUnlock} title={t('live.pinsSwitch')} help={t('live.pinsText')} />
+              </SettingsCard>
+            )}
+
+            {/* Tab "Steam": account (OpenID linking) + Steam Web API key */}
+            {activeTab === 'steam' && (
+              <SettingsCard>
+                <SettingsRow
+                  title={settings?.steamUserId ? t('steam.linked', { id: settings.steamUserId }) : t('steam.notLinked')}
+                  help={t('steam.loginNote')}
                 >
-                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                    <div className="font-bold" style={{ color: 'var(--text-primary)' }}>
-                      {settings?.steamUserId ? t('steam.linked', { id: settings.steamUserId }) : t('steam.notLinked')}
-                    </div>
-                    <div>{t('steam.loginNote')}</div>
-                  </div>
                   <a href={steamLoginUrl()} className="pv-btn pv-btn-primary shrink-0">
-                    <IconLogin2 size={15} />
+                    <IconLogin2 size={17} aria-hidden="true" />
                     <span>{settings?.steamUserId ? t('steam.otherAccount') : t('steam.login')}</span>
                   </a>
-                </div>
+                </SettingsRow>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label
-                        className="text-xs font-bold"
-                        style={{ color: 'var(--text-secondary)' }}
-                      >
-                        {t('steam.keyLabel')}
-                      </label>
-                      <a
-                        href="https://steamcommunity.com/dev/apikey"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[11px] font-bold hover:underline"
-                        style={{ color: 'var(--accent-crystal)' }}
-                      >
+                <SettingsRow
+                  title={t('steam.keyLabel')}
+                  labelFor="pv-steam-key"
+                  help={
+                    <>
+                      <a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noreferrer" className="pv-set-link">
                         {t('steam.getKey')}
                       </a>
-                    </div>
-                    <div className="flex gap-2">
-                      <input
-                        type="password"
-                        value={steamKey}
-                        onChange={(e) => {
-                          setSteamKey(e.target.value)
-                          if (e.target.value) setClearSteam(false)
-                        }}
-                        placeholder={
-                          settings?.hasSteamKey && !clearSteam
-                            ? t('steam.keySaved', { hint: settings.steamKeyHint })
-                            : t('steam.keyEmpty')
-                        }
-                        className="pv-input w-full"
-                      />
-                      {settings?.hasSteamKey && (
-                        <Tooltip label={t('steam.deleteKey')}>
-                          <button
-                            type="button"
-                            onClick={() => setClearSteam(!clearSteam)}
-                            className="pv-btn !px-2.5"
-                            aria-label={t('steam.deleteKey')}
-                          >
-                            <IconTrash size={15} />
-                          </button>
-                        </Tooltip>
+                      {settings?.hasSteamKey && !clearSteam && (
+                        <span className="pv-set-chip ms-3">
+                          <IconCheck size={15} aria-hidden="true" /> {t('steam.active', { hint: settings.steamKeyHint })}
+                        </span>
                       )}
-                    </div>
-                  </div>
+                    </>
+                  }
+                >
+                  <input
+                    id="pv-steam-key"
+                    type="password"
+                    value={steamKey}
+                    onChange={(e) => {
+                      setSteamKey(e.target.value)
+                      if (e.target.value) setClearSteam(false)
+                    }}
+                    placeholder={settings?.hasSteamKey && !clearSteam ? t('steam.keySaved', { hint: settings.steamKeyHint }) : t('steam.keyEmpty')}
+                    className="pv-input"
+                    autoComplete="off"
+                  />
+                  {settings?.hasSteamKey && (
+                    <IconButton label={t('steam.deleteKey')} aria-pressed={clearSteam} onClick={() => setClearSteam(!clearSteam)}>
+                      <IconTrash size={20} />
+                    </IconButton>
+                  )}
+                </SettingsRow>
 
-                  <div>
-                    <label
-                      className="block text-xs font-bold mb-1"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
-                      {t('steam.manualIdLabel')}
-                    </label>
-                    <input
-                      type="text"
-                      value={steamUserId}
-                      onChange={(e) => setSteamUserId(e.target.value)}
-                      placeholder={t('steam.manualIdPlaceholder')}
-                      className="pv-input w-full"
-                    />
-                  </div>
-                </div>
+                <SettingsRow title={t('steam.manualIdLabel')} labelFor="pv-steam-id">
+                  <input
+                    id="pv-steam-id"
+                    type="text"
+                    value={steamUserId}
+                    onChange={(e) => setSteamUserId(e.target.value)}
+                    placeholder={t('steam.manualIdPlaceholder')}
+                    className="pv-input"
+                  />
+                </SettingsRow>
 
                 {/* Where the key comes from (Steam's own docs: partner.steamgames.com/doc/webapi_overview/auth) */}
-                <div className="rounded-lg p-3.5 text-xs leading-relaxed" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}>
-                  <div className="mb-1.5 font-extrabold" style={{ color: 'var(--text-primary)' }}>
-                    {t('steam.guide.title')}
-                  </div>
-                  <ol className="list-decimal space-y-1 pl-5" style={{ color: 'var(--text-secondary)' }}>
-                    <li>
-                      <Trans
-                        t={t}
-                        i18nKey="steam.guide.step1"
-                        components={{ link: <a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noreferrer" className="font-bold hover:underline" style={{ color: 'var(--accent-crystal)' }} /> }}
-                      />
-                      {/* Only on the gaming PC itself: the Steam client is usually signed in already */}
-                      {openInSteamClient && (
-                        <>
-                          {' '}
-                          <Trans
-                            t={t}
-                            i18nKey="steam.guide.step1Client"
-                            components={{ clientLink: <a href={steamClientUrl('https://steamcommunity.com/dev/apikey')} className="font-bold hover:underline" style={{ color: 'var(--accent-crystal)' }} /> }}
-                          />
-                        </>
-                      )}
-                    </li>
-                    <li>{t('steam.guide.step2')}</li>
-                    <li>{t('steam.guide.step3')}</li>
-                    <li>{t('steam.guide.step4')}</li>
-                  </ol>
-                  <p className="mt-1.5" style={{ color: 'var(--text-muted)' }}>
-                    {t('steam.guide.privacy')}
-                  </p>
-                </div>
+                <SettingsRow wide title={t('steam.guide.title')}>
+                  <SettingsGuide>
+                    <ol>
+                      <li>
+                        <Trans t={t} i18nKey="steam.guide.step1" components={{ link: <a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noreferrer" /> }} />
+                        {/* Only on the gaming PC itself: the Steam client is usually signed in already */}
+                        {openInSteamClient && (
+                          <>
+                            {' '}
+                            <Trans t={t} i18nKey="steam.guide.step1Client" components={{ clientLink: <a href={steamClientUrl('https://steamcommunity.com/dev/apikey')} /> }} />
+                          </>
+                        )}
+                      </li>
+                      <li>{t('steam.guide.step2')}</li>
+                      <li>{t('steam.guide.step3')}</li>
+                      <li>{t('steam.guide.step4')}</li>
+                    </ol>
+                    <p>{t('steam.guide.privacy')}</p>
+                  </SettingsGuide>
+                </SettingsRow>
 
                 {/* The Steam folder on the computer PlatinVault runs on (only shown where PlatinVault reads Steam itself) */}
                 <SteamFolderSection />
-              </div>
-              )}
+              </SettingsCard>
+            )}
 
-              {/* Tab "Twitch & IGDB": Twitch button (link only, no key) + optional own Twitch developer app for IGDB */}
-              {activeTab === 'twitch' && (
-                <div className="space-y-4">
-                  <div className="pv-card space-y-2">
-                    <div className="flex items-center gap-2 text-sm font-extrabold" style={{ color: 'var(--accent-crystal)' }}>
-                      <IconBrandTwitch size={18} />
-                      <span>{t('twitch.buttonTitle')}</span>
-                    </div>
-                    <Switch checked={twitchButton} onChange={setTwitchButton} className={SWITCH_ROW}>
-                      {t('twitch.buttonSwitch')}
-                    </Switch>
-                    <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                      {t('twitch.buttonText')}
-                    </p>
-                  </div>
+            {/* Tab "Twitch & IGDB": Twitch button (link only, no key) + optional own Twitch developer app for IGDB */}
+            {activeTab === 'twitch' && (
+              <SettingsCard>
+                <SettingsToggle checked={twitchButton} onChange={setTwitchButton} title={t('twitch.buttonSwitch')} help={t('twitch.buttonText')} />
 
-                  <div className="pv-card space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 text-sm font-extrabold" style={{ color: 'var(--accent-gold)' }}>
-                        <IconSparkles size={18} />
-                        <span>{t('twitch.igdbTitle')}</span>
-                      </div>
-                      {settings?.hasTwitchKey && !clearTwitch && (
-                        <span className="pv-badge pv-badge-ok">
-                          <IconCheck size={13} /> {t('steam.active', { hint: settings.twitchKeyHint })}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                      {t('twitch.igdbIntro')}
-                    </p>
+                <SettingsTopic>{t('twitch.igdbTitle')}</SettingsTopic>
+                <p className="pv-set-muted" style={{ margin: '0.375rem 0 0.25rem' }}>
+                  {t('twitch.igdbIntro')}
+                  {settings?.hasTwitchKey && !clearTwitch && (
+                    <span className="pv-set-chip ms-3">
+                      <IconCheck size={15} aria-hidden="true" /> {t('steam.active', { hint: settings.twitchKeyHint })}
+                    </span>
+                  )}
+                </p>
 
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <TwitchCredentialField
-                        label={t('twitch.clientId')}
-                        value={twitchClientId}
-                        onChange={(v) => {
-                          setTwitchClientId(v)
-                          if (v) setClearTwitch(false)
-                        }}
-                        placeholder={
-                          settings?.hasTwitchKey && !clearTwitch
-                            ? t('twitch.idSaved', { hint: settings.twitchKeyHint })
-                            : t('twitch.idEmpty')
-                        }
-                      />
-                      <TwitchCredentialField
-                        label={t('twitch.clientSecret')}
-                        secret
-                        value={twitchSecret}
-                        onChange={(v) => {
-                          setTwitchSecret(v)
-                          if (v) setClearTwitch(false)
-                        }}
-                        placeholder={
-                          settings?.hasTwitchKey && !clearTwitch ? t('twitch.secretSaved') : t('twitch.secretEmpty')
-                        }
-                      />
-                    </div>
+                <TwitchCredentialField
+                  label={t('twitch.clientId')}
+                  value={twitchClientId}
+                  onChange={(v) => {
+                    setTwitchClientId(v)
+                    if (v) setClearTwitch(false)
+                  }}
+                  placeholder={settings?.hasTwitchKey && !clearTwitch ? t('twitch.idSaved', { hint: settings.twitchKeyHint }) : t('twitch.idEmpty')}
+                />
+                <TwitchCredentialField
+                  label={t('twitch.clientSecret')}
+                  secret
+                  value={twitchSecret}
+                  onChange={(v) => {
+                    setTwitchSecret(v)
+                    if (v) setClearTwitch(false)
+                  }}
+                  placeholder={settings?.hasTwitchKey && !clearTwitch ? t('twitch.secretSaved') : t('twitch.secretEmpty')}
+                />
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        className="pv-btn !py-1 !px-3 !text-xs"
-                        disabled={
-                          twitchTest.checking ||
-                          (!settings?.hasTwitchKey && !(twitchClientId.trim() && twitchSecret.trim())) ||
-                          (clearTwitch && !(twitchClientId.trim() && twitchSecret.trim()))
-                        }
-                        onClick={async () => {
-                          setTwitchTest({ checking: true, result: null, error: null })
-                          try {
-                            const result = await testTwitchConnection(twitchClientId.trim() || undefined, twitchSecret.trim() || undefined)
-                            setTwitchTest({ checking: false, result, error: null })
-                          } catch (err: unknown) {
-                            setTwitchTest({
-                              checking: false,
-                              result: null,
-                              error: err instanceof Error ? err.message : t('twitch.testFailed'),
-                            })
-                          }
-                        }}
-                      >
-                        {twitchTest.checking ? <IconLoader2 size={14} className="animate-spin" /> : <IconPlugConnected size={14} />}
-                        <span>{t('twitch.test')}</span>
-                      </button>
-                      {settings?.hasTwitchKey && (
-                        <button
-                          type="button"
-                          onClick={() => setClearTwitch(!clearTwitch)}
-                          className="pv-btn !py-1 !px-3 !text-xs"
-                          aria-pressed={clearTwitch}
-                        >
-                          <IconTrash size={14} />
-                          <span>{clearTwitch ? t('twitch.willDelete') : t('twitch.deleteSaved')}</span>
-                        </button>
-                      )}
-                    </div>
-                    {/* Reserved line, so the result does not push the guide below */}
-                    <p
-                      className="min-h-[2.5rem] text-xs font-semibold leading-relaxed"
+                <SettingsRow
+                  title={t('twitch.test')}
+                  help={
+                    /* Reserved line, so the result does not push the guide below */
+                    <ReservedText
                       role="status"
+                      className="font-medium"
                       style={{
-                        color: twitchTest.error || (twitchTest.result && !twitchTest.result.connected)
-                          ? 'var(--accent-crimson)'
-                          : 'var(--accent-emerald)',
+                        color: twitchTest.error || (twitchTest.result && !twitchTest.result.connected) ? 'var(--accent-crimson)' : 'var(--accent-emerald)',
                       }}
+                      candidates={[twitchTest.error ?? twitchTest.result?.message ?? '']}
                     >
                       {twitchTest.error ?? twitchTest.result?.message ?? ''}
-                      {(twitchTest.error || (twitchTest.result && !twitchTest.result.connected)) && <CopyErrorButton className="ms-2 align-middle" report={{ message: twitchTest.error ?? twitchTest.result?.message }} />}
-                    </p>
-
-                    {/* Steps as described in IGDB's own docs (api-docs.igdb.com, "Account Creation") */}
-                    <div className="rounded-lg p-3.5 text-xs leading-relaxed" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}>
-                      <div className="mb-1.5 font-extrabold" style={{ color: 'var(--text-primary)' }}>
-                        {t('twitch.guide.title')}
-                      </div>
-                      <ol className="list-decimal space-y-1 pl-5" style={{ color: 'var(--text-secondary)' }}>
-                        <li>{t('twitch.guide.step1')}</li>
-                        <li>
-                          <Trans
-                            t={t}
-                            i18nKey="twitch.guide.step2"
-                            components={{ securityLink: <a href="https://www.twitch.tv/settings/security" target="_blank" rel="noreferrer" className="font-bold hover:underline" style={{ color: 'var(--accent-crystal)' }} /> }}
-                          />
-                        </li>
-                        <li>
-                          <Trans
-                            t={t}
-                            i18nKey="twitch.guide.step3"
-                            components={{
-                              consoleLink: <a href="https://dev.twitch.tv/console/apps/create" target="_blank" rel="noreferrer" className="font-bold hover:underline" style={{ color: 'var(--accent-crystal)' }} />,
-                              code: <code />,
-                            }}
-                          />
-                        </li>
-                        <li>
-                          <Trans t={t} i18nKey="twitch.guide.step4" components={{ strong: <strong /> }} />
-                        </li>
-                        <li>{t('twitch.guide.step5')}</li>
-                        <li>{t('twitch.guide.step6')}</li>
-                      </ol>
-                      <p className="mt-1.5" style={{ color: 'var(--text-muted)' }}>
-                        {t('twitch.guide.privacy')}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Tab "PlatinVault Bridge": token + download for the bridge program on the gaming PC */}
-              {activeTab === 'bridge' && !desktopHost && (
-                <div className="space-y-4">
-                  {/* PlatinVault reads Steam on this computer itself (native Linux package): say that the bridge is only for another PC */}
-                  {readsSteamLocally && (
-                    <p className="pv-card text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }} data-testid="bridge-not-needed">
-                      {t('steamLocal.bridgeNotNeeded')}
-                    </p>
-                  )}
-                  <BridgeSection />
-                </div>
-              )}
-
-              {/* Tab "System": health check of backend, database, data folder and sources */}
-              {/* Updates first (switch "Beta-Versionen erhalten", check, install or image tag), then the health check */}
-              {activeTab === 'system' && (
-                <div className="space-y-4">
-                  <UpdatesSection />
-                  <FoldersSection />
-                  <SystemStatusSection />
-                </div>
-              )}
-
-              {/* Tab "KI-Recherche": AI providers with a model dropdown once a key connects */}
-              {activeTab === 'ki' && (
-              <div className="space-y-4">
-              <AiSelectionSection
-                mode={aiMode}
-                onModeChange={setAiMode}
-                defaultProvider={aiDefault}
-                onDefaultProviderChange={setAiDefault}
-                autoFallback={aiFallback}
-                onAutoFallbackChange={setAiFallback}
-                hasKey={{
-                  gemini: Boolean(geminiKey.trim()) || (Boolean(settings?.hasGeminiKey) && !clearGemini),
-                  claude: Boolean(claudeKey.trim()) || (Boolean(settings?.hasClaudeKey) && !clearClaude),
-                  openai: Boolean(openAiKey.trim()) || (Boolean(settings?.hasOpenAiKey) && !clearOpenAi),
-                }}
-              />
-              <div className="pv-card space-y-4">
-                <div
-                  className="flex items-center gap-2 text-sm font-extrabold"
-                  style={{ color: 'var(--accent-emerald)' }}
+                      {(twitchTest.error || (twitchTest.result && !twitchTest.result.connected)) && (
+                        <CopyErrorButton className="ms-2 align-middle" report={{ message: twitchTest.error ?? twitchTest.result?.message }} />
+                      )}
+                    </ReservedText>
+                  }
                 >
-                  <IconSparkles size={18} />
-                  <span>{t('ai.title')}</span>
-                </div>
+                  <button
+                    type="button"
+                    className="pv-btn relative"
+                    disabled={
+                      twitchTest.checking ||
+                      (!settings?.hasTwitchKey && !(twitchClientId.trim() && twitchSecret.trim())) ||
+                      (clearTwitch && !(twitchClientId.trim() && twitchSecret.trim()))
+                    }
+                    aria-busy={twitchTest.checking || undefined}
+                    onClick={async () => {
+                      setTwitchTest({ checking: true, result: null, error: null })
+                      try {
+                        const result = await testTwitchConnection(twitchClientId.trim() || undefined, twitchSecret.trim() || undefined)
+                        setTwitchTest({ checking: false, result, error: null })
+                      } catch (err: unknown) {
+                        setTwitchTest({
+                          checking: false,
+                          result: null,
+                          error: err instanceof Error ? err.message : t('twitch.testFailed'),
+                        })
+                      }
+                    }}
+                  >
+                    <BridgeBusyLabel busy={twitchTest.checking}>
+                      <IconPlugConnected size={17} aria-hidden="true" />
+                      <span>{t('twitch.test')}</span>
+                    </BridgeBusyLabel>
+                  </button>
+                  {settings?.hasTwitchKey && (
+                    <button type="button" onClick={() => setClearTwitch(!clearTwitch)} className="pv-btn-text pv-btn-text--calm" aria-pressed={clearTwitch}>
+                      <IconTrash size={17} aria-hidden="true" />
+                      <span>{clearTwitch ? t('twitch.willDelete') : t('twitch.deleteSaved')}</span>
+                    </button>
+                  )}
+                </SettingsRow>
+
+                {/* Steps as described in IGDB's own docs (api-docs.igdb.com, "Account Creation") */}
+                <SettingsRow wide title={t('twitch.guide.title')}>
+                  <SettingsGuide>
+                    <ol>
+                      <li>{t('twitch.guide.step1')}</li>
+                      <li>
+                        <Trans t={t} i18nKey="twitch.guide.step2" components={{ securityLink: <a href="https://www.twitch.tv/settings/security" target="_blank" rel="noreferrer" /> }} />
+                      </li>
+                      <li>
+                        <Trans
+                          t={t}
+                          i18nKey="twitch.guide.step3"
+                          components={{
+                            consoleLink: <a href="https://dev.twitch.tv/console/apps/create" target="_blank" rel="noreferrer" />,
+                            code: <code />,
+                          }}
+                        />
+                      </li>
+                      <li>
+                        <Trans t={t} i18nKey="twitch.guide.step4" components={{ strong: <strong /> }} />
+                      </li>
+                      <li>{t('twitch.guide.step5')}</li>
+                      <li>{t('twitch.guide.step6')}</li>
+                    </ol>
+                    <p>{t('twitch.guide.privacy')}</p>
+                  </SettingsGuide>
+                </SettingsRow>
+              </SettingsCard>
+            )}
+
+            {/* Tab "PlatinVault Bridge": token + download for the bridge program on the gaming PC */}
+            {activeTab === 'bridge' && !desktopHost && (
+              <SettingsCard>
+                {/* PlatinVault reads Steam on this computer itself (native Linux package): say that the bridge is only for another PC */}
+                {readsSteamLocally && (
+                  <p className="pv-set-muted" style={{ margin: 0, paddingBlock: '0.875rem', borderBlockEnd: '1px solid var(--border-subtle)' }} data-testid="bridge-not-needed">
+                    {t('steamLocal.bridgeNotNeeded')}
+                  </p>
+                )}
+                <BridgeSection />
+              </SettingsCard>
+            )}
+
+            {/* Tab "System": updates first (channel, check, install or image tag), then the folders and the health check */}
+            {activeTab === 'system' && (
+              <SettingsCard>
+                <UpdatesSection />
+                <FoldersSection />
+                <SystemStatusSection />
+              </SettingsCard>
+            )}
+
+            {/* Tab "KI-Recherche": AI providers with a model dropdown once a key connects */}
+            {activeTab === 'ki' && (
+              <SettingsCard>
+                <AiSelectionSection
+                  mode={aiMode}
+                  onModeChange={setAiMode}
+                  defaultProvider={aiDefault}
+                  onDefaultProviderChange={setAiDefault}
+                  autoFallback={aiFallback}
+                  onAutoFallbackChange={setAiFallback}
+                  hasKey={{
+                    gemini: Boolean(geminiKey.trim()) || (Boolean(settings?.hasGeminiKey) && !clearGemini),
+                    claude: Boolean(claudeKey.trim()) || (Boolean(settings?.hasClaudeKey) && !clearClaude),
+                    openai: Boolean(openAiKey.trim()) || (Boolean(settings?.hasOpenAiKey) && !clearOpenAi),
+                  }}
+                />
+                <SettingsTopic>{t('ai.title')}</SettingsTopic>
 
                 {/* 1. Google Gemini */}
                 <ProviderKeyAndModelRow
                   label={t('ai.geminiLabel')}
-                  hint={
-                    <Trans
-                      t={t}
-                      i18nKey="ai.geminiHint"
-                      components={{ keyLink: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="font-bold hover:underline" style={{ color: 'var(--accent-crystal)' }} /> }}
-                    />
-                  }
+                  hint={<Trans t={t} i18nKey="ai.geminiHint" components={{ keyLink: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="pv-set-link" /> }} />}
                   placeholder="AIzaSy..."
                   keyValue={geminiKey}
                   onKeyChange={(val) => {
@@ -1286,14 +1080,7 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
                   isCleared={clearGemini}
                   onToggleClear={() => setClearGemini(!clearGemini)}
                   conn={geminiConn}
-                  onRecheck={() =>
-                    void checkProvider(
-                      'gemini',
-                      geminiKey,
-                      !!settings?.hasGeminiKey,
-                      clearGemini
-                    )
-                  }
+                  onRecheck={() => void checkProvider('gemini', geminiKey, !!settings?.hasGeminiKey, clearGemini)}
                   selectedModel={geminiModel}
                   onSelectModel={setGeminiModel}
                 />
@@ -1302,13 +1089,7 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
                 {/* 2. Anthropic Claude */}
                 <ProviderKeyAndModelRow
                   label={t('ai.claudeLabel')}
-                  hint={
-                    <Trans
-                      t={t}
-                      i18nKey="ai.claudeHint"
-                      components={{ keyLink: <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer" className="font-bold hover:underline" style={{ color: 'var(--accent-crystal)' }} /> }}
-                    />
-                  }
+                  hint={<Trans t={t} i18nKey="ai.claudeHint" components={{ keyLink: <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer" className="pv-set-link" /> }} />}
                   placeholder="sk-ant-api03-..."
                   keyValue={claudeKey}
                   onKeyChange={(val) => {
@@ -1320,14 +1101,7 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
                   isCleared={clearClaude}
                   onToggleClear={() => setClearClaude(!clearClaude)}
                   conn={claudeConn}
-                  onRecheck={() =>
-                    void checkProvider(
-                      'claude',
-                      claudeKey,
-                      !!settings?.hasClaudeKey,
-                      clearClaude
-                    )
-                  }
+                  onRecheck={() => void checkProvider('claude', claudeKey, !!settings?.hasClaudeKey, clearClaude)}
                   selectedModel={claudeModel}
                   onSelectModel={setClaudeModel}
                 />
@@ -1346,71 +1120,26 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
                   isCleared={clearOpenAi}
                   onToggleClear={() => setClearOpenAi(!clearOpenAi)}
                   conn={openAiConn}
-                  onRecheck={() =>
-                    void checkProvider(
-                      'openai',
-                      openAiKey,
-                      !!settings?.hasOpenAiKey,
-                      clearOpenAi
-                    )
-                  }
+                  onRecheck={() => void checkProvider('openai', openAiKey, !!settings?.hasOpenAiKey, clearOpenAi)}
                   selectedModel={openAiModel}
                   onSelectModel={setOpenAiModel}
                 />
 
-              </div>
-
-              {/* Predefined research building blocks (no free text): scope, focus, spoilers, presentation */}
-              <ResearchBlocksSection value={blocks} onChange={setBlocks} policy={settings?.researchBlocksPolicy} />
-              </div>
-              )}
-            </>
-          )}
-          </div>
-          </div>
-
-          {/* Footer: status message + actions, always visible */}
-          <div
-            className="flex flex-wrap items-center justify-between gap-3 px-6 py-4"
-            style={{ background: 'var(--bg-elevated)', borderTop: '1px solid var(--border-subtle)' }}
-          >
-          <div className="flex w-full min-w-0 items-center gap-3 sm:w-auto sm:flex-1">
-            <ReservedText
-              className="min-w-0 flex-1 text-xs font-bold"
-              candidates={[
-                t('footer.saved'),
-                t('footer.saveFailed'),
-                t('twitch.saveProblem'),
-                t('twitch.saveNeedBoth'),
-              ]}
-              role="status"
-              style={{ color: statusMsg?.type === 'err' ? 'var(--accent-crimson)' : 'var(--accent-emerald)' }}
-            >
-              {statusMsg?.text}
-            </ReservedText>
-            <CopyErrorButton inactive={statusMsg?.type !== 'err'} report={{ message: statusMsg?.text }} className="shrink-0" />
-          </div>
-
-          <div className="flex items-center justify-end gap-3">
-            <button type="button" onClick={onClose} className="pv-btn">
-              {tc('close')}
-            </button>
-            {/* Busy state: the label stays (invisible) and a spinner covers it, so the button keeps its size in both languages */}
-            <button
-              type="submit"
-              disabled={saving || loading}
-              aria-busy={saving || undefined}
-              className="pv-btn pv-btn-emerald relative"
-            >
-              <BridgeBusyLabel busy={saving}>
-                <IconCheck size={17} />
-                <span>{t('footer.save')}</span>
-              </BridgeBusyLabel>
-            </button>
-          </div>
-          </div>
-        </form>
+                {/* Predefined research building blocks (no free text): scope, focus, spoilers, presentation */}
+                <ResearchBlocksSection value={blocks} onChange={setBlocks} policy={settings?.researchBlocksPolicy} />
+              </SettingsCard>
+            )}
+          </>
+        )}
       </div>
+    </form>
+  )
+
+  // Page mode: the content area of the app shell is the frame. Otherwise the same content in the old dialog frame.
+  if (page) return <section aria-labelledby={tabTitleId}>{content}</section>
+  return (
+    <div className="pv-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby={tabTitleId}>
+      <div className="pv-modal flex h-[min(90dvh,860px)] w-full max-w-5xl flex-col overflow-y-auto">{content}</div>
     </div>
   )
 }
@@ -1435,59 +1164,41 @@ function GeminiDiagnoseBlock({ model }: { model: string }) {
   const line = (label: string, r: GeminiDiagnosisDto['plain']) => (
     <div className="flex items-start gap-2">
       {r.ok ? (
-        <IconCheck size={15} className="mt-0.5 shrink-0" style={{ color: 'var(--accent-emerald)' }} />
+        <IconCheck size={17} className="mt-0.5 shrink-0" style={{ color: 'var(--accent-emerald)' }} aria-hidden="true" />
       ) : (
-        <IconAlertTriangle size={15} className="mt-0.5 shrink-0" style={{ color: 'var(--accent-crimson)' }} />
+        <IconAlertTriangle size={17} className="mt-0.5 shrink-0" style={{ color: 'var(--accent-crimson)' }} aria-hidden="true" />
       )}
       <span>
-        <strong>{label}:</strong> {r.message}
+        <strong style={{ fontWeight: 600 }}>{label}:</strong> {r.message}
       </span>
     </div>
   )
+  const failedReport = state.result
+    ? [
+        { label: t('ai.diagnose.plain'), result: state.result.plain },
+        { label: t('ai.diagnose.search'), result: state.result.search },
+      ]
+        .filter((entry) => !entry.result.ok)
+        .map((entry) => `${entry.label}: ${entry.result.message}`)
+        .join('\n')
+    : ''
   return (
-    <div className="rounded-lg p-3 text-xs leading-relaxed" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span>{t('ai.diagnose.intro', { model })}</span>
-        <button type="button" className="pv-btn !py-1 !px-3 !text-xs" onClick={() => void run()} disabled={state.busy} aria-busy={state.busy || undefined}>
-          <span className="relative inline-flex items-center gap-1.5">
-            <span className={`inline-flex items-center gap-1.5 ${state.busy ? 'invisible' : ''}`}>
-              <IconPlugConnected size={14} />
-              {t('ai.diagnose.run')}
-            </span>
-            {state.busy && (
-              <span className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-                <IconLoader2 size={14} className="animate-spin" />
-              </span>
-            )}
-          </span>
-        </button>
-      </div>
+    <SettingsRow wide title={t('ai.diagnose.run')} help={t('ai.diagnose.intro', { model })}>
+      <button type="button" className="pv-btn relative" onClick={() => void run()} disabled={state.busy} aria-busy={state.busy || undefined}>
+        <BridgeBusyLabel busy={state.busy}>
+          <IconPlugConnected size={17} aria-hidden="true" />
+          {t('ai.diagnose.run')}
+        </BridgeBusyLabel>
+      </button>
       {(state.result || state.error) && (
-        <div className="mt-2 space-y-1" role="status">
-          {state.error && (
-            <div style={{ color: 'var(--accent-crimson)' }}>
-              {state.error}
-              <CopyErrorButton className="ms-2 align-middle" report={{ message: state.error }} />
-            </div>
-          )}
+        <div className="w-full space-y-2" role="status">
+          {state.error && <ErrorBlock title={t('ai.diagnose.failed')} message={state.error} />}
           {state.result && line(t('ai.diagnose.plain'), state.result.plain)}
           {state.result && line(t('ai.diagnose.search'), state.result.search)}
-          {state.result && (!state.result.plain.ok || !state.result.search.ok) && (
-            <CopyErrorButton
-              report={{
-                message: [
-                  { label: t('ai.diagnose.plain'), result: state.result.plain },
-                  { label: t('ai.diagnose.search'), result: state.result.search },
-                ]
-                  .filter((entry) => !entry.result.ok)
-                  .map((entry) => `${entry.label}: ${entry.result.message}`)
-                  .join('\n'),
-              }}
-            />
-          )}
+          {state.result && failedReport && <CopyErrorButton variant="text" report={{ message: failedReport }} />}
         </div>
       )}
-    </div>
+    </SettingsRow>
   )
 }
 
@@ -1518,10 +1229,21 @@ function TwitchCredentialField({
   const id = useId()
   const problem = twitchCredentialProblem(value, t)
   return (
-    <div>
-      <label htmlFor={id} className="mb-1 block text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>
-        {label}
-      </label>
+    <SettingsRow
+      title={label}
+      labelFor={id}
+      help={
+        /* Reserved room for the longest message (every one of them, in this language and at this width), so nothing below moves while typing */
+        <ReservedText
+          id={`${id}-msg`}
+          className="font-medium"
+          style={{ color: 'var(--accent-crimson)' }}
+          candidates={[t('twitch.problemChars'), t('twitch.problemTooShort', { length: 128, min: 8 }), t('twitch.problemTooLong', { length: 128, max: 128 })]}
+        >
+          {problem ?? ''}
+        </ReservedText>
+      }
+    >
       <input
         id={id}
         type={secret ? 'password' : 'text'}
@@ -1532,19 +1254,10 @@ function TwitchCredentialField({
         spellCheck={false}
         aria-invalid={problem ? true : undefined}
         aria-describedby={`${id}-msg`}
-        className="pv-input w-full"
+        className="pv-input"
         style={problem ? { borderColor: 'var(--accent-crimson)' } : undefined}
       />
-      {/* Reserved room for the longest message (every one of them, in this language and at this width), so nothing below moves while typing */}
-      <ReservedText
-        id={`${id}-msg`}
-        className="mt-1 text-[11px] font-semibold leading-snug"
-        style={{ color: 'var(--accent-crimson)' }}
-        candidates={[t('twitch.problemChars'), t('twitch.problemTooShort', { length: 128, min: 8 }), t('twitch.problemTooLong', { length: 128, max: 128 })]}
-      >
-        {problem ?? ''}
-      </ReservedText>
-    </div>
+    </SettingsRow>
   )
 }
 
@@ -1587,116 +1300,73 @@ function ProviderKeyAndModelRow({
   const { t } = useTranslation('settings')
   const hasAnyKey = Boolean(keyValue.trim()) || (hasSavedKey && !isCleared)
 
+  const inputId = useId()
+  const modelsShown = conn.connected && conn.models.length > 0
+
   return (
-    <div
-      className="pt-3 space-y-2.5"
-      style={{ borderTop: '1px solid var(--border-subtle)' }}
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <label
-          className="text-xs font-bold"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-          {label}
-        </label>
-
-        {conn.checking ? (
-          <span
-            className="inline-flex items-center gap-1 text-xs font-bold"
-            style={{ color: 'var(--accent-crystal)' }}
-          >
-            <IconLoader2 size={13} className="animate-spin" />
-            {t('ai.row.checking')}
-          </span>
-        ) : conn.connected ? (
-          <span className="pv-badge pv-badge-ok">
-            <IconCheck size={12} /> {t('ai.row.connected', { count: conn.models.length })}
-          </span>
-        ) : hasAnyKey && conn.error ? (
-          <span
-            className="text-xs font-bold"
-            style={{ color: 'var(--accent-crimson)' }}
-          >
-            {t('ai.row.failed', { reason: conn.error })}
-            <CopyErrorButton className="ms-2 align-middle" report={{ message: t('ai.row.failed', { reason: conn.error }) }} />
-          </span>
-        ) : (
-          <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-            {t('ai.row.none')}
-          </span>
+    <>
+      <SettingsRow
+        title={label}
+        labelFor={inputId}
+        help={
+          <>
+            {hint && <span className="block">{hint}</span>}
+            {conn.checking ? (
+              <span className="inline-flex items-center gap-1.5" style={{ color: 'var(--link)' }}>
+                <IconLoader2 size={15} className="animate-spin" aria-hidden="true" />
+                {t('ai.row.checking')}
+              </span>
+            ) : conn.connected ? (
+              <span className="pv-set-chip">
+                <IconCheck size={15} aria-hidden="true" /> {t('ai.row.connected', { count: conn.models.length })}
+              </span>
+            ) : hasAnyKey && conn.error ? null : (
+              <span>{t('ai.row.none')}</span>
+            )}
+          </>
+        }
+      >
+        <input
+          id={inputId}
+          type="password"
+          value={keyValue}
+          onChange={(e) => onKeyChange(e.target.value)}
+          placeholder={hasSavedKey && !isCleared ? t('ai.row.saved', { hint: savedKeyHint }) : placeholder}
+          className="pv-input"
+          autoComplete="off"
+        />
+        {hasAnyKey && (
+          <IconButton label={t('ai.row.recheck')} description={t('ai.row.recheckHint')} aria-label={t('ai.row.recheckLabel')} onClick={onRecheck} disabled={conn.checking}>
+            <IconRefresh size={20} className={conn.checking ? 'animate-spin' : ''} />
+          </IconButton>
         )}
-      </div>
-
-      {hint && (
-        <p className="text-[11px] leading-snug" style={{ color: 'var(--text-muted)' }}>
-          {hint}
-        </p>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-        <div
-          className={
-            conn.connected && conn.models.length > 0
-              ? 'md:col-span-7 flex gap-2'
-              : 'md:col-span-12 flex gap-2'
-          }
-        >
-          <input
-            type="password"
-            value={keyValue}
-            onChange={(e) => onKeyChange(e.target.value)}
-            placeholder={hasSavedKey && !isCleared ? t('ai.row.saved', { hint: savedKeyHint }) : placeholder}
-            className="pv-input w-full"
-          />
-          {hasAnyKey && (
-            <Tooltip label={t('ai.row.recheck')} description={t('ai.row.recheckHint')}>
-              <button
-                type="button"
-                onClick={onRecheck}
-                disabled={conn.checking}
-                className="pv-btn !px-2.5"
-                aria-label={t('ai.row.recheckLabel')}
-              >
-                <IconRefresh
-                  size={15}
-                  className={conn.checking ? 'animate-spin' : ''}
-                />
-              </button>
-            </Tooltip>
-          )}
-          {hasSavedKey && (
-            <Tooltip label={t('ai.row.removeKey')}>
-              <button
-                type="button"
-                onClick={onToggleClear}
-                className="pv-btn !px-2.5"
-                aria-label={t('ai.row.removeKey')}
-              >
-                <IconTrash size={15} />
-              </button>
-            </Tooltip>
-          )}
+        {hasSavedKey && (
+          <IconButton label={t('ai.row.removeKey')} aria-pressed={isCleared} onClick={onToggleClear}>
+            <IconTrash size={20} />
+          </IconButton>
+        )}
+        {/* Model dropdown is ONLY rendered when an API key is present AND the connection succeeded */}
+        {modelsShown && (
+          <select
+            value={selectedModel}
+            onChange={(e) => onSelectModel(e.target.value)}
+            aria-label={t('ai.row.modelLabel', { provider: label })}
+            className="pv-select"
+          >
+            {conn.models.map((m) => (
+              <option key={m.id} value={m.id}>
+                {isBudgetModel(m.id) ? t('ai.row.budgetTip', { model: m.label }) : m.label}
+              </option>
+            ))}
+          </select>
+        )}
+      </SettingsRow>
+      {hasAnyKey && !conn.connected && conn.error && !conn.checking && (
+        <div className="pv-set-row pv-set-row--wide" style={{ paddingBlock: '0.25rem' }}>
+          <ErrorBlock title={t('ai.row.failedTitle', { provider: label })} message={conn.error} />
         </div>
-
-        {/* Model Dropdown is ONLY rendered when an API key is present AND the connection succeeded */}
-        {conn.connected && conn.models.length > 0 && (
-          <div className="md:col-span-5">
-            <select
-              value={selectedModel}
-              onChange={(e) => onSelectModel(e.target.value)}
-              aria-label={t('ai.row.modelLabel', { provider: label })}
-              className="pv-input w-full font-semibold"
-            >
-              {conn.models.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {isBudgetModel(m.id) ? t('ai.row.budgetTip', { model: m.label }) : m.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-    </div>
+      )}
+    </>
   )
 }
 
@@ -1753,7 +1423,7 @@ function BridgeDialog({ labelledBy, busy = false, onClose, children }: BridgeDia
 
   return createPortal(
     <div
-      className="pv-modal-backdrop"
+      className="pv-modal-backdrop pv-modal-backdrop--top"
       style={{ zIndex: 60 }}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget && !busy) onClose()
@@ -1976,27 +1646,24 @@ function BridgeSection() {
   const onLocalhost = ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
 
   return (
-    <div className="pv-card space-y-3">
-      <div className="flex min-h-7 flex-wrap items-center justify-between gap-2">
-        <div id={titleId} className="flex items-center gap-2 text-sm font-extrabold" style={{ color: 'var(--accent-purple)' }}>
-          <IconPlugConnected size={18} />
-          <span>{t('bridge.title')}</span>
-        </div>
+    <div className="pv-set-section">
+      <div className="pv-set-section__title">
+        <span id={titleId}>{t('bridge.title')}</span>
         {hasToken && (
-          <span className="pv-badge pv-badge-ok">
-            <IconCheck size={13} /> {status?.hint ? t('bridge.tokenActiveHint', { hint: status.hint }) : t('bridge.tokenActive')}
+          <span className="pv-set-chip">
+            <IconCheck size={15} aria-hidden="true" /> {status?.hint ? t('bridge.tokenActiveHint', { hint: status.hint }) : t('bridge.tokenActive')}
           </span>
         )}
       </div>
 
-      <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+      <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
         {t('bridge.intro')}
         {bundledVersion ? ` ${t('bridge.introVersion', { version: bundledVersion })}` : ''}
       </p>
 
       {/* Which gaming PC the download is for. The install steps below always take the room of the longer variant, so switching moves nothing */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <span className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>
+        <span className="text-sm font-bold" style={{ color: 'var(--text-secondary)' }}>
           {t('bridge.os.label')}
         </span>
         <div className="pv-segmented" role="group" aria-label={t('bridge.os.group')}>
@@ -2009,14 +1676,14 @@ function BridgeSection() {
       </div>
 
       <div
-        className="flex flex-wrap items-center justify-between gap-3 rounded-xl p-3"
-        style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}
+        className="flex flex-wrap items-center justify-between gap-3 py-2"
+        style={{ borderBlock: '1px solid var(--border-subtle)' }}
         role="group"
         aria-labelledby={titleId}
       >
-        <div className="flex min-h-10 min-w-0 flex-1 items-center gap-2.5 text-xs" aria-live="polite">
+        <div className="flex min-h-10 min-w-0 flex-1 items-center gap-2.5 text-sm" aria-live="polite">
           <span
-            className="h-2.5 w-2.5 shrink-0 rounded-full"
+            className="h-2.5 w-2.5 shrink-0 rounded-sm"
             style={{ background: statusColor }}
             aria-hidden="true"
           />
@@ -2038,7 +1705,7 @@ function BridgeSection() {
               type="button"
               onClick={handlePackageClick}
               disabled={busyAction !== null || isLoading || !bundledVersion}
-              className="pv-btn pv-btn-primary relative disabled:cursor-not-allowed disabled:opacity-60"
+              className="pv-btn pv-btn-primary relative"
             >
               <BridgeBusyLabel busy={busyAction === 'package' && confirm === null}>
                 <IconDownload size={15} />
@@ -2050,7 +1717,7 @@ function BridgeSection() {
             type="button"
             onClick={handleCreateClick}
             disabled={busyAction !== null || isLoading}
-            className="pv-btn pv-btn-emerald relative disabled:cursor-not-allowed disabled:opacity-60"
+            className="pv-btn pv-btn-primary relative"
           >
             <BridgeBusyLabel busy={busyAction === 'create' && confirm === null}>
               <IconPlus size={15} />
@@ -2064,16 +1731,7 @@ function BridgeSection() {
               setConfirm('delete')
             }}
             disabled={!hasToken || busyAction !== null}
-            className="pv-btn disabled:cursor-not-allowed disabled:opacity-60"
-            style={
-              hasToken
-                ? {
-                    background: 'var(--accent-crimson-bg)',
-                    color: 'var(--accent-crimson)',
-                    borderColor: 'var(--accent-crimson-border)',
-                  }
-                : undefined
-            }
+            className="pv-btn-text pv-btn-text--calm"
           >
             <IconTrash size={15} />
             <span>{t('bridge.deleteToken')}</span>
@@ -2082,7 +1740,7 @@ function BridgeSection() {
       </div>
 
       {/* How to install the downloaded package. Both variants are laid over each other in one grid cell, so the block is as tall as the longer one */}
-      <div className="grid text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }} data-testid="bridge-steps">
+      <div className="grid text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }} data-testid="bridge-steps">
         <div className={`col-start-1 row-start-1 ${os === 'windows' ? '' : 'invisible'}`} aria-hidden={os !== 'windows'}>
           <Trans t={t} i18nKey="bridge.windows.steps" components={{ code: <code /> }} />
         </div>
@@ -2104,10 +1762,7 @@ function BridgeSection() {
       </div>
 
       {/* Reserved room for an error of the direct "Token erzeugen" click, so it moves nothing */}
-      <div className="min-h-9 text-xs font-bold" role="alert" style={{ color: 'var(--accent-crimson)' }}>
-        {cardError}
-        {cardError && <CopyErrorButton className="ms-2 align-middle" report={{ message: cardError }} />}
-      </div>
+      <div className="min-h-12">{cardError && <ErrorBlock title={t('bridge.errorTitle')} message={cardError} defaultOpen />}</div>
 
       {confirm && (
         <BridgeDialog
@@ -2118,17 +1773,13 @@ function BridgeSection() {
           <div className="space-y-4 p-6">
             <div className="flex items-start gap-3.5">
               <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                style={{
-                  background: 'var(--accent-crimson-bg)',
-                  color: 'var(--accent-crimson)',
-                  border: '1px solid var(--accent-crimson-border)',
-                }}
+                className="flex h-10 w-10 shrink-0 items-center justify-center"
+                style={{ color: 'var(--accent-crimson)' }}
               >
                 <IconAlertTriangle size={20} />
               </div>
               <div className="min-w-0 space-y-1.5">
-                <h2 id={confirmTitleId} className="text-base font-extrabold" style={{ color: 'var(--text-primary)' }}>
+                <h2 id={confirmTitleId} className="pv-dialog-title">
                   {confirm === 'replace'
                     ? t('bridge.confirm.replaceTitle')
                     : confirm === 'package'
@@ -2141,10 +1792,7 @@ function BridgeSection() {
               </div>
             </div>
 
-            <div className="min-h-[2.75rem] text-xs font-bold" role="alert" style={{ color: 'var(--accent-crimson)' }}>
-              {dialogError}
-              {dialogError && <CopyErrorButton className="ms-2 align-middle" report={{ message: dialogError }} />}
-            </div>
+            <div className="min-h-12">{dialogError && <ErrorBlock title={t('bridge.errorTitle')} message={dialogError} defaultOpen />}</div>
 
             <div className="flex justify-end gap-2.5 pt-3" style={{ borderTop: '1px solid var(--border-subtle)' }}>
               <button
@@ -2158,16 +1806,7 @@ function BridgeSection() {
               </button>
               <button
                 type="button"
-                className={`pv-btn relative ${confirm === 'replace' ? 'pv-btn-emerald' : confirm === 'package' ? 'pv-btn-primary' : ''}`}
-                style={
-                  confirm === 'delete'
-                    ? {
-                        background: 'var(--accent-crimson-bg)',
-                        color: 'var(--accent-crimson)',
-                        borderColor: 'var(--accent-crimson-border)',
-                      }
-                    : undefined
-                }
+                className={`pv-btn relative ${confirm === 'delete' ? 'pv-btn-danger' : 'pv-btn-primary'}`}
                 disabled={busyAction !== null}
                 onClick={() =>
                   confirm === 'replace'
@@ -2198,17 +1837,13 @@ function BridgeSection() {
           <div className="space-y-4 p-6">
             <div className="flex items-start gap-3.5">
               <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                style={{
-                  background: 'var(--accent-purple-bg)',
-                  color: 'var(--accent-purple)',
-                  border: '1px solid var(--accent-purple-border)',
-                }}
+                className="flex h-10 w-10 shrink-0 items-center justify-center"
+                style={{ color: 'var(--link)' }}
               >
                 <IconPlugConnected size={20} />
               </div>
               <div className="min-w-0 space-y-1.5">
-                <h2 id={createdTitleId} className="text-base font-extrabold" style={{ color: 'var(--text-primary)' }}>
+                <h2 id={createdTitleId} className="pv-dialog-title">
                   {t('bridge.created.title')}
                 </h2>
                 <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
@@ -2217,7 +1852,7 @@ function BridgeSection() {
               </div>
             </div>
 
-            <div className="pv-alert pv-alert-gold !p-3 text-xs leading-snug">
+            <div className="pv-note pv-note--warn flex items-start gap-2">
               <IconAlertTriangle size={17} className="mt-px shrink-0" style={{ color: 'var(--accent-gold)' }} />
               <span className="font-semibold">
                 {t('bridge.created.warning')}
@@ -2225,7 +1860,7 @@ function BridgeSection() {
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="bridge-token-value" className="block text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>
+              <label htmlFor="bridge-token-value" className="block text-sm font-bold" style={{ color: 'var(--text-secondary)' }}>
                 {t('bridge.created.tokenLabel')}
               </label>
               <div className="flex gap-2">
@@ -2235,7 +1870,7 @@ function BridgeSection() {
                   readOnly
                   value={created.token}
                   onFocus={(e) => e.currentTarget.select()}
-                  className="pv-input w-full font-mono !text-xs"
+                  className="pv-input w-full font-mono"
                 />
                 <CopyButton
                   value={created.token}
@@ -2246,7 +1881,7 @@ function BridgeSection() {
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="bridge-command-value" className="block text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>
+              <label htmlFor="bridge-command-value" className="block text-sm font-bold" style={{ color: 'var(--text-secondary)' }}>
                 {t('bridge.created.commandLabel')}
               </label>
               <div className="flex items-start gap-2">
@@ -2256,7 +1891,7 @@ function BridgeSection() {
                   rows={4}
                   value={command}
                   onFocus={(e) => e.currentTarget.select()}
-                  className="pv-input w-full resize-none font-mono !text-xs"
+                  className="pv-input w-full resize-none font-mono"
                 />
                 <CopyButton
                   value={command}
@@ -2267,7 +1902,7 @@ function BridgeSection() {
             </div>
 
             {/* Reserved room: a localhost hint and/or a copy failure message never move the buttons */}
-            <div className="min-h-[3.75rem] space-y-1 text-xs leading-snug">
+            <div className="min-h-[3.75rem] space-y-1 text-sm leading-snug">
               {onLocalhost && (
                 <p style={{ color: 'var(--text-secondary)' }}>
                   <Trans
@@ -2286,7 +1921,7 @@ function BridgeSection() {
             </div>
 
             <div className="flex justify-end pt-3" style={{ borderTop: '1px solid var(--border-subtle)' }}>
-              <button type="button" className="pv-btn pv-btn-emerald" onClick={() => setCreated(null)}>
+              <button type="button" className="pv-btn pv-btn-primary" onClick={() => setCreated(null)}>
                 <IconCheck size={16} />
                 <span>{t('bridge.created.done')}</span>
               </button>

@@ -312,7 +312,7 @@ export function BatchChapters({ slug, scope, rows, saved, footerEl, fixed, onSav
   const footer = (
     <div className="grid w-full gap-2">
       <ReservedText
-        className="text-xs font-semibold"
+        className="text-sm font-semibold"
         style={{ color: rest.state === 'copied' ? 'var(--accent-emerald)' : 'var(--text-secondary)' }}
         candidates={[
           t('manual.batch.footer.reasonChecking'),
@@ -334,7 +334,7 @@ export function BatchChapters({ slug, scope, rows, saved, footerEl, fixed, onSav
               <span>{t('manual.chapters.back')}</span>
             </button>
           )}
-          <span className="text-xs font-semibold tabular-nums" style={{ color: 'var(--text-secondary)' }} data-testid="manual-progress">
+          <span className="text-sm font-semibold tabular-nums" style={{ color: 'var(--text-secondary)' }} data-testid="manual-progress">
             {t('manual.chapters.progress', { done: savedCount, total })}
           </span>
         </div>
@@ -342,7 +342,7 @@ export function BatchChapters({ slug, scope, rows, saved, footerEl, fixed, onSav
           <button type="button" className="pv-btn max-sm:w-full max-sm:justify-center" disabled={!restEnabled || restLoading} onClick={() => void copyRest()} data-testid="batch-rest">
             <StackedLabel active={restActive} labels={restLabels} />
           </button>
-          <button type="button" className="pv-btn pv-btn-emerald relative" disabled={saveable.length === 0 || saving || checking} onClick={() => void save()} data-testid="batch-save">
+          <button type="button" className="pv-btn pv-btn-primary relative" disabled={saveable.length === 0 || saving || checking} onClick={() => void save()} data-testid="batch-save">
             <span className={`inline-flex ${saving ? 'invisible' : ''}`}>
               <StackedLabel active={0} labels={saveLabels} />
             </span>
@@ -367,10 +367,10 @@ export function BatchChapters({ slug, scope, rows, saved, footerEl, fixed, onSav
         <h3 id={`${listId}-how`} className="text-sm font-extrabold" style={{ color: 'var(--text-primary)' }}>
           {t('manual.batch.how.heading')}
         </h3>
-        <ol className="space-y-1.5 text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+        <ol className="space-y-1.5 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
           {stepKeys.map((key, index) => (
             <li key={key} className="flex gap-2">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold" style={{ background: 'var(--accent-emerald-bg)', color: 'var(--accent-emerald)', border: '1px solid var(--accent-emerald-border)' }} aria-hidden="true">
+              <span className="w-5 shrink-0 text-end font-semibold tabular-nums" style={{ color: 'var(--text-muted)' }} aria-hidden="true">
                 {index + 1}
               </span>
               <span className="min-w-0">{t(`manual.batch.how.${key}`)}</span>
@@ -385,7 +385,7 @@ export function BatchChapters({ slug, scope, rows, saved, footerEl, fixed, onSav
           <h3 id={`${listId}-prompt`} className="text-sm font-extrabold" style={{ color: 'var(--text-primary)' }}>
             {t('manual.batch.promptHeading')}
           </h3>
-          <ReservedText className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }} candidates={[t('manual.batch.promptInfoLoading'), t('manual.batch.promptInfo', { count: total, size: fmt.number(999) })]} data-testid="batch-prompt-info">
+          <ReservedText className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }} candidates={[t('manual.batch.promptInfoLoading'), t('manual.batch.promptInfo', { count: total, size: fmt.number(999) })]} data-testid="batch-prompt-info">
             {promptInfo}
           </ReservedText>
           <PromptBox key={unsavedSignature} load={loadPrompt} />
@@ -398,7 +398,7 @@ export function BatchChapters({ slug, scope, rows, saved, footerEl, fixed, onSav
           <h3 id={`${listId}-list`} className="text-sm font-extrabold" style={{ color: 'var(--text-primary)' }}>
             {t('manual.batch.checklist.heading', { count: total })}
           </h3>
-          <ReservedText className="text-xs font-bold tabular-nums" style={{ color: 'var(--text-secondary)' }} candidates={[t('manual.batch.checklist.recognized', { found: total, count: total })]} data-testid="batch-counter">
+          <ReservedText className="text-sm font-bold tabular-nums" style={{ color: 'var(--text-secondary)' }} candidates={[t('manual.batch.checklist.recognized', { found: total, count: total })]} data-testid="batch-counter">
             {counterText}
           </ReservedText>
         </div>
@@ -414,10 +414,10 @@ export function BatchChapters({ slug, scope, rows, saved, footerEl, fixed, onSav
 
         {/* Answers no chapter claims: a box of fixed height that scrolls inside, so one appearing never pushes the answer field down */}
         <div className="space-y-1.5 pt-1" data-testid="batch-unmatched">
-          <h4 className="text-xs font-extrabold uppercase tracking-wider tabular-nums" style={{ color: unmatched.length > 0 ? 'var(--accent-crimson)' : 'var(--text-muted)' }}>
+          <h4 className="text-sm font-extrabold uppercase tracking-wider tabular-nums" style={{ color: unmatched.length > 0 ? 'var(--accent-crimson)' : 'var(--text-muted)' }}>
             {t('manual.batch.unmatched.heading', { count: unmatched.length })}
           </h4>
-          <div className="h-32 space-y-2 overflow-y-auto rounded-lg p-2.5 text-xs" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
+          <div className="h-32 space-y-2 overflow-y-auto rounded-lg p-2.5 text-sm" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
             {unmatched.length === 0 ? (
               <p style={{ color: 'var(--text-muted)' }}>{result ? t('manual.batch.unmatched.none') : t('manual.batch.unmatched.idle')}</p>
             ) : (
@@ -461,11 +461,11 @@ export function BatchChapters({ slug, scope, rows, saved, footerEl, fixed, onSav
                   e.target.value = ''
                 }}
               />
-              <button type="button" className="pv-btn !px-2.5 !py-1 !text-xs" disabled={saving} onClick={() => fileInput.current?.click()}>
+              <button type="button" className="pv-btn !px-2.5 !py-1 !text-sm" disabled={saving} onClick={() => fileInput.current?.click()}>
                 <IconFileImport size={14} className="shrink-0" aria-hidden="true" />
                 <span>{t('manual.batch.answer.chooseFile')}</span>
               </button>
-              <button type="button" className="pv-btn !px-2.5 !py-1 !text-xs" disabled={saving || text.length === 0} onClick={() => void clearText()}>
+              <button type="button" className="pv-btn !px-2.5 !py-1 !text-sm" disabled={saving || text.length === 0} onClick={() => void clearText()}>
                 <IconTrash size={14} className="shrink-0" aria-hidden="true" />
                 <span>{t('manual.batch.answer.clear')}</span>
               </button>
@@ -498,7 +498,7 @@ export function BatchChapters({ slug, scope, rows, saved, footerEl, fixed, onSav
               aria-label={t('manual.batch.answer.label')}
               aria-describedby={`${fieldId}-meta`}
               placeholder={t('manual.batch.answer.placeholder')}
-              className="block max-h-72 min-h-[9rem] w-full resize-y rounded-lg p-2.5 font-mono text-xs leading-relaxed"
+              className="block max-h-72 min-h-[9rem] w-full resize-y rounded-lg p-2.5 font-mono text-sm leading-relaxed"
               style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: `1px solid ${dragging ? 'var(--accent-crystal)' : 'var(--border-subtle)'}`, outline: dragging ? '2px dashed var(--accent-crystal)' : undefined }}
             />
             {dragging && (
@@ -509,7 +509,7 @@ export function BatchChapters({ slug, scope, rows, saved, footerEl, fixed, onSav
           </div>
           <ReservedText
             id={`${fieldId}-meta`}
-            className="text-[11px] font-semibold tabular-nums"
+            className="text-[0.8125rem] font-semibold tabular-nums"
             style={{ color: 'var(--text-muted)' }}
             candidates={[t('manual.batch.answer.empty'), t('manual.batch.answer.collected', { size: fmt.number(9_999_999) })]}
             data-testid="batch-meta"
@@ -518,7 +518,7 @@ export function BatchChapters({ slug, scope, rows, saved, footerEl, fixed, onSav
           </ReservedText>
 
           {/* Messages about the text: fixed height, scrolls inside, so nothing around it moves */}
-          <div className="h-40 space-y-2 overflow-y-auto rounded-lg p-2.5 text-xs" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }} role="status" aria-live="polite" data-testid="batch-messages">
+          <div className="h-40 space-y-2 overflow-y-auto rounded-lg p-2.5 text-sm" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }} role="status" aria-live="polite" data-testid="batch-messages">
             {fileFailure && <FailureLine failure={fileFailure} />}
             {saveFailure && <FailureLine failure={{ message: t('manual.batch.footer.saveFailed', { reason: saveFailure.message }), details: saveFailure.details }} />}
             {restFailure && <FailureLine failure={{ message: t('manual.batch.footer.restFailed', { reason: restFailure.message }), details: restFailure.details }} />}
@@ -570,14 +570,14 @@ export function BatchChapters({ slug, scope, rows, saved, footerEl, fixed, onSav
             value={restPrompt}
             aria-label={t('manual.copy.promptLabel')}
             rows={8}
-            className="block max-h-60 w-full resize-y rounded-lg p-2.5 font-mono text-xs leading-relaxed"
+            className="block max-h-60 w-full resize-y rounded-lg p-2.5 font-mono text-sm leading-relaxed"
             style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)' }}
           />
         </section>
       )}
 
       {allDone && (
-        <p className="pv-alert pv-alert-emerald text-xs font-bold" role="status" data-testid="batch-all-done">
+        <p className="pv-note pv-note--ok text-sm font-bold" role="status" data-testid="batch-all-done">
           {t('manual.batch.allDone')}
         </p>
       )}
@@ -645,9 +645,9 @@ function BatchRowItem({ row, status, item }: { row: BatchRow; status: RowStatus;
   // The toggle keeps its room in every row, so a result appearing never changes the row's height
   const shown = open && hasDetails
   return (
-    <li className="rounded-xl p-2.5" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }} data-testid="batch-row" data-key={row.batchKey} data-status={status}>
+    <li className="rounded-lg p-2.5" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }} data-testid="batch-row" data-key={row.batchKey} data-status={status}>
       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-2.5 gap-y-1.5 sm:grid-cols-[auto_minmax(0,1fr)_auto_auto]">
-        <span className="pt-0.5 font-mono text-[11px] font-extrabold" style={{ color: 'var(--text-muted)' }}>
+        <span className="pt-0.5 font-mono text-[0.8125rem] font-extrabold" style={{ color: 'var(--text-muted)' }}>
           {row.batchKey}
         </span>
         <span className="min-w-0 break-words text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -658,7 +658,7 @@ function BatchRowItem({ row, status, item }: { row: BatchRow; status: RowStatus;
         </div>
         <button
           type="button"
-          className={`col-start-3 row-start-1 flex h-6 w-6 items-center justify-center rounded sm:col-start-4 ${hasDetails ? '' : 'invisible'}`}
+          className={`col-start-3 row-start-1 -m-3 flex h-12 w-12 items-center justify-center rounded-md sm:col-start-4 ${hasDetails ? '' : 'invisible'}`}
           style={{ color: 'var(--text-secondary)' }}
           aria-expanded={shown}
           aria-controls={panelId}
@@ -671,7 +671,7 @@ function BatchRowItem({ row, status, item }: { row: BatchRow; status: RowStatus;
         </button>
       </div>
       {shown && item && (
-        <div id={panelId} className="mt-2 space-y-2 text-xs" data-testid="batch-row-details">
+        <div id={panelId} className="mt-2 space-y-2 text-sm" data-testid="batch-row-details">
           {item.notApplicable && (
             <p className="whitespace-pre-line break-words font-semibold" style={{ color: 'var(--text-primary)' }}>
               {item.notApplicable}

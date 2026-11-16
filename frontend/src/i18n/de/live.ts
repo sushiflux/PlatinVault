@@ -128,6 +128,7 @@ const live = {
     },
   },
   noteDialog: {
+    failedTitle: 'Notiz nicht gespeichert',
     title: 'Persönliche Notiz',
     placeholder: 'Eigene Tipps, fehlende Fundorte oder Fortschritts-Notizen...',
     save: 'Notiz speichern',

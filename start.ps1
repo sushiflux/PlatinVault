@@ -26,9 +26,29 @@ Set-Location $RootDir
 
 $LogDir = Join-Path $RootDir '.logs'
 
+# Hooks live in the repository's own hooks folder, not in core.hooksPath (see scripts\install-hooks.ps1). Never fails the start.
+function Initialize-GitHooks {
+    try {
+        if (Remove-LegacyHooksPath) {
+            # Migration: the current repo versions are trusted, take them over once.
+            Install-GitHooks (Get-HooksDir) $script:HookNames
+            return
+        }
+        $hooksDir = Get-HooksDir
+        if (-not $hooksDir) { return }
+        $status = Get-HookStatus $hooksDir
+        if ($status.Missing.Count -gt 0) { Install-GitHooks $hooksDir $status.Missing }
+        if ($status.Changed.Count -gt 0) {
+            Write-Warn ('WARNUNG: Diese Git-Hooks weichen von scripts\git-hooks ab und wurden NICHT uebernommen: ' + ($status.Changed -join ', '))
+            Write-Warn 'Pruefen mit "git diff" (bzw. die Dateien in scripts\git-hooks lesen), dann bewusst uebernehmen mit .\scripts\install-hooks.ps1'
+        }
+    }
+    catch { Write-Warn "Git-Hooks konnten nicht geprueft werden: $($_.Exception.Message)" }
+}
+
 function Initialize-Repository {
     if (Test-Path (Join-Path $RootDir '.git')) {
-        Invoke-Native 'git' @('config', 'core.hooksPath', 'scripts/git-hooks') -Quiet | Out-Null
+        Initialize-GitHooks
     }
     $versionFile = Join-Path $RootDir 'version.txt'
     if (-not (Test-Path $versionFile)) {

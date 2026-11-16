@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { IconCheck, IconX } from '@tabler/icons-react'
 import type { LiveAchievementItemDto } from '../../api/types'
 import { useFormat } from '../../i18n/format'
-import { GhostIconButton } from '../ui/GhostIconButton'
+import { RowIconButton } from './RowIconButton'
 import { TierIcon } from '../ui/TierIcon'
 import { Tooltip } from '../ui/Tooltip'
 import type { PinEntry } from './usePinList'
@@ -62,6 +62,7 @@ export function PinCard({ entry, placement, onOpen, onRemove }: PinCardProps) {
       data-done={done ? '' : undefined}
       data-leaving={leaving ? '' : undefined}
       data-testid="pin-card"
+      data-placement={placement}
       data-api-name={apiName}
       initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.94 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -74,17 +75,17 @@ export function PinCard({ entry, placement, onOpen, onRemove }: PinCardProps) {
             {ach ? <img src={iconSrc(ach)} alt="" style={{ filter: done ? 'none' : 'grayscale(85%) opacity(75%)' }} /> : <span className="pv-pin-skeleton block animate-pulse" aria-hidden="true" />}
             {done && (
               <span className="pv-pin-check" aria-hidden="true">
-                <IconCheck size={12} stroke={3.4} />
+                <IconCheck size={11} stroke={3.4} />
               </span>
             )}
           </span>
           <span className="pv-pin-body">
             <span className="pv-pin-name">{name}</span>
             <span className="pv-pin-foot">
-              {ach && <TierIcon tier={ach.rarityTier} size={14} />}
+              {ach && <TierIcon tier={ach.rarityTier} size={15} />}
               {counter ? (
                 <span className="pv-pin-counter">
-                  <span className="pv-pin-counter-text text-[0.72rem]">{counterText}</span>
+                  <span className="pv-pin-counter-text">{counterText}</span>
                   <span
                     className="pv-pin-bar"
                     role="progressbar"
@@ -98,7 +99,7 @@ export function PinCard({ entry, placement, onOpen, onRemove }: PinCardProps) {
                 </span>
               ) : (
                 <span className="pv-pin-state">
-                  {done && <IconCheck size={13} stroke={3} aria-hidden="true" />}
+                  {done && <IconCheck size={14} stroke={2.6} aria-hidden="true" />}
                   {ach ? stateText : ''}
                 </span>
               )}
@@ -107,9 +108,9 @@ export function PinCard({ entry, placement, onOpen, onRemove }: PinCardProps) {
         </button>
       </Tooltip>
       {!leaving && (
-        <GhostIconButton label={t('pins.card.remove', { name })} onClick={() => onRemove(apiName)} className="pv-pin-remove inline-flex">
-          <IconX size={14} aria-hidden="true" />
-        </GhostIconButton>
+        <RowIconButton label={t('pins.card.remove', { name })} onClick={() => onRemove(apiName)} size={placement === 'dock' ? 'md' : 'lg'} className="pv-pin-remove inline-flex">
+          <IconX size={18} aria-hidden="true" />
+        </RowIconButton>
       )}
     </motion.div>
   )

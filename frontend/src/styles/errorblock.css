@@ -1,0 +1,89 @@
+/* One error message, the way the rules want it: a short headline that stays visible (what failed, with the error code), an arrow that
+   unfolds the detailed description, and the copy button (copies everything, also while folded). A thin straight crimson line sits at the
+   left edge. Component: components/ui/ErrorBlock.tsx. */
+.pv-err {
+  position: relative;
+  padding: 0.5rem 0 0.5rem 1.125rem;
+  min-inline-size: 0;
+}
+
+.pv-err::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block: 0.5rem;
+  inline-size: 2px;
+  background: var(--accent-crimson);
+}
+
+.pv-err__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.25rem;
+}
+
+.pv-err__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-block-size: 3rem;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  text-align: start;
+  color: var(--accent-crimson);
+  cursor: pointer;
+}
+
+.pv-err__toggle:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.pv-err__chev {
+  flex: none;
+  transition: transform 0.15s ease;
+}
+
+.pv-err__toggle[aria-expanded='true'] .pv-err__chev {
+  transform: rotate(90deg);
+}
+
+.pv-err__code {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.pv-err__spacer {
+  flex: 1 1 0;
+}
+
+.pv-err__body {
+  display: grid;
+  gap: 0.625rem;
+  padding-block-end: 0.375rem;
+}
+
+.pv-err__body > p {
+  margin: 0;
+  color: var(--text-primary);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.pv-err__body > .pv-err__tech {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-err__chev {
+    transition: none;
+  }
+}

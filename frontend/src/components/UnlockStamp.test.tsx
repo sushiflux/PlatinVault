@@ -68,7 +68,7 @@ describe('unlock date and time in the trophy popups', () => {
     expect(slot.textContent).toBe('')
     expect(slot.querySelector('svg')).toBeNull()
     // The fixed height class is what keeps the card the same size with and without a time
-    expect(slot.className).toContain('h-4')
+    expect(slot.className).toContain('h-5')
   })
 
   it('card: same slot (same height class) with and without a time', async () => {

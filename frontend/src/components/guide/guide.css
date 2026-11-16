@@ -1,273 +1,360 @@
-/* Guide blocks beyond the basic ones: the puzzle (hidden hints and solution), the typed hints of the walkthrough, its sub-headings and numbered
-   steps. Colours come from the shared tokens (light and dark), corners from the shared radius scale. */
+/* The guide in the light look of variant "Kristall": chapter head, numbered steps, hint blocks as text with a thin straight line, puzzle, action row of a
+   chapter, checklist tables. Colours come from the shared tokens (light and dark), corners from the shared radius scale, weights are 500/600 only.
+   Accent lines are own elements (pseudo-elements), square-ended and inset - never a border that bends around a corner. */
 
 @import './walkthrough.css';
 
-/* ---------- Numbered steps (walkthrough route, puzzle solution) ---------- */
+/* ---------- Chapter head: small-caps context line, the chapter title, the chapter actions on the right ---------- */
+.pv-chapter-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.pv-chapter-head__titles {
+  min-inline-size: 0;
+  flex: 1 1 12rem;
+}
+
+.pv-chapter-head__titles .pv-page-title {
+  margin-block-start: 0.125rem;
+  overflow-wrap: anywhere;
+}
+
+/* A calm line of facts below the head of the first chapter (genre, missables, play time, difficulty): icon + text, no boxes */
+.pv-chapter-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1.25rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+}
+
+.pv-chapter-facts li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-inline-size: 0;
+}
+
+.pv-chapter-facts svg {
+  flex: none;
+  color: var(--text-muted);
+}
+
+/* ---------- Numbered steps (walkthrough route, puzzle solution): the number is plain text, no box ---------- */
 .pv-steps {
   list-style: none;
   counter-reset: pv-step;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.6rem;
+  gap: 0.625rem;
 }
 
 .pv-steps > li {
   counter-increment: pv-step;
-  display: grid;
-  grid-template-columns: 1.75rem minmax(0, 1fr);
-  gap: 0.7rem;
-  align-items: start;
-  font-size: 0.9rem;
+  position: relative;
+  min-block-size: 1.75rem;
+  padding-inline-start: 2.5rem;
+  font-size: 1rem;
   line-height: 1.6;
-  color: var(--text-secondary);
+  color: var(--text-primary);
 }
 
 .pv-steps > li::before {
   content: counter(pv-step);
-  display: grid;
-  place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: var(--radius-sm);
-  background: var(--accent-crystal-bg);
-  border: 1px solid var(--accent-crystal-border);
-  color: var(--accent-crystal);
-  font-size: 0.78rem;
-  font-weight: 800;
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: 1.75rem;
+  text-align: end;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
 }
 
+/* The route of a part: no card around it, the steps stand on the page */
 .pv-steps-card {
   display: grid;
-  gap: 0.8rem;
+  gap: 0.75rem;
+  max-inline-size: 60rem;
 }
 
 .pv-steps-title {
-  font-size: 1rem;
-  font-weight: 800;
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
-/* ---------- Sub-heading of the walkthrough ---------- */
+/* ---------- Sub-heading of a walkthrough without levels ---------- */
 .pv-wt-heading {
-  margin-block-start: 0.6rem;
-  padding: 0.3rem 0 0.3rem 1rem;
-  border-inline-start: 4px solid var(--accent-crystal);
+  padding-block-start: 0.25rem;
 }
 
 .pv-wt-heading h3 {
-  font-size: 1.2rem;
-  font-weight: 800;
-  line-height: 1.3;
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.35;
   color: var(--text-primary);
 }
 
 .pv-wt-heading p {
-  margin-block-start: 0.2rem;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
-/* ---------- Typed hint (alert with a kind) ---------- */
-.pv-hint {
-  align-items: flex-start;
-}
-
-.pv-hint-icon {
-  flex: none;
-  margin-block-start: 0.1rem;
-}
-
-.pv-alert-gold .pv-hint-icon {
-  color: var(--accent-gold);
-}
-.pv-alert-danger .pv-hint-icon {
-  color: var(--accent-crimson);
-}
-.pv-alert-emerald .pv-hint-icon {
-  color: var(--accent-emerald);
-}
-.pv-alert-crystal .pv-hint-icon {
-  color: var(--accent-crystal);
-}
-
-.pv-hint-body {
-  min-width: 0;
-  display: grid;
-  gap: 0.2rem;
-}
-
-.pv-hint-label {
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  margin: 0.25rem 0 0;
+  max-inline-size: 60rem;
+  font-size: 1rem;
   color: var(--text-secondary);
 }
 
-.pv-alert-gold .pv-hint-label {
-  color: var(--accent-gold-text);
+/* ---------- Hint block: text with a thin straight line on the left. The line and the label carry the meaning colour; the text stays in the
+   text colour (contrast). Variants set --pv-hint-line / --pv-hint-ink; the label also names the kind, so colour is never the only carrier. ---------- */
+.pv-hint {
+  position: relative;
+  max-inline-size: 60rem;
+  padding: 0.125rem 0 0.125rem 1.125rem;
+  font-size: 1rem;
+  color: var(--text-primary);
+  --pv-hint-line: var(--accent-crystal);
+  --pv-hint-ink: var(--accent-crystal);
 }
-.pv-alert-danger .pv-hint-label {
-  color: var(--accent-crimson);
+
+.pv-hint::before {
+  content: '';
+  position: absolute;
+  inset-block: 0.125rem;
+  inset-inline-start: 0;
+  inline-size: 2px;
+  background: var(--pv-hint-line);
 }
-.pv-alert-emerald .pv-hint-label {
-  color: var(--accent-emerald);
+
+.pv-hint--gold,
+.pv-alert-gold.pv-hint {
+  --pv-hint-line: var(--accent-gold);
+  --pv-hint-ink: var(--accent-gold-text);
 }
-.pv-alert-crystal .pv-hint-label {
-  color: var(--accent-crystal);
+
+.pv-hint--danger {
+  --pv-hint-line: var(--accent-crimson);
+  --pv-hint-ink: var(--accent-crimson);
+}
+
+.pv-hint--emerald {
+  --pv-hint-line: var(--accent-emerald);
+  --pv-hint-ink: var(--accent-emerald);
+}
+
+.pv-hint--purple {
+  --pv-hint-line: var(--accent-purple);
+  --pv-hint-ink: var(--accent-purple);
+}
+
+.pv-hint--crystal {
+  --pv-hint-line: var(--accent-crystal);
+  --pv-hint-ink: var(--accent-crystal);
+}
+
+/* The one hint that must not be overlooked: the line is a little stronger */
+.pv-hint-point_of_no_return::before {
+  inline-size: 3px;
+}
+
+.pv-hint-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--pv-hint-ink);
+}
+
+.pv-hint-icon {
+  display: inline-flex;
+  flex: none;
+}
+
+.pv-hint-body {
+  display: grid;
+  gap: 0.125rem;
+  min-inline-size: 0;
 }
 
 .pv-hint-title {
-  font-size: 0.95rem;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
 .pv-hint-text {
-  font-size: 0.88rem;
+  margin: 0;
   line-height: 1.6;
-  color: var(--text-secondary);
+  color: var(--text-primary);
 }
 
-/* ---------- Puzzle ---------- */
-.pv-puzzle {
+/* "Do this first": a plain list under the text, hairline above */
+.pv-hint-todo {
   display: grid;
-  gap: 0.9rem;
-  border-inline-start: 4px solid var(--accent-purple);
+  gap: 0.25rem;
+  margin-block-start: 0.5rem;
+  padding-block-start: 0.5rem;
+  border-block-start: 1px solid var(--border-subtle);
+}
+
+.pv-hint-todo-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pv-hint-todo ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.pv-hint-todo li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: start;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.pv-hint-todo li > svg {
+  margin-block-start: 0.2rem;
+  color: var(--pv-hint-ink);
+}
+
+/* ---------- Puzzle: a quiet surface with a thin violet line; the way to the solution stays hidden until it is asked for ---------- */
+.pv-puzzle {
+  position: relative;
+  display: grid;
+  gap: 0.5rem;
+  max-inline-size: 60rem;
+  padding: 1rem 1.25rem 0.5rem 1.375rem;
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  --pv-puzzle-line: var(--accent-purple);
+}
+
+.pv-puzzle::before {
+  content: '';
+  position: absolute;
+  inset-block: 0.75rem;
+  inset-inline-start: 0;
+  inline-size: 2px;
+  background: var(--pv-puzzle-line);
 }
 
 .pv-puzzle-done {
-  border-inline-start-color: var(--accent-emerald);
+  --pv-puzzle-line: var(--accent-emerald);
 }
 
 .pv-puzzle-head {
   display: flex;
-  align-items: center;
-  gap: 0.8rem;
   flex-wrap: wrap;
-}
-
-.pv-puzzle-icon {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 2.2rem;
-  height: 2.2rem;
-  border-radius: var(--radius-md);
-  background: var(--accent-purple-bg);
-  border: 1px solid var(--accent-purple-border);
-  color: var(--accent-purple);
-}
-
-.pv-puzzle-titles {
-  flex: 1 1 14rem;
-  min-width: 0;
-  display: grid;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
 }
 
 .pv-puzzle-kicker {
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--accent-purple);
 }
 
 .pv-puzzle-title {
-  font-size: 1.05rem;
-  font-weight: 800;
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
   color: var(--text-primary);
   overflow-wrap: anywhere;
-}
-
-.pv-puzzle-head-end {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  flex-wrap: wrap;
 }
 
 .pv-puzzle-missable {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.2rem 0.6rem;
-  border-radius: var(--radius-sm);
-  background: var(--accent-crimson-bg);
-  border: 1px solid var(--accent-crimson-border);
+  font-size: 0.875rem;
+  font-weight: 600;
   color: var(--accent-crimson);
-  font-size: 0.74rem;
-  font-weight: 700;
-}
-
-.pv-puzzle-done-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  cursor: pointer;
 }
 
 .pv-puzzle-task {
-  font-size: 0.92rem;
-  line-height: 1.6;
+  margin: 0;
   color: var(--text-secondary);
 }
 
 .pv-puzzle-facts {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-  gap: 0.7rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.125rem 0.875rem;
   margin: 0;
 }
 
-.pv-puzzle-facts > div {
-  padding: 0.65rem 0.85rem;
-  border-radius: var(--radius-md);
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
-}
-
 .pv-puzzle-facts dt {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  font-weight: 500;
   color: var(--text-muted);
 }
 
 .pv-puzzle-facts dd {
-  margin: 0.2rem 0 0;
-  font-size: 0.88rem;
-  line-height: 1.55;
+  margin: 0;
   color: var(--text-primary);
 }
 
+.pv-puzzle-self {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--text-muted);
+}
+
+/* The actions: frameless text buttons, the done box at the end. All labels of a button are stacked, so a button never changes its size. */
 .pv-puzzle-actions {
   display: flex;
-  align-items: center;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  align-items: center;
+  gap: 0 0.25rem;
+  margin-inline: -0.75rem;
 }
 
-/* Both buttons keep their size whatever their label says (the labels are stacked); focus ring like every control of the app */
+.pv-puzzle-actions .pv-puzzle-spacer {
+  flex: 1 1 0;
+}
+
 .pv-puzzle-btn:focus-visible {
-  outline: 2px solid var(--accent-crystal);
-  outline-offset: 2px;
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
 }
 
-.pv-puzzle-self {
-  flex: 1 1 14rem;
-  font-size: 0.8rem;
-  color: var(--text-muted);
+.pv-puzzle-done-label {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 3rem;
+  padding-inline-end: 0.75rem;
+  gap: 0;
+  cursor: pointer;
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+}
+
+.pv-puzzle-done-label > span {
+  margin-inline-start: 0.125rem;
 }
 
 /* The revealed areas: only these grow, the buttons above them stay where they are */
@@ -275,128 +362,332 @@
   overflow: hidden;
 }
 
-.pv-puzzle-panel {
+.pv-puzzle-panel,
+.pv-puzzle-undocumented {
+  position: relative;
   display: grid;
-  gap: 0.6rem;
-  margin-block-start: 0.1rem;
-  padding: 0.9rem 1rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
+  gap: 0.375rem;
+  padding: 0.5rem 0 0.5rem 1rem;
 }
 
-.pv-puzzle-panel-hints {
-  background: var(--accent-gold-bg);
-  border-color: var(--accent-gold-border);
-}
-
-.pv-puzzle-panel-solution {
-  background: var(--accent-crystal-bg);
-  border-color: var(--accent-crystal-border);
+.pv-puzzle-panel::before,
+.pv-puzzle-undocumented::before {
+  content: '';
+  position: absolute;
+  inset-block: 0.5rem;
+  inset-inline-start: 0;
+  inline-size: 1px;
+  background: var(--border-strong);
 }
 
 .pv-puzzle-panel-title {
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--accent-crystal);
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .pv-puzzle-hint {
   display: grid;
-  gap: 0.15rem;
-  font-size: 0.9rem;
+  gap: 0.125rem;
+  margin: 0;
   line-height: 1.6;
   color: var(--text-primary);
 }
 
 .pv-puzzle-hint-no {
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--accent-gold-text);
-}
-
-.pv-puzzle-panel-solution .pv-steps > li {
+  font-weight: 600;
   color: var(--text-primary);
 }
 
 .pv-puzzle-source {
-  font-size: 0.78rem;
+  margin: 0;
+  font-size: 0.875rem;
   color: var(--text-muted);
 }
 
 .pv-puzzle-undocumented {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.6rem;
-  padding: 0.7rem 0.9rem;
-  border-radius: var(--radius-md);
-  background: var(--bg-elevated);
-  border: 1px dashed var(--border-strong);
+  margin-block-end: 0.5rem;
   color: var(--text-secondary);
-  font-size: 0.85rem;
-}
-
-.pv-puzzle-undocumented > svg {
-  flex: none;
-  margin-block-start: 0.15rem;
-  color: var(--text-muted);
 }
 
 .pv-puzzle-undocumented > div {
   display: grid;
-  gap: 0.1rem;
+  gap: 0.125rem;
 }
 
 .pv-puzzle-undocumented strong {
+  font-weight: 600;
   color: var(--text-primary);
 }
 
-/* ---------- Action row of a chapter ("Kapitel entfernen") ---------- */
+/* ---------- Action row of a chapter: research again, subscription, remove. Frameless text buttons; crimson only on hover and focus. ---------- */
 .pv-chapter-actions {
   display: flex;
-  align-items: center;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
-  gap: 0.5rem 0.75rem;
-  /* A fixed height: the row exists for every chapter, nothing below it moves */
-  min-block-size: 2rem;
+  gap: 0;
+  margin-inline-end: -0.75rem;
 }
 
 .pv-chapter-redo {
   display: flex;
-  align-items: center;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-inline-end: auto;
+  align-items: center;
+  gap: 0;
 }
 
-.pv-chapter-remove {
-  margin-inline-start: auto;
+/* ---------- Checkbox of the guide (done boxes in tables, puzzles, side quests): the project look, 20 px box in a 48 px target ---------- */
+.pv-check {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  margin: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  cursor: pointer;
+}
+
+.pv-check:checked {
+  background: var(--act);
+  border-color: var(--act);
+}
+
+.pv-check:checked::after {
+  content: '';
+  inline-size: 0.3125rem;
+  block-size: 0.625rem;
+  margin-block-start: -0.125rem;
+  border: solid var(--act-on);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.pv-check:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.pv-check-hit {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.3rem 0.65rem;
-  border-radius: var(--radius-md);
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  font-weight: 700;
+  justify-content: center;
+  inline-size: 3rem;
+  block-size: 3rem;
   cursor: pointer;
-  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
 }
 
-.pv-chapter-remove:hover:not(:disabled),
-.pv-chapter-remove:focus-visible {
-  color: var(--accent-crimson);
-  background: var(--accent-crimson-bg);
-  border-color: var(--accent-crimson-border);
+/* ---------- Checklist tables ---------- */
+.pv-table {
+  display: grid;
+  gap: 0.5rem;
+  min-inline-size: 0;
 }
 
-.pv-chapter-remove:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+.pv-table-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.125rem 0.75rem;
+}
+
+.pv-table-title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pv-table-count {
+  font-size: 0.9375rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Search and the two filters in one calm row, no card around them */
+.pv-table-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pv-table-filters .pv-table-search {
+  position: relative;
+  flex: 1 1 14rem;
+  min-inline-size: 0;
+}
+
+.pv-table-filters .pv-select {
+  max-inline-size: 100%;
+}
+
+.vault-table-wrapper {
+  overflow-x: auto;
+  max-inline-size: 100%;
+  container-type: inline-size;
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+}
+
+.vault-table-wrapper:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.vault-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 1rem;
+}
+
+.vault-table th,
+.vault-table td {
+  padding: 0.5rem 0.75rem;
+  text-align: start;
+  vertical-align: middle;
+  border-block-end: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.vault-table thead th {
+  padding-block: 0.625rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.vault-table tbody th {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.vault-table tbody tr:last-child > * {
+  border-block-end: 0;
+}
+
+.vault-table tbody tr:hover > * {
+  background: var(--bg-elevated);
+}
+
+.vault-table .pv-check-cell {
+  inline-size: 3.5rem;
+  padding: 0 0 0 0.25rem;
+}
+
+/* A done row is quiet: the text turns secondary and the name is struck through; the box stays as it is */
+.vault-table tbody tr.row-checked > :not(.pv-check-cell) {
+  color: var(--text-muted);
+}
+
+.vault-table tbody tr.row-checked > th {
+  text-decoration: line-through;
+}
+
+/* Narrow: every row becomes a block, each value with its column label; rows are told apart by the hairline */
+@container (width < 40.625rem) {
+  .vault-table,
+  .vault-table thead,
+  .vault-table tbody,
+  .vault-table tr,
+  .vault-table th,
+  .vault-table td {
+    display: block;
+  }
+
+  .vault-table thead {
+    display: none;
+  }
+
+  .vault-table tr {
+    padding-block: 0.5rem;
+    border-block-end: 1px solid var(--border-subtle);
+  }
+
+  .vault-table tbody tr:last-child {
+    border-block-end: 0;
+  }
+
+  .vault-table th,
+  .vault-table td {
+    padding-block: 0.125rem;
+    border-block-end: 0;
+  }
+
+  .vault-table tbody tr:hover > * {
+    background: transparent;
+  }
+
+  .vault-table td::before {
+    content: attr(data-label) ': ';
+    font-weight: 600;
+    color: var(--text-muted);
+    display: inline-block;
+    min-inline-size: 7.1875rem;
+  }
+
+  .vault-table td.pv-check-cell {
+    inline-size: auto;
+    padding: 0;
+  }
+
+  .vault-table td.pv-check-cell::before {
+    content: none;
+  }
+}
+
+/* ---------- Spoiler button: a quiet row, the badge tells what a click does ---------- */
+.pv-spoiler:hover {
+  background: var(--bg-elevated);
+}
+
+.pv-spoiler:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ---------- Failed chapter and the "research all again" note: the shared note look, the actions as text buttons ---------- */
+.pv-failed {
+  display: grid;
+  gap: 0.5rem;
+  max-inline-size: 60rem;
+}
+
+.pv-failed__title {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pv-failed__message {
+  margin: 0;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.pv-failed__hint {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+}
+
+.pv-failed__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0;
+  margin-inline: -0.75rem;
+}
+
+@media (max-width: 767px) {
+  .pv-puzzle {
+    padding-inline: 1.125rem 0.75rem;
+  }
 }

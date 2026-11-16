@@ -5,11 +5,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
   IconAlertTriangle,
-  IconBook,
   IconBook2,
-  IconChartBar,
   IconCheck,
-  IconClock,
   IconEye,
   IconFileExport,
   IconFileTypePdf,
@@ -19,9 +16,7 @@ import {
   IconLink,
   IconRefresh,
   IconSearch,
-  IconShieldCheck,
   IconSparkles,
-  IconTrophy,
   IconWand,
   IconX,
 } from '@tabler/icons-react'
@@ -46,7 +41,6 @@ import type { ManualChapterSeed, AiCompleteGuideResponse, AiJobDto, AiJobKind, A
 import { useFormat } from '../i18n/format'
 import { useGuideTranslation } from '../utils/useGuideTranslation'
 import type { UiLanguage } from '../i18n'
-import { AppFooter } from '../components/AppFooter'
 import { ScrollTopButton } from '../components/ScrollTopButton'
 import { useAiPicker } from '../components/ai/AiChoice'
 import { AiProgressNotice, AiProgressOverlay } from '../components/ai/AiProgress'
@@ -59,31 +53,37 @@ import { useAiProgress } from '../components/ai/useAiProgress'
 import { useAiStatus } from '../components/ai/useAiStatus'
 import { ErrorDetails } from '../components/ui/ErrorDetails'
 import { useConfirm } from '../components/ui/ConfirmDialog'
-import { CabinetToolGroup } from '../components/cabinet/CabinetToolGroup'
+import { GameHeadStatus } from '../components/GameHeadStatus'
 import { GameTrophyBar } from '../components/GameTrophyBar'
 import { PinsScope, usePinCount, type PinsFailure } from '../components/pins/pinsContext'
 import { PinsSurface } from '../components/pins/PinsSurface'
-import { ChapterDrawerButton, ChapterSidebar, DRAWER_QUERY } from '../components/gamenav/ChapterSidebar'
-import { tabDomId, type ChapterItem } from '../components/gamenav/ChapterTabs'
-import { SectionTabs, type SectionItem } from '../components/gamenav/SectionTabs'
+import {
+  LIVE_TROPHIES_TAB_SLUG,
+  LORE_TAB_SLUG,
+  STATS_TAB_SLUG,
+  guideChapters,
+  resolveGameTab,
+  slugToTabParam,
+  tabParamToSlug,
+} from '../components/shell/navModel'
+import { useOpenSettings, useShell } from '../components/shell/ShellContext'
 import { TwitchButton } from '../components/TwitchButton'
 import { GameStatsPanel } from '../components/GameStatsPanel'
+import { LorePanel } from '../components/lore/LorePanel'
 import { GuideBuilderDialog } from '../components/GuideBuilderDialog'
 import { SteamLinkDialog } from '../components/SteamLinkDialog'
 import { LiveTrackerPanel } from '../components/LiveTrackerPanel'
-import { HeaderUtilities } from '../components/HeaderUtilities'
 import { HintTour } from '../components/onboarding/HintTour'
 import { useScreenHints } from '../components/onboarding/useScreenHints'
 import { FloatingNotice, FloatingNoticeStack } from '../components/ui/FloatingNotice'
 import { ReservedText } from '../components/ui/ReservedText'
 import { iconButtonClass, IconButton } from '../components/ui/IconButton'
-import { Switch } from '../components/ui/Switch'
 import { Tooltip } from '../components/ui/Tooltip'
-import { UiScaleControl } from '../components/ui/UiScaleControl'
 import { PlayButton } from '../components/launch/PlayButton'
 import { AchievementLookupProvider } from '../components/guide/achievements'
 import { BossCard } from '../components/guide/BossCard'
 import { ChapterBody } from '../components/guide/ChapterBody'
+import { ChapterHead } from '../components/guide/ChapterHead'
 import { GuideHeading, HintAlert, StepsStory, isGuideAlertKind } from '../components/guide/GuideBlocks'
 import { OverviewBlock } from '../components/guide/OverviewBlock'
 import { ItemLinkContext, RowLinks, useItemLinks } from '../components/guide/ItemLinks'
@@ -98,33 +98,11 @@ import { RemoveChapterBar } from '../components/guide/RemoveChapterBar'
 import { useConfirmRedoChapter } from '../components/guide/useRedoChapter'
 import { useRemoveChapter } from '../components/guide/useRemoveChapter'
 import { PuzzleScopeContext } from '../components/guide/puzzleState'
-import { OnboardingTour } from '../components/onboarding/OnboardingTour'
-import { useOnboardingTour } from '../components/onboarding/useOnboardingTour'
-import { SettingsModal, type SettingsTab } from '../components/SettingsModal'
 import { describeError } from '../utils/apiErrorText'
 import { errorCodeOf } from '../utils/errorReport'
-import { useAchievementNotes } from '../utils/useAchievementNotes'
-import { useMediaQuery } from '../utils/useMediaQuery'
-import { useStickyHeaderHeight } from '../utils/useStickyHeaderHeight'
 
-interface GameGuidePageProps {
-  theme: string
-  onToggleTheme: () => void
-}
-
-// Remembered per browser: the side nav collapsed to numbers
-const NAV_COLLAPSED_KEY = 'pv_game_nav_collapsed_v1'
-
-const LIVE_TROPHIES_TAB_SLUG = '__live_steam_trophies__'
-const STATS_TAB_SLUG = '__steam_stats__'
-// Slug of the optional Story & Lore tab created by POST /api/games/{slug}/ai-lore
-const LORE_TAB_SLUG = 'story-lore'
-
-// The active tab lives in the URL (?tab=...), so a link or a reload lands on the same chapter / section. The sections have
-// short names there; a chapter uses its own slug.
-const TAB_PARAM_TO_SLUG: Record<string, string> = { live: LIVE_TROPHIES_TAB_SLUG, stats: STATS_TAB_SLUG, story: LORE_TAB_SLUG }
-const slugToTabParam = (slug: string) =>
-  slug === LIVE_TROPHIES_TAB_SLUG ? 'live' : slug === STATS_TAB_SLUG ? 'stats' : slug === LORE_TAB_SLUG ? 'story' : slug
+// The active tab lives in the URL (?tab=...), so a link (the tree navigation of the shell) or a reload lands on the same chapter /
+// area; the rule which tab a URL means is shared with the tree (components/shell/navModel.ts).
 
 // The language the guide content is written in (GameDetailDto.contentLanguage); anything unknown counts as "not known" = no hint
 function contentLanguageOf(game: GameDetailDto): UiLanguage | null {
@@ -146,7 +124,7 @@ interface PageNotice {
 }
 
 // Dedicated 100% Master Companion Page for a single selected game in the harmonious 100-Prozent Pastel design.
-export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
+export function GameGuidePage() {
   const { t } = useTranslation(['game', 'common', 'ai'])
   const { language } = useFormat()
   const { slug = '' } = useParams()
@@ -166,16 +144,13 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
   const { data: aiStatus } = useAiStatus()
   const aiNotice = useAiSwitchNotice()
   const aiWho = useAiWhoText()
-  const isDrawer = useMediaQuery(DRAWER_QUERY)
 
   const [searchParams, setSearchParams] = useSearchParams()
-  const [activeTabSlug, setActiveTabSlug] = useState<string>(() => {
-    const param = searchParams.get('tab')
-    return param ? (TAB_PARAM_TO_SLUG[param] ?? param) : ''
-  })
-  // Every tab change (chapter bar, section tabs, buttons) goes through here and is written to the URL without a history entry
+  // The tab named in the URL (resolved against the guide further down, once it is loaded)
+  const requestedTab = tabParamToSlug(searchParams.get('tab'))
+  // Every tab change from inside the page (buttons, links between chapters) goes through here and is written to the URL without a
+  // history entry; the tree navigation of the shell links to the same URLs
   const selectTab = (slug: string) => {
-    setActiveTabSlug(slug)
     setSearchParams(
       (previous) => {
         const next = new URLSearchParams(previous)
@@ -198,7 +173,7 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
     row.classList.add('pv-row-flash')
     // No cleanup on purpose: the pending reference is cleared above, which would cancel the timer that takes the highlight away again
     window.setTimeout(() => row.classList.remove('pv-row-flash'), 2400)
-  }, [pendingRowRef, activeTabSlug])
+  }, [pendingRowRef, requestedTab])
   useEffect(() => {
     if (!pendingAnchorId) return
     const heading = document.getElementById(pendingAnchorId)
@@ -209,28 +184,9 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
     heading.focus({ preventScroll: true })
     heading.classList.add('pv-anchor-flash')
     window.setTimeout(() => heading.classList.remove('pv-anchor-flash'), 2400)
-  }, [pendingAnchorId, activeTabSlug])
-  const headerRef = useStickyHeaderHeight<HTMLElement>()
-  const [coverFailed, setCoverFailed] = useState(false)
-  const [navCollapsed, setNavCollapsed] = useState(() => {
-    try {
-      return localStorage.getItem(NAV_COLLAPSED_KEY) === '1'
-    } catch {
-      return false
-    }
-  })
-  const toggleNavCollapsed = () =>
-    setNavCollapsed((previous) => {
-      try {
-        localStorage.setItem(NAV_COLLAPSED_KEY, previous ? '0' : '1')
-      } catch {
-        // Storage unavailable (private mode): the choice holds for this visit only
-      }
-      return !previous
-    })
-  // Phone: the chapter drawer
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const closeDrawer = useCallback(() => setDrawerOpen(false), [])
+  }, [pendingAnchorId, requestedTab])
+  // Cover images that failed to load: the next candidate is tried before the logo is shown
+  const [failedCovers, setFailedCovers] = useState<string[]>([])
 
   // AI Expand Tab Modal state
   const [expandOpen, setExpandOpen] = useState(false)
@@ -258,18 +214,11 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
   const [manual, setManual] = useState<{ chapter?: ManualChapterSeed; chapters?: ManualChapterSeed[] } | null>(null)
   // The AI chosen when the builder was opened (mode "ask"); undefined = the settings decide
   const [builderProvider, setBuilderProvider] = useState<string | undefined>(undefined)
-  // Onboarding tour ("?" button in the header); its last step can open the settings right here
-  const tour = useOnboardingTour()
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [settingsTab, setSettingsTab] = useState<SettingsTab | undefined>(undefined)
+  // The one onboarding tour lives in the shell; the settings are a page of the shell (/settings?tab=...)
+  const shell = useShell()
+  const openSettings = useOpenSettings()
   // Coach marks of this page: the first time it is seen (and while no intro / dialog is up), and on "?" any time
-  const hints = useScreenHints('game', tour.open || settingsOpen || expandOpen || steamLinkOpen || builderOpen || manual !== null)
-  // "Restart the introduction" in the settings closes the settings first, then the tour opens
-  useEffect(() => {
-    const close = () => setSettingsOpen(false)
-    window.addEventListener('pv-start-tour', close)
-    return () => window.removeEventListener('pv-start-tour', close)
-  }, [])
+  const hints = useScreenHints('game', shell.tourOpen || expandOpen || steamLinkOpen || builderOpen || manual !== null)
 
   const {
     data: game,
@@ -305,8 +254,6 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
     if (translation.aiNotice) showAiNotice(translation.aiNotice)
   }, [translation.aiNotice, showAiNotice])
 
-  // Personal notes on achievements can be switched off in the settings (then the tab's description does not mention them)
-  const { enabled: notesEnabled } = useAchievementNotes()
   const hasGuide = Boolean(game)
   const failedChapters = failedChapterTabs(game)
   const showLiveTrophiesTab = Boolean(game?.steamAppId)
@@ -315,14 +262,16 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
   const loreTab = game?.tabs.find((t) => t.slug === LORE_TAB_SLUG)
   // Guide chapters without the lore tab (own nav entry) and without the Steam achievement
   // list: Steam reports those unlocks itself, the list only feeds the tips of the live trophies tab
-  const guideTabs = game ? game.tabs.filter((t) => t.slug !== LORE_TAB_SLUG && !t.isAchievementList) : []
+  const guideTabs = guideChapters(game)
+  // The tab that is shown: the one in the URL when it exists, else the first chapter (else live trophies, statistics)
+  const activeTabSlug = resolveGameTab(game, requestedTab)
 
   // Trophy progress for the header and the "Im Blick" cards, straight from Steam (same query as the live trophies tab, so no extra requests).
   // Faster (3 s) only while THIS game runs and has pinned achievements, so a pinned counter moves on every tab; otherwise the calm 15 s.
   // (The live tab brings its own faster pace while it is open.)
   const pinCount = usePinCount(game?.steamAppId)
   const { data: liveStatus } = useQuery({ queryKey: ['live-status'], queryFn: fetchLiveStatus, refetchInterval: 4000 })
-  const { data: liveTrophies } = useQuery({
+  const { data: liveTrophies, refetch: refetchLiveTrophies, isFetching: liveTrophiesFetching } = useQuery({
     queryKey: ['live-achievements', game?.steamAppId ?? 'auto'],
     queryFn: () => fetchLiveAchievements(game?.steamAppId ?? undefined),
     enabled: Boolean(game?.steamAppId),
@@ -330,22 +279,9 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
   })
 
   useEffect(() => {
-    setCoverFailed(false)
+    setFailedCovers([])
   }, [slug])
 
-  useEffect(() => {
-    if (!game) return
-    const onVirtualTab =
-      (activeTabSlug === LIVE_TROPHIES_TAB_SLUG && showLiveTrophiesTab) ||
-      (activeTabSlug === STATS_TAB_SLUG && showStatsTab) ||
-      activeTabSlug === LORE_TAB_SLUG
-    if (onVirtualTab) return
-    if (!guideTabs.some((t) => t.slug === activeTabSlug)) {
-      setActiveTabSlug(
-        guideTabs[0]?.slug ?? (showLiveTrophiesTab ? LIVE_TROPHIES_TAB_SLUG : showStatsTab ? STATS_TAB_SLUG : '')
-      )
-    }
-  }, [game, activeTabSlug, hasGuide, showLiveTrophiesTab, showStatsTab])
 
   // Spoiler gate of the lore tab: revealed per game, optionally remembered in this browser
   const spoilerKey = `pv_lore_revealed_${slug}`
@@ -764,222 +700,86 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
         },
       }
     : null
+  // The wide Steam header image of the game head (the live data brings it), else the guide's own cover
+  const headCover = [liveTrophies?.game.headerImage, game.coverUrl].find((url): url is string => Boolean(url) && !failedCovers.includes(url as string))
   const guideContentLanguage = contentLanguageOf(game)
   // The answer holds the translated guide (its texts are in the UI language, not in the language it was written in)
   const isTranslatedView = guideContentLanguage !== null && game.language === language && game.language !== guideContentLanguage
   const onLiveOrStats =
     (activeTabSlug === LIVE_TROPHIES_TAB_SLUG && showLiveTrophiesTab) || (activeTabSlug === STATS_TAB_SLUG && showStatsTab)
 
-  // The two navigation levels: the guide chapters (side nav) and the sections next to the guide (trophy bar, right side)
-  const chapterItems: ChapterItem[] = guideTabs.map((tab) => ({
-    slug: tab.slug,
-    title: tab.title.replace(/^\d+\.\s*/, ''),
-    checked: tab.checkedItemsCount,
-    total: tab.totalCheckableItems,
-    groupKey: tab.groupKey ?? null,
-  }))
-  const sectionItems: SectionItem[] = [
-    ...(showLiveTrophiesTab
-      ? [
-          {
-            slug: LIVE_TROPHIES_TAB_SLUG,
-            label: t('sections.live.label'),
-            fullLabel: t('sections.live.fullLabel'),
-            description: notesEnabled ? t('sections.live.descriptionWithNotes') : t('sections.live.description'),
-            icon: <IconTrophy size={16} aria-hidden="true" />,
-            tone: 'gold' as const,
-            hint: 'game-live',
-          },
-        ]
-      : []),
-    ...(showStatsTab
-      ? [
-          {
-            slug: STATS_TAB_SLUG,
-            label: t('sections.stats.label'),
-            fullLabel: t('sections.stats.fullLabel'),
-            description: t('sections.stats.description'),
-            icon: <IconChartBar size={16} aria-hidden="true" />,
-            tone: 'crystal' as const,
-          },
-        ]
-      : []),
-    {
-      slug: LORE_TAB_SLUG,
-      label: t('sections.lore.label'),
-      fullLabel: t('sections.lore.fullLabel'),
-      description: t('sections.lore.description'),
-      icon: <IconBook size={16} aria-hidden="true" />,
-      tone: 'purple',
-    },
-  ]
-  // Exactly one of the two (side nav, trophy bar) shows an active tab
-  const activeChapterSlug = guideTabs.some((t) => t.slug === activeTabSlug) ? activeTabSlug : null
-  const activeSectionSlug = sectionItems.some((item) => item.slug === activeTabSlug) ? activeTabSlug : null
-
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Sticky Top Header (100% Guide Style) */}
-      <header ref={headerRef} className="top-header no-print">
-        <div className="pv-hbar pv-hbar--game">
-          {/* Brand: way home, cover, title and subtitle */}
-          <div className="pv-hbrand">
-            <Tooltip label={t('header.home.label')} description={t('header.home.description')}>
-              <Link to="/" aria-label={t('header.home.label')} className={iconButtonClass('primary')}>
-                <IconHome size={18} />
-              </Link>
-            </Tooltip>
-
-            {game.coverUrl && !coverFailed ? (
-              <img
-                src={game.coverUrl}
-                alt={game.title}
-                onError={() => setCoverFailed(true)}
-                className="hidden h-10 w-7 shrink-0 rounded-md object-cover sm:block"
-                style={{ border: '1px solid var(--border-subtle)' }}
-              />
-            ) : (
-              <img
-                src="/favicon.svg"
-                alt={t('header.coverAlt')}
-                className="hidden h-10 w-10 shrink-0 rounded-lg sm:block"
-              />
-            )}
-
-            <div className="min-w-0">
-              <h1
-                className="truncate text-base font-extrabold leading-tight tracking-tight sm:text-lg"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {game.title}
-                <span className="hidden xl:inline"> — {t('header.titleSuffix')}</span>
-              </h1>
-              {game.subtitle && (
-                <p className="hidden truncate text-xs font-medium sm:block" style={{ color: 'var(--text-muted)' }}>
-                  {game.subtitle}
-                </p>
-              )}
-            </div>
-
-            {/* Play: pinned to the end of the brand area, right before the tools - always the same place. It exists only while the
-                game can be started (bridge connected or Steam on this PC, and the game has a Steam link), so nothing else moves */}
-            <span className="pv-hplay">
-              <PlayButton variant="button" target={{ kind: 'game', slug: game.slug }} gameName={game.title} unavailable={!game.steamAppId} showRunning steamAppId={game.steamAppId} />
-            </span>
-          </div>
-
-          {/* Tools: guide tools | view and export | cabinet (the trophy progress lives in the compact bar below the header) */}
-          <div className="pv-htools">
-            {hasGuide && (
-              <>
-                <div className="pv-hgroup" role="toolbar" aria-label={t('header.extendGroup')}>
-                  <IconButton
-                    tone="emerald"
-                    label={t('header.complete.label')}
-                    description={[t('header.complete.description'), aiWho].filter(Boolean).join(' ')}
-                    busy={completing}
-                    onClick={() => (guideTabs.length === 0 && !noAiKey ? void handleCompleteGuide() : void openBuilder())}
-                  >
-                    <IconWand size={18} />
-                  </IconButton>
-
-                  <IconButton
-                    label={t('header.addTab.label')}
-                    description={[t('header.addTab.description'), aiWho].filter(Boolean).join(' ')}
-                    onClick={() => setExpandOpen(true)}
-                  >
-                    <IconSparkles size={18} />
-                  </IconButton>
-                </div>
-                <span className="pv-hdivider" aria-hidden="true" />
-              </>
-            )}
-
-            <div className="pv-hgroup" role="toolbar" aria-label={t('header.viewGroup')}>
-              {hasGuide && (
-                <Tooltip label={t('header.export.label')} description={t('header.export.description')}>
-                  <a
-                    href={gameExportUrl(game.slug)}
-                    download
-                    aria-label={t('header.export.label')}
-                    className={iconButtonClass()}
-                  >
-                    <IconFileExport size={18} />
-                  </a>
-                </Tooltip>
-              )}
-
-              {/* Who streams this game right now? Renders nothing while the Twitch switch in the settings is off */}
-              <span data-hint="game-twitch" className="inline-flex empty:hidden">
-                <TwitchButton name={game.title} />
-              </span>
-
-              <IconButton
-                tone="primary"
-                label={t('header.print.label')}
-                description={t('header.print.description')}
-                onClick={() => window.print()}
-              >
-                <IconFileTypePdf size={18} />
-              </IconButton>
-
-              {hasGuide && (
-                <IconButton
-                  label={t('header.reset.label')}
-                  description={t('header.reset.description')}
-                  onClick={() => void handleResetProgress()}
-                >
-                  <IconRefresh size={18} />
-                </IconButton>
-              )}
-            </div>
-
-            <CabinetToolGroup />
-
-            <span className="pv-hdivider" aria-hidden="true" />
-            <UiScaleControl />
-          </div>
-
-          {/* Utilities: the same four, in the same place, on every page */}
-          <HeaderUtilities theme={theme} onToggleTheme={onToggleTheme} onOpenSettings={(tab) => { setSettingsTab(tab); setSettingsOpen(true) }} onShowHints={hints.show} />
+    <div className="pv-game flex flex-col">
+      {/* Game head: cover, title, subtitle, Play - and one calm action row with the page's tools (they lived in the page header before) */}
+      <div className="pv-game-head no-print">
+        {headCover ? (
+          <img src={headCover} alt="" onError={() => setFailedCovers((list) => [...list, headCover])} className="pv-game-cover" />
+        ) : (
+          <img src="/favicon.svg" alt="" className="pv-game-cover pv-game-cover--logo" />
+        )}
+        <div className="pv-game-titles">
+          <h1 className="pv-page-title">{game.title}</h1>
+          {game.steamAppId ? <GameHeadStatus data={liveTrophies} /> : null}
+          {game.subtitle && <p className="pv-page-sub">{game.subtitle}</p>}
         </div>
-      </header>
+        {/* Play: exists only while the game can be started (bridge connected or Steam on this PC, and a Steam link); "running" in its place */}
+        <span className="pv-game-play">
+          <PlayButton variant="button" target={{ kind: 'game', slug: game.slug }} gameName={game.title} unavailable={!game.steamAppId} showRunning steamAppId={game.steamAppId} />
+        </span>
+        <div className="pv-game-actions" role="toolbar" aria-label={t('header.viewGroup')}>
+          {hasGuide && (
+            <>
+              <IconButton
+                tone="emerald"
+                label={t('header.complete.label')}
+                description={[t('header.complete.description'), aiWho].filter(Boolean).join(' ')}
+                busy={completing}
+                onClick={() => (guideTabs.length === 0 && !noAiKey ? void handleCompleteGuide() : void openBuilder())}
+              >
+                <IconWand size={20} />
+              </IconButton>
+              <IconButton
+                label={t('header.addTab.label')}
+                description={[t('header.addTab.description'), aiWho].filter(Boolean).join(' ')}
+                onClick={() => setExpandOpen(true)}
+              >
+                <IconSparkles size={20} />
+              </IconButton>
+              <Tooltip label={t('header.export.label')} description={t('header.export.description')}>
+                <a href={gameExportUrl(game.slug)} download aria-label={t('header.export.label')} className={iconButtonClass()}>
+                  <IconFileExport size={20} />
+                </a>
+              </Tooltip>
+            </>
+          )}
+          {/* Who streams this game right now? Renders nothing while the Twitch switch in the settings is off */}
+          <span data-hint="game-twitch" className="inline-flex empty:hidden">
+            <TwitchButton name={game.title} />
+          </span>
+          <IconButton tone="primary" label={t('header.print.label')} description={t('header.print.description')} onClick={() => window.print()}>
+            <IconFileTypePdf size={20} />
+          </IconButton>
+          {hasGuide && (
+            <IconButton label={t('header.reset.label')} description={t('header.reset.description')} onClick={() => void handleResetProgress()}>
+              <IconRefresh size={20} />
+            </IconButton>
+          )}
+        </div>
+      </div>
 
-      {/* The trophy bar (sections right, the "Kapitel" button on a phone) spans the window; below it the chapter side nav and the content */}
       <PinsScope appId={game.steamAppId} onError={showPinFailure}>
       <div className="app-shell">
-        <GameTrophyBar
-          data={liveTrophies}
-          hasSteam={Boolean(game.steamAppId)}
-          sections={<SectionTabs items={sectionItems} activeSlug={activeSectionSlug} onSelect={selectTab} />}
-          chaptersButton={isDrawer && chapterItems.length > 0 ? <ChapterDrawerButton expanded={drawerOpen} onClick={() => setDrawerOpen(true)} /> : undefined}
-        />
+        {/* Trophy progress and tiers of this game (the areas and chapters are entries of the tree navigation) */}
+        <GameTrophyBar data={liveTrophies} hasSteam={Boolean(game.steamAppId)} onRefresh={() => void refetchLiveTrophies()} refreshing={liveTrophiesFetching} />
 
         <div className="pv-gbody">
-        <ChapterSidebar
-          chapters={chapterItems}
-          activeSlug={activeChapterSlug}
-          onSelect={selectTab}
-          drawer={isDrawer}
-          drawerOpen={drawerOpen}
-          onDrawerClose={closeDrawer}
-          collapsed={navCollapsed}
-          onToggleCollapsed={toggleNavCollapsed}
-        />
-
-        {/* Content next to the navigation */}
+        {/* Content */}
         <div className="content-column flex min-w-0 flex-1 flex-col self-stretch">
-        {/* Active Tab Content */}
         <AchievementLookupProvider achievements={liveTrophies?.achievements}>
         <ItemLinkContext.Provider value={itemLinkApi}>
         <SideQuestTargetContext.Provider value={sideQuestTarget}>
         <PuzzleScopeContext.Provider value={game.slug}>
-        <main
-          id="pv-game-panel"
-          role="tabpanel"
-          aria-labelledby={activeTabSlug ? tabDomId(activeTabSlug) : undefined}
-          className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 space-y-6"
-        >
+        <div id="pv-game-panel" className="flex-1 min-w-0 pt-6 space-y-6">
           {!game.steamAppId && (
             <div className="pv-alert pv-alert-crystal flex flex-wrap items-center justify-between gap-3 no-print">
               <span className="text-sm">
@@ -1018,8 +818,9 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
               busy={loreBusy}
               onReveal={revealLore}
               onResearch={(oneOff) => void handleResearchLore(oneOff)}
-              checkedSet={checkedSet}
-              onToggleCheck={handleToggleCheck}
+              renderSection={(section, position) => (
+                <SectionRenderer position={position} section={section} checkedSet={checkedSet} onToggleCheck={handleToggleCheck} spoilersOpen />
+              )}
             />
           ) : hasGuide && guideTabs.length === 0 ? (
             <div className="pv-card flex flex-col items-center gap-3 py-14 text-center">
@@ -1037,81 +838,29 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
               {/* Several chapters whose research failed: research them all again, once at the top of the guide */}
               {failedChapters.length >= 2 && <RetryAllBanner count={failedChapters.length} busy={retrying} onRetryAll={(oneOff) => void handleRetryChapters(null, oneOff)} onManual={() => setManual({ chapters: failedChapterSeeds(game) })} />}
 
-              {/* Hero Card on Tab 1 (Exact 100% Guide Look) */}
-              {activeTab && activeTab.id === guideTabs[0]?.id && (
-                <div className="hero-card">
-                  {/* The buttons wrap below the text when the row is too narrow (rem basis: follows the UI size, unlike the md breakpoint alone) */}
-                  <div className="flex flex-col md:flex-row md:flex-wrap md:items-center justify-between gap-4">
-                    <div className="min-w-0 space-y-2 max-w-4xl md:flex-[1_1_24rem]">
-                      <div
-                        className="text-xs font-extrabold uppercase tracking-wider"
-                        style={{ color: 'var(--accent-emerald)' }}
-                      >
-                        {game.genreTags}
-                      </div>
-                      <h2
-                        className="text-xl sm:text-2xl font-black"
-                        style={{ color: 'var(--text-primary)' }}
-                      >
-                        {t('hero.title', { title: game.title })}
-                      </h2>
-                      <p
-                        className="text-xs sm:text-sm leading-relaxed"
-                        style={{ color: 'var(--text-secondary)' }}
-                      >
-                        {game.subtitle}
-                      </p>
-                      <div className="flex flex-wrap gap-2.5 pt-2">
-                        {game.missablesInfo && (
-                          <span className="stat-pill safe">
-                            <IconShieldCheck size={15} />
-                            {game.missablesInfo}
-                          </span>
-                        )}
-                        {game.estimatedHours && (
-                          <span className="stat-pill crystal">
-                            <IconClock size={15} />
-                            {game.estimatedHours}
-                          </span>
-                        )}
-                        {game.difficultyInfo && (
-                          <span className="stat-pill gold">
-                            <IconTrophy size={15} />
-                            {game.difficultyInfo}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-2 shrink-0 no-print">
-                      {showLiveTrophiesTab && (
-                        <button
-                          type="button"
-                          onClick={() => selectTab(LIVE_TROPHIES_TAB_SLUG)}
-                          className="pv-btn pv-btn-gold"
-                        >
-                          <IconTrophy size={16} />
-                          <span>{t('hero.openLive')}</span>
-                        </button>
-                      )}
-                      <Link to="/" className="pv-btn">
-                        <IconHome size={16} />
-                        <span>{t('hero.backToOverview')}</span>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* The chapter's own action row. A failed-research placeholder has its own button inside its block (same question, same flow) */}
-              {activeTab && !activeTab.sections.some((section) => section.failedChapter) && (
-                <RemoveChapterBar
-                  disabled={removingChapter || completing || retrying || loreBusy || redoing}
-                  onRemove={() => void handleRemoveChapter(activeTab, false)}
-                  onRedo={(oneOff) => void handleRedoChapter(activeTab, oneOff)}
-                  onRedoManual={() => void handleRedoChapterManual(activeTab)}
-                  redoBusy={redoing}
-                />
+              {/* The head of the chapter: context line, title and the chapter's own actions (the facts of the guide sit under the first chapter's title).
+                  A failed-research placeholder has its own buttons inside its block (same question, same flow). */}
+              {activeTab && (
+                <ChapterHead
+                  gameTitle={game.title}
+                  groupKey={activeTab.groupKey}
+                  title={activeTab.title}
+                  facts={
+                    activeTab.id === guideTabs[0]?.id
+                      ? { genre: game.genreTags, missables: game.missablesInfo, hours: game.estimatedHours, difficulty: game.difficultyInfo }
+                      : undefined
+                  }
+                >
+                  {!activeTab.sections.some((section) => section.failedChapter) && (
+                    <RemoveChapterBar
+                      disabled={removingChapter || completing || retrying || loreBusy || redoing}
+                      onRemove={() => void handleRemoveChapter(activeTab, false)}
+                      onRedo={(oneOff) => void handleRedoChapter(activeTab, oneOff)}
+                      onRedoManual={() => void handleRedoChapterManual(activeTab)}
+                      redoBusy={redoing}
+                    />
+                  )}
+                </ChapterHead>
               )}
 
               {/* Render all Sections of the active Tab: a chapter with a failed-research placeholder keeps the plain list, every other chapter gets its
@@ -1160,7 +909,7 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
               )}
             </>
           )}
-        </main>
+        </div>
         </PuzzleScopeContext.Provider>
         </SideQuestTargetContext.Provider>
         </ItemLinkContext.Provider>
@@ -1174,9 +923,7 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
       </div>
       </PinsScope>
 
-      {/* The version, credit, copyright and licences are in the info card at the foot of the side navigation (gamenav/NavInfo.tsx). Only a game
-          without chapters has no navigation: then the page-end footer carries them (it brings its own "back to top" button) */}
-      {chapterItems.length > 0 ? <ScrollTopButton /> : <AppFooter />}
+      <ScrollTopButton />
 
       {/* Overlays over the page (never part of the layout): a running job, a result, a failure */}
       <FloatingNoticeStack>
@@ -1203,10 +950,7 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
             actions={[
               {
                 label: t('notice.aiSettings'),
-                onClick: () => {
-                  setSettingsTab('ki')
-                  setSettingsOpen(true)
-                },
+                onClick: () => openSettings('ki'),
               },
               { label: t('translate.retry'), onClick: translation.retry },
             ]}
@@ -1254,8 +998,7 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
                       label: t('notice.aiSettings'),
                       onClick: () => {
                         setActionError(null)
-                        setSettingsTab('ki')
-                        setSettingsOpen(true)
+                        openSettings('ki')
                       },
                     },
                   ]
@@ -1272,31 +1015,7 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
         onClose={hints.close}
         onShowIntro={() => {
           hints.close()
-          tour.start()
-        }}
-      />
-
-      <OnboardingTour
-        open={tour.open}
-        paused={settingsOpen}
-        onClose={tour.finish}
-        onOpenSettings={(tab) => {
-          setSettingsTab(tab)
-          setSettingsOpen(true)
-        }}
-      />
-
-      <SettingsModal
-        open={settingsOpen}
-        initialTab={settingsTab}
-        onClose={() => {
-          setSettingsOpen(false)
-          setSettingsTab(undefined)
-        }}
-        onSaved={() => {
-          void queryClient.invalidateQueries({ queryKey: ['settings'] })
-          void queryClient.invalidateQueries({ queryKey: ['live-status'] })
-          void queryClient.invalidateQueries({ queryKey: ['live-achievements'] })
+          shell.startTour()
         }}
       />
 
@@ -1341,7 +1060,7 @@ export function GameGuidePage({ theme, onToggleTheme }: GameGuidePageProps) {
             queryClient.setQueryData(['game', slug], updated)
             void queryClient.invalidateQueries({ queryKey: ['games'] })
             setSteamLinkOpen(false)
-            setCoverFailed(false)
+            setFailedCovers([])
             setActionInfo({ title: t('notice.steamLinked.title'), message: t('notice.steamLinked.message') })
           }}
         />
@@ -1490,101 +1209,6 @@ interface SectionRendererProps {
   position?: string
 }
 
-// Optional Story & Lore tab: research button when empty, one spoiler gate for the whole tab, then the sections.
-function LorePanel({
-  tab,
-  revealed,
-  busy,
-  onReveal,
-  onResearch,
-  checkedSet,
-  onToggleCheck,
-}: {
-  tab: GuideTabDto | undefined
-  revealed: boolean
-  busy: boolean
-  onReveal: (remember: boolean) => void
-  onResearch: (oneOff?: string) => void
-  checkedSet: Set<string>
-  onToggleCheck: (itemKey: string, checked: boolean) => Promise<void>
-}) {
-  const { t } = useTranslation('game')
-  const [remember, setRemember] = useState(false)
-  // The AI picked for this one research ("Mit Claude"); the setting itself stays as it is
-  const [oneOff, setOneOff] = useState<AiProviderId | undefined>(undefined)
-
-  if (!tab) {
-    return (
-      <div className="pv-card flex flex-col items-center gap-3 py-14 text-center">
-        <IconBook size={36} style={{ color: 'var(--accent-crimson)' }} />
-        <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-          {t('lore.none')}
-        </p>
-        <p className="max-w-xl text-xs" style={{ color: 'var(--text-secondary)' }}>
-          {t('lore.noneHint')}
-        </p>
-        <AiRunButton
-          tone="pv-btn-emerald"
-          busy={busy}
-          oneOff={oneOff}
-          onOneOffChange={setOneOff}
-          onClick={() => onResearch(oneOff)}
-          icon={<IconSparkles size={15} />}
-          label={<span>{t('lore.research')}</span>}
-        />
-      </div>
-    )
-  }
-
-  if (!revealed) {
-    return (
-      <div className="pv-card flex flex-col items-center gap-3 py-14 text-center">
-        <IconAlertTriangle size={36} style={{ color: 'var(--accent-gold)' }} />
-        <p className="text-base font-extrabold" style={{ color: 'var(--text-primary)' }}>
-          {t('lore.gateTitle')}
-        </p>
-        <p className="max-w-xl text-sm" style={{ color: 'var(--text-secondary)' }}>
-          {t('lore.gateText')}
-        </p>
-        <Switch checked={remember} onChange={setRemember} className="flex items-center gap-2.5 text-xs font-semibold text-[color:var(--text-secondary)]">
-          {t('lore.remember')}
-        </Switch>
-        <button type="button" onClick={() => onReveal(remember)} className="pv-btn pv-btn-gold">
-          <IconEye size={15} />
-          <span>{t('lore.reveal')}</span>
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-end no-print">
-        <Tooltip label={t('lore.redo.label')} description={t('lore.redo.description')}>
-          <AiRunButton
-            busy={busy}
-            oneOff={oneOff}
-            onOneOffChange={setOneOff}
-            onClick={() => onResearch(oneOff)}
-            icon={<IconRefresh size={15} />}
-            label={<span>{t('lore.redo.button')}</span>}
-          />
-        </Tooltip>
-      </div>
-      {tab.sections.map((section, idx) => (
-        <SectionRenderer
-          key={`${tab.id}-lore-${idx}`}
-          position={`${tab.id}:${idx}`}
-          section={section}
-          checkedSet={checkedSet}
-          onToggleCheck={onToggleCheck}
-          spoilersOpen
-        />
-      ))}
-    </div>
-  )
-}
-
 function SectionRenderer(props: SectionRendererProps) {
   // Spoiler sections outside the lore tab stay collapsed until opened one by one
   if (props.section.spoiler && !props.spoilersOpen) {
@@ -1598,16 +1222,12 @@ function SpoilerSection(props: SectionRendererProps) {
   const [open, setOpen] = useState(false)
   if (open) return <SectionContent {...props} />
   return (
-    <button
-      type="button"
-      onClick={() => setOpen(true)}
-      className="pv-card flex w-full items-center justify-between gap-3 text-left cursor-pointer"
-    >
-      <span className="text-sm font-extrabold" style={{ color: 'var(--text-primary)' }}>
+    <button type="button" onClick={() => setOpen(true)} className="pv-card pv-spoiler flex w-full cursor-pointer items-center justify-between gap-3 text-start">
+      <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
         {props.section.title || t('spoilerSection.fallbackTitle')}
       </span>
       <span className="pv-badge pv-badge-b inline-flex items-center gap-1">
-        <IconEye size={13} /> {t('spoilerSection.show')}
+        <IconEye size={14} /> {t('spoilerSection.show')}
       </span>
     </button>
   )
@@ -1647,12 +1267,12 @@ function SectionContent({ section, checkedSet, onToggleCheck, position }: Sectio
     return (
       <article className="pv-card space-y-3">
         {section.title && (
-          <h3 className="text-base font-extrabold" style={{ color: 'var(--text-primary)' }}>
+          <h3 className="text-[1.0625rem] font-semibold" style={{ color: 'var(--text-primary)' }}>
             {section.title}
           </h3>
         )}
         {paragraphs.map((paragraph, i) => (
-          <p key={i} className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+          <p key={i} className="leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
             {paragraph}
           </p>
         ))}
@@ -1661,52 +1281,20 @@ function SectionContent({ section, checkedSet, onToggleCheck, position }: Sectio
   }
 
   if (section.type === 'alert') {
-    const variantClass =
-      section.variant === 'gold'
-        ? 'pv-alert-gold'
-        : section.variant === 'danger'
-          ? 'pv-alert-danger'
-          : section.variant === 'emerald'
-            ? 'pv-alert-emerald'
-            : 'pv-alert-crystal'
-
-    const iconColor =
-      section.variant === 'gold'
-        ? 'var(--accent-gold)'
-        : section.variant === 'danger'
-          ? 'var(--accent-crimson)'
-          : section.variant === 'emerald'
-            ? 'var(--accent-emerald)'
-            : 'var(--accent-crystal)'
-
+    // A plain alert is the same quiet hint block as the typed hints: text with a thin straight line, the title as its label
+    const variant = section.variant === 'gold' || section.variant === 'danger' || section.variant === 'emerald' || section.variant === 'purple' ? section.variant : 'crystal'
     return (
-      <div className={`pv-alert ${variantClass}`}>
-        <div className="shrink-0 mt-0.5" style={{ color: iconColor }}>
-          {section.variant === 'danger' ? (
-            <IconAlertTriangle size={22} />
-          ) : (
-            <IconInfoCircle size={22} />
-          )}
-        </div>
-        <div className="space-y-1">
-          {section.title && (
-            <div
-              className="font-extrabold text-sm sm:text-base"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              {section.title}
-            </div>
-          )}
-          {section.htmlContent && (
-            <p
-              className="text-xs sm:text-sm leading-relaxed"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              {section.htmlContent}
-            </p>
-          )}
-        </div>
-      </div>
+      <aside className={`pv-hint pv-hint--${variant}`}>
+        {section.title && (
+          <div className="pv-hint-label">
+            <span className="pv-hint-icon" aria-hidden="true">
+              {variant === 'danger' ? <IconAlertTriangle size={18} /> : <IconInfoCircle size={18} />}
+            </span>
+            {section.title}
+          </div>
+        )}
+        {section.htmlContent && <p className="pv-hint-text">{section.htmlContent}</p>}
+      </aside>
     )
   }
 
@@ -1732,7 +1320,7 @@ function SectionContent({ section, checkedSet, onToggleCheck, position }: Sectio
             <article key={i} className="pv-card space-y-3">
               <div className="pv-card-header">
                 <h3
-                  className="text-base font-extrabold"
+                  className="text-[1.0625rem] font-semibold"
                   style={{ color: 'var(--text-primary)' }}
                 >
                   {card.title}
@@ -1745,14 +1333,14 @@ function SectionContent({ section, checkedSet, onToggleCheck, position }: Sectio
               </div>
               {card.introText && (
                 <p
-                  className="text-xs sm:text-sm leading-relaxed"
+                  className="leading-relaxed"
                   style={{ color: 'var(--text-secondary)' }}
                 >
                   {card.introText}
                 </p>
               )}
               {card.bullets && card.bullets.length > 0 && (
-                <ul className="space-y-2.5 text-xs sm:text-sm">
+                <ul className="space-y-2.5">
                   {card.bullets.map((b, bi) => (
                     <li
                       key={bi}
@@ -1760,7 +1348,7 @@ function SectionContent({ section, checkedSet, onToggleCheck, position }: Sectio
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       <IconCheck
-                        size={16}
+                        size={18}
                         className="shrink-0 mt-1"
                         style={{ color: 'var(--accent-crystal)' }}
                       />
@@ -1820,34 +1408,29 @@ export function ChecklistTableSection({
   })
 
   return (
-    <div className="space-y-3">
-      {/* Filter Bar */}
-      <div className="pv-card !p-3.5 flex flex-wrap items-center gap-3 no-print">
-        <div className="relative flex-1 min-w-[220px]">
-          <IconSearch
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2"
-            style={{ color: 'var(--text-muted)' }}
-          />
+    <div className="pv-table">
+      <div className="pv-table-head">
+        <h3 className="pv-table-title">{table.caption}</h3>
+        <span className="pv-table-count">{t('table.count', { count: filteredRows.length })}</span>
+      </div>
+
+      {/* Search and the two filters: one calm row */}
+      <div className="pv-table-filters no-print">
+        <div className="pv-table-search">
+          <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={table.searchPlaceholder ?? t('table.searchPlaceholder')}
+            aria-label={table.searchPlaceholder ?? t('table.searchPlaceholder')}
             className="pv-input pv-input-icon w-full"
           />
         </div>
 
         {table.categories && table.categories.length > 0 && (
-          <select
-            value={catFilter}
-            onChange={(e) => setCatFilter(e.target.value)}
-            aria-label={t('table.categoryFilter')}
-            className="pv-input font-semibold"
-          >
-            <option value="ALL">
-              {table.categoryFilterLabel ?? t('table.allCategories')}
-            </option>
+          <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} aria-label={t('table.categoryFilter')} className="pv-select">
+            <option value="ALL">{table.categoryFilterLabel ?? t('table.allCategories')}</option>
             {table.categories.map((c) => (
               <option key={c} value={c}>
                 {c}
@@ -1857,15 +1440,8 @@ export function ChecklistTableSection({
         )}
 
         {table.secondaryCategories && table.secondaryCategories.length > 0 && (
-          <select
-            value={secFilter}
-            onChange={(e) => setSecFilter(e.target.value)}
-            aria-label={t('table.secondaryFilter')}
-            className="pv-input font-semibold"
-          >
-            <option value="ALL">
-              {table.secondaryFilterLabel ?? t('table.allFilters')}
-            </option>
+          <select value={secFilter} onChange={(e) => setSecFilter(e.target.value)} aria-label={t('table.secondaryFilter')} className="pv-select">
+            <option value="ALL">{table.secondaryFilterLabel ?? t('table.allFilters')}</option>
             {table.secondaryCategories.map((c) => (
               <option key={c} value={c}>
                 {c}
@@ -1875,27 +1451,17 @@ export function ChecklistTableSection({
         )}
       </div>
 
-      {/* Responsive Container-Query Table */}
-      <div
-        tabIndex={0}
-        role="region"
-        aria-label={table.caption}
-        className="vault-table-wrapper"
-      >
+      {/* Responsive container-query table */}
+      <div tabIndex={0} role="region" aria-label={table.caption} className="vault-table-wrapper">
         <table className="vault-table">
-          <caption
-            className="text-left px-4 py-3 font-extrabold text-sm"
-            style={{
-              background: 'var(--bg-elevated)',
-              borderBottom: '1px solid var(--border-subtle)',
-              color: 'var(--text-primary)',
-            }}
-          >
-            {t('table.caption', { caption: table.caption, count: filteredRows.length })}
-          </caption>
+          <caption className="sr-only">{t('table.caption', { caption: table.caption, count: filteredRows.length })}</caption>
           <thead>
             <tr>
-              {table.checkable && <th className="w-12 text-center">{t('table.done')}</th>}
+              {table.checkable && (
+                <th className="pv-check-cell">
+                  <span className="sr-only">{t('table.done')}</span>
+                </th>
+              )}
               {table.columns.map((col) => (
                 <th key={col.key}>{col.label}</th>
               ))}
@@ -1907,23 +1473,18 @@ export function ChecklistTableSection({
               const checkKey = itemLinks ? itemLinks.index.resolveKey(row.itemId, row.ref) : row.itemId
               const isChecked = checkedSet.has(checkKey)
               return (
-                <tr
-                  key={row.itemId}
-                  className={isChecked ? 'row-checked' : ''}
-                  data-item-id={row.itemId}
-                >
+                <tr key={row.itemId} className={isChecked ? 'row-checked' : ''} data-item-id={row.itemId}>
                   {table.checkable && (
-                    <td className="w-12 text-center" data-label={t('table.done')}>
-                      <input
-                        type="checkbox"
-                        aria-label={t('table.doneFor', { name: Object.values(row.cells)[0] ?? row.itemId })}
-                        checked={isChecked}
-                        onChange={(e) =>
-                          void onToggleCheck(checkKey, e.target.checked)
-                        }
-                        className="h-5 w-5 rounded cursor-pointer"
-                        style={{ accentColor: 'var(--accent-emerald)' }}
-                      />
+                    <td className="pv-check-cell" data-label={t('table.done')}>
+                      <label className="pv-check-hit">
+                        <input
+                          type="checkbox"
+                          className="pv-check"
+                          aria-label={t('table.doneFor', { name: Object.values(row.cells)[0] ?? row.itemId })}
+                          checked={isChecked}
+                          onChange={(e) => void onToggleCheck(checkKey, e.target.checked)}
+                        />
+                      </label>
                     </td>
                   )}
                   {table.columns.map((col, colIndex) => {
@@ -1939,22 +1500,10 @@ export function ChecklistTableSection({
                       )
                     }
                     const badgeClass =
-                      col.badgeVariant === 's'
-                        ? 'pv-badge-s'
-                        : col.badgeVariant === 'b'
-                          ? 'pv-badge-b'
-                          : col.badgeVariant === 'ok'
-                            ? 'pv-badge-ok'
-                            : 'pv-badge-a'
+                      col.badgeVariant === 's' ? 'pv-badge-s' : col.badgeVariant === 'b' ? 'pv-badge-b' : col.badgeVariant === 'ok' ? 'pv-badge-ok' : 'pv-badge-a'
                     return (
                       <td key={col.key} data-label={col.label}>
-                        {col.badgeVariant ? (
-                          <span className={`pv-badge ${badgeClass}`}>
-                            {cellVal}
-                          </span>
-                        ) : (
-                          cellVal
-                        )}
+                        {col.badgeVariant ? <span className={`pv-badge ${badgeClass}`}>{cellVal}</span> : cellVal}
                         {rowLinks}
                       </td>
                     )

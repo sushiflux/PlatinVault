@@ -32,7 +32,7 @@ export function PlatinumChip() {
   const { t } = useTranslation('live')
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-extrabold shadow"
+      className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold shadow"
       style={{
         background: 'linear-gradient(135deg, #f8fafc 0%, #dbeafe 45%, #9fd3f2 100%)',
         color: '#0f172a',

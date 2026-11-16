@@ -100,7 +100,7 @@ public sealed class BridgeTokenStore(CompanionDbContext db)
 
     // INSERT ... ON CONFLICT is atomic, so concurrent pushes can never collide on the primary key
     private Task<int> UpsertAsync(string key, string value, CancellationToken ct) =>
-        db.Database.ExecuteSqlInterpolatedAsync(
+        db.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO app_settings ("Key", "Value", "UpdatedAt") VALUES ({key}, {value}, {DateTimeOffset.UtcNow})
             ON CONFLICT ("Key") DO UPDATE SET "Value" = EXCLUDED."Value", "UpdatedAt" = EXCLUDED."UpdatedAt"

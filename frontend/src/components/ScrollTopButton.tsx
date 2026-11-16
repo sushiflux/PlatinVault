@@ -3,9 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { IconArrowUp } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 
-// Round "back to top" button bottom-right, above the footer (never over it); appears after scrolling one screen down.
-// --pv-footer-h is the measured height of the page footer (AppFooter publishes it); the button keeps its distance to it. A page
-// without a footer (the game page, its version and licences sit in the side navigation) leaves it unset: 1 rem from the edge.
+// "Back to top" button bottom-right (48 px target, calm solid surface, no shadow); appears after scrolling one screen down.
 // --pv-dock-h is the height of the "Im Blick" dock at the bottom of the game page (unset without it): the button stands above the dock.
 export function ScrollTopButton() {
   const { t } = useTranslation('shell')
@@ -26,12 +24,13 @@ export function ScrollTopButton() {
           type="button"
           aria-label={t('scrollTop')}
           onClick={() => window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' })}
-          className="no-print fixed right-4 z-40 flex h-11 w-11 items-center justify-center rounded-full shadow-lg backdrop-blur-md cursor-pointer sm:right-6"
+          className="no-print fixed right-4 z-40 flex h-12 w-12 items-center justify-center cursor-pointer sm:right-6"
           style={{
-            bottom: 'calc(var(--pv-footer-h, 0px) + var(--pv-dock-h, 0px) + 1rem)',
-            background: 'var(--bg-glass)',
-            color: 'var(--accent-crystal)',
-            border: '1px solid var(--accent-crystal-border)',
+            bottom: 'calc(var(--pv-dock-h, 0px) + 1rem)',
+            background: 'var(--bg-surface)',
+            color: 'var(--link)',
+            border: '1px solid var(--border-strong)',
+            borderRadius: 'var(--radius-md)',
           }}
           initial={reduce ? { opacity: 0 } : { opacity: 0, y: 12, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}

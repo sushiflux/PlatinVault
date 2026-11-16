@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { AppCopyright, AppVersion, LicensesButton } from './FooterParts'
+import { AppVersion, LicensesButton } from './FooterParts'
 
 function stubBranding(body: Record<string, unknown>, delayMs = 0) {
   vi.stubGlobal(
@@ -48,14 +48,6 @@ describe('AppVersion', () => {
     expect((placeholder?.textContent ?? '').length).toBeGreaterThan(5)
     await waitFor(() => expect(container.querySelector('span.invisible')).toBeNull())
     expect(screen.getByText('v2026.11.12.13.557 (β)')).toBeTruthy()
-  })
-})
-
-describe('AppCopyright', () => {
-  it('names the year of today and the company from the branding', async () => {
-    stubBranding({ productName: 'PlatinVault', company: 'SushiFlux', version: 'v1' })
-    renderWithClient(<AppCopyright />)
-    expect(await screen.findByText(`© ${new Date().getFullYear()} SushiFlux`)).toBeTruthy()
   })
 })
 

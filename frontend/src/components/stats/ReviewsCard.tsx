@@ -70,8 +70,8 @@ export function ReviewsCard({ stats, order }: { stats: GameStatsDto; order?: num
       >
         {positive > 0 && (
           <div
-            className="pv-viz-mark flex items-center rounded-[4px] px-2 text-[19px] font-extrabold leading-none text-white"
-            style={{ flex: positive, background: 'var(--viz-1)', minInlineSize: 6 }}
+            className="pv-viz-mark flex items-center px-2 text-[19px] font-semibold leading-none"
+            style={{ flex: positive, background: 'var(--viz-1)', color: 'var(--act-on)', minInlineSize: 6 }}
             {...blockProps(pos)}
           >
             {posShare >= LABEL_MIN_SHARE && fmt.pctInt(Math.round(posShare * 100))}
@@ -79,8 +79,8 @@ export function ReviewsCard({ stats, order }: { stats: GameStatsDto; order?: num
         )}
         {negative > 0 && (
           <div
-            className="pv-viz-mark flex items-center rounded-[4px] px-2 text-[19px] font-extrabold leading-none text-white"
-            style={{ flex: negative, background: 'var(--viz-2)', minInlineSize: 6 }}
+            className="pv-viz-mark flex items-center px-2 text-[19px] font-semibold leading-none"
+            style={{ flex: negative, background: 'var(--viz-2)', color: 'var(--act-on)', minInlineSize: 6 }}
             {...blockProps(neg)}
           >
             {negShare >= LABEL_MIN_SHARE && fmt.pctInt(Math.round(negShare * 100))}

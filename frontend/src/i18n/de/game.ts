@@ -106,11 +106,8 @@ const game = {
     text: 'Für dieses Spiel gibt es noch keinen Guide.',
     button: 'Erstes Kapitel per KI recherchieren',
   },
-  hero: {
-    title: '{{title}} — 100% Master Guide',
-    openLive: 'Live Steam-Trophäen öffnen',
-    backToOverview: 'Zurück zur Spiele-Übersicht',
-  },
+  // The facts of the guide under the title of its first chapter (screen reader label of the list)
+  chapterFacts: 'Eckdaten des Guides',
   // Shown above guide and lore content that is written in the other language than the interface
   contentLanguage: {
     hint: 'Dieser Guide ist auf {{language}} verfasst.',
@@ -273,6 +270,8 @@ const game = {
     allCategories: 'Alle Kategorien',
     secondaryFilter: 'Sekundärfilter',
     allFilters: 'Alle Filter',
+    count_one: '{{count, number}} Eintrag',
+    count_other: '{{count, number}} Einträge',
     caption_one: '{{caption}} ({{count, number}} Eintrag)',
     caption_other: '{{caption}} ({{count, number}} Einträge)',
     done: 'Erledigt',
@@ -346,6 +345,7 @@ const game = {
   },
 
   steamLink: {
+    errorTitle: 'Verknüpfung fehlgeschlagen',
     title: 'Mit Steam verknüpfen',
     text: 'Mit der Steam-AppID bekommt das Spiel das offizielle Cover, Live-Achievements und Statistiken.',
     searchLabel: 'Spielname im Steam Store',

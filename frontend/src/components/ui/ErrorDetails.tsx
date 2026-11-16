@@ -35,7 +35,7 @@ export function ErrorDetails({ details, message, title, code, reserve = false }:
             aria-expanded={open}
             aria-controls={id}
             onClick={() => setOpen((value) => !value)}
-            className="inline-flex cursor-pointer items-center gap-1 text-xs font-bold underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-crystal)]"
+            className="pv-hit inline-flex cursor-pointer items-center gap-1 text-sm font-medium underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
             style={{ color: 'var(--text-secondary)' }}
           >
             <IconChevronDown size={14} aria-hidden="true" className={`transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -47,7 +47,7 @@ export function ErrorDetails({ details, message, title, code, reserve = false }:
       {open && details && (
         <pre
           id={id}
-          className="mt-1.5 max-h-60 overflow-auto whitespace-pre-wrap break-words p-2.5 font-mono text-xs font-normal leading-relaxed"
+          className="mt-1.5 max-h-60 overflow-auto whitespace-pre-wrap break-words p-2.5 font-mono text-sm font-normal leading-relaxed"
           style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)' }}
         >
           {details}

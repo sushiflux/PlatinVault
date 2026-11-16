@@ -14,7 +14,7 @@
 # The bridge has its own version 1.0.<n>, n = number of commits that touched the Linux bridge, the shared bridge core or the Steam readers
 # (the Windows bridge counts its own files the same way). Set --bridge-version / BRIDGE_LINUX_VERSION when there is no git history.
 #
-# Runs on Linux (CI: ubuntu-latest; locally in a container such as mcr.microsoft.com/dotnet/sdk:10.0). Needs the .NET SDK (global.json),
+# Runs on Linux (CI: ubuntu-latest; locally in a container such as mcr.microsoft.com/dotnet/sdk:11.0). Needs the .NET SDK (global.json),
 # bash, GNU tar, gzip and sha256sum.
 #
 #   scripts/build-bridge-linux.sh [--bridge-version 1.0.7] [--channel release|beta|nightly] [--product-version "<readable version>"]

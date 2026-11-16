@@ -102,11 +102,8 @@ const game = {
     text: 'There is no guide for this game yet.',
     button: 'Research the first chapter with AI',
   },
-  hero: {
-    title: '{{title}} — 100% Master Guide',
-    openLive: 'Open live Steam trophies',
-    backToOverview: 'Back to the game overview',
-  },
+  // The facts of the guide under the title of its first chapter (screen reader label of the list)
+  chapterFacts: 'Key facts of the guide',
   contentLanguage: {
     hint: 'This guide was written in {{language}}.',
     de: 'German',
@@ -267,6 +264,8 @@ const game = {
     allCategories: 'All categories',
     secondaryFilter: 'Secondary filter',
     allFilters: 'All filters',
+    count_one: '{{count, number}} entry',
+    count_other: '{{count, number}} entries',
     caption_one: '{{caption}} ({{count, number}} entry)',
     caption_other: '{{caption}} ({{count, number}} entries)',
     done: 'Done',
@@ -338,6 +337,7 @@ const game = {
   },
 
   steamLink: {
+    errorTitle: 'Linking failed',
     title: 'Link to Steam',
     text: 'With the Steam AppID the game gets the official cover, live achievements and statistics.',
     searchLabel: 'Game name in the Steam Store',

@@ -9,6 +9,7 @@ import { fetchAiStatus } from '../../api/client'
 import type { AiProviderId, AiProviderStatusDto, AiStatusDto } from '../../api/types'
 import { StackedLabel } from '../ui/StackedLabel'
 import { AI_STATUS_KEY } from './useAiStatus'
+import './ai.css'
 import { providersWithKey, readLastAiChoice, useProviderStateText, writeLastAiChoice } from './aiProviders'
 
 // The dialog of the selection mode "ask before every request": every AI action calls pickAi() first.
@@ -160,46 +161,31 @@ function AiChooserPanel({ status, onClose }: { status: AiStatusDto; onClose: (pr
         exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.97, y: 6 }}
         transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 32 }}
       >
-        <div className="flex items-start gap-4">
-          <div
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-            style={{ background: 'var(--accent-emerald-bg)', color: 'var(--accent-emerald)', border: '1px solid var(--accent-emerald-border)' }}
-            aria-hidden="true"
-          >
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 shrink-0" style={{ color: 'var(--accent-crystal)' }} aria-hidden="true">
             <IconSparkles size={22} />
-          </div>
+          </span>
           <div className="min-w-0 flex-1">
-            <h2 id={titleId} className="text-base font-extrabold leading-snug" style={{ color: 'var(--text-primary)' }}>
+            <h2 id={titleId} className="text-[1.0625rem] font-semibold leading-snug" style={{ color: 'var(--text-primary)' }}>
               {t('chooser.title')}
             </h2>
-            <p id={introId} className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            <p id={introId} className="mt-1 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               {t('chooser.intro')}
             </p>
           </div>
         </div>
 
         {troubled && (
-          <p
-            className="mt-4 rounded-lg px-3 py-2 text-xs font-semibold leading-snug"
-            style={{ background: 'var(--accent-gold-bg)', color: 'var(--text-primary)', border: '1px solid var(--accent-gold-border)' }}
-            role="status"
-          >
+          <p className="pv-note pv-note--warn mt-4" role="status">
             {t('chooser.unhealthy', { provider: t(`providers.${troubled.id}`), state: stateText(troubled) })}
           </p>
         )}
 
-        <div role="radiogroup" aria-label={t('chooser.groupLabel')} className="mt-4 space-y-2">
+        <div role="radiogroup" aria-label={t('chooser.groupLabel')} className="pv-ai-choice mt-4">
           {keyed.map((provider) => {
             const isOn = provider.id === selected
             return (
-              <label
-                key={provider.id}
-                className="flex cursor-pointer items-center gap-3 rounded-xl p-3 text-sm focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--accent-crystal)]"
-                style={{
-                  background: isOn ? 'var(--accent-emerald-bg)' : 'var(--bg-elevated)',
-                  border: `1px solid ${isOn ? 'var(--accent-emerald-border)' : 'var(--border-subtle)'}`,
-                }}
-              >
+              <label key={provider.id} className="pv-ai-choice__row" data-selected={isOn || undefined}>
                 <input
                   type="radio"
                   name="ai-provider"
@@ -213,24 +199,15 @@ function AiChooserPanel({ status, onClose }: { status: AiStatusDto; onClose: (pr
                     }
                   }}
                 />
-                <span
-                  aria-hidden="true"
-                  className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full"
-                  style={{ border: `2px solid ${isOn ? 'var(--accent-emerald)' : 'var(--text-muted)'}` }}
-                >
-                  <span className="h-2 w-2 rounded-full" style={{ background: isOn ? 'var(--accent-emerald)' : 'transparent' }} />
-                </span>
+                <span aria-hidden="true" className="pv-ai-choice__dot" />
                 <span className="min-w-0 flex-1">
-                  <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 font-extrabold" style={{ color: 'var(--text-primary)' }}>
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 font-semibold">
                     {t(`providers.${provider.id}`)}
-                    {provider.id === last && <span className="pv-badge pv-badge-b !py-0 !text-[10px]">{t('chooser.lastUsed')}</span>}
-                    {provider.id === status.defaultProvider && <span className="pv-badge pv-badge-a !py-0 !text-[10px]">{t('button.standardTag')}</span>}
-                    {!provider.webSearch && <span className="pv-badge pv-badge-s !py-0 !text-[10px]">{t('noWebSearch')}</span>}
+                    {provider.id === last && <span className="pv-badge pv-badge-b !py-0 !text-[11px]">{t('chooser.lastUsed')}</span>}
+                    {provider.id === status.defaultProvider && <span className="pv-badge pv-badge-a !py-0 !text-[11px]">{t('button.standardTag')}</span>}
+                    {!provider.webSearch && <span className="pv-badge pv-badge-s !py-0 !text-[11px]">{t('noWebSearch')}</span>}
                   </span>
-                  <span
-                    className="mt-0.5 block text-xs font-semibold"
-                    style={{ color: provider.state === 'ok' ? 'var(--text-muted)' : 'var(--accent-gold-text)' }}
-                  >
+                  <span className="mt-0.5 block text-sm" style={{ color: provider.state === 'ok' ? 'var(--text-muted)' : 'var(--accent-gold-text)' }}>
                     {stateText(provider)} · {provider.model}
                   </span>
                 </span>
@@ -243,8 +220,8 @@ function AiChooserPanel({ status, onClose }: { status: AiStatusDto; onClose: (pr
           <button type="button" className="pv-btn" onClick={() => onClose(null)}>
             {tc('cancel')}
           </button>
-          <button type="button" className="pv-btn pv-btn-emerald" disabled={!chosen} onClick={confirm}>
-            <IconSparkles size={15} />
+          <button type="button" className="pv-btn pv-btn-primary" disabled={!chosen} onClick={confirm}>
+            <IconSparkles size={18} />
             {/* All labels stacked: the button keeps its width whichever AI is selected */}
             <StackedLabel
               active={Math.max(0, keyed.findIndex((p) => p.id === selected))}

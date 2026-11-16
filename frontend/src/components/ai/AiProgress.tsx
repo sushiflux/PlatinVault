@@ -65,13 +65,13 @@ export function AiProgressLines({ view, align = 'start' }: AiProgressLinesProps)
       <ReservedText className={`text-sm font-bold ${alignClass}`} style={{ color: 'var(--text-primary)' }} candidates={stepCandidates} aria-live="polite">
         {stepText(t, step)}
       </ReservedText>
-      <ReservedText className={`text-xs font-semibold ${alignClass}`} style={{ color: 'var(--accent-crystal)' }} candidates={[SAMPLE_SWITCH]} aria-live="polite">
+      <ReservedText className={`text-sm font-semibold ${alignClass}`} style={{ color: 'var(--accent-crystal)' }} candidates={[SAMPLE_SWITCH]} aria-live="polite">
         {job?.switchNotice ?? ''}
       </ReservedText>
-      <p className="text-xs font-semibold tabular-nums" style={{ color: 'var(--text-secondary)' }} data-testid="ai-progress-elapsed">
+      <p className="text-sm font-semibold tabular-nums" style={{ color: 'var(--text-secondary)' }} data-testid="ai-progress-elapsed">
         {t('progress.elapsed', { time: formatElapsed(view?.elapsedSeconds ?? 0) })}
       </p>
-      <ReservedText className={`text-xs leading-snug ${alignClass}`} style={{ color: slow ? 'var(--accent-gold-text)' : 'var(--text-muted)' }} candidates={[t('progress.general'), t('progress.slow')]}>
+      <ReservedText className={`text-sm leading-snug ${alignClass}`} style={{ color: slow ? 'var(--accent-gold-text)' : 'var(--text-muted)' }} candidates={[t('progress.general'), t('progress.slow')]}>
         {slow ? t('progress.slow') : t('progress.general')}
       </ReservedText>
     </div>

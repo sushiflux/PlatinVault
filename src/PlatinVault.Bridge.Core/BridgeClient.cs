@@ -95,12 +95,12 @@ internal sealed class BridgeClient : IDisposable
     /// <param name="handler">Replaces the real network handler (tests only).</param>
     public BridgeClient(BridgeSettings settings, string version, string? platform = null, HttpMessageHandler? handler = null)
     {
-        _libraryEndpoint = settings.LibraryEndpoint;
-        _stateEndpoint = settings.StateEndpoint;
+        _libraryEndpoint = settings.LibraryEndpoint();
+        _stateEndpoint = settings.StateEndpoint();
         _exeEndpoint = platform is null
-            ? settings.ExeEndpoint
-            : new Uri(settings.ExeEndpoint + "?platform=" + Uri.EscapeDataString(platform));
-        _commandsEndpoint = settings.CommandsEndpoint;
+            ? settings.ExeEndpoint()
+            : new Uri(settings.ExeEndpoint() + "?platform=" + Uri.EscapeDataString(platform));
+        _commandsEndpoint = settings.CommandsEndpoint();
 
         handler ??= new SocketsHttpHandler
         {

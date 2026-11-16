@@ -61,7 +61,7 @@ function Invoke-ServerCommand([string]$Dll, [string[]]$Arguments, [string]$Envir
 
 # The server dll that "dotnet watch" of start.ps1 builds (Debug). Null when it was never built.
 function Find-DevServerDll {
-    $dll = Join-Path $script:RootDir 'src\Companion.Api\bin\Debug\net10.0\Companion.Api.dll'
+    $dll = Join-Path $script:RootDir 'src\Companion.Api\bin\Debug\net11.0\Companion.Api.dll'
     if (Test-Path -LiteralPath $dll) { return $dll }
     return $null
 }
@@ -95,4 +95,59 @@ function Stop-AppProcesses {
         $owner = Get-PortProcess $port
         if ($owner -and $owner.ProcessName -in @('dotnet', 'node', 'Companion.Api')) { Stop-ProcessTree $owner.Id }
     }
+}
+
+# ---- Git hooks ----------------------------------------------------------------------------------------------------
+# Hooks are copied into the repository's own hooks folder and only updated deliberately (scripts\install-hooks.ps1),
+# never wired through core.hooksPath: a hook that changes upstream must not run right on "git pull".
+$script:HookNames = @('pre-commit', 'post-commit', 'post-merge')
+
+function Get-GitOutput([string[]]$Arguments) {
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try { $out = & git -C $script:RootDir @Arguments 2>$null; $code = $LASTEXITCODE }
+    finally { $ErrorActionPreference = $previous }
+    if ($code -ne 0 -or $null -eq $out) { return '' }
+    return (("$out").Trim())
+}
+
+# Absolute path of the hooks folder git really uses. Only meaningful once core.hooksPath is no longer set.
+function Get-HooksDir {
+    $path = Get-GitOutput @('rev-parse', '--git-path', 'hooks')
+    if (-not $path) { return $null }
+    if (-not [System.IO.Path]::IsPathRooted($path)) { $path = Join-Path $script:RootDir $path }
+    return [System.IO.Path]::GetFullPath($path)
+}
+
+function Get-HooksPathSetting { return (Get-GitOutput @('config', '--local', '--get', 'core.hooksPath')) }
+
+# Returns @{ Missing = names; Changed = names } comparing the installed hooks with scripts\git-hooks by content.
+function Get-HookStatus([string]$HooksDir) {
+    $missing = @(); $changed = @()
+    foreach ($name in $script:HookNames) {
+        $installed = Join-Path $HooksDir $name
+        $source = Join-Path $script:RootDir "scripts\git-hooks\$name"
+        if (-not (Test-Path $installed)) { $missing += $name; continue }
+        if ((Get-FileHash $installed -Algorithm SHA256).Hash -ne (Get-FileHash $source -Algorithm SHA256).Hash) { $changed += $name }
+    }
+    return @{ Missing = $missing; Changed = $changed }
+}
+
+# Copies the given hooks byte-exact (no re-encoding, so LF endings and the missing BOM stay as in the repository).
+function Install-GitHooks([string]$HooksDir, [string[]]$Names) {
+    New-Item -ItemType Directory -Force -Path $HooksDir | Out-Null
+    foreach ($name in $Names) {
+        Copy-Item -LiteralPath (Join-Path $script:RootDir "scripts\git-hooks\$name") -Destination (Join-Path $HooksDir $name) -Force
+        Write-Ok "Hook installiert: $name"
+    }
+}
+
+# Removes core.hooksPath only when it still points at the old repo folder.
+function Remove-LegacyHooksPath {
+    if ((Get-HooksPathSetting) -eq 'scripts/git-hooks') {
+        & git -C $script:RootDir config --local --unset core.hooksPath 2>$null | Out-Null
+        Write-Ok 'core.hooksPath (scripts/git-hooks) entfernt.'
+        return $true
+    }
+    return $false
 }

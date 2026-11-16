@@ -70,7 +70,7 @@ const shell = {
     copyright: '© {{year}} {{company}}',
     licenses: 'Lizenzen',
     licensesHint: 'Lizenz (GNU AGPL v3), Quellcode und Hinweise zu den enthaltenen Open-Source-Komponenten',
-    // The info symbol at the foot of the game page's side navigation and the card it opens (gamenav/NavInfo.tsx)
+    // The info symbol at the foot of the side navigation (components/shell/ShellNav.tsx)
     infoLabel: 'Info zu Version und Lizenzen',
     about: 'Über {{name}}',
     // The version as a button with its popover (components/updates/VersionCheck.tsx)
@@ -88,6 +88,46 @@ const shell = {
   madeWith: {
     text: 'Mit <heart/> gemacht',
     heart: 'Herz',
+  },
+  // The app shell (components/shell): header brand, the tree navigation on the left, its icon rail and the phone drawer
+  nav: {
+    label: 'Hauptnavigation',
+    skip: 'Zum Inhalt springen',
+    brandHome: 'PlatinVault – zur Übersicht',
+    overview: 'Übersicht',
+    library: 'Alle Spiele',
+    myGames: 'Meine Spiele',
+    noFavorites: 'Noch keine Favoriten. Setze in „Alle Spiele“ einen Stern.',
+    live: 'Live-Trophäen',
+    stats: 'Statistiken',
+    lore: 'Story & Lore',
+    chapters: 'Kapitel von {{game}}',
+    chapterProgress: '{{checked}} von {{total}} erledigt',
+    failed: 'Recherche fehlgeschlagen',
+    cabinet: 'Trophäenschrank',
+    settings: 'Einstellungen',
+    info: 'Info zu Version, Neuigkeiten und Lizenzen',
+    search: {
+      label: 'Spiel oder Kapitel suchen',
+      placeholder: 'Spiel oder Kapitel suchen …',
+      clear: 'Suche leeren',
+      none: 'Nichts gefunden für „{{query}}“.',
+    },
+    collapse: 'Navigation einklappen',
+    expand: 'Navigation ausklappen',
+    menuOpen: 'Navigation öffnen',
+    drawerLabel: 'Navigation',
+    menuClose: 'Navigation schließen',
+  },
+  // The about page (route /about, pages/AboutPage.tsx)
+  about: {
+    intro: 'Live-Steam-Erfolge und KI-recherchierte 100-%-Guides in einer App.',
+    version: 'Version',
+    newsLabel: 'Neuerungen',
+    madeLabel: 'Gemacht',
+    licenseLabel: 'Lizenz',
+    licenseLine: 'Freie Software unter der GNU Affero General Public License, Version 3.',
+    sourceTitle: 'Quellcode',
   },
   scrollTop: 'Nach oben',
   handbook: {

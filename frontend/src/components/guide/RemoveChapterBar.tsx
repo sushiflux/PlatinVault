@@ -31,25 +31,26 @@ export function RemoveChapterBar({ disabled, onRemove, onRedo, onRedoManual, red
         <div className="pv-chapter-redo">
           {onRedo && (
             <AiRunButton
+              quiet
               busy={redoBusy}
               disabled={disabled || redoBusy}
               oneOff={oneOff}
               onOneOffChange={setOneOff}
               onClick={() => onRedo(oneOff)}
-              icon={<IconRefresh size={15} className="shrink-0" aria-hidden="true" />}
+              icon={<IconRefresh size={18} className="shrink-0" aria-hidden="true" />}
               label={<span>{t('redoChapter.button')}</span>}
             />
           )}
           {onRedoManual && (
-            <button type="button" className="pv-btn" disabled={disabled || redoBusy} onClick={onRedoManual}>
-              <IconClipboardText size={15} className="shrink-0" aria-hidden="true" />
+            <button type="button" className="pv-btn-text pv-btn-text--calm" disabled={disabled || redoBusy} onClick={onRedoManual}>
+              <IconClipboardText size={18} className="shrink-0" aria-hidden="true" />
               <span>{t('redoChapter.manualButton')}</span>
             </button>
           )}
         </div>
       )}
-      <button type="button" className="pv-chapter-remove" disabled={disabled} onClick={onRemove}>
-        <IconTrash size={15} className="shrink-0" aria-hidden="true" />
+      <button type="button" className="pv-btn-text pv-btn-text--calm pv-btn-text--danger" disabled={disabled} onClick={onRemove}>
+        <IconTrash size={18} className="shrink-0" aria-hidden="true" />
         <span>{t('removeChapter.button')}</span>
       </button>
     </div>

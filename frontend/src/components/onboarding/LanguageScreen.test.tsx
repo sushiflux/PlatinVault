@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { applyLanguage, currentLanguage } from '../../i18n'
+import { THEME_EVENT } from '../../utils/themeEvent'
 import { LanguageScreen } from './LanguageScreen'
 
 function renderScreen() {
@@ -43,17 +44,45 @@ describe('LanguageScreen', () => {
     vi.restoreAllMocks()
   })
 
-  it('offers Deutsch and English as radio buttons and preselects the browser language', () => {
+  it('offers Deutsch and English as one connected radio group and preselects the browser language', () => {
     vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['en-GB'])
     vi.spyOn(navigator, 'language', 'get').mockReturnValue('en-GB')
     stubServer(() => new Response('{}', { status: 200 }))
     renderScreen()
 
-    const radios = screen.getAllByRole('radio') as HTMLInputElement[]
-    expect(radios.map((radio) => radio.value)).toEqual(['de', 'en'])
-    expect(radios.find((radio) => radio.checked)?.value).toBe('en')
-    expect(screen.getByText('Deutsch')).toBeTruthy()
-    expect(screen.getByText('English')).toBeTruthy()
+    const group = screen.getByRole('radiogroup', { name: 'Language' })
+    const radios = within(group).getAllByRole('radio')
+    expect(radios.map((radio) => radio.getAttribute('data-language'))).toEqual(['de', 'en'])
+    expect(radios.find((radio) => radio.getAttribute('aria-checked') === 'true')?.getAttribute('data-language')).toBe('en')
+    expect(within(group).getByText('Deutsch')).toBeTruthy()
+    expect(within(group).getByText('English')).toBeTruthy()
+  })
+
+  it('moves the language choice with the arrow keys', () => {
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['de-DE'])
+    vi.spyOn(navigator, 'language', 'get').mockReturnValue('de-DE')
+    stubServer(() => new Response('{}', { status: 200 }))
+    renderScreen()
+
+    const group = screen.getByRole('radiogroup', { name: 'Sprache' })
+    fireEvent.keyDown(within(group).getByRole('radio', { name: 'Deutsch' }), { key: 'ArrowRight' })
+    expect(within(group).getByRole('radio', { name: 'English' }).getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('applies the colour scheme at once through the theme event and shows the brand panel with its five features', () => {
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['de-DE'])
+    vi.spyOn(navigator, 'language', 'get').mockReturnValue('de-DE')
+    stubServer(() => new Response('{}', { status: 200 }))
+    const seen: string[] = []
+    const listener = (event: Event) => seen.push((event as CustomEvent<string>).detail)
+    window.addEventListener(THEME_EVENT, listener)
+    renderScreen()
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Dunkel' }))
+    window.removeEventListener(THEME_EVENT, listener)
+    expect(seen).toEqual(['dark'])
+    expect(screen.getByRole('radio', { name: 'Dunkel' }).getAttribute('aria-checked')).toBe('true')
+    expect(document.querySelectorAll('.pv-first-list li')).toHaveLength(5)
   })
 
   it('applies the chosen language and saves it as ui.language', async () => {

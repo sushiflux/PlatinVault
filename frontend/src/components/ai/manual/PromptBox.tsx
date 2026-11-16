@@ -83,7 +83,7 @@ export function PromptBox({ load, extraActions }: PromptBoxProps) {
     <div className="space-y-2" data-testid="prompt-box">
       <div className="flex flex-wrap items-center gap-2">
         <Tooltip label={t('manual.row.copy')} description={t('manual.copy.hint')}>
-          <button type="button" className="pv-btn pv-btn-emerald relative" onClick={() => void onCopy()} disabled={loading}>
+          <button type="button" className="pv-btn pv-btn-primary relative" onClick={() => void onCopy()} disabled={loading}>
             <span className={`inline-flex items-center gap-[inherit] ${loading ? 'invisible' : ''}`}>
               <IconClipboardCopy size={15} className="shrink-0" aria-hidden="true" />
               <span>{t('manual.row.copy')}</span>
@@ -107,7 +107,7 @@ export function PromptBox({ load, extraActions }: PromptBoxProps) {
       </div>
 
       <ReservedText
-        className="text-xs font-semibold"
+        className="text-sm font-semibold"
         style={{ color: state === 'selected' ? 'var(--accent-gold-text)' : 'var(--accent-emerald)' }}
         candidates={[t('manual.copy.copied'), t('manual.copy.selected'), t('manual.copy.exported', { name: 'platinvault-final-fantasy-resonance-kapitel-beste-waffen-ruestungen.md' }), t('manual.copy.loading')]}
         role="status"
@@ -118,7 +118,7 @@ export function PromptBox({ load, extraActions }: PromptBoxProps) {
       </ReservedText>
 
       {error && (
-        <div className="pv-alert pv-alert-danger whitespace-pre-line break-words text-xs font-semibold" role="alert">
+        <div className="pv-note pv-note--danger whitespace-pre-line break-words text-sm font-semibold" role="alert">
           {t('manual.copy.failed', { reason: error.message })}
           <ErrorDetails message={t('manual.copy.failed', { reason: error.message })} details={error.details} />
         </div>
@@ -131,7 +131,7 @@ export function PromptBox({ load, extraActions }: PromptBoxProps) {
           value={prompt.prompt}
           aria-label={t('manual.copy.promptLabel')}
           rows={10}
-          className="block max-h-72 w-full resize-y rounded-lg p-2.5 font-mono text-xs leading-relaxed"
+          className="block max-h-72 w-full resize-y rounded-lg p-2.5 font-mono text-sm leading-relaxed"
           style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)' }}
         />
       )}

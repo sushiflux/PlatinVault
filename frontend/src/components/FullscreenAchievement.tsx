@@ -12,6 +12,9 @@ import { TierTrophy, tierGlow } from './platinum/TierTrophy'
 
 // The "Vollbild" popup position: for a few seconds the whole window belongs to the achievement that was just unlocked.
 //
+// The stage stays a dark cinema moment in both themes on purpose (the one festive full-window moment besides the platinum celebration); its
+// lines are thin and straight, its type is 600 weight, and the time line along the bottom edge is the shared PopupCountdown.
+//
 // Self-contained on purpose: it needs only the achievement (its tier decides the colours), an optional game name and a dismiss
 // callback, and it never reads the theme (the stage is dark in the light and the dark theme alike, like a cinema moment). The
 // Windows desktop host can therefore render the very same component in its transparent overlay window over a game.
@@ -266,7 +269,7 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
                   {achievement.iconUrl && <AchievementIcon url={achievement.iconUrl} size={size.icon} edge={edge} />}
                   <div className="min-w-0" style={{ textAlign: portrait ? 'center' : 'left' }}>
                     <div
-                      className="font-extrabold uppercase"
+                      className="font-semibold uppercase"
                       style={{ color: tone, fontSize: size.eyebrow, letterSpacing: '0.24em' }}
                     >
                       {t('live:fullscreen.unlocked', { tier: tierName })}
@@ -280,7 +283,7 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
                 </motion.div>
 
                 <motion.h1
-                  className="font-black text-white"
+                  className="font-semibold text-white"
                   style={{
                     marginTop: 'clamp(0.7rem, 2.4vh, 2.5rem)',
                     fontSize: size.name,
@@ -297,11 +300,11 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
 
                 {/* The accent rule under the name: grows out of the left (the middle in portrait) */}
                 <motion.span
-                  className="block h-[3px] rounded-full"
+                  className="block h-[3px]"
                   style={{
                     marginTop: 'clamp(0.6rem, 1.6vh, 1.5rem)',
                     width: 'clamp(3rem, 9vh, 9rem)',
-                    background: `linear-gradient(90deg, ${edge}, ${tone})`,
+                    background: edge,
                     transformOrigin: portrait ? '50% 50%' : '0% 50%',
                   }}
                   initial={{ opacity: 0, scaleX: reduce ? 1 : 0 }}
@@ -364,7 +367,8 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
                 key={`${achievement.apiName}-${achievement.unlockTime ?? ''}-${visibleMs}`}
                 durationMs={visibleMs}
                 color={edge}
-                style={{ insetInline: 0, insetBlockEnd: 0, blockSize: 'clamp(3px, 0.45vh, 6px)', borderRadius: 0 }}
+                track={`${edge}33`}
+                style={{ insetInline: 0, insetBlockEnd: 0, blockSize: 'clamp(3px, 0.45vh, 6px)' }}
               />
             )}
 
@@ -396,8 +400,8 @@ function AchievementIcon({ url, size, edge }: { url: string; size: string; edge:
       src={url}
       alt=""
       onError={() => setFailedUrl(url)}
-      className="shrink-0 rounded-xl object-cover"
-      style={{ width: size, height: size, border: `2px solid ${edge}`, boxShadow: `0 0 22px ${edge}80` }}
+      className="shrink-0 rounded-md object-cover"
+      style={{ width: size, height: size, border: `2px solid ${edge}` }}
     />
   )
 }

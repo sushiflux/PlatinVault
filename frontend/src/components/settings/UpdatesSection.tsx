@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { CopyErrorButton } from '../ui/CopyErrorButton'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { IconCloudDownload, IconDownload, IconExternalLink, IconLoader2, IconNotes, IconRefresh } from '@tabler/icons-react'
+import { IconDownload, IconExternalLink, IconLoader2, IconNotes, IconRefresh } from '@tabler/icons-react'
 import { hasReleaseNotes, releasePageUrl } from '../../api/releaseNotes'
 import { checkForUpdates, fetchUpdateStatus, installUpdate, updateSettings } from '../../api/client'
 import type { UpdateChannel, UpdateCheckInterval, UpdateStatusDto } from '../../api/types'
 import { useFormat } from '../../i18n/format'
 import { ReservedText } from '../ui/ReservedText'
+import { SettingsRow, SettingsTopic } from './SettingsParts'
 import { StackedLabel } from '../ui/StackedLabel'
 import { useConfirm } from '../ui/ConfirmDialog'
 import { ReleaseNotesViewer } from '../updates/ReleaseNotesDialog'
@@ -114,36 +115,35 @@ export function UpdatesSection() {
   }
 
   return (
-    <div className="pv-card space-y-3" data-testid="updates-section">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-sm font-extrabold" style={{ color: 'var(--accent-crystal)' }}>
-          <IconCloudDownload size={18} aria-hidden="true" />
-          <span>{t('updates.title')}</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
-          <span>{t('updates.installed')}</span>
-          <span className="font-mono font-semibold" style={{ color: 'var(--text-primary)' }}>
-            {data?.currentVersion ?? '…'}
-          </span>
-          {data && (
-            <span
-              className="rounded-sm px-1.5 py-0.5 text-[0.68rem] font-extrabold uppercase tracking-wide"
-              style={{
-                color: data.currentChannel === 'beta' || data.currentChannel === 'nightly' ? 'var(--accent-gold)' : 'var(--text-secondary)',
-                border: `1px solid ${data.currentChannel === 'beta' || data.currentChannel === 'nightly' ? 'var(--accent-gold-border)' : 'var(--border-subtle)'}`,
-              }}
-            >
-              {t(`updates.channel.${data.currentChannel}`)}
-            </span>
-          )}
-        </div>
-      </div>
+    <div data-testid="updates-section">
+      <SettingsTopic>{t('updates.title')}</SettingsTopic>
 
-      {/* The one update choice (never two switches): the shared segmented control; the three labels are short, so the row is the same in both languages */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span id="update-channel-label" className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
-          {t('updates.channelLabel')}
+      <SettingsRow title={t('updates.installed')}>
+        <span className="font-mono font-semibold" style={{ color: 'var(--text-primary)' }}>
+          {data?.currentVersion ?? '…'}
         </span>
+        {data && (
+          <span
+            className="rounded-sm px-1.5 py-0.5 text-[0.75rem] font-semibold uppercase tracking-wide"
+            style={{
+              color: data.currentChannel === 'beta' || data.currentChannel === 'nightly' ? 'var(--accent-gold-text)' : 'var(--text-secondary)',
+              border: `1px solid ${data.currentChannel === 'beta' || data.currentChannel === 'nightly' ? 'var(--accent-gold-border)' : 'var(--border-subtle)'}`,
+            }}
+          >
+            {t(`updates.channel.${data.currentChannel}`)}
+          </span>
+        )}
+      </SettingsRow>
+
+      {/* The one update choice (never two switches): the shared segmented control; what the selected channel receives has its room reserved
+          for the longest of the three in the active language, so a change moves nothing */}
+      <SettingsRow
+        title={t('updates.channelLabel')}
+        titleId="update-channel-label"
+        help={
+          <ReservedText candidates={UPDATE_CHANNELS.map((id) => t(`updates.channelHints.${id}`))}>{t(`updates.channelHints.${selected}`)}</ReservedText>
+        }
+      >
         <div className="pv-segmented" role="group" aria-labelledby="update-channel-label" data-testid="update-channel">
           {UPDATE_CHANNELS.map((id) => (
             <button
@@ -159,30 +159,27 @@ export function UpdatesSection() {
             </button>
           ))}
         </div>
-      </div>
-      {/* What the selected channel receives; room for the longest of the three in the active language, so a change moves nothing */}
-      <ReservedText
-        className="text-xs leading-relaxed"
-        style={{ color: 'var(--text-muted)' }}
-        candidates={UPDATE_CHANNELS.map((id) => t(`updates.channelHints.${id}`))}
-      >
-        {t(`updates.channelHints.${selected}`)}
-      </ReservedText>
+      </SettingsRow>
       {switchError && (
-        <p role="alert" className="text-xs font-semibold leading-relaxed" style={{ color: 'var(--accent-crimson)' }}>
+        <p role="alert" className="py-2 text-sm font-semibold leading-relaxed" style={{ color: 'var(--accent-crimson)' }}>
           {switchError}
           <CopyErrorButton className="ms-2 align-middle" report={{ message: switchError }} />
         </p>
       )}
 
       {/* How often PlatinVault looks by itself (the server decides when GitHub is asked; a check by hand always works) */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t pt-3" style={{ borderColor: 'var(--border-subtle)' }}>
-        <label htmlFor="update-interval" className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
-          {t('updates.interval.label')}
-        </label>
+      <SettingsRow
+        title={t('updates.interval.label')}
+        labelFor="update-interval"
+        help={
+          <ReservedText candidates={UPDATE_CHECK_INTERVALS.map((id) => t(`updates.interval.hints.${id}`))}>
+            {t(`updates.interval.hints.${data?.checkInterval ?? 'daily'}`)}
+          </ReservedText>
+        }
+      >
         <select
           id="update-interval"
-          className="pv-input !w-auto font-semibold"
+          className="pv-select"
           value={data?.checkInterval ?? 'daily'}
           disabled={!data || devBuild || interval.isPending}
           onChange={(event) => interval.mutate(event.target.value as UpdateCheckInterval)}
@@ -193,32 +190,26 @@ export function UpdatesSection() {
             </option>
           ))}
         </select>
-      </div>
-      <ReservedText
-        className="text-xs leading-relaxed"
-        style={{ color: 'var(--text-muted)' }}
-        candidates={UPDATE_CHECK_INTERVALS.map((id) => t(`updates.interval.hints.${id}`))}
-      >
-        {t(`updates.interval.hints.${data?.checkInterval ?? 'daily'}`)}
-      </ReservedText>
+      </SettingsRow>
       {intervalError && (
-        <p role="alert" className="text-xs font-semibold leading-relaxed" style={{ color: 'var(--accent-crimson)' }}>
+        <p role="alert" className="py-2 text-sm font-semibold leading-relaxed" style={{ color: 'var(--accent-crimson)' }}>
           {intervalError}
           <CopyErrorButton className="ms-2 align-middle" report={{ message: intervalError }} />
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t pt-3" style={{ borderColor: 'var(--border-subtle)' }}>
+      <div className="pv-set-section" style={{ paddingBlockStart: '0.875rem' }}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <button
           type="button"
-          className="pv-btn !py-1 !px-3 !text-xs"
+          className="pv-btn"
           onClick={() => check.mutate()}
           disabled={checking || !data || data.state === 'disabled' || devBuild}
         >
           {checking ? <IconLoader2 size={14} className="animate-spin" aria-hidden="true" /> : <IconRefresh size={14} aria-hidden="true" />}
           <StackedLabel active={checking ? 1 : 0} labels={[t('updates.check'), t('updates.checking')]} />
         </button>
-        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+        <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
           {data?.checkedAt ? t('updates.checkedAt', { time: format.date(data.checkedAt, 'dateTimeSeconds') }) : t('updates.neverChecked')}
         </span>
       </div>
@@ -229,7 +220,7 @@ export function UpdatesSection() {
       </ReservedText>
       {/* A second manual check within a minute is answered from memory; its note has its room from the start */}
       <ReservedText
-        className="text-xs leading-relaxed"
+        className="text-sm leading-relaxed"
         style={{ color: 'var(--text-muted)' }}
         candidates={[t('updates.result.throttled', { time: '00:00:00' })]}
       >
@@ -245,20 +236,20 @@ export function UpdatesSection() {
             { icon: IconNotes, label: t('updates.notes') },
             { icon: IconExternalLink, label: t('updates.notesOnGitHub') },
           ].map(({ icon: Icon, label }) => (
-            <span key={label} className="pv-btn invisible col-start-1 row-start-1 !py-1 !px-3 !text-xs" aria-hidden="true">
+            <span key={label} className="pv-btn invisible col-start-1 row-start-1" aria-hidden="true">
               <Icon size={14} />
               <span>{label}</span>
             </span>
           ))}
           {available && hasReleaseNotes(available) ? (
-            <button type="button" className="pv-btn col-start-1 row-start-1 justify-self-start !py-1 !px-3 !text-xs" onClick={() => setNotesOpen(true)} data-testid="updates-notes">
+            <button type="button" className="pv-btn col-start-1 row-start-1 justify-self-start" onClick={() => setNotesOpen(true)} data-testid="updates-notes">
               <IconNotes size={14} aria-hidden="true" />
               <span>{t('updates.notes')}</span>
             </button>
           ) : available && releasePageUrl(available) ? (
             // No notes text came with the release: a plain external link to its page
             <a
-              className="pv-btn col-start-1 row-start-1 justify-self-start !py-1 !px-3 !text-xs"
+              className="pv-btn col-start-1 row-start-1 justify-self-start"
               href={releasePageUrl(available) ?? undefined}
               target="_blank"
               rel="noopener noreferrer"
@@ -272,7 +263,7 @@ export function UpdatesSection() {
         {desktop && (
           <button
             type="button"
-            className={`pv-btn pv-btn-primary !py-1 !px-3 !text-xs ${data?.canInstall ? '' : 'invisible'}`}
+            className={`pv-btn pv-btn-primary ${data?.canInstall ? '' : 'invisible'}`}
             onClick={() => void onInstall()}
             disabled={!data?.canInstall || install.isPending}
           >
@@ -284,7 +275,7 @@ export function UpdatesSection() {
       {desktop && (
         <ReservedText
           role="status"
-          className="text-xs font-semibold leading-relaxed"
+          className="text-sm font-semibold leading-relaxed"
           style={{ color: RESULT_TONE_COLOR[installMessage?.tone ?? 'muted'] }}
           candidates={[t('updates.result.installing'), t('updates.result.installStarted'), installMessage?.text ?? '']}
         >
@@ -296,6 +287,7 @@ export function UpdatesSection() {
       {data && linuxPackage && !devBuild && <LinuxHowTo data={data} />}
       {data && !desktop && !linuxPackage && !devBuild && <DockerHowTo data={data} latestTag={latestTag} betaTag={betaTag} nightlyTag={nightlyTag} />}
       <ReleaseNotesViewer release={notesOpen ? available : null} onClose={() => setNotesOpen(false)} />
+      </div>
     </div>
   )
 }
@@ -308,7 +300,7 @@ function LinuxHowTo({ data }: { data: UpdateStatusDto }) {
   const folder = file.replace(/\.tar\.gz$/, '')
   const downloadUrl = offer?.linuxPackageUrl ?? null
   return (
-    <div className="space-y-3 border-t pt-3 text-xs leading-relaxed" style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }} data-testid="updates-linux">
+    <div className="space-y-3 border-t pt-3 text-sm leading-relaxed" style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }} data-testid="updates-linux">
       <div className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
         {t('updates.linux.title')}
       </div>
@@ -316,7 +308,7 @@ function LinuxHowTo({ data }: { data: UpdateStatusDto }) {
       {/* The download link takes its room even when there is nothing to download, so the steps below never move */}
       <div className={downloadUrl ? '' : 'invisible'} aria-hidden={downloadUrl ? undefined : true}>
         <a
-          className="pv-btn !py-1 !px-3 !text-xs"
+          className="pv-btn"
           href={downloadUrl ?? undefined}
           target="_blank"
           rel="noopener noreferrer"
@@ -384,7 +376,7 @@ function DockerHowTo({ data, latestTag, betaTag, nightlyTag }: { data: UpdateSta
   ]
 
   return (
-    <div className="space-y-3 border-t pt-3 text-xs leading-relaxed" style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }}>
+    <div className="space-y-3 border-t pt-3 text-sm leading-relaxed" style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }}>
       <div className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
         {t('updates.docker.title')}
       </div>

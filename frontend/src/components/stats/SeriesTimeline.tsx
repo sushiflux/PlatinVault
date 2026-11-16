@@ -52,7 +52,7 @@ function SeriesTile({ game, last }: { game: GameSeriesGameDto; last: boolean }) 
       {/* rail: the dot sits on a hairline that runs on to the next game */}
       <div className="relative mb-2 flex h-4 items-center gap-2">
         <span
-          className="relative z-[1] inline-block h-3 w-3 shrink-0 rounded-full"
+          className="relative z-[1] inline-block h-3 w-3 shrink-0 rounded-sm"
           style={{
             background: game.isCurrent ? 'var(--viz-1)' : 'var(--bg-surface)',
             border: `2px solid ${game.isCurrent ? 'var(--viz-1)' : 'var(--border-strong)'}`,
@@ -81,8 +81,8 @@ function SeriesTile({ game, last }: { game: GameSeriesGameDto; last: boolean }) 
         </div>
         {hasTrophies && (
           <div className="mt-1.5">
-            <div className="h-1.5 overflow-hidden rounded-full" style={{ background: 'var(--viz-track)' }}>
-              <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'var(--viz-1)' }} />
+            <div className="h-1.5 overflow-hidden rounded-sm" style={{ background: 'var(--viz-track)' }}>
+              <div className="h-full rounded-sm" style={{ width: `${pct}%`, background: 'var(--viz-1)' }} />
             </div>
             <div className="mt-0.5 text-xs" style={{ color: 'var(--viz-ink-3)' }}>
               {t('series.trophies', { unlocked: game.trophiesUnlocked ?? 0, total: game.trophiesTotal ?? 0 })}

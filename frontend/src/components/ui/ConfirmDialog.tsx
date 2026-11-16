@@ -3,7 +3,7 @@ import type { KeyboardEvent, ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
-import { IconAlertTriangle, IconTrash } from '@tabler/icons-react'
+import '../../styles/dialogs.css'
 
 // Our own confirmation dialog - never window.confirm/alert/prompt (the browser's boxes ignore the app's look).
 // Usage: const confirm = useConfirm(); if (!(await confirm({ ... }))) return
@@ -106,12 +106,9 @@ function ConfirmPanel({ options, onClose }: { options: ConfirmOptions; onClose: 
     }
   }
 
-  const Icon = danger ? IconTrash : IconAlertTriangle
-  const accent = danger ? 'crimson' : 'gold'
-
   return (
     <motion.div
-      className="pv-modal-backdrop"
+      className="pv-modal-backdrop pv-modal-backdrop--top"
       style={{ zIndex: 80 }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -128,37 +125,19 @@ function ConfirmPanel({ options, onClose }: { options: ConfirmOptions; onClose: 
         aria-labelledby={titleId}
         aria-describedby={messageId}
         onKeyDown={handleKeyDown}
-        className="pv-modal w-full max-w-md p-6"
+        className="pv-modal w-full max-w-lg p-6"
         initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 10 }}
         animate={reduce ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
         exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.97, y: 6 }}
         transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 32 }}
       >
-        <div className="flex items-start gap-4">
-          <motion.div
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-            style={{
-              background: `var(--accent-${accent}-bg)`,
-              color: `var(--accent-${accent})`,
-              border: `1px solid var(--accent-${accent}-border)`,
-            }}
-            initial={reduce ? false : { scale: 0.6, rotate: -8 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 16, delay: 0.05 }}
-            aria-hidden="true"
-          >
-            <Icon size={22} />
-          </motion.div>
-          <div className="min-w-0 flex-1">
-            <h2 id={titleId} className="text-base font-extrabold leading-snug" style={{ color: 'var(--text-primary)' }}>
-              {title}
-            </h2>
-            <div id={messageId} className="mt-1.5 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-              {message}
-            </div>
-          </div>
+        <h2 id={titleId} className="pv-dialog-title">
+          {title}
+        </h2>
+        <div id={messageId} className="pv-dialog-text">
+          {message}
         </div>
-        <div className="mt-6 flex flex-wrap justify-end gap-2">
+        <div className="pv-dialog-actions">
           <button ref={cancelRef} type="button" className="pv-btn" onClick={() => onClose(false)}>
             {cancelLabel}
           </button>
@@ -168,7 +147,6 @@ function ConfirmPanel({ options, onClose }: { options: ConfirmOptions; onClose: 
             className={`pv-btn ${danger ? 'pv-btn-danger' : 'pv-btn-primary'}`}
             onClick={() => onClose(true)}
           >
-            {danger && <IconTrash size={15} />}
             <span>{confirmLabel}</span>
           </button>
         </div>

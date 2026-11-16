@@ -1,0 +1,168 @@
+/* Full-page status screens (components/errors/StatusPage.tsx, always English) and the crash page (components/errors/ErrorBoundary.tsx).
+   Light and dark follow the app's tokens; the crash page brings its own literal colours (light-dark) so it stays legible even when the
+   app's theming is what broke. */
+
+.pv-status {
+  display: grid;
+  place-items: center;
+  min-block-size: calc(100dvh - var(--pv-header-h, 3.75rem) - 6rem);
+  padding: 1.5rem 1rem;
+}
+
+.pv-status-in {
+  inline-size: 100%;
+  max-inline-size: 30rem;
+}
+
+.pv-status-code {
+  margin: 0;
+  font-size: 4.5rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+/* The thin gold line under the status code (straight, square ends) */
+.pv-status-bar {
+  inline-size: 3rem;
+  block-size: 2px;
+  margin: 1.25rem 0;
+  background: var(--accent-gold);
+}
+
+.pv-status-text {
+  margin: 0.5rem 0 0;
+  color: var(--text-muted);
+  font-size: 1.0625rem;
+  line-height: 1.5;
+}
+
+.pv-status-acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-block-start: 1.5rem;
+}
+
+.pv-status-detail {
+  margin: 1.75rem 0 0;
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- crash page: the app's theming may be the thing that broke, so it carries its own colours ---------- */
+:root:not([data-theme]) .pv-crash {
+  color-scheme: light dark;
+}
+
+.pv-crash {
+  --cr-bg: light-dark(#f4f6fa, #0f1524);
+  --cr-surface: light-dark(#ffffff, #182036);
+  --cr-text: light-dark(#131a26, #eef2f8);
+  --cr-muted: light-dark(#4a5568, #a9b5cb);
+  --cr-line: light-dark(#dce2ec, #28344f);
+  --cr-strong: light-dark(#7f8aa0, #6b7a9c);
+  --cr-act: light-dark(#0369a1, #7dd3fc);
+  --cr-act-on: light-dark(#ffffff, #04263a);
+  --cr-gold: light-dark(#98600b, #f2c14e);
+  --cr-ok: light-dark(#047857, #6ee7b7);
+  min-block-size: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem 1rem;
+  background: var(--cr-bg);
+  color: var(--cr-text);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+.pv-crash-in {
+  inline-size: 100%;
+  max-inline-size: 38rem;
+}
+
+.pv-crash h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.pv-crash-bar {
+  inline-size: 3rem;
+  block-size: 2px;
+  margin: 1.125rem 0;
+  background: var(--cr-gold);
+}
+
+.pv-crash p {
+  margin: 0.5rem 0 0;
+  color: var(--cr-muted);
+  font-size: 1.0625rem;
+  line-height: 1.5;
+}
+
+.pv-crash-acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-block-start: 1.5rem;
+}
+
+.pv-crash button,
+.pv-crash-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-block-size: 3rem;
+  padding: 0 1.125rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--cr-act);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.pv-crash .pv-crash-primary {
+  background: var(--cr-act);
+  color: var(--cr-act-on);
+}
+
+.pv-crash button:focus-visible {
+  outline: 2px solid var(--cr-act);
+  outline-offset: 2px;
+}
+
+.pv-crash-ok {
+  display: inline-block;
+  min-inline-size: 4.5rem;
+  color: var(--cr-ok);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.pv-crash-details {
+  margin-block-start: 1rem;
+}
+
+.pv-crash-details pre {
+  margin: 0.5rem 0 0;
+  padding: 0.75rem 1rem;
+  max-block-size: 16rem;
+  overflow: auto;
+  background: var(--cr-surface);
+  border: 1px solid var(--cr-line);
+  border-radius: 6px;
+  color: var(--cr-muted);
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

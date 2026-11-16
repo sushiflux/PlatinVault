@@ -57,8 +57,8 @@ public sealed class ConfigTests
         Assert.False(BridgeSettings.TryResolve("http://s:1", "has a space", NoEnv, null, null, out _, out _));
 
         Assert.True(BridgeSettings.TryResolve("https://host/platinvault", "token-0000000000000", NoEnv, null, null, out var settings, out _));
-        Assert.Equal("https://host/platinvault/api/bridge/state", settings!.StateEndpoint.ToString());
-        Assert.Equal("https://host/platinvault/api/bridge/commands", settings.CommandsEndpoint.ToString());
+        Assert.Equal("https://host/platinvault/api/bridge/state", settings!.StateEndpoint().ToString());
+        Assert.Equal("https://host/platinvault/api/bridge/commands", settings.CommandsEndpoint().ToString());
         Assert.Equal("***0000", settings.TokenHint);
     }
 

@@ -121,6 +121,7 @@ const live = {
     },
   },
   noteDialog: {
+    failedTitle: 'Note not saved',
     title: 'Personal note',
     placeholder: 'Your own tips, missing locations or progress notes...',
     save: 'Save note',

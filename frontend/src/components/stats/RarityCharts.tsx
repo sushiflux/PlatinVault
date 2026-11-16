@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { IconChevronDown, IconChevronUp, IconDiamond, IconLock, IconTrophy } from '@tabler/icons-react'
 import type { LiveAchievementItemDto, LiveGameAchievementsDto } from '../../api/types'
@@ -162,10 +162,10 @@ export function TierMeters({ data, order }: TierProps) {
   const { t } = useTranslation('stats')
   const tip = useChartTip()
   const tiers = [
-    { key: 'platinum', label: t('tiers.platinum'), icon: <TierIcon tier="Platinum" size={16} />, ...data.platinum, rule: t('tiers.rulePlatinum') },
-    { key: 'gold', label: t('tiers.gold'), icon: <TierIcon tier="Gold" size={16} />, ...data.gold, rule: t('tiers.ruleGold') },
-    { key: 'silver', label: t('tiers.silver'), icon: <TierIcon tier="Silver" size={16} />, ...data.silver, rule: t('tiers.ruleSilver') },
-    { key: 'bronze', label: t('tiers.bronze'), icon: <TierIcon tier="Bronze" size={16} />, ...data.bronze, rule: t('tiers.ruleBronze') },
+    { key: 'platinum', color: 'var(--tier-platinum)', label: t('tiers.platinum'), icon: <TierIcon tier="Platinum" size={16} />, ...data.platinum, rule: t('tiers.rulePlatinum') },
+    { key: 'gold', color: 'var(--tier-gold)', label: t('tiers.gold'), icon: <TierIcon tier="Gold" size={16} />, ...data.gold, rule: t('tiers.ruleGold') },
+    { key: 'silver', color: 'var(--tier-silver)', label: t('tiers.silver'), icon: <TierIcon tier="Silver" size={16} />, ...data.silver, rule: t('tiers.ruleSilver') },
+    { key: 'bronze', color: 'var(--tier-bronze)', label: t('tiers.bronze'), icon: <TierIcon tier="Bronze" size={16} />, ...data.bronze, rule: t('tiers.ruleBronze') },
   ].filter((tier) => tier.total > 0)
 
   return (
@@ -199,18 +199,16 @@ export function TierMeters({ data, order }: TierProps) {
               )}
             >
               <div className="mb-1.5 flex items-center justify-between gap-3">
-                <span className="inline-flex items-center gap-2 text-sm font-bold" style={{ color: 'var(--viz-ink)' }}>
-                  <span style={{ color: 'var(--viz-ink-3)' }}>{tier.icon}</span>
+                <span className="inline-flex items-center gap-2 text-base" style={{ color: 'var(--viz-ink)' }}>
+                  <span style={{ color: tier.color }}>{tier.icon}</span>
                   {tier.label}
                 </span>
-                <span className="text-sm font-extrabold" style={{ color: 'var(--viz-ink)' }}>
-                  {tier.achieved} <span style={{ color: 'var(--viz-ink-3)', fontWeight: 700 }}>/ {tier.total}</span>
+                <span className="text-base font-medium tabular-nums" style={{ color: 'var(--viz-ink)' }}>
+                  {tier.achieved} <span style={{ color: 'var(--viz-ink-2)' }}>/ {tier.total}</span>
                 </span>
               </div>
-              <div className="h-2.5 overflow-hidden rounded-full" style={{ background: 'var(--viz-track)' }}>
-                {pct > 0 && (
-                  <Grow delay={i * 0.07} className="h-full rounded-full" style={{ width: `${pct}%`, background: 'var(--viz-1)' }} />
-                )}
+              <div className="pv-viz-meter" style={{ '--meter-color': tier.color } as CSSProperties}>
+                {pct > 0 && <Grow delay={i * 0.07} style={{ width: `${pct}%` }} />}
               </div>
             </div>
           )

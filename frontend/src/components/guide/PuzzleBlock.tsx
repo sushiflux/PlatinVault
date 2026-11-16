@@ -1,6 +1,6 @@
 import { useId } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { IconBulb, IconEye, IconEyeOff, IconLock, IconMapPin, IconPuzzle, IconRoute } from '@tabler/icons-react'
+import { IconBulb, IconEye, IconEyeOff, IconLock, IconPuzzle } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import type { GuideSectionDto } from '../../api/types'
 import { StackedLabel } from '../ui/StackedLabel'
@@ -53,36 +53,21 @@ export function PuzzleBlock({ section, checkedSet, onToggleCheck, stateKey }: Pu
     else reveal.revealNextHint()
   }
 
+  const showActions = hints.length > 0 || hasSolution || itemId !== null
+
   return (
-    <article className={`pv-card pv-puzzle ${isDone ? 'pv-puzzle-done' : ''}`} data-puzzle={itemId ?? undefined}>
+    <article className={`pv-puzzle ${isDone ? 'pv-puzzle-done' : ''}`} data-puzzle={itemId ?? undefined}>
       <header className="pv-puzzle-head">
-        <span className="pv-puzzle-icon" aria-hidden="true">
-          <IconPuzzle size={20} />
+        <span className="pv-puzzle-kicker">
+          <IconPuzzle size={16} aria-hidden="true" />
+          {t('puzzle.badge')}
         </span>
-        <div className="pv-puzzle-titles">
-          <span className="pv-puzzle-kicker">{t('puzzle.badge')}</span>
-          {section.title && <h3 className="pv-puzzle-title">{section.title}</h3>}
-        </div>
-        <div className="pv-puzzle-head-end">
-          {puzzle.missable && (
-            <span className="pv-puzzle-missable">
-              <IconLock size={13} aria-hidden="true" /> {t('puzzle.missable')}
-            </span>
-          )}
-          {itemId && (
-            <label className="pv-puzzle-done-label">
-              <input
-                type="checkbox"
-                checked={isDone}
-                onChange={(e) => void onToggleCheck(itemId, e.target.checked)}
-                aria-label={t('puzzle.doneFor', { name })}
-                className="h-5 w-5 rounded cursor-pointer"
-                style={{ accentColor: 'var(--accent-emerald)' }}
-              />
-              <span>{t('puzzle.done')}</span>
-            </label>
-          )}
-        </div>
+        {section.title && <h3 className="pv-puzzle-title">{section.title}</h3>}
+        {puzzle.missable && (
+          <span className="pv-puzzle-missable">
+            <IconLock size={14} aria-hidden="true" /> {t('puzzle.missable')}
+          </span>
+        )}
       </header>
 
       {section.htmlContent && <p className="pv-puzzle-task">{section.htmlContent}</p>}
@@ -90,54 +75,56 @@ export function PuzzleBlock({ section, checkedSet, onToggleCheck, stateKey }: Pu
       {(puzzle.location || puzzle.requirements) && (
         <dl className="pv-puzzle-facts">
           {puzzle.location && (
-            <div>
-              <dt>
-                <IconMapPin size={14} aria-hidden="true" /> {t('puzzle.where')}
-              </dt>
+            <>
+              <dt>{t('puzzle.where')}</dt>
               <dd>{puzzle.location}</dd>
-            </div>
+            </>
           )}
           {puzzle.requirements && (
-            <div>
-              <dt>
-                <IconRoute size={14} aria-hidden="true" /> {t('puzzle.requirements')}
-              </dt>
+            <>
+              <dt>{t('puzzle.requirements')}</dt>
               <dd>{puzzle.requirements}</dd>
-            </div>
+            </>
           )}
         </dl>
       )}
 
+      {(hasSolution || hints.length > 0) && <p className="pv-puzzle-self">{t('puzzle.selfHint')}</p>}
+
+      {showActions && (
+        <div className="pv-puzzle-actions no-print">
+          {hints.length > 0 && (
+            <button type="button" className="pv-btn-text pv-puzzle-btn" onClick={onHintClick} aria-expanded={reveal.hints > 0} aria-controls={hintsId}>
+              <IconBulb size={18} aria-hidden="true" />
+              <StackedLabel align="start" active={hintLabelIndex} labels={[t('puzzle.hint.show'), t('puzzle.hint.next'), t('puzzle.hint.hide')]} />
+            </button>
+          )}
+          {hasSolution && (
+            <button type="button" className="pv-btn-text pv-puzzle-btn" onClick={reveal.toggleSolution} aria-expanded={reveal.solution} aria-controls={solutionId}>
+              {reveal.solution ? <IconEyeOff size={18} aria-hidden="true" /> : <IconEye size={18} aria-hidden="true" />}
+              <StackedLabel align="start" active={reveal.solution ? 1 : 0} labels={[t('puzzle.solution.show'), t('puzzle.solution.hide')]} />
+            </button>
+          )}
+          <span className="pv-puzzle-spacer" />
+          {itemId && (
+            <label className="pv-puzzle-done-label">
+              <span className="pv-check-hit">
+                <input
+                  type="checkbox"
+                  className="pv-check"
+                  checked={isDone}
+                  onChange={(e) => void onToggleCheck(itemId, e.target.checked)}
+                  aria-label={t('puzzle.doneFor', { name })}
+                />
+              </span>
+              <span>{t('puzzle.done')}</span>
+            </label>
+          )}
+        </div>
+      )}
+
       {(hasSolution || hints.length > 0) && (
         <>
-          <div className="pv-puzzle-actions no-print">
-            {hints.length > 0 && (
-              <button
-                type="button"
-                className="pv-btn pv-btn-gold pv-puzzle-btn"
-                onClick={onHintClick}
-                aria-expanded={reveal.hints > 0}
-                aria-controls={hintsId}
-              >
-                <IconBulb size={16} aria-hidden="true" />
-                <StackedLabel active={hintLabelIndex} labels={[t('puzzle.hint.show'), t('puzzle.hint.next'), t('puzzle.hint.hide')]} />
-              </button>
-            )}
-            {hasSolution && (
-              <button
-                type="button"
-                className="pv-btn pv-btn-primary pv-puzzle-btn"
-                onClick={reveal.toggleSolution}
-                aria-expanded={reveal.solution}
-                aria-controls={solutionId}
-              >
-                {reveal.solution ? <IconEyeOff size={16} aria-hidden="true" /> : <IconEye size={16} aria-hidden="true" />}
-                <StackedLabel active={reveal.solution ? 1 : 0} labels={[t('puzzle.solution.show'), t('puzzle.solution.hide')]} />
-              </button>
-            )}
-            <span className="pv-puzzle-self">{t('puzzle.selfHint')}</span>
-          </div>
-
           <div id={hintsId} aria-live="polite">
             <AnimatePresence initial={false}>
               {reveal.hints > 0 && (

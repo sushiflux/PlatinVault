@@ -9,16 +9,16 @@ internal sealed record BridgeSettings(Uri Server, string Token)
     public const string TokenEnvVar = "PLATINVAULT_TOKEN";
 
     /// <summary>Endpoint of section 4 of the spec; the server URL always ends with '/' so a sub path survives.</summary>
-    public Uri StateEndpoint => new(Server, "api/bridge/state");
+    public Uri StateEndpoint() => new(Server, "api/bridge/state");
 
     /// <summary>Where the server offers the current bridge exe (self-update).</summary>
-    public Uri ExeEndpoint => new(Server, "api/bridge/exe");
+    public Uri ExeEndpoint() => new(Server, "api/bridge/exe");
 
     /// <summary>Where the bridge sends the library facts of the Steam client (release date, ratings, size on disk) for the dashboard sort orders.</summary>
-    public Uri LibraryEndpoint => new(Server, "api/bridge/library");
+    public Uri LibraryEndpoint() => new(Server, "api/bridge/library");
 
     /// <summary>Where the bridge asks for commands ("start this game") and reports how they ended.</summary>
-    public Uri CommandsEndpoint => new(Server, "api/bridge/commands");
+    public Uri CommandsEndpoint() => new(Server, "api/bridge/commands");
 
     /// <summary>Server address without the trailing slash, for display and for saving.</summary>
     public string ServerText => Server.GetLeftPart(UriPartial.Path).TrimEnd('/');

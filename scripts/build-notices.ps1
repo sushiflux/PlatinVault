@@ -8,7 +8,7 @@
   Run it whenever dependencies change and before every beta/release:  .\scripts\build-notices.ps1
   Only check whether the committed file is still current:           .\scripts\build-notices.ps1 -Check
 
-  Needs Node.js 24+ (runs the TypeScript script directly), the .NET 10 SDK and "npm ci" in frontend\.
+  Needs Node.js 24+ (runs the TypeScript script directly), the .NET 11 SDK and "npm ci" in frontend\.
   Windows PowerShell 5.1 compatible. Console output is German and ASCII-only.
 #>
 param(
@@ -22,7 +22,7 @@ if (-not (Get-Command 'node' -ErrorAction SilentlyContinue)) {
     throw 'node wurde nicht gefunden. Bitte Node.js 24 oder neuer installieren: https://nodejs.org/en/download'
 }
 if (-not (Get-Command 'dotnet' -ErrorAction SilentlyContinue)) {
-    throw 'dotnet wurde nicht gefunden. Bitte das .NET 10 SDK installieren: https://dotnet.microsoft.com/download/dotnet/10.0'
+    throw 'dotnet wurde nicht gefunden. Bitte das .NET 11 SDK installieren: https://dotnet.microsoft.com/download/dotnet/11.0'
 }
 $nodeMajor = [int]((& node -p "process.versions.node.split('.')[0]") | Select-Object -First 1)
 if ($nodeMajor -lt 24) {

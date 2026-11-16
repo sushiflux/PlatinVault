@@ -1,0 +1,256 @@
+/* The frame of the game page inside the app shell (variant "Kristall"): the game head (cover, name, status line, play, the calm action
+   row), the trophy part under it (progress line + four tier figures, shown on every tab) and the content row with the "Im Blick" column
+   (components/pins). The chapters and the areas are entries of the shell's tree navigation (components/shell).
+   Imported by GameTrophyBar.tsx, GameHeadStatus.tsx and PinsSurface.tsx. */
+
+/* ---------- game head ---------- */
+.pv-game-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'cover titles play'
+    'cover actions actions';
+  align-items: center;
+  gap: 0.25rem 1.25rem;
+}
+
+/* The wide Steam header image (2:1) like the design; a game without one shows the app logo on a calm panel */
+.pv-game-cover {
+  grid-area: cover;
+  align-self: start;
+  inline-size: 10.5rem;
+  block-size: 5.25rem;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+}
+
+.pv-game-cover--logo {
+  object-fit: contain;
+  padding: 0.75rem;
+}
+
+.pv-game-titles {
+  grid-area: titles;
+  min-inline-size: 0;
+}
+
+.pv-game-play {
+  grid-area: play;
+  display: inline-flex;
+  justify-self: end;
+}
+
+.pv-game-play:empty {
+  display: none;
+}
+
+/* Status under the name: live dot, platinum, ticked in the guide, playtime. Always one line high. */
+.pv-gstatus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.125rem 1rem;
+  min-block-size: 1.5rem;
+  margin-block-start: 0.125rem;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+.pv-gstatus-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--accent-emerald);
+  font-weight: 500;
+}
+
+.pv-gstatus-live .pv-live-dot {
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  background: var(--accent-emerald);
+}
+
+.pv-gstatus-plat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--accent-gold-text);
+  font-weight: 500;
+}
+
+/* The page's tools in one calm row of boxless icon buttons (complete, add chapter, export, Twitch, print, reset) */
+.pv-game-actions {
+  grid-area: actions;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  margin-inline-start: -0.75rem;
+}
+
+@media (max-width: 639px) {
+  .pv-game-head {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      'cover titles'
+      'play play'
+      'actions actions';
+  }
+
+  .pv-game-cover {
+    inline-size: 7.5rem;
+    block-size: 3.75rem;
+  }
+
+  .pv-game-play {
+    justify-self: start;
+  }
+}
+
+/* ---------- content row: content + the "Im Blick" column ---------- */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  inline-size: 100%;
+}
+
+.pv-gbody {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.75rem;
+  inline-size: 100%;
+}
+
+/* Small progress counter ("3/12"), calm; all done = success colour */
+.pv-tab-count {
+  flex: 0 0 auto;
+  align-self: center;
+  padding: 0.125em 0.375em;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-tab-count[data-done] {
+  background: var(--accent-emerald-bg);
+  color: var(--accent-emerald);
+}
+
+/* ---------- trophy part (components/GameTrophyBar.tsx): progress sentence, thin line, four tier figures; in the flow under the head ---------- */
+.pv-gbar {
+  display: grid;
+  gap: 0.75rem;
+  padding-block: 1rem 1.25rem;
+  border-block-end: 1px solid var(--border-subtle);
+}
+
+.pv-gbar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  /* One text line high from the first frame; the 3 rem refresh button hangs out of it with negative margins, so nothing moves */
+  min-block-size: 1.5rem;
+}
+
+.pv-gbar-refresh {
+  margin-block: -0.75rem;
+  margin-inline-end: -0.75rem;
+}
+
+.pv-gbar-sum {
+  min-inline-size: 10.5rem;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.5rem;
+}
+
+/* The thin progress line: 3 px, square ends; gold once everything is unlocked */
+.pv-gbar-track {
+  position: relative;
+  block-size: 3px;
+  background: var(--track);
+}
+
+.pv-gbar-track > i {
+  display: block;
+  block-size: 100%;
+  background: var(--prog);
+}
+
+.pv-gbar-track[data-complete] > i {
+  background: var(--accent-gold);
+}
+
+.pv-tiers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  row-gap: 0.75rem;
+}
+
+.pv-fig-wrap {
+  display: block;
+  min-inline-size: 0;
+  padding: 0.125rem 1.5rem;
+  border-inline-start: 1px solid var(--border-subtle);
+}
+
+.pv-fig-wrap:first-child {
+  padding-inline-start: 0;
+  border-inline-start: 0;
+}
+
+.pv-fig {
+  display: grid;
+  gap: 0.0625rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-fig-value {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.pv-fig-name {
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.pv-fig[data-tier='Platinum'] .pv-fig-name {
+  color: var(--tier-platinum-text);
+}
+
+.pv-fig[data-tier='Gold'] .pv-fig-name {
+  color: var(--tier-gold-text);
+}
+
+.pv-fig[data-tier='Silver'] .pv-fig-name {
+  color: var(--tier-silver-text);
+}
+
+.pv-fig[data-tier='Bronze'] .pv-fig-name {
+  color: var(--tier-bronze-text);
+}
+
+/* Narrow: two figures per row, the vertical hairline only between the two of a row */
+@media (max-width: 639px) {
+  .pv-tiers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pv-fig-wrap:nth-child(odd) {
+    padding-inline-start: 0;
+    border-inline-start: 0;
+  }
+}

@@ -115,7 +115,7 @@ function VersionPanel({ anchor, panelId, onClose, hasNotes, onShowNotes }: Panel
       exit={{ opacity: 0, transition: { duration: 0.1 } }}
       transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
     >
-      <div className="flex items-center gap-2 font-extrabold" style={{ color: 'var(--accent-crystal)' }}>
+      <div className="flex items-center gap-2 font-semibold" style={{ color: 'var(--accent-crystal)' }}>
         <IconCloudDownload size={18} aria-hidden="true" />
         <span>{t('footer.version.title')}</span>
       </div>

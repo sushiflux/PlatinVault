@@ -12,6 +12,8 @@ export interface ErrorReportInput {
   details?: string | null
   /** A code that names the failure ("HTTP 502 · gemini · quota"). */
   code?: string | number | null
+  /** Language of the labels in the copied text (the status pages are always English); default: the language of the interface. */
+  language?: string
 }
 
 // The version the server reported last (branding answer). Kept in a plain variable so the copy button needs no React Query context;
@@ -64,8 +66,9 @@ export function buildErrorReport(input: ErrorReportInput, version: string | null
   if (title && !message.startsWith(title)) lines.push(title)
   if (message) lines.push(message)
   const blocks: string[] = [lines.join('\n')].filter(Boolean)
-  if (details) blocks.push(`${i18n.t('errors:report.details')}:\n${details}`)
-  if (code) blocks.push(`${i18n.t('errors:report.code')}: ${code}`)
+  const lng = input.language
+  if (details) blocks.push(`${i18n.t('errors:report.details', { lng })}:\n${details}`)
+  if (code) blocks.push(`${i18n.t('errors:report.code', { lng })}: ${code}`)
   blocks.push(`PlatinVault${version ? ` ${version}` : ''} · ${formatReportTime(at)}`)
   return blocks.join('\n\n')
 }

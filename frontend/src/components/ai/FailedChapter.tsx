@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { IconAlertTriangle, IconClipboardText, IconRefresh, IconTrash } from '@tabler/icons-react'
+import { IconClipboardText, IconRefresh, IconTrash } from '@tabler/icons-react'
 import type { AiProviderId, GameDetailDto, GuideSectionDto, ManualChapterSeed } from '../../api/types'
 import { ErrorDetails } from '../ui/ErrorDetails'
 import { AiRunButton } from './AiRunButton'
+import '../guide/guide.css'
 
 /** The chapters of a guide whose research failed (the server marks their placeholder section with `failedChapter`). */
 export function failedChapterTabs(game: GameDetailDto | undefined): { id: string; title: string }[] {
@@ -46,43 +47,32 @@ export function FailedChapterBlock({ section, busy, onRetry, onRemove, onManual 
   const failure = section.failedChapter
   if (!failure) return null
   return (
-    <div className="pv-alert pv-alert-gold" data-testid="failed-chapter">
-      <div className="mt-0.5 shrink-0" style={{ color: 'var(--accent-gold)' }}>
-        <IconAlertTriangle size={22} aria-hidden="true" />
-      </div>
-      <div className="min-w-0 flex-1 space-y-2">
-        <div className="text-sm font-extrabold sm:text-base" style={{ color: 'var(--text-primary)' }}>
-          {t('failedChapter.title')}
-        </div>
-        <p className="whitespace-pre-line break-words text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-          {failure.message}
-        </p>
-        <ErrorDetails title={t('failedChapter.title')} message={failure.message} details={failure.providerMessage} />
-        <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-          {t('failedChapter.hint')}
-        </p>
-        <div className="no-print flex flex-wrap items-center gap-2 pt-1">
-          <AiRunButton
-            tone="pv-btn-emerald"
-            busy={busy}
-            disabled={busy}
-            oneOff={oneOff}
-            onOneOffChange={setOneOff}
-            onClick={() => onRetry(oneOff)}
-            icon={<IconRefresh size={15} className="shrink-0" />}
-            label={<span>{t('failedChapter.retry')}</span>}
-          />
-          {onManual && (
-            <button type="button" className="pv-btn" disabled={busy} onClick={onManual}>
-              <IconClipboardText size={15} className="shrink-0" aria-hidden="true" />
-              <span>{t('manual.entry.chapter')}</span>
-            </button>
-          )}
-          <button type="button" className="pv-btn" disabled={busy} onClick={onRemove}>
-            <IconTrash size={15} className="shrink-0" aria-hidden="true" />
-            <span>{t('failedChapter.remove')}</span>
+    <div className="pv-note pv-note--warn pv-failed" data-testid="failed-chapter">
+      <p className="pv-failed__title">{t('failedChapter.title')}</p>
+      <p className="pv-failed__message whitespace-pre-line">{failure.message}</p>
+      <ErrorDetails title={t('failedChapter.title')} message={failure.message} details={failure.providerMessage} />
+      <p className="pv-failed__hint">{t('failedChapter.hint')}</p>
+      <div className="pv-failed__actions no-print">
+        <AiRunButton
+          quiet
+          busy={busy}
+          disabled={busy}
+          oneOff={oneOff}
+          onOneOffChange={setOneOff}
+          onClick={() => onRetry(oneOff)}
+          icon={<IconRefresh size={18} className="shrink-0" />}
+          label={<span>{t('failedChapter.retry')}</span>}
+        />
+        {onManual && (
+          <button type="button" className="pv-btn-text pv-btn-text--calm" disabled={busy} onClick={onManual}>
+            <IconClipboardText size={18} className="shrink-0" aria-hidden="true" />
+            <span>{t('manual.entry.chapter')}</span>
           </button>
-        </div>
+        )}
+        <button type="button" className="pv-btn-text pv-btn-text--calm pv-btn-text--danger" disabled={busy} onClick={onRemove}>
+          <IconTrash size={18} className="shrink-0" aria-hidden="true" />
+          <span>{t('failedChapter.remove')}</span>
+        </button>
       </div>
     </div>
   )
@@ -101,35 +91,26 @@ export function RetryAllBanner({ count, busy, onRetryAll, onManual }: RetryAllBa
   const { t } = useTranslation('ai')
   const [oneOff, setOneOff] = useState<AiProviderId | undefined>(undefined)
   return (
-    <div className="pv-alert pv-alert-gold no-print" data-testid="retry-all-banner">
-      <div className="mt-0.5 shrink-0" style={{ color: 'var(--accent-gold)' }}>
-        <IconAlertTriangle size={22} aria-hidden="true" />
-      </div>
-      <div className="min-w-0 flex-1 space-y-2">
-        <div className="text-sm font-extrabold sm:text-base" style={{ color: 'var(--text-primary)' }}>
-          {t('failedChapter.allTitle', { count })}
-        </div>
-        <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-          {t('failedChapter.allHint')}
-        </p>
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <AiRunButton
-            tone="pv-btn-emerald"
-            busy={busy}
-            disabled={busy}
-            oneOff={oneOff}
-            onOneOffChange={setOneOff}
-            onClick={() => onRetryAll(oneOff)}
-            icon={<IconRefresh size={15} className="shrink-0" />}
-            label={<span>{t('failedChapter.retryAll')}</span>}
-          />
-          {onManual && (
-            <button type="button" className="pv-btn" disabled={busy} onClick={onManual} data-testid="retry-all-manual">
-              <IconClipboardText size={15} className="shrink-0" aria-hidden="true" />
-              <span>{t('manual.entry.all')}</span>
-            </button>
-          )}
-        </div>
+    <div className="pv-note pv-note--warn pv-failed no-print" data-testid="retry-all-banner">
+      <p className="pv-failed__title">{t('failedChapter.allTitle', { count })}</p>
+      <p className="pv-failed__hint">{t('failedChapter.allHint')}</p>
+      <div className="pv-failed__actions">
+        <AiRunButton
+          quiet
+          busy={busy}
+          disabled={busy}
+          oneOff={oneOff}
+          onOneOffChange={setOneOff}
+          onClick={() => onRetryAll(oneOff)}
+          icon={<IconRefresh size={18} className="shrink-0" />}
+          label={<span>{t('failedChapter.retryAll')}</span>}
+        />
+        {onManual && (
+          <button type="button" className="pv-btn-text pv-btn-text--calm" disabled={busy} onClick={onManual} data-testid="retry-all-manual">
+            <IconClipboardText size={18} className="shrink-0" aria-hidden="true" />
+            <span>{t('manual.entry.all')}</span>
+          </button>
+        )}
       </div>
     </div>
   )

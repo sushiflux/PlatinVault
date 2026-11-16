@@ -6,7 +6,7 @@ import { IconRefresh } from '@tabler/icons-react'
 import { fetchGameHistory, fetchGameIgdb, fetchGameSeries, fetchGameStats, fetchLiveAchievements } from '../api/client'
 import { ChartSkeleton, useStatsFormat } from './stats/chartKit'
 import { FactsCard, NewsCard } from './stats/GameFacts'
-import { HeroTiles, heroGridClass } from './stats/HeroTiles'
+import { HeroTiles, heroGridProps } from './stats/HeroTiles'
 import { PlayerCountChart, PlaytimeCalendar } from './stats/HistoryCharts'
 import { RANGE_CHOICES } from './stats/historyData'
 import { PlaytimeCompare, RatingCompare } from './stats/IgdbCharts'
@@ -73,12 +73,12 @@ export function GameStatsPanel({ slug, steamAppId }: { slug: string; steamAppId?
 
   if (stats.error || !data) {
     return (
-      <div className="pv-alert pv-alert-danger flex-wrap items-center justify-between gap-3">
-        <span className="text-sm font-semibold">{t('panel.loadError', { reason: errorText(stats.error) })}</span>
+      <div className="pv-note pv-note--danger flex flex-wrap items-center justify-between gap-3">
+        <span className="font-semibold">{t('panel.loadError', { reason: errorText(stats.error) })}</span>
         <span className="inline-flex items-center gap-3">
           <CopyErrorButton report={{ message: t('panel.loadError', { reason: errorText(stats.error) }) }} />
           <button type="button" className="pv-btn" onClick={() => void stats.refetch()}>
-            <IconRefresh size={15} />
+            <IconRefresh size={16} />
             <span>{t('common:retry')}</span>
           </button>
         </span>
@@ -131,7 +131,7 @@ export function GameStatsPanel({ slug, steamAppId }: { slug: string; steamAppId?
   return (
     <div className="pv-stats space-y-8">
       {!hasPersonal && (
-        <p className="pv-card text-sm" style={{ color: 'var(--text-secondary)' }}>
+        <p className="pv-note" style={{ color: 'var(--text-secondary)' }}>
           {live.error ? t('panel.noPersonalDataWithError', { reason: errorText(live.error) }) : t('panel.noPersonalData')}
           {live.error && <CopyErrorButton className="ms-2 align-middle" report={{ message: t('panel.noPersonalDataWithError', { reason: errorText(live.error) }) }} />}
         </p>
@@ -197,7 +197,7 @@ export function GameStatsPanel({ slug, steamAppId }: { slug: string; steamAppId?
           ) : null}
         </div>
         {history.error && !history.data && (
-          <p className="pv-alert pv-alert-danger text-sm font-semibold" role="alert">
+          <p className="pv-note pv-note--danger font-semibold" role="alert">
             {t('panel.historyError', { reason: errorText(history.error) })}
             <CopyErrorButton className="ms-2 align-middle" report={{ message: t('panel.historyError', { reason: errorText(history.error) }) }} />
           </p>
@@ -208,7 +208,7 @@ export function GameStatsPanel({ slug, steamAppId }: { slug: string; steamAppId?
         {(history.isLoading || history.data) && (
           <div className="space-y-3">
             <div className="flex flex-wrap items-center justify-end gap-3">
-              <span className="text-xs font-bold" style={{ color: 'var(--text-muted)' }}>
+              <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
                 {t('panel.playerRange')}
               </span>
               <div className="pv-segmented" role="group" aria-label={t('panel.playerRange')}>
@@ -272,11 +272,11 @@ function StatsSkeleton() {
   const { t } = useTranslation('stats')
   return (
     <div className="pv-stats space-y-8" aria-busy="true" aria-label={t('panel.loading')}>
-      <div className={heroGridClass(4)}>
+      <div {...heroGridProps(4)}>
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="pv-card animate-pulse" style={{ minBlockSize: '9.5rem' }}>
-            <div className="pv-viz-skel" style={{ blockSize: '0.9rem', inlineSize: '55%', opacity: 0.7 }} />
-            <div className="pv-viz-skel mt-4" style={{ blockSize: '2rem', inlineSize: '40%', opacity: 0.5 }} />
+          <div key={i} className="pv-fig animate-pulse" style={{ minBlockSize: '6rem' }}>
+            <div className="pv-viz-skel" style={{ blockSize: '1.9rem', inlineSize: '40%', opacity: 0.5 }} />
+            <div className="pv-viz-skel mt-2" style={{ blockSize: '0.9rem', inlineSize: '55%', opacity: 0.7 }} />
           </div>
         ))}
       </div>

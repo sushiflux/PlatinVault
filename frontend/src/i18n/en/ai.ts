@@ -31,6 +31,7 @@ const ai = {
   },
 
   selection: {
+    errorTitle: 'AI provider status',
     title: 'AI selection',
     intro:
       'Decides which AI takes over your actions: researching a new guide, completing a guide, adding a chapter, Story & Lore and translating guides.',

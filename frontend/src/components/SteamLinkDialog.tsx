@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { CopyErrorButton } from './ui/CopyErrorButton'
-import { IconLink, IconLoader2, IconSearch, IconX } from '@tabler/icons-react'
+import { ErrorBlock } from './ui/ErrorBlock'
+import { IconButton } from './ui/IconButton'
+import '../styles/dialogs.css'
+import { IconLoader2, IconSearch, IconX } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { linkSteamApp, searchSteamGames } from '../api/client'
 import type { GameDetailDto, SteamSearchItemDto } from '../api/types'
@@ -52,24 +54,32 @@ export function SteamLinkDialog({ slug, initialQuery, onClose, onLinked }: Steam
   }
 
   return (
-    <div className="pv-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="steam-link-title">
-      <div className="pv-modal w-full max-w-lg p-6 space-y-4">
-        <div className="flex items-center justify-between pb-3" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-          <div id="steam-link-title" className="flex items-center gap-2 font-bold text-sm" style={{ color: 'var(--accent-crystal)' }}>
-            <IconLink size={20} />
-            <span>{t('game:steamLink.title')}</span>
-          </div>
-          <button type="button" onClick={onClose} disabled={linkingId !== null} className="pv-btn !p-1.5" aria-label={t('common:close')}>
-            <IconX size={18} />
-          </button>
+    <div
+      className="pv-modal-backdrop pv-modal-backdrop--top"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="steam-link-title"
+      onKeyDown={(e) => {
+        if (e.key === 'Escape' && linkingId === null) {
+          e.stopPropagation()
+          onClose()
+        }
+      }}
+    >
+      <div className="pv-modal w-full max-w-lg p-6">
+        <div className="flex items-start justify-between gap-3">
+          <h2 id="steam-link-title" className="pv-dialog-title">
+            {t('game:steamLink.title')}
+          </h2>
+          <IconButton label={t('common:close')} onClick={onClose} disabled={linkingId !== null} className="shrink-0">
+            <IconX size={20} aria-hidden="true" />
+          </IconButton>
         </div>
 
-        <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-          {t('game:steamLink.text')}
-        </p>
+        <p className="pv-dialog-text">{t('game:steamLink.text')}</p>
 
-        <div className="relative">
-          <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+        <div className="relative mt-4">
+          <IconSearch size={17} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
           <input
             type="search"
             value={query}
@@ -81,33 +91,38 @@ export function SteamLinkDialog({ slug, initialQuery, onClose, onLinked }: Steam
           />
         </div>
 
-        <div className="max-h-72 min-h-40 overflow-y-auto space-y-1.5">
+        {/* Hairline list: cover, name and AppID per row; a row is one frameless button */}
+        <ul className="m-0 mt-2 max-h-72 min-h-40 list-none overflow-y-auto p-0">
           {results.map((item) => (
-            <button
-              key={item.appId}
-              type="button"
-              disabled={linkingId !== null}
-              onClick={() => void link(item)}
-              className="relative flex w-full items-center gap-3 rounded-lg p-2 text-left cursor-pointer"
-              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}
-            >
-              <img src={item.headerImageUrl} alt="" className="h-10 w-20 rounded object-cover shrink-0" />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-xs font-bold" style={{ color: 'var(--text-primary)' }}>{item.name}</span>
-                <span className="block text-[10px]" style={{ color: 'var(--text-muted)' }}>{t('game:steamLink.appId', { id: item.appId })}</span>
-              </span>
-              {linkingId === item.appId && <IconLoader2 size={16} className="animate-spin shrink-0" />}
-            </button>
+            <li key={item.appId} style={{ borderBlockEnd: '1px solid var(--border-subtle)' }}>
+              <button
+                type="button"
+                disabled={linkingId !== null}
+                onClick={() => void link(item)}
+                className="relative flex min-h-12 w-full cursor-pointer items-center gap-3 px-1 py-2 text-left hover:bg-[var(--bg-elevated)]"
+              >
+                <img src={item.headerImageUrl} alt="" className="h-10 w-20 shrink-0 object-cover" style={{ borderRadius: 'var(--radius-sm)' }} />
+                <span className="min-w-0 flex-1">
+                  <span className="block break-words font-medium" style={{ color: 'var(--text-primary)' }}>
+                    {item.name}
+                  </span>
+                  <span className="block text-sm" style={{ color: 'var(--text-muted)' }}>
+                    {t('game:steamLink.appId', { id: item.appId })}
+                  </span>
+                </span>
+                {linkingId === item.appId && <IconLoader2 size={17} className="shrink-0 animate-spin" aria-hidden="true" />}
+              </button>
+            </li>
           ))}
           {!searching && results.length === 0 && query.trim().length >= 2 && (
-            <p className="py-6 text-center text-xs" style={{ color: 'var(--text-muted)' }}>{t('game:steamLink.none')}</p>
+            <li className="py-6 text-center" style={{ color: 'var(--text-muted)' }}>
+              {t('game:steamLink.none')}
+            </li>
           )}
-        </div>
+        </ul>
 
-        <div className="min-h-[1.25rem] text-xs font-bold" role="alert" style={{ color: 'var(--accent-crimson)' }}>
-          {error}
-          {error && <CopyErrorButton className="ms-2 align-middle" report={{ message: error }} />}
-        </div>
+        {/* Room for a problem, so it moves nothing */}
+        <div className="mt-2 min-h-12">{error && <ErrorBlock title={t('game:steamLink.errorTitle')} message={error} defaultOpen />}</div>
       </div>
     </div>
   )

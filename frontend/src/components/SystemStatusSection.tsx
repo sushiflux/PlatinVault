@@ -29,7 +29,7 @@ const STATUS_LOOK: Record<RowStatus, { icon: typeof IconCircleCheck; color: stri
   warn: { icon: IconAlertTriangle, color: 'var(--accent-gold)' },
   error: { icon: IconCircleX, color: 'var(--accent-crimson)' },
   off: { icon: IconCircleMinus, color: 'var(--text-muted)' },
-  checking: { icon: IconLoader2, color: 'var(--accent-crystal)', spin: true },
+  checking: { icon: IconLoader2, color: 'var(--link)', spin: true },
   unknown: { icon: IconCircleDashed, color: 'var(--accent-crimson)' },
 }
 
@@ -60,13 +60,13 @@ function CheckRow({ row }: { row: Row }) {
           <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
             {row.label}
           </span>
-          <span className="text-xs font-extrabold" style={{ color: look.color }}>
+          <span className="text-sm font-semibold" style={{ color: look.color }}>
             {t(`system.status.${row.status}`)}
             {row.latencyMs != null ? ` · ${row.latencyMs} ms` : ''}
           </span>
         </div>
         {/* The detail line always has its height, so rows do not jump while the check runs */}
-        <p className="min-h-[1.25rem] text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+        <p className="min-h-[1.25rem] text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
           {row.detail}
         </p>
         {row.extra}
@@ -130,13 +130,13 @@ export function SystemStatusSection() {
   })
 
   return (
-    <div className="pv-card space-y-3">
+    <div className="pv-set-section">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <div className="text-sm font-extrabold" style={{ color: 'var(--text-primary)' }}>
+          <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
             {t('system.title')}
           </div>
-          <div className="min-h-[1rem] text-xs" style={{ color: 'var(--text-muted)' }}>
+          <div className="min-h-[1rem] text-sm" style={{ color: 'var(--text-muted)' }}>
             {checking
               ? t('system.checking')
               : data && !backendDown
@@ -144,8 +144,8 @@ export function SystemStatusSection() {
                 : t('system.lastFailed')}
           </div>
         </div>
-        <button type="button" className="pv-btn !py-1 !px-3 !text-xs" onClick={() => void refetch()} disabled={isFetching}>
-          <IconRefresh size={14} className={isFetching ? 'animate-spin' : ''} />
+        <button type="button" className="pv-btn-text" onClick={() => void refetch()} disabled={isFetching}>
+          <IconRefresh size={17} className={isFetching ? 'animate-spin' : ''} />
           <span>{t('system.recheck')}</span>
         </button>
       </div>
@@ -161,12 +161,12 @@ export function SystemStatusSection() {
           <div className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
             {t('system.handbookTitle')}
           </div>
-          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
             {t('system.handbookText')}
           </div>
         </div>
-        <button type="button" className="pv-btn !py-1 !px-3 !text-xs" onClick={() => setHandbookOpen(true)}>
-          <IconBook2 size={14} aria-hidden="true" />
+        <button type="button" className="pv-btn-text" onClick={() => setHandbookOpen(true)}>
+          <IconBook2 size={17} aria-hidden="true" />
           <span>{t('system.handbookOpen')}</span>
         </button>
       </div>
@@ -178,12 +178,12 @@ export function SystemStatusSection() {
           <div className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
             {t('system.licensesTitle')}
           </div>
-          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
             {t('system.licensesText')}
           </div>
         </div>
-        <button type="button" className="pv-btn !py-1 !px-3 !text-xs" onClick={() => setLicensesOpen(true)}>
-          <IconLicense size={14} aria-hidden="true" />
+        <button type="button" className="pv-btn-text" onClick={() => setLicensesOpen(true)}>
+          <IconLicense size={17} aria-hidden="true" />
           <span>{t('system.licensesOpen')}</span>
         </button>
       </div>
@@ -197,26 +197,26 @@ export function SystemStatusSection() {
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            className="pv-btn !py-1 !px-3 !text-xs"
+            className="pv-btn-text"
             onClick={() => {
               resetSeenHints()
               setHintsReset(true)
             }}
           >
-            <IconRoute size={14} aria-hidden="true" />
+            <IconRoute size={17} aria-hidden="true" />
             <span>{t('system.resetHints')}</span>
           </button>
           <button
             type="button"
-            className="pv-btn !py-1 !px-3 !text-xs"
+            className="pv-btn-text"
             onClick={() => window.dispatchEvent(new Event(START_TOUR_EVENT))}
           >
-            <IconRefresh size={14} aria-hidden="true" />
+            <IconRefresh size={17} aria-hidden="true" />
             <span>{t('system.restartTour')}</span>
           </button>
         </div>
         {/* The message keeps its place: the row below never jumps */}
-        <div className="min-h-[1rem] text-xs" role="status" style={{ color: 'var(--accent-emerald)' }}>
+        <div className="min-h-[1rem] text-sm" role="status" style={{ color: 'var(--accent-emerald)' }}>
           {hintsReset ? t('system.hintsReset') : ''}
         </div>
       </div>

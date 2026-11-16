@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { IconCheck } from '@tabler/icons-react'
 import type { GuidePlanDto, GuidePlanTopicDto } from '../../api/types'
 import { Tooltip } from '../ui/Tooltip'
+import '../guide/guide.css'
+import './ai.css'
 
 // Key of a plan entry; extras share the topic id "extra", so their title tells them apart
 export const keyOf = (topic: GuidePlanTopicDto) => (topic.id === 'extra' ? `extra:${topic.title}` : topic.id)
@@ -60,11 +62,11 @@ export function TopicGroup({
   return (
     <section className="space-y-2">
       <div>
-        <h3 className="text-xs font-extrabold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+        <h3 className="pv-eyebrow">
           {title} ({topics.length})
         </h3>
         {hint && (
-          <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
+          <p className="text-[0.8125rem]" style={{ color: 'var(--text-muted)' }}>
             {hint}
           </p>
         )}
@@ -75,26 +77,13 @@ export function TopicGroup({
           const isOn = selected.has(key) && !topic.covered
           return (
             <Tooltip key={key} label={topic.title} description={topic.focus} className="flex">
-              <label
-                className={`flex w-full items-start gap-2.5 rounded-xl p-3 text-xs ${disabled ? 'opacity-60' : 'cursor-pointer'}`}
-                style={{
-                  background: isOn ? 'var(--accent-emerald-bg)' : 'var(--bg-elevated)',
-                  border: `1px solid ${isOn ? 'var(--accent-emerald-border)' : 'var(--border-subtle)'}`,
-                }}
-              >
-                <input
-                  type="checkbox"
-                  className="mt-0.5 rounded"
-                  style={{ accentColor: 'var(--accent-emerald)' }}
-                  checked={isOn}
-                  disabled={disabled}
-                  onChange={() => onToggle(topic)}
-                />
+              <label className={`pv-topic ${disabled ? 'opacity-60' : 'cursor-pointer'}`} data-selected={isOn || undefined}>
+                <input type="checkbox" className="pv-check mt-0.5" checked={isOn} disabled={disabled} onChange={() => onToggle(topic)} />
                 <span className="min-w-0">
-                  <span className="flex flex-wrap items-center gap-1.5 font-bold" style={{ color: 'var(--text-primary)' }}>
+                  <span className="flex flex-wrap items-center gap-1.5 font-semibold" style={{ color: 'var(--text-primary)' }}>
                     {topic.title}
-                    {topic.required && !topic.covered && <span className="pv-badge pv-badge-s !py-0 !text-[10px]">{t('builder.required')}</span>}
-                    {topic.covered && <IconCheck size={13} style={{ color: 'var(--accent-emerald)' }} />}
+                    {topic.required && !topic.covered && <span className="pv-badge pv-badge-s !py-0 !text-[0.8125rem]">{t('builder.required')}</span>}
+                    {topic.covered && <IconCheck size={16} style={{ color: 'var(--accent-emerald)' }} />}
                   </span>
                   <span className="mt-0.5 line-clamp-2 block" style={{ color: 'var(--text-secondary)' }}>
                     {topic.reason && !topic.recommended ? topic.reason : topic.focus}

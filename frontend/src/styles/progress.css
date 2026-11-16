@@ -1,0 +1,33 @@
+/* The trophy progress line (components/ui/ProgressBar.tsx), variant "Kristall": a thin straight line, square ends, no gradient, no
+   glints. The fill is the progress colour; a game at 100 % turns the line gold (the one gold line of a finished game).
+   --p (0..100) is the single input, set inline by the component. */
+.pv-pbar {
+  --p: 0;
+  position: relative;
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.progress-bar-track {
+  position: relative;
+  block-size: 3px;
+  background: var(--track);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  block-size: 100%;
+  inline-size: calc(var(--p) * 1%);
+  background: var(--prog);
+  transition: inline-size 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pv-pbar[data-complete] .progress-bar-fill {
+  background: var(--accent-gold);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-bar-fill {
+    transition: none;
+  }
+}
