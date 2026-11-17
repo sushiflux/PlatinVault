@@ -4,6 +4,7 @@ import {
   DEFAULT_CHOICE,
   DEFAULT_DIRECTION,
   ORDERS_BY_VIEW,
+  SHARED_ORDERS,
   chooseOrder,
   countMissing,
   favoriteSortValues,
@@ -25,6 +26,9 @@ const values = (title: string, patch: Partial<SortValues> = {}): SortValues => (
   sizeBytes: null,
   metacritic: null,
   reviews: null,
+  igdbCritics: null,
+  igdbPlayers: null,
+  overall: null,
   ...patch,
 })
 
@@ -139,16 +143,16 @@ describe('values of the two kinds of cards', () => {
   } as GameSummaryDto
 
   it('reads a favourite, preferring the sort values of the library data', () => {
-    const v = favoriteSortValues(favorite)
+    const v = favoriteSortValues(favorite, true)
     expect(v).toMatchObject({ completion: 25, playtimeMinutes: 90, sizeBytes: 1234, metacritic: 82, reviews: 91 })
     expect(v.release).toBe(Date.parse('2020-05-05T00:00:00Z'))
-    expect(favoriteSortValues({ ...favorite, sortMetacritic: null, sortReviewPercent: undefined })).toMatchObject({ metacritic: 80, reviews: 90 })
+    expect(favoriteSortValues({ ...favorite, sortMetacritic: null, sortReviewPercent: undefined }, true)).toMatchObject({ metacritic: 80, reviews: 90 })
   })
 
   it('treats a game without achievements as unknown, not as 0 %', () => {
-    expect(favoriteSortValues({ ...favorite, trophiesTotal: 0, trophiesUnlocked: 0 }).completion).toBeNull()
+    expect(favoriteSortValues({ ...favorite, trophiesTotal: 0, trophiesUnlocked: 0 }, true).completion).toBeNull()
     const owned = { name: 'Lib', playtimeHours: 2, lastPlayedAt: null, trophiesTotal: null, trophiesUnlocked: null } as SteamOwnedGameDto
-    const v = librarySortValues(owned)
+    const v = librarySortValues(owned, true)
     expect(v.completion).toBeNull()
     expect(v.playtimeMinutes).toBe(120)
     expect(v.lastPlayed).toBeNull()
@@ -157,17 +161,75 @@ describe('values of the two kinds of cards', () => {
   })
 
   it('sorts by the real size, and by the estimated install size for games that are not installed', () => {
-    const installed = favoriteSortValues({ ...favorite, sizeOnDiskBytes: 10, installSizeBytes: 99 })
-    const notInstalled = favoriteSortValues({ ...favorite, sizeOnDiskBytes: null, installSizeBytes: 50 })
-    const unknown = favoriteSortValues({ ...favorite, sizeOnDiskBytes: null, installSizeBytes: null })
+    const installed = favoriteSortValues({ ...favorite, sizeOnDiskBytes: 10, installSizeBytes: 99 }, true)
+    const notInstalled = favoriteSortValues({ ...favorite, sizeOnDiskBytes: null, installSizeBytes: 50 }, true)
+    const unknown = favoriteSortValues({ ...favorite, sizeOnDiskBytes: null, installSizeBytes: null }, true)
     expect(installed.sizeBytes).toBe(10)
     expect(notInstalled.sizeBytes).toBe(50)
     expect(unknown.sizeBytes).toBeNull()
-    expect(librarySortValues({ name: 'L', playtimeHours: 1, installSizeBytes: 7 } as SteamOwnedGameDto).sizeBytes).toBe(7)
+    expect(librarySortValues({ name: 'L', playtimeHours: 1, installSizeBytes: 7 } as SteamOwnedGameDto, true).sizeBytes).toBe(7)
     expect(sizeOf({ sizeOnDiskBytes: 0, installSizeBytes: 5 })).toEqual({ kind: 'estimate', bytes: 5 })
   })
 
   it('treats an unparseable date as unknown', () => {
-    expect(favoriteSortValues({ ...favorite, releaseAt: 'soon' }).release).toBeNull()
+    expect(favoriteSortValues({ ...favorite, releaseAt: 'soon' }, true).release).toBeNull()
+  })
+})
+
+describe('the rating orders: IGDB critics, IGDB players, overall rating', () => {
+  const fav = (title: string, patch: Partial<GameSummaryDto>) =>
+    favoriteSortValues({ title, trophiesUnlocked: 0, trophiesTotal: 0, ...patch } as GameSummaryDto, true)
+
+  it('are in both views, after the Steam reviews, best first', () => {
+    for (const order of ['igdbCritics', 'igdbPlayers', 'overall'] as const) {
+      expect(ORDERS_BY_VIEW.favorites).toContain(order)
+      expect(ORDERS_BY_VIEW.all).toContain(order)
+      expect(DEFAULT_DIRECTION[order]).toBe('desc')
+      expect(parseSortChoice(`${order}:asc`, 'all')).toEqual({ order, direction: 'asc' })
+    }
+    expect(SHARED_ORDERS.slice(-4)).toEqual(['reviews', 'igdbCritics', 'igdbPlayers', 'overall'])
+  })
+
+  it('read the IGDB ratings and the mean of the ratings a favourite has', () => {
+    const v = fav('A', { reviewPercent: 90, metacriticScore: 80, igdbRating: 70, igdbUserRating: 60 })
+    expect(v).toMatchObject({ igdbCritics: 70, igdbPlayers: 60, overall: 75 })
+    expect(fav('B', {})).toMatchObject({ igdbCritics: null, igdbPlayers: null, overall: null })
+    // Only a Steam rating: that is the overall value
+    expect(fav('C', { reviewPercent: 87 }).overall).toBe(87)
+  })
+
+  it('read the same for a library game', () => {
+    const owned = { name: 'L', playtimeHours: 1, sortReviewPercent: 90, sortMetacritic: 70, igdbRating: 50, igdbUserRating: null } as SteamOwnedGameDto
+    expect(librarySortValues(owned, true)).toMatchObject({ igdbCritics: 50, igdbPlayers: null, overall: 70 })
+    expect(librarySortValues({ name: 'N', playtimeHours: 0 } as SteamOwnedGameDto, true)).toMatchObject({ igdbCritics: null, igdbPlayers: null, overall: null })
+  })
+
+  it('ignore the IGDB ratings without credentials, exactly like the tile strip: no critics/players values, the mean only has Steam and Metacritic', () => {
+    const patch = { reviewPercent: 90, metacriticScore: 80, igdbRating: 70, igdbUserRating: 60 } as Partial<GameSummaryDto>
+    const base = { title: 'A', trophiesUnlocked: 0, trophiesTotal: 0, ...patch } as GameSummaryDto
+    expect(favoriteSortValues(base, false)).toMatchObject({ igdbCritics: null, igdbPlayers: null, overall: 85 })
+    expect(favoriteSortValues(base, true)).toMatchObject({ igdbCritics: 70, igdbPlayers: 60, overall: 75 })
+    const owned = { name: 'L', playtimeHours: 1, sortReviewPercent: 90, sortMetacritic: 70, igdbRating: 50, igdbUserRating: 40 } as SteamOwnedGameDto
+    expect(librarySortValues(owned, false)).toMatchObject({ igdbCritics: null, igdbPlayers: null, overall: 80 })
+    const items = [base, { ...base, title: 'B' }]
+    expect(countMissing(items, (item) => favoriteSortValues(item, false), 'igdbCritics')).toBe(2)
+    expect(countMissing(items, (item) => favoriteSortValues(item, true), 'igdbCritics')).toBe(0)
+  })
+
+  it('sort best first, reversible, games without a value last in both directions, ties by title', () => {
+    const items = [
+      fav('Delta', {}),
+      fav('Beta', { igdbRating: 80, reviewPercent: 60 }),
+      fav('Alpha', { igdbRating: 90, reviewPercent: 90 }),
+      fav('Gamma', { igdbRating: 80, reviewPercent: 60 }),
+    ]
+    expect(sorted(items, 'igdbCritics', 'desc')).toEqual(['Alpha', 'Beta', 'Gamma', 'Delta'])
+    expect(sorted(items, 'igdbCritics', 'asc')).toEqual(['Beta', 'Gamma', 'Alpha', 'Delta'])
+    expect(sorted(items, 'overall', 'desc')).toEqual(['Alpha', 'Beta', 'Gamma', 'Delta'])
+    expect(sorted(items, 'overall', 'asc')).toEqual(['Beta', 'Gamma', 'Alpha', 'Delta'])
+    // Nobody has IGDB players: all missing, ordered by title
+    expect(sorted(items, 'igdbPlayers', 'desc')).toEqual(['Alpha', 'Beta', 'Delta', 'Gamma'])
+    expect(countMissing(items, (item) => item, 'igdbPlayers')).toBe(4)
+    expect(countMissing(items, (item) => item, 'overall')).toBe(1)
   })
 })

@@ -85,6 +85,13 @@ const dashboard = {
     favorites: 'Favourites ({{n}})',
     allGames: 'All games ({{n}})',
   },
+  compact: {
+    label: 'Search, view and sorting',
+    searchOpen: 'Open search',
+    searchClose: 'Close search',
+    options: 'View and tile size',
+    optionsTitle: 'View',
+  },
   list: {
     title: 'Title',
     playtime: 'Playtime',
@@ -150,6 +157,9 @@ const dashboard = {
       size: 'Size',
       metacritic: 'Metacritic score',
       reviews: 'Steam reviews',
+      igdbCritics: 'IGDB critics',
+      igdbPlayers: 'IGDB players',
+      overall: 'Overall rating',
     },
     hints: {
       custom: 'The way you dragged the cards',
@@ -161,6 +171,9 @@ const dashboard = {
       size: 'Size on disk – the estimated install size when not installed',
       metacritic: 'Score of the critics',
       reviews: 'Share of positive Steam reviews',
+      igdbCritics: 'Score of the critics on IGDB',
+      igdbPlayers: 'Score of the players on IGDB',
+      overall: 'Average of all ratings the game has',
     },
     sentence: 'Sorted: {{order}} – {{direction}}.',
     directions: {
@@ -173,6 +186,9 @@ const dashboard = {
       size: { asc: 'smallest first', desc: 'largest first' },
       metacritic: { asc: 'lowest first', desc: 'highest first' },
       reviews: { asc: 'worst first', desc: 'best first' },
+      igdbCritics: { asc: 'lowest first', desc: 'highest first' },
+      igdbPlayers: { asc: 'lowest first', desc: 'highest first' },
+      overall: { asc: 'worst first', desc: 'best first' },
     },
     direction: {
       label: 'Reverse the direction',

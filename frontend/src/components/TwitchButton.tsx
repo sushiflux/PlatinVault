@@ -21,12 +21,14 @@ interface TwitchButtonProps {
   labelText?: string
   // How many streams are live for this game right now (only known with Twitch credentials): shown inline after the label: a small live dot and the number. Unknown = nothing.
   liveCount?: LiveCount
+  // Ref callback of the link itself (a card's action bar reports it to the live-count collector: its count is fetched while it is on screen)
+  linkRef?: (element: HTMLAnchorElement | null) => (() => void) | undefined
 }
 
 // "Who streams this game live?": opens Twitch in a new tab - no key, no account, PlatinVault sends nothing to Twitch.
 // Shows the Twitch logo in Twitch purple so the destination is obvious (user decision 2026-10-31).
 // Hidden while the switch in Settings > Twitch & IGDB is off.
-export function TwitchButton({ name, size = 18, className, style, wrapperClassName, labelText, liveCount }: TwitchButtonProps) {
+export function TwitchButton({ name, size = 18, className, style, wrapperClassName, labelText, liveCount, linkRef }: TwitchButtonProps) {
   const { t } = useTranslation('game')
   const fmt = useFormat()
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: fetchSettings, staleTime: 60_000 })
@@ -46,8 +48,8 @@ export function TwitchButton({ name, size = 18, className, style, wrapperClassNa
       : liveCount.atLeast
         ? t('twitch.liveMany', { count: liveCount.count })
         : t('twitch.live', { count: liveCount.count })
-  // With Twitch credentials every Twitch segment of a card holds the room of the widest count ("300+") after its label (whether this game
-  // has a count or not), so nothing shifts when a count arrives, changes or goes away (.pv-bar-seg--live, .pv-bar-count)
+  // With Twitch credentials the segment is marked live (.pv-bar-seg--live): its logo stays exactly where the logos of the other segments
+  // are, and the count (.pv-bar-count) is laid beside it, out of the flow - so nothing shifts when a count arrives, changes or goes away
   const inBar = (className ?? '').includes('pv-bar-seg')
   const reserve = Boolean(settings?.hasTwitchKey) && inBar
   const badge = liveCount && liveCount.count > 0 ? `${fmt.number(liveCount.count)}${liveCount.atLeast ? '+' : ''}` : null
@@ -55,6 +57,7 @@ export function TwitchButton({ name, size = 18, className, style, wrapperClassNa
   return (
     <Tooltip label={label} description={liveText ? `${liveText}. ${description}` : description} className={wrapperClassName}>
       <a
+        ref={linkRef}
         href={url}
         target="_blank"
         rel="noreferrer noopener"
@@ -66,11 +69,11 @@ export function TwitchButton({ name, size = 18, className, style, wrapperClassNa
         {/* In a card's action bar the logo is neutral until the segment is hovered or focused (CSS); everywhere else it wears the Twitch violet */}
         <IconBrandTwitch size={size} className={inBar ? 'pv-bar-seg-icon' : undefined} style={inBar ? undefined : { color: 'var(--brand-twitch)' }} />
         {labelText && <span className="pv-bar-label">{labelText}</span>}
-        {/* The count sits in the line of the label: the live dot in Twitch violet and the number in the label's font. Its room is always
-            reserved (see above); nothing for 0 streams - the tooltip says that nobody is streaming it */}
-        {inBar && (reserve || badge) && (
+        {/* The count: the live dot in Twitch violet and the number, laid beside the logo without taking room in the line (CSS); nothing
+            for 0 streams - the tooltip says that nobody is streaming it */}
+        {inBar && badge && (
           <span className="pv-bar-count" aria-hidden="true">
-            <span className="pv-bar-live-dot" style={badge ? undefined : { visibility: 'hidden' }} />
+            <span className="pv-bar-live-dot" />
             <span className="pv-bar-num">{badge}</span>
           </span>
         )}

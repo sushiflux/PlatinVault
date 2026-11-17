@@ -92,7 +92,8 @@ public sealed partial class TwitchStreamsService(TwitchAuthService auth, IgdbSer
     /// How many streams are live right now in the game's Twitch category - the same category the stream list uses (IGDB id, else the exact
     /// name) and the same optional language filter. Counted by paging ("Get Streams" has no total): up to <see cref="CountMaxPages"/> pages
     /// of <see cref="CountPageSize"/>; a full last page gives <c>AtLeast</c> ("300+"). Cached per category and language for five minutes; a
-    /// failure throws <see cref="TwitchApiException"/> and is never cached. Null without credentials; a game without a Twitch category has 0.
+    /// failure throws <see cref="TwitchApiException"/> and is never cached. Null without credentials; a game without a Twitch category
+    /// is "unknown", not 0: <see cref="TwitchLiveCount.NoCategory"/> (the card must not claim that nobody streams it).
     /// </summary>
     public async Task<TwitchLiveCount?> CountLiveAsync(int? steamAppId, string? gameName, string? language, CancellationToken ct)
     {
@@ -105,7 +106,8 @@ public sealed partial class TwitchStreamsService(TwitchAuthService auth, IgdbSer
         var category = await ResolveCategoryAsync(steamAppId, gameName, ct);
         if (category is null)
         {
-            return new TwitchLiveCount(0, false);
+            logger.LogDebug("Keine Twitch-Kategorie für App {AppId} ({Name}), keine Live-Zahl", steamAppId, gameName);
+            return TwitchLiveCount.NoCategory;
         }
 
         var key = $"twitch-live-count:{category.Id}:{lang}";
@@ -176,8 +178,10 @@ public sealed partial class TwitchStreamsService(TwitchAuthService auth, IgdbSer
 
         if (category is null && !string.IsNullOrWhiteSpace(name))
         {
-            // The name must match the Twitch category exactly; try the Steam title with and without trademark signs
-            var names = new[] { name, TrademarkSigns().Replace(name, string.Empty).Trim() }
+            // Twitch "Get Games": the name must exactly match the category title (case rule not documented); try the Steam title
+            // as is, without trademark signs and with collapsed whitespace
+            var plain = TrademarkSigns().Replace(name, string.Empty).Trim();
+            var names = new[] { name, plain, Whitespace().Replace(plain, " ") }
                 .Where(n => n.Length > 0)
                 .Distinct(StringComparer.Ordinal);
             category = await FindCategoryAsync(string.Join("&", names.Select(n => $"name={Uri.EscapeDataString(n)}")), ct);
@@ -189,6 +193,9 @@ public sealed partial class TwitchStreamsService(TwitchAuthService auth, IgdbSer
 
     [GeneratedRegex(@"[™®©]")]
     private static partial Regex TrademarkSigns();
+
+    [GeneratedRegex(@"\s+")]
+    private static partial Regex Whitespace();
 
     /// <summary>"Get Games": the first match of the given query (igdb_id=... or name=...), null when Twitch has none.</summary>
     private async Task<Category?> FindCategoryAsync(string query, CancellationToken ct)
@@ -293,4 +300,8 @@ public sealed partial class TwitchStreamsService(TwitchAuthService auth, IgdbSer
 }
 
 /// <summary>Streams live in a game's Twitch category right now; <c>AtLeast</c> = the count stopped at its limit ("300+").</summary>
-public sealed record TwitchLiveCount(int Count, bool AtLeast);
+public sealed record TwitchLiveCount(int Count, bool AtLeast, bool CategoryKnown = true)
+{
+    /// <summary>Twitch has no category for the game: the live count is unknown (not zero).</summary>
+    public static readonly TwitchLiveCount NoCategory = new(0, false, false);
+}

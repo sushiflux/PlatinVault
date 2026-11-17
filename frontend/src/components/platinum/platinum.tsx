@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
+import { useEffect, useId, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import { useReducedMotion } from 'motion/react'
 import './platinum.css'
 import { TierIcon } from '../ui/TierIcon'
@@ -135,6 +135,48 @@ export function PlatinumCoverFx({ seed, compact = false }: { seed: string; compa
   )
 }
 
+// The rosette at the right end of the gold line: round medal with two ribbon tails, in the same per-theme gold tokens as the line.
+// The circle centre sits on the line's centre and half the medal overhangs the line end (size per tile density in platinum.css).
+// Animated: a glint crossing the medal and one star spark, both in step with the line's shine (same phase). Static (reduced
+// motion): the plain medal. Never changes the layout: absolutely positioned, inside the aria-hidden line.
+function PlatinumMedal({ animated }: { animated: boolean }) {
+  const uid = useId().replace(/\W/g, '')
+  const fill = `pvm-fill-${uid}`
+  const tail = `pvm-tail-${uid}`
+  const clip = `pvm-clip-${uid}`
+  return (
+    <span className="pv-plat-medal">
+      <svg viewBox="0 0 20 22" className="pv-plat-medal-svg" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id={fill} x1="0.15" y1="0" x2="0.85" y2="1">
+            <stop offset="0" stopColor="var(--pv-plat-gold-shine)" />
+            <stop offset="0.5" stopColor="var(--pv-plat-gold-mid)" />
+            <stop offset="1" stopColor="var(--pv-plat-gold-edge)" />
+          </linearGradient>
+          <linearGradient id={tail} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="var(--pv-plat-gold-mid)" />
+            <stop offset="1" stopColor="var(--pv-plat-gold-edge)" />
+          </linearGradient>
+          <clipPath id={clip}>
+            <circle cx="10" cy="9" r="7.4" />
+          </clipPath>
+        </defs>
+        <path d="M6 14 L3.6 21.4 L7.6 19.4 L10.2 14 Z" fill={`url(#${tail})`} className="pv-plat-medal-edge" />
+        <path d="M14 14 L16.4 21.4 L12.4 19.4 L9.8 14 Z" fill={`url(#${tail})`} className="pv-plat-medal-edge" />
+        <circle cx="10" cy="9" r="8" fill={`url(#${fill})`} className="pv-plat-medal-edge" />
+        <circle cx="10" cy="9" r="5.2" fill="none" className="pv-plat-medal-ring" />
+        <path d={SPARK_PATH} transform="translate(6 5)" fill="var(--pv-plat-star)" />
+        {animated && (
+          <g clipPath={`url(#${clip})`}>
+            <rect x="0" y="0" width="4" height="20" className="pv-plat-medal-glint pv-plat-anim" />
+          </g>
+        )}
+      </svg>
+      {animated && <Spark className="pv-plat-medal-spark pv-plat-anim" style={{ '--i': 1 } as CSSProperties} />}
+    </span>
+  )
+}
+
 // The gold trophy line of a finished game (rendered inside the ProgressBar, over its 3 px track): 5 px gold line with a slow light
 // sweep and tiny twinkling stars that may overhang it. Absolutely positioned (the tile keeps its height), pointer-events none,
 // aria-hidden. The gold is a per-theme metallic gradient (tokens in platinum.css; darkest stop 5.9:1 against the light card, 4.6:1 against the dark one). Reduced motion: the
@@ -148,6 +190,7 @@ export function PlatinumLineFx({ seed }: { seed: string }) {
   return (
     <span ref={ref} className="pv-plat-line" aria-hidden="true" data-pv-fx={reduce ? 'static' : 'animated'} data-active={active ? 'true' : undefined} style={style}>
       <span className="pv-plat-line-gold">{!reduce && <span className="pv-plat-bar-shine pv-plat-anim" />}</span>
+      <PlatinumMedal animated={!reduce} />
       {!reduce &&
         TWINKLE.map((tw, i) => (
           <Spark key={tw.x} className="pv-plat-twinkle pv-plat-anim" style={{ insetInlineStart: tw.x, inlineSize: tw.s, blockSize: tw.s, marginBlockStart: -tw.s / 2, '--i': i } as CSSProperties} />

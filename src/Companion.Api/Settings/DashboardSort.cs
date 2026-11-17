@@ -21,7 +21,7 @@ public static class DashboardSort
 
     /// <summary>Orders both views know.</summary>
     public static readonly string[] SharedOrders =
-        ["completion", "alphabetical", "playtime", "lastPlayed", "release", "size", "metacritic", "reviews"];
+        ["completion", "alphabetical", "playtime", "lastPlayed", "release", "size", "metacritic", "reviews", "igdbCritics", "igdbPlayers", "overall"];
 
     /// <summary>The value to store for a submitted one (trimmed, order id case-sensitive, direction lower case), or null when it is invalid for the view.</summary>
     public static string? Normalize(string? value, bool favorites)

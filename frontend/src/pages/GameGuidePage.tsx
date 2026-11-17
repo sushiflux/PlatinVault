@@ -55,6 +55,8 @@ import { useAiProgress } from '../components/ai/useAiProgress'
 import { useAiStatus } from '../components/ai/useAiStatus'
 import { ErrorDetails } from '../components/ui/ErrorDetails'
 import { useConfirm } from '../components/ui/ConfirmDialog'
+import { GameAreaSwitch } from '../components/GameAreaSwitch'
+import { GameBackButton } from '../components/GameBackButton'
 import { GameHeadStatus } from '../components/GameHeadStatus'
 import { GameTrophyBar } from '../components/GameTrophyBar'
 import { PinsScope, usePinCount, type PinsFailure } from '../components/pins/pinsContext'
@@ -739,6 +741,7 @@ export function GameGuidePage() {
     <div className="pv-game flex flex-col">
       {/* Game head: cover, title, subtitle, Play - and one calm action row with the page's tools (they lived in the page header before) */}
       <div className="pv-game-head no-print">
+        <GameBackButton />
         {headCover ? (
           <img src={headCover} alt="" onError={() => setFailedCovers((list) => [...list, headCover])} className="pv-game-cover" />
         ) : (
@@ -792,6 +795,10 @@ export function GameGuidePage() {
             </IconButton>
           )}
         </div>
+        {/* Guide | Live trophies | Statistics: the last two need a Steam link, without one the bar is not there at all */}
+        {game.steamAppId ? (
+          <GameAreaSwitch gameSlug={game.slug} activeTab={activeTabSlug} chapterSlugs={guideTabs.map((tab) => tab.slug)} onSelect={selectTab} />
+        ) : null}
       </div>
 
       <PinsScope appId={game.steamAppId} onError={showPinFailure}>

@@ -1,4 +1,5 @@
 import type { GameSummaryDto, SteamOwnedGameDto } from '../api/types'
+import { overallRating } from './ratings'
 
 /**
  * The dashboard's sort orders (user wish 2026-11-02). The ids are the ones the server stores and validates
@@ -15,6 +16,9 @@ export type SortOrder =
   | 'size'
   | 'metacritic'
   | 'reviews'
+  | 'igdbCritics'
+  | 'igdbPlayers'
+  | 'overall'
 
 export type SortDirection = 'asc' | 'desc'
 
@@ -35,6 +39,9 @@ export const SHARED_ORDERS: readonly SortOrder[] = [
   'size',
   'metacritic',
   'reviews',
+  'igdbCritics',
+  'igdbPlayers',
+  'overall',
 ]
 
 /** "custom" = the hand-made order of the favourites (drag & drop); only the favourites view has it, and it comes first. */
@@ -54,6 +61,9 @@ export const DEFAULT_DIRECTION: Record<SortOrder, SortDirection> = {
   size: 'desc',
   metacritic: 'desc',
   reviews: 'desc',
+  igdbCritics: 'desc',
+  igdbPlayers: 'desc',
+  overall: 'desc',
 }
 
 export const DEFAULT_CHOICE: Record<DashboardSortView, SortChoice> = {
@@ -110,6 +120,11 @@ export interface SortValues {
   sizeBytes: number | null
   metacritic: number | null
   reviews: number | null
+  /** IGDB critics / IGDB players, 0-100 (only counted with IGDB credentials, like the tile's rating strip). */
+  igdbCritics: number | null
+  igdbPlayers: number | null
+  /** The plain mean of all ratings the game has (see overallRating), 0-100. */
+  overall: number | null
 }
 
 const time = (iso: string | null | undefined): number | null => {
@@ -121,7 +136,7 @@ const time = (iso: string | null | undefined): number | null => {
 const share = (unlocked: number | null | undefined, total: number | null | undefined): number | null =>
   total != null && total > 0 && unlocked != null ? (unlocked / total) * 100 : null
 
-export function favoriteSortValues(game: GameSummaryDto): SortValues {
+export function favoriteSortValues(game: GameSummaryDto, igdbConfigured: boolean): SortValues {
   return {
     title: game.title,
     completion: share(game.trophiesUnlocked, game.trophiesTotal),
@@ -131,10 +146,13 @@ export function favoriteSortValues(game: GameSummaryDto): SortValues {
     sizeBytes: sizeOf(game).bytes || null,
     metacritic: game.sortMetacritic ?? game.metacriticScore,
     reviews: game.sortReviewPercent ?? game.reviewPercent,
+    igdbCritics: igdbConfigured ? (game.igdbRating ?? null) : null,
+    igdbPlayers: igdbConfigured ? (game.igdbUserRating ?? null) : null,
+    overall: overallRating(game, igdbConfigured),
   }
 }
 
-export function librarySortValues(game: SteamOwnedGameDto): SortValues {
+export function librarySortValues(game: SteamOwnedGameDto, igdbConfigured: boolean): SortValues {
   return {
     title: game.name,
     completion: share(game.trophiesUnlocked, game.trophiesTotal),
@@ -145,6 +163,9 @@ export function librarySortValues(game: SteamOwnedGameDto): SortValues {
     sizeBytes: sizeOf(game).bytes || null,
     metacritic: game.sortMetacritic ?? null,
     reviews: game.sortReviewPercent ?? null,
+    igdbCritics: igdbConfigured ? (game.igdbRating ?? null) : null,
+    igdbPlayers: igdbConfigured ? (game.igdbUserRating ?? null) : null,
+    overall: overallRating(game, igdbConfigured),
   }
 }
 
@@ -165,6 +186,12 @@ export function numericValue(values: SortValues, order: SortOrder): number | nul
       return values.metacritic
     case 'reviews':
       return values.reviews
+    case 'igdbCritics':
+      return values.igdbCritics
+    case 'igdbPlayers':
+      return values.igdbPlayers
+    case 'overall':
+      return values.overall
     default:
       return null
   }

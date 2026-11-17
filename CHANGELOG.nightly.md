@@ -7,6 +7,33 @@
 <a name="english"></a>
 ## English
 
+## v2026.11.26.7.3366 (α)
+
+### ✨ New
+
+- **Compact bar while scrolling:** when you scroll down in your favourites or in "All games", a slim bar with search,
+  view, sorting and tile size fades in under the header, exactly in step with your scrolling. When you scroll back, it
+  fades out the same way.
+- **Three new sort orders:** IGDB critics, IGDB players and Overall rating. The overall rating is the average of all
+  ratings a game shows on its tile; if it has only one, that one counts. Games without a rating stay at the end.
+
+### 🔄 Changed
+
+- **A "Back" button at the top of the game page** takes you to where you were before. You now reach live trophies and
+  statistics through the bar "Guide | Live trophies | Statistics" in the game header; the navigation on the left only shows
+  the guide chapters and Story & Lore.
+- Switching chapters in the navigation no longer piles up in the history: "Back" (also the browser's back button) leaves
+  the game page instead of going back chapter by chapter.
+- Platinum games now carry a small golden medal at the end of their golden trophy line.
+- The Twitch icon on the tiles now sits in the middle like the other icons, with the number of streams next to it.
+
+### 🔧 Fix
+
+- The Twitch number showed 0 for some games even though someone was streaming, and further down in "All games" there
+  was often no number at all. Now every game gets its number as soon as you see it. If Twitch cannot find a game, there is
+  no number instead of a wrong 0.
+- At the bottom edge of the window the sort menu now opens upwards instead of opening invisibly below the screen.
+
 ## v2026.11.25.15.12074 (α)
 
 ### ✨ New
@@ -143,6 +170,33 @@
 
 <a name="deutsch"></a>
 ## Deutsch
+
+## v2026.11.26.7.3366 (α)
+
+### ✨ Neu
+
+- **Kompakte Leiste beim Scrollen:** Scrollst du in den Favoriten oder in „Alle Spiele“ nach unten, blendet sich unter der
+  Kopfzeile eine schmale Leiste mit Suche, Ansicht, Sortierung und Kachelgröße ein, genau im Takt deines Scrollens.
+  Scrollst du zurück, verblasst sie genauso.
+- **Drei neue Sortierungen:** IGDB-Kritiker, IGDB-Spieler und Gesamtwertung. Die Gesamtwertung ist der Durchschnitt aller
+  Bewertungen, die ein Spiel auf seiner Kachel zeigt; hat es nur eine, zählt diese. Spiele ohne Bewertung stehen am Ende.
+
+### 🔄 Geändert
+
+- **Auf der Spielseite gibt es oben einen Knopf „Zurück“**, der dich dorthin bringt, wo du vorher warst. Live-Trophäen und
+  Statistiken erreichst du jetzt über die Leiste „Guide | Live-Trophäen | Statistiken“ im Kopf der Spielseite; die
+  Navigation links zeigt nur noch die Guide-Kapitel und Story & Lore.
+- Kapitelwechsel in der Navigation landen nicht mehr einzeln im Verlauf: „Zurück“ (auch der Zurück-Knopf des Browsers)
+  verlässt die Spielseite, statt Kapitel für Kapitel zurückzugehen.
+- Platin-Spiele tragen am Ende ihrer goldenen Trophäenlinie jetzt einen kleinen goldenen Orden.
+- Das Twitch-Symbol sitzt auf den Kacheln jetzt in der Mitte wie die anderen Symbole, die Zahl der Streams steht daneben.
+
+### 🔧 Behoben
+
+- Die Twitch-Zahl zeigte bei manchen Spielen 0, obwohl gerade gestreamt wurde, und weiter unten in „Alle Spiele“ kam oft
+  gar keine Zahl. Jetzt bekommt jedes Spiel seine Zahl, sobald du es siehst. Findet Twitch ein Spiel nicht, steht dort
+  keine Zahl statt einer falschen 0.
+- Das Sortiermenü öffnet sich am unteren Fensterrand jetzt nach oben, statt unsichtbar unter dem Bildschirm aufzugehen.
 
 ## v2026.11.25.15.12074 (α)
 

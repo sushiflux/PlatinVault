@@ -300,15 +300,15 @@ const onboarding = {
     },
     gameNav: {
       title: 'Chapters',
-      text: 'Every game has its own navigation on the left: live trophies, statistics, the chapters of the guide and Story & Lore. Collapsed to the slim bar, the icon of a group opens a small list of its chapters. PlatinVault remembers your ticks.',
+      text: 'Every game has its own navigation on the left: the chapters of the guide and Story & Lore. Collapsed to the slim bar, the icon of a group opens a small list of its chapters. PlatinVault remembers your ticks.',
     },
     gameNavPhone: {
       title: 'Chapters',
-      text: 'This button opens the navigation of this game – with the chapters of the guide, live trophies and statistics. PlatinVault remembers your ticks.',
+      text: 'This button opens the navigation of this game – with the chapters of the guide and Story & Lore. PlatinVault remembers your ticks.',
     },
     gameLive: {
-      title: 'Live trophies',
-      text: 'All Steam trophies of this game with their rarity. PlatinVault ticks new achievements in the guide automatically.',
+      title: 'Guide, live trophies, statistics',
+      text: 'At the top of the game head you switch between the guide, the live trophies and the statistics. The live trophies show all Steam trophies of this game with their rarity; PlatinVault ticks new achievements in the guide automatically.',
     },
     gameTwitch: {
       title: 'Live on Twitch',

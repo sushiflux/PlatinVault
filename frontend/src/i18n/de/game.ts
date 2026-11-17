@@ -38,6 +38,18 @@ const game = {
     },
   },
 
+  // The way back at the top of the game head and the area bar under it (components/GameBackButton.tsx, GameAreaSwitch.tsx)
+  back: {
+    label: 'Zurück',
+    tooltip: 'Zur vorherigen Seite',
+  },
+  areas: {
+    group: 'Bereich des Spiels',
+    guide: 'Guide',
+    live: 'Live-Trophäen',
+    stats: 'Statistiken',
+  },
+
   // Where the chapter bar sits: Auto follows the orientation of the window
   nav: {
     region: 'Kapitel-Navigation',

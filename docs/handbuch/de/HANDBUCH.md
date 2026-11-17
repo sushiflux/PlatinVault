@@ -247,11 +247,9 @@ Fährst du mit der Maus über ein Symbol, erklärt ein kurzer Hinweis, was es tu
 
 ### Die Navigation auf der Spielseite
 
-Nur auf der Seite eines Spiels steht links eine Navigation – sie gehört zu diesem einen Spiel. Die Übersicht, **Alle Spiele**, die Einstellungen und **Über PlatinVault** haben keine Navigation; dort kommst du über die Kopfzeile weiter. Von oben nach unten:
+Nur auf der Seite eines Spiels steht links eine Navigation – sie gehört zu diesem einen Spiel und enthält nur den Guide. Die Übersicht, **Alle Spiele**, die Einstellungen und **Über PlatinVault** haben keine Navigation; dort kommst du über die Kopfzeile weiter. Zur Übersicht kommst du jederzeit mit einem Klick auf das Logo in der Kopfzeile. Von oben nach unten:
 
 - **Spielkopf:** das Cover und der Titel des Spiels.
-- **Übersicht:** führt zurück zu deinen Favoriten (5.2).
-- **Live-Trophäen** und **Statistiken** (nur bei Spielen mit Steam-Erfolgen).
 - **Kapitel:** die Kapitel des Guides unter ihren Gruppenüberschriften (hat ein Guide nur eine Gruppe, gibt es keine Überschriften). Neben einem Kapitel zeigt eine Zahl, wie viel du davon abgehakt hast; ein Warnsymbol heißt, dass die Recherche des Kapitels fehlgeschlagen ist (6.2).
 - **Story & Lore** (6.5).
 
@@ -274,15 +272,16 @@ Die Seite **Übersicht** und die Seite **Alle Spiele** sehen gleich aus und habe
   ausgewertet“.
 - Mit dem Regler **Kachelgröße** wählst du zwischen Groß, Kompakt, Sehr kompakt, Liste und Nur Text.
 - Die **Suche** filtert die aktuelle Ansicht; unter der Reihe zeigt „Zeige x von y“, wie viele Spiele gerade zu sehen sind, und **Filter zurücksetzen** räumt die Suche wieder auf.
-  Scrollst du nach unten, übernimmt eine schmale Leiste unter der Kopfzeile Suche, Umschalter und Regler.
+- **Kompakte Leiste:** Scrollst du nach unten, blendet sich eine schmale Leiste unter der Kopfzeile ein, Schritt für Schritt, genau in dem Maß, wie die Suchzeile nach oben aus dem Bild wandert. Scrollst du wieder nach oben, verblasst sie genauso. Solange du in der Leiste tippst oder ein Menü aus ihr geöffnet hast, bleibt sie sichtbar. Sie enthält Suche, **Favoriten / Alle Spiele**, Sortierung und Kachelgröße. In schmalen Fenstern ist die Suche ein Lupen-Knopf, und Kachelgröße und Ansicht liegen hinter dem Knopf **Ansicht und Kachelgröße**.
 - **Sortieren:** Rechts neben der Zählzeile wählst du die Reihenfolge der Kacheln – in beiden Ansichten. Zur Wahl stehen **Abschlussquote**
   (freigeschaltete Steam-Erfolge in Prozent), **Alphabetisch**, **Spielzeit**, **Zuletzt gespielt**, **Erscheinungsdatum**, **Größe**,
-  **Metacritic-Wertung** und **Steam-Bewertungen**; bei den Favoriten kommt als erste **Eigene Reihenfolge** dazu. Der Knopf daneben dreht die Richtung um;
+  **Metacritic-Wertung**, **Steam-Bewertungen**, **IGDB-Kritiker**, **IGDB-Spieler** und **Gesamtwertung**; bei den Favoriten kommt als erste **Eigene Reihenfolge** dazu. Der Knopf daneben dreht die Richtung um;
   jede Reihenfolge beginnt mit dem Sinnvollen zuerst (höchste Quote, A bis Z, neueste, größte, beste). Spiele, für die es keinen Wert gibt
   (zum Beispiel ohne Metacritic-Wertung oder nicht installiert), stehen immer am Ende – in beiden Richtungen. Eine Zeile unter der Zählzeile sagt in Worten, wie
   gerade sortiert ist und wie viele Spiele ohne Wert am Ende stehen; solange PlatinVault Werte noch nachlädt, steht dort, wie weit es ist, und die Liste ergänzt sich von selbst.
   Deine Wahl wird gespeichert (pro Ansicht) und gilt im Windows-Programm und im Browser gleich. Kacheln **ziehen** lässt sich nur in der **Eigenen Reihenfolge** (bei den
   Favoriten; ohne Suchfilter) – in jeder anderen Sortierung ist das Ziehen aus.
+- **Die Bewertungs-Sortierungen:** **IGDB-Kritiker** sortiert nach der Wertung der Fachpresse bei IGDB, **IGDB-Spieler** nach der Wertung der IGDB-Nutzer (beide nur mit den Zugangsdaten einer eigenen Twitch-Anwendung, siehe 6.4). Die **Gesamtwertung** ist der Durchschnitt aller Bewertungen, die ein Spiel hat: Steam-Rezensionen (Anteil positiv in Prozent), Metacritic, IGDB-Kritiker und IGDB-Spieler. Hat ein Spiel nur eine Bewertung, zählt diese. Spiele ganz ohne Bewertung stehen am Ende.
 - **Woher die Werte kommen:** Spielzeit, zuletzt gespielt und Abschlussquote liefert Steam selbst. Erscheinungsdatum, Metacritic-Wertung, Steam-Bewertungen und
   die Größe auf der Platte liest PlatinVault, wenn es kann, aus den eigenen Dateien des Steam-Programms auf dem Spiele-PC – im Windows-Programm direkt, auf einem
   Unraid-Server über die Bridge. Fehlt das, fragt PlatinVault Erscheinungsdatum und Bewertungen langsam im Hintergrund bei Steams Store nach. **Die Größe gibt es nur mit Steam
@@ -315,7 +314,7 @@ Zeilen) mit den Genres von Steam und – in den Größen Groß und Kompakt – f
 und bei den Favoriten die geschätzte Dauer für 100 %. Ganz unten steht deine **Trophäenzeile** mit Fortschrittsbalken. Alles, wonach du sortieren kannst (5.2), steht auch auf der Kachel: die
 Abschlussquote im Trophäenbalken, die übrigen Werte in diesen Zeilen. Jede Kachel zeigt dieselben Zeilen mit demselben Symbol, damit
 alle gleich aussehen: Fehlt ein Wert (noch nicht gespielt, keine Angabe von Steam, keine Schätzung), steht dort ein grauer Strich „–“,
-und ein Hinweis beim Darüberfahren nennt den Grund. Spiele mit allen Trophäen erkennst du am **Platin**-Schild oben rechts auf dem Cover, um das ab und zu ein kurzes Funkeln aufblitzt, und an der Trophäenzeile unten an der Kachel: Statt des goldenen Pokals steht dort das Platin-Symbol (ein Pokal mit Funkeln), und die Linie darunter ist eine kräftige goldene Linie mit einem langsam wandernden Lichtschimmer und kleinen funkelnden Sternen (im hellen Farbschema fast weiße Sterne mit dunkelgoldenem Schein). Ist in Windows „Animationen reduzieren“ an, bleibt die Linie ruhig und steht still.
+und ein Hinweis beim Darüberfahren nennt den Grund. Spiele mit allen Trophäen erkennst du am **Platin**-Schild oben rechts auf dem Cover, um das ab und zu ein kurzes Funkeln aufblitzt, und an der Trophäenzeile unten an der Kachel: Statt des goldenen Pokals steht dort das Platin-Symbol (ein Pokal mit Funkeln), und die Linie darunter ist eine kräftige goldene Linie mit einem langsam wandernden Lichtschimmer und kleinen funkelnden Sternen. Am Ende der Linie sitzt ein kleiner goldener Orden (eine Rosette), auf dem ab und zu ein Glanzpunkt aufblitzt (im hellen Farbschema mit dunkelgoldenem Schein). Ist in Windows „Animationen reduzieren“ an, bleibt die Linie ruhig und steht still.
 
 - **Größe:** Ist das Spiel installiert, steht dort die echte **Größe auf der Platte** (so schreibt sie auch Steam, zum Beispiel „48,3 GB“).
   Ist es nicht installiert, steht dort die **Installationsgröße** mit „ca.“: PlatinVault schätzt sie aus den Daten, die Steam selbst über das
@@ -337,7 +336,7 @@ PlatinVault direkt auf dem Gaming-PC läuft; sonst teilen sich die übrigen beid
 **Twitch & IGDB** die Zugangsdaten einer eigenen Twitch-Anwendung eingetragen hast und „Live-Streams“ an ist, direkt im Feld eine Zahl neben dem Twitch-Symbol:
 wie viele Streams gerade live zu diesem Spiel laufen („12“; ab 300 steht „300+“). Bei normal großen Kacheln steht dort nur das Symbol mit der Zahl; das Wort „Twitch“
 erscheint nur in sehr breiten Feldern. Bei 0 steht keine Zahl, der Hinweis sagt dann, dass gerade niemand
-streamt. Das Feld hält den Platz für die Zahl immer frei, damit sich nichts verschiebt. Die Zahlen kommen im Hintergrund und aktualisieren sich alle paar Minuten; ohne Zugangsdaten bleibt das Feld wie es war.
+streamt. Das Symbol steht mittig im Feld, genau wie die Symbole der anderen Felder; der kleine Live-Punkt neben der Zahl erscheint erst ab einer bestimmten Kachelbreite. Das Feld hält den Platz für die Zahl immer frei, damit sich nichts verschiebt. Die Zahlen kommen im Hintergrund für jede Kachel, zu der du scrollst – auch weit unten in „Alle Spiele“ – und aktualisieren sich alle paar Minuten. Kennt Twitch für ein Spiel keine Kategorie, steht keine Zahl da; PlatinVault behauptet dann nicht, dass niemand streamt. Ohne Zugangsdaten bleibt das Feld wie es war.
 
 ## 5.5 Trophäenschrank
 
@@ -358,12 +357,16 @@ Der Trophäenschrank zeigt alle Spiele, die du auf **100 %** gebracht hast, wie 
 
 ## 6.1 Aufbau
 
-Oben stehen Cover, Titel, der Knopf **Spielen** und eine ruhige Reihe mit den Werkzeugen des Spiels (Symbole mit Hinweis beim Darüberfahren: Guide vervollständigen, Kapitel ergänzen, Exportieren, Twitch, Drucken/PDF, Fortschritt zurücksetzen). Darunter zeigt eine Zeile deinen Trophäen-Fortschritt mit den Stufen. Danach folgt der Inhalt der gewählten Seite.
+Ganz oben im Spielkopf steht der Knopf **Zurück**. Er bringt dich auf die Seite, von der du gekommen bist – oder zur Übersicht, wenn du das Spiel direkt geöffnet hast. Darunter stehen Cover, Titel, der Knopf **Spielen** und eine ruhige Reihe mit den Werkzeugen des Spiels (Symbole mit Hinweis beim Darüberfahren: Guide vervollständigen, Kapitel ergänzen, Exportieren, Twitch, Drucken/PDF, Fortschritt zurücksetzen). Darunter zeigt eine Zeile deinen Trophäen-Fortschritt mit den Stufen. Danach folgt der Inhalt der gewählten Seite.
 
-Welche Seite des Spiels du siehst, bestimmst du in der **Navigation links** (sie gibt es nur auf der Spielseite, 5.1). Sie hat diese Einträge:
+Unten im Spielkopf wechselst du mit der **Bereichsleiste** zwischen den Bereichen des Spiels. Sie erscheint nur bei Spielen, die mit Steam verbunden sind:
 
-- **Live-Trophäen** – die Steam-Erfolge des Spiels (6.3),
-- **Statistiken** (6.4),
+- **Guide** – die Kapitel des Guides (6.2). Ein Klick bringt dich zu dem Kapitel zurück, das du in diesem Spiel zuletzt gelesen hast.
+- **Live-Trophäen** – die Steam-Erfolge des Spiels (6.3).
+- **Statistiken** (6.4).
+
+Die **Navigation links** (sie gibt es nur auf der Spielseite, 5.1) enthält nur den Guide. Sie hat diese Einträge:
+
 - die **Kapitel** des Guides (6.2), geordnet unter kleinen Überschriften wie **Einstieg**, **Story & Welt**, **Kampf & Taktik** oder **Fortschritt & Freischaltungen** (hat ein Guide nur eine Gruppe, gibt es keine Überschriften). Neben jedem Kapitel zeigt eine Zahl, wie viel du abgehakt hast,
 - **Story & Lore** (6.5).
 

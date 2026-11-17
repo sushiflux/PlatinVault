@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AboutPage } from '../../pages/AboutPage'
 import { NotFoundPage } from '../../pages/NotFoundPage'
@@ -88,16 +88,26 @@ const stubMedia = (phone: boolean) => stubWidth(phone ? 390 : 1440)
 
 function LocationProbe() {
   const location = useLocation()
-  return <p data-testid="location">{`${location.pathname}${location.search}`}</p>
+  const navigate = useNavigate()
+  return (
+    <>
+      <p data-testid="location">{`${location.pathname}${location.search}`}</p>
+      {/* Stands in for the browser's back button / the game head's back button */}
+      <button type="button" onClick={() => void navigate(-1)}>
+        probe-back
+      </button>
+    </>
+  )
 }
 
-function renderShell(path: string) {
+function renderShell(path: string | string[]) {
+  const entries = Array.isArray(path) ? path : [path]
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
       <ConfirmProvider>
         <LaunchProvider>
-          <MemoryRouter initialEntries={[path]}>
+          <MemoryRouter initialEntries={entries} initialIndex={entries.length - 1}>
             <Routes>
               <Route element={<AppShell theme="light" onToggleTheme={() => {}} />}>
                 <Route path="/" element={<LocationProbe />} />
@@ -269,14 +279,14 @@ describe('AppShell header', () => {
 })
 
 describe('AppShell game navigation', () => {
-  it('is the tree of the open game: back to the overview, areas, chapters under their groups, Story & Lore - nothing else', async () => {
+  it('is the tree of the open game: chapters under their groups, Story & Lore - no overview, live trophies or statistics entry', async () => {
     stubMedia(false)
     renderShell('/games/alpha?tab=bosses')
     const tree = nav()
     const list = await within(tree).findByRole('list', { name: 'Kapitel von Alpha Quest' })
-    expect(within(tree).getByRole('link', { name: /Übersicht/ }).getAttribute('href')).toBe('/')
-    expect(within(list).getByRole('link', { name: 'Live-Trophäen' }).getAttribute('href')).toBe('/games/alpha?tab=live')
-    expect(within(list).getByRole('link', { name: 'Statistiken' }).getAttribute('href')).toBe('/games/alpha?tab=stats')
+    // The way back and the areas live in the game head now, not in the tree
+    for (const name of [/Übersicht/, /Live-Trophäen/, /Statistiken/]) expect(within(tree).queryByRole('link', { name })).toBeNull()
+    expect(tree.querySelector('[data-hint="game-live"]')).toBeNull()
     expect(within(list).getByRole('link', { name: /^Bosse/ }).getAttribute('aria-current')).toBe('page')
     expect(within(list).getByRole('link', { name: /^Komplettlösung/ }).getAttribute('aria-current')).toBeNull()
     expect(within(list).getByRole('link', { name: /^Komplettlösung/ }).textContent).toContain('2 von 5 erledigt')
@@ -301,7 +311,7 @@ describe('AppShell game navigation', () => {
     expect(within(list).getByRole('link', { name: /^Komplettlösung/ }).getAttribute('aria-current')).toBe('page')
   })
 
-  it('collapses to an icon rail, remembers it in this browser, and keeps live, statistics, lore and every chapter reachable', async () => {
+  it('collapses to an icon rail, remembers it in this browser, and keeps lore and every chapter reachable', async () => {
     stubMedia(false)
     renderShell('/games/alpha?tab=bosses')
     await within(nav()).findByRole('list', { name: 'Kapitel von Alpha Quest' })
@@ -315,11 +325,9 @@ describe('AppShell game navigation', () => {
     const tree = nav()
     expect(tree.getAttribute('data-rail')).toBe('true')
     expect(within(tree).getByRole('button', { name: 'Navigation ausklappen' })).toBeTruthy()
-    // The areas stay reachable as icons named for screen readers (and by tooltip)
-    expect((await within(tree).findByRole('link', { name: 'Live-Trophäen' })).getAttribute('href')).toBe('/games/alpha?tab=live')
-    expect(within(tree).getByRole('link', { name: 'Statistiken' }).getAttribute('href')).toBe('/games/alpha?tab=stats')
-    expect(within(tree).getByRole('link', { name: 'Story & Lore' }).getAttribute('href')).toBe('/games/alpha?tab=story')
-    expect(within(tree).getByRole('link', { name: 'Übersicht' }).getAttribute('href')).toBe('/')
+    // Story & Lore stays reachable as an icon named for screen readers (and by tooltip); the rail has no overview / area entries either
+    expect((await within(tree).findByRole('link', { name: 'Story & Lore' })).getAttribute('href')).toBe('/games/alpha?tab=story')
+    for (const name of ['Übersicht', 'Live-Trophäen', 'Statistiken']) expect(within(tree).queryByRole('link', { name })).toBeNull()
     // One icon per chapter group; the one that holds the open chapter carries the accent line
     const combat = within(tree).getByRole('button', { name: 'Kampf & Taktik' })
     expect(combat.getAttribute('data-active')).toBe('true')
@@ -410,11 +418,23 @@ describe('AppShell on a phone', () => {
     expect(nav().getAttribute('data-rail')).toBeNull()
   })
 
-  it('goes back to the overview from the drawer', async () => {
+  it('has no overview, live trophies or statistics entry in the drawer either', async () => {
     stubMedia(true)
     renderShell('/games/alpha')
     fireEvent.click(screen.getByRole('button', { name: 'Navigation öffnen' }))
-    fireEvent.click(await within(nav()).findByRole('link', { name: /Übersicht/ }))
+    await within(nav()).findByRole('link', { name: /^Bosse/ })
+    for (const name of [/Übersicht/, /Live-Trophäen/, /Statistiken/]) expect(within(nav()).queryByRole('link', { name })).toBeNull()
+  })
+
+  it('does not add history entries when moving between chapters, so the back button leaves the game', async () => {
+    stubMedia(false)
+    // The overview, then the game: one step back must land on the overview, however many chapters were opened in between
+    renderShell(['/', '/games/alpha?tab=bosses'])
+    fireEvent.click(await within(nav()).findByRole('link', { name: /Komplettlösung/ }))
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/games/alpha?tab=walkthrough'))
+    fireEvent.click(within(nav()).getByRole('link', { name: /Nebenquests/ }))
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/games/alpha?tab=quests'))
+    fireEvent.click(screen.getByRole('button', { name: 'probe-back' }))
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/'))
   })
 })

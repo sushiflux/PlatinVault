@@ -32,11 +32,11 @@ describe('TwitchButton live count', () => {
     expect(link().querySelector('.pv-bar-count')).toBeNull()
   })
 
-  it('shows the number of live streams inline after the label and says it in words', () => {
+  it('shows the number of live streams beside the logo and says it in words', () => {
     renderButton({ count: 12, atLeast: false })
     const count = link().querySelector('.pv-bar-count')
     expect(count?.textContent).toBe('12')
-    // In the line of the label (a child of the link next to it), not a corner badge laid over it
+    // A child of the link next to its label (positioned beside the logo by CSS), not a corner badge laid over it
     expect(count?.previousElementSibling?.className).toBe('pv-bar-label')
     expect(count?.querySelector('.pv-bar-live-dot')).toBeTruthy()
     expect(link().querySelector('.pv-bar-live')).toBeNull()
@@ -60,11 +60,13 @@ describe('TwitchButton live count', () => {
     expect(link().getAttribute('aria-label')).toBe('Live auf Twitch: Portal 2')
   })
 
-  it('reserves the room of the count with Twitch credentials, for a game with and without a count alike', async () => {
+  it('marks the segment live with Twitch credentials, with or without a count, and draws a count element only when there is a number', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ twitchStreamsEnabled: true, hasTwitchKey: true }), { status: 200, headers: { 'Content-Type': 'application/json' } })))
     renderButton(undefined)
     await waitFor(() => expect(link().className).toContain('pv-bar-seg--live'))
-    expect(link().querySelector('.pv-bar-count')?.textContent).toBe('')
+    // The logo keeps its place either way: nothing is drawn in the line for a missing number
+    expect(link().querySelector('.pv-bar-count')).toBeNull()
+    expect(link().querySelector('.pv-bar-seg-icon')).toBeTruthy()
     cleanup()
     renderButton({ count: 7, atLeast: false })
     await waitFor(() => expect(link().className).toContain('pv-bar-seg--live'))

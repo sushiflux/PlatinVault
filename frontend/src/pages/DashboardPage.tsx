@@ -30,6 +30,7 @@ import {
   fetchGames,
   fetchLiveStatus,
   fetchLibrarySummary,
+  fetchSettings,
   fetchSteamLibrary,
   importGuide,
   reorderGames,
@@ -38,6 +39,7 @@ import {
 } from '../api/client'
 import type { GameSummaryDto, SteamOwnedGameDto } from '../api/types'
 import { localeFor, useFormat } from '../i18n/format'
+import { DashboardCompactBarHost } from '../components/DashboardCompactBar'
 import { DashboardSortControl } from '../components/DashboardSortControl'
 import { DashboardFigures, ViewSwitch } from '../components/DashboardControls'
 import {
@@ -163,6 +165,9 @@ export function DashboardPage({ view: routeView }: DashboardPageProps) {
 
   const [search, setSearch] = useState('')
   const [density, setDensity] = useState<TileDensity>(loadTileDensity)
+  // The compact copy of the controls (DashboardCompactBarHost) takes over from this row; its hand-over state lives in the host, not here
+  const controlsRef = useRef<HTMLDivElement>(null)
+  const reduceMotion = useReducedMotion() ?? false
   // The settings are a page of the shell (/settings?tab=...)
   const openSettings = useOpenSettings()
   // The failure of the last action (reorder, favourite, delete, import) as a floating notice: what failed, why, the raw text
@@ -228,7 +233,6 @@ export function DashboardPage({ view: routeView }: DashboardPageProps) {
   )
   const [draggingSlug, setDraggingSlug] = useState<string | null>(null)
   // Saves the new order; the list on screen changes at once and is rolled back when the server says no
-  const reduceMotion = useReducedMotion() ?? false
   // The card that was just dropped (gets a short confirming ring)
   const [landedSlug, setLandedSlug] = useState<string | null>(null)
   // After a mouse drop the pointer still rests on the card, and its hover lift would start exactly when the dragged copy hands
@@ -272,8 +276,13 @@ export function DashboardPage({ view: routeView }: DashboardPageProps) {
   const favoritesChoice = dashboardSort.choiceFor('favorites')
   const libraryChoice = dashboardSort.choiceFor('all')
   const sortLocale = localeFor(fmt.language)
+  // IGDB ratings count for the sorts only when the tile's rating strip shows them too (same settings query, same flag)
+  const { data: appSettings } = useQuery({ queryKey: ['settings'], queryFn: fetchSettings, staleTime: 60_000 })
+  const igdbConfigured = Boolean(appSettings?.hasTwitchKey)
+  const favoriteValues = (game: GameSummaryDto) => favoriteSortValues(game, igdbConfigured)
+  const libraryValues = (game: SteamOwnedGameDto) => librarySortValues(game, igdbConfigured)
   // "Own order" (custom) is the server's manual order (games.SortOrder); every other order sorts a copy of it
-  const orderedFavorites = sortItems(favoriteGames, favoriteSortValues, favoritesChoice, sortLocale)
+  const orderedFavorites = sortItems(favoriteGames, favoriteValues, favoritesChoice, sortLocale)
   const filteredGames = orderedFavorites.filter((g) => `${g.title} ${gameGenres(g).join(' ')}`.toLowerCase().includes(needle))
   // Dragging needs the full list in the manual order: with a filter the order of a subset would be ambiguous, and in any other
   // sort order a dropped card would have no place that means anything
@@ -332,17 +341,14 @@ export function DashboardPage({ view: routeView }: DashboardPageProps) {
     (library?.games ?? [])
       .map((g) => (vaultCovers.has(g.appId) ? { ...g, coverUrl: vaultCovers.get(g.appId)! } : g))
       .filter((g) => g.name.toLowerCase().includes(needle)),
-    librarySortValues,
+    libraryValues,
     libraryChoice,
     sortLocale
   )
 
-  // Live Twitch streams per card (the badge on the Twitch buttons): one background batch for the games on the page, only with Twitch credentials
-  const liveCounts = useTwitchLiveCounts(
-    view === 'all'
-      ? filteredLibrary.map((g) => ({ appId: g.appId, name: g.name }))
-      : filteredGames.flatMap((g) => (g.steamAppId ? [{ appId: g.steamAppId, name: g.title }] : []))
-  )
+  // Live Twitch streams per card (the number on the Twitch buttons): the cards that are on screen report themselves and get their count in small
+  // batches; only with Twitch credentials
+  const liveCounts = useTwitchLiveCounts()
 
   // ---- The sort control and the sentence under the count line: how the cards are sorted and what is still missing for it ----
   const activeChoice = view === 'all' ? libraryChoice : favoritesChoice
@@ -350,12 +356,13 @@ export function DashboardPage({ view: routeView }: DashboardPageProps) {
   const shownCount = view === 'all' ? filteredLibrary.length : filteredGames.length
   const missingCount =
     view === 'all'
-      ? countMissing(filteredLibrary, librarySortValues, activeOrder)
-      : countMissing(filteredGames, favoriteSortValues, activeOrder)
+      ? countMissing(filteredLibrary, libraryValues, activeOrder)
+      : countMissing(filteredGames, favoriteValues, activeOrder)
   // The server looks release dates / reviews up in the background, and rates the library's trophies; until that is done the list
   // is sorted by what is known so far and says so (instead of silently showing an incomplete order as if it were final)
   let lookup: { done: number; total: number } | null = null
-  if ((activeOrder === 'release' || activeOrder === 'metacritic' || activeOrder === 'reviews') && librarySummary?.metaScanning) {
+  // (the overall rating includes the Steam and Metacritic values; the IGDB ratings come with the games, there is nothing to wait for)
+  if ((activeOrder === 'release' || activeOrder === 'metacritic' || activeOrder === 'reviews' || activeOrder === 'overall') && librarySummary?.metaScanning) {
     lookup = { done: librarySummary.metaDone ?? 0, total: librarySummary.metaTotal ?? 0 }
   } else if (activeOrder === 'completion' && view === 'all' && librarySummary?.scanning) {
     lookup = { done: librarySummary.scanDone, total: librarySummary.scanTotal }
@@ -516,7 +523,7 @@ export function DashboardPage({ view: routeView }: DashboardPageProps) {
       <DashboardFigures {...figures} />
 
       {/* One row of controls: search | favourites / all games | tile size */}
-      <div className="pv-dash-ctl">
+      <div className="pv-dash-ctl" ref={controlsRef}>
         <div className="pv-dash-search">
           <label htmlFor="dashboard-game-search" className="sr-only">
             {t('hero.searchLabel')}
@@ -596,8 +603,26 @@ export function DashboardPage({ view: routeView }: DashboardPageProps) {
         />
       </div>
 
+      {/* The same controls as a compact bar under the header, laid over the content (fixed: nothing moves when it comes or goes) */}
+      <DashboardCompactBarHost
+        rowRef={controlsRef}
+        search={search}
+        onSearch={setSearch}
+        hasLibrary={hasLibrary}
+        view={view}
+        onSelectView={selectView}
+        favoritesCount={favoriteGames.length}
+        libraryCount={librarySummary?.libraryGameCount}
+        density={density}
+        onDensity={handleDensityChange}
+        sortView={view}
+        sortChoice={activeChoice}
+        sortLoading={sortLoading}
+        onSortChange={(next) => dashboardSort.setChoice(view, next)}
+      />
+
       {/* Game tiles in the chosen size (slider in the controls row) */}
-      <LiveCountProvider counts={liveCounts}>
+      <LiveCountProvider value={liveCounts}>
         {view === 'all' ? (
           libraryLoading || waitingForLibrary ? (
             <div className="pv-card pv-dash-loading">

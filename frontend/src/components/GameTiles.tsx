@@ -20,7 +20,7 @@ import type { GameSummaryDto, SteamOwnedGameDto } from '../api/types'
 import { fixedT } from '../i18n'
 import { useFormat } from '../i18n/format'
 import { sizeOf, type SizeSource } from '../utils/dashboardSort'
-import { useLiveCount } from '../utils/useTwitchLiveCounts'
+import { useLiveCount, useLiveCountWatch } from '../utils/useTwitchLiveCounts'
 import { isPlatinumGame, PlatinumCoverFx, PlatinumLineFx } from './platinum/platinum'
 import { RatingStrip } from './RatingStrip'
 import { PlayButton } from './launch/PlayButton'
@@ -105,7 +105,9 @@ function FavoriteStar({ label, favorite, busy = false, hint = false, onClick }: 
 function TwitchSegment({ name, appId }: { name: string; appId?: number | null }) {
   const { t } = useTranslation('dashboard')
   const liveCount = useLiveCount(appId)
-  return <TwitchButton name={name} size={18} className="pv-bar-seg" wrapperClassName="pv-bar-cell" labelText={t('card.twitchShort')} liveCount={liveCount} />
+  // While this segment is (nearly) on screen the game's count is fetched
+  const watch = useLiveCountWatch(appId, name)
+  return <TwitchButton name={name} size={18} className="pv-bar-seg" wrapperClassName="pv-bar-cell" labelText={t('card.twitchShort')} liveCount={liveCount} linkRef={watch} />
 }
 
 const DENSITY_KEY = 'pv_dashboard_density'
@@ -165,14 +167,16 @@ export function TileContainer({ density, children }: { density: TileDensity; chi
 interface TileSizeSliderProps {
   value: TileDensity
   onChange: (value: TileDensity) => void
+  // A copy of the control (the compact bar) needs its own id for the label, and no coach-mark anchor
+  id?: string
+  copy?: boolean
 }
 
-export function TileSizeSlider({ value, onChange }: TileSizeSliderProps) {
+export function TileSizeSlider({ value, onChange, id = 'dashboard-tile-size', copy = false }: TileSizeSliderProps) {
   const { t } = useTranslation('dashboard')
   const label = t(`tiles.size.${TILE_DENSITY_KEYS[value]}`)
-  const id = 'dashboard-tile-size'
   return (
-    <div className="pv-size" data-hint="dashboard-size">
+    <div className="pv-size" data-hint={copy ? undefined : 'dashboard-size'}>
       <label htmlFor={id} className="pv-size-label">
         {/* Both languages' captions are laid on top of each other: the slider next to it has the same width in either */}
         <LangStack render={(language) => fixedT(language, 'dashboard')('tiles.sizeLabel')} />

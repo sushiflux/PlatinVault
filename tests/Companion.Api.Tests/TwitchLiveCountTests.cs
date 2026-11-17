@@ -138,11 +138,11 @@ public sealed class TwitchLiveCountTests : IDisposable
     }
 
     [Fact]
-    public async Task A_game_without_a_twitch_category_has_zero_live_streams_and_costs_no_streams_call()
+    public async Task A_game_without_a_twitch_category_is_unknown_and_costs_no_streams_call()
     {
         var (_, streams, twitch, _) = Service(new FakeTwitch(_ => Page(5, null)));
 
-        Assert.Equal(new TwitchLiveCount(0, false), await streams.CountLiveAsync(null, "Nothing", null, CancellationToken.None));
+        Assert.Equal(TwitchLiveCount.NoCategory, await streams.CountLiveAsync(null, "Nothing", null, CancellationToken.None));
         Assert.Empty(twitch.StreamCalls);
     }
 
@@ -191,8 +191,20 @@ public sealed class TwitchLiveCountTests : IDisposable
 
         var result = await batch.CountAsync(games, null, TimeSpan.FromSeconds(10), CancellationToken.None);
 
-        Assert.Equal([new LiveCountEntry(101, 5, false), new LiveCountEntry(103, 0, false)], result.Counts);
+        // 103 has no Twitch category: unknown, so neither counted nor pending
+        Assert.Equal([new LiveCountEntry(101, 5, false)], result.Counts);
         // Nothing is pending (a failure is not "still loading"): the card just has no badge
+        Assert.Empty(result.Pending);
+    }
+
+    [Fact]
+    public async Task A_real_category_with_zero_live_streams_is_a_count_of_zero()
+    {
+        var (batch, _, _, _) = Service(new FakeTwitch(_ => Page(0, null)));
+
+        var result = await batch.CountAsync([new LiveCountGame(201, "Game 5")], null, TimeSpan.FromSeconds(10), CancellationToken.None);
+
+        Assert.Equal([new LiveCountEntry(201, 0, false)], result.Counts);
         Assert.Empty(result.Pending);
     }
 

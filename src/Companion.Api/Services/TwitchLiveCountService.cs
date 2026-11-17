@@ -39,7 +39,8 @@ public sealed class TwitchLiveCountService(TwitchStreamsService streams, ILogger
                 if (Volatile.Read(ref stop)) return;
                 try
                 {
-                    if (await streams.CountLiveAsync(game.AppId, game.Name, language, token) is { } count)
+                    // Null (no credentials) and "no category" are settled but get no entry: the card shows no number
+                    if (await streams.CountLiveAsync(game.AppId, game.Name, language, token) is { CategoryKnown: true } count)
                     {
                         done[game.AppId] = new LiveCountEntry(game.AppId, count.Count, count.AtLeast);
                     }

@@ -33,6 +33,17 @@ public sealed class LibrarySortDataTests : IDisposable
         Assert.Equal(expected, DashboardSort.Normalize(value, favorites));
 
     [Theory]
+    [InlineData("igdbCritics")]
+    [InlineData("igdbPlayers")]
+    [InlineData("overall")]
+    public void IGDB_and_overall_orders_are_accepted_in_both_views_and_directions(string order)
+    {
+        foreach (var favorites in new[] { true, false })
+            foreach (var direction in new[] { "asc", "desc" })
+                Assert.Equal($"{order}:{direction}", DashboardSort.Normalize($"{order}:{direction}", favorites));
+    }
+
+    [Theory]
     [InlineData("custom:asc", false)] // the manual order exists only in the favourites view
     [InlineData("dateAdded:desc", true)] // not an order of this app
     [InlineData("playtime", true)]

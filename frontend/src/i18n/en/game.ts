@@ -38,6 +38,17 @@ const game = {
     },
   },
 
+  back: {
+    label: 'Back',
+    tooltip: 'To the previous page',
+  },
+  areas: {
+    group: 'Area of the game',
+    guide: 'Guide',
+    live: 'Live trophies',
+    stats: 'Statistics',
+  },
+
   nav: {
     region: 'Chapter navigation',
     title: 'Guide chapters',

@@ -92,6 +92,14 @@ const dashboard = {
     favorites: 'Favoriten ({{n}})',
     allGames: 'Alle Spiele ({{n}})',
   },
+  // The compact bar of the controls that appears under the header when the controls row has scrolled away (components/DashboardCompactBar.tsx)
+  compact: {
+    label: 'Suchen, Ansicht und Sortierung',
+    searchOpen: 'Suche öffnen',
+    searchClose: 'Suche schließen',
+    options: 'Ansicht und Kachelgröße',
+    optionsTitle: 'Ansicht',
+  },
   // Column heads of the list sizes (Nur Text, Liste); the same words are read to screen readers in front of each value
   list: {
     title: 'Titel',
@@ -163,6 +171,9 @@ const dashboard = {
       size: 'Größe',
       metacritic: 'Metacritic-Wertung',
       reviews: 'Steam-Bewertungen',
+      igdbCritics: 'IGDB-Kritiker',
+      igdbPlayers: 'IGDB-Spieler',
+      overall: 'Gesamtwertung',
     },
     // What each order measures, as the second line of its menu entry
     hints: {
@@ -175,6 +186,9 @@ const dashboard = {
       size: 'Größe auf der Platte – ohne Installation die geschätzte Installationsgröße',
       metacritic: 'Wertung der Fachpresse',
       reviews: 'Anteil positiver Steam-Rezensionen',
+      igdbCritics: 'Wertung der Kritiker bei IGDB',
+      igdbPlayers: 'Wertung der Spieler bei IGDB',
+      overall: 'Durchschnitt aller vorhandenen Wertungen',
     },
     sentence: 'Sortiert: {{order}} – {{direction}}.',
     // The direction in words, per order (what comes first)
@@ -188,6 +202,9 @@ const dashboard = {
       size: { asc: 'kleinste zuerst', desc: 'größte zuerst' },
       metacritic: { asc: 'niedrigste zuerst', desc: 'höchste zuerst' },
       reviews: { asc: 'schlechteste zuerst', desc: 'beste zuerst' },
+      igdbCritics: { asc: 'niedrigste zuerst', desc: 'höchste zuerst' },
+      igdbPlayers: { asc: 'niedrigste zuerst', desc: 'höchste zuerst' },
+      overall: { asc: 'schlechteste zuerst', desc: 'beste zuerst' },
     },
     direction: {
       label: 'Richtung umkehren',

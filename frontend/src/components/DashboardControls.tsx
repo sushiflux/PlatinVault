@@ -72,11 +72,13 @@ interface ViewSwitchProps {
   onSelect: (view: DashboardView) => void
   favoritesCount: number
   libraryCount: number | undefined
+  // A copy of the switch (the compact bar) is no coach-mark anchor
+  copy?: boolean
 }
 
 // "Favourites (n)" | "All games (n)": one connected bar. Both languages' labels are laid on top of each other, so the bar is as wide
 // as its longest version and switching the language never moves the search or the slider beside it.
-export function ViewSwitch({ view, onSelect, favoritesCount, libraryCount }: ViewSwitchProps) {
+export function ViewSwitch({ view, onSelect, favoritesCount, libraryCount, copy = false }: ViewSwitchProps) {
   const { t } = useTranslation('dashboard')
   const stacked = (key: 'controls.favorites' | 'controls.allGames', value: number | undefined) => (
     <LangStack
@@ -85,7 +87,7 @@ export function ViewSwitch({ view, onSelect, favoritesCount, libraryCount }: Vie
     />
   )
   return (
-    <div className="pv-segmented pv-dash-switch" role="group" aria-label={t('controls.viewGroup')} data-hint="dashboard-add">
+    <div className="pv-segmented pv-dash-switch" role="group" aria-label={t('controls.viewGroup')} data-hint={copy ? undefined : 'dashboard-add'}>
       <button type="button" aria-pressed={view === 'favorites'} onClick={() => onSelect('favorites')}>
         {stacked('controls.favorites', favoritesCount)}
       </button>

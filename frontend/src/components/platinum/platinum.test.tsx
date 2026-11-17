@@ -49,6 +49,36 @@ describe('PlatinumLineFx', () => {
     expect(line.querySelector('.pv-plat-bar-shine')).not.toBeNull()
   })
 
+  it('has a decorative rosette at the line end with a glint and a spark', () => {
+    const { container } = render(<PlatinumLineFx seed="ffr" />)
+    const medal = container.querySelector('.pv-plat-line .pv-plat-medal')!
+    expect(medal).not.toBeNull()
+    expect(medal.closest('[aria-hidden="true"]')).not.toBeNull()
+    expect(medal.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true')
+    expect(medal.querySelector('.pv-plat-medal-glint.pv-plat-anim')).not.toBeNull()
+    expect(medal.querySelector('.pv-plat-medal-spark.pv-plat-anim')).not.toBeNull()
+  })
+
+  it('shows the rosette static with reduced motion', () => {
+    reducedMotion.value = true
+    const { container } = render(<PlatinumLineFx seed="ffr" />)
+    expect(container.querySelector('.pv-plat-medal circle')).not.toBeNull()
+    expect(container.querySelector('.pv-plat-medal .pv-plat-anim')).toBeNull()
+    expect(container.querySelector('.pv-plat-medal-glint')).toBeNull()
+  })
+
+  it('gives every rosette its own gradient ids', () => {
+    const { container } = render(
+      <>
+        <PlatinumLineFx seed="a" />
+        <PlatinumLineFx seed="b" />
+      </>,
+    )
+    const ids = [...container.querySelectorAll('.pv-plat-medal linearGradient')].map((g) => g.id)
+    expect(ids.length).toBe(4)
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+
   it('is a static gold line with reduced motion', () => {
     reducedMotion.value = true
     const { container } = render(<PlatinumLineFx seed="ffr" />)

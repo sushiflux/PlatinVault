@@ -36,6 +36,84 @@
   background: linear-gradient(90deg, var(--pv-plat-gold-edge), var(--pv-plat-gold-mid) 30%, var(--pv-plat-gold-shine) 50%, var(--pv-plat-gold-mid) 70%, var(--pv-plat-gold-edge));
 }
 
+/* The rosette at the right end of the line. --pv-medal-w is the medal width; the viewBox is 20 x 22 with the circle centre at (10, 9),
+   so the circle centre lands on the line centre and half the width overhangs the line end. Large tile 18 px wide (circle 14.4 px,
+   tails 11.7 px below the line centre), compact 16, very compact 14. It stays inside the 16 / 12 / 10 px side padding and the
+   12 / 12 / 8 px bottom padding of the tile text block, and clear of the 6 px gap above the line (the count above is never covered). */
+.pv-plat-medal {
+  --pv-medal-w: 18px;
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-start: 50%;
+  margin-inline-end: calc(var(--pv-medal-w) * -0.5);
+  margin-block-start: calc(var(--pv-medal-w) * -0.45);
+  inline-size: var(--pv-medal-w);
+  block-size: calc(var(--pv-medal-w) * 1.1);
+  pointer-events: none;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+}
+
+.pv-tiles[data-size='compact'] .pv-plat-medal {
+  --pv-medal-w: 16px;
+}
+
+.pv-tiles[data-size='veryCompact'] .pv-plat-medal {
+  --pv-medal-w: 14px;
+}
+
+.pv-plat-medal-svg {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: visible;
+}
+
+/* Edge = the darkest gold stop: 5.9:1 against the white card (light), 4.6:1 against #141d35 (dark), above 3:1 for graphics */
+.pv-plat-medal-edge {
+  stroke: var(--pv-plat-gold-edge);
+  stroke-width: 0.9;
+  stroke-linejoin: round;
+}
+
+.pv-plat-medal-ring {
+  stroke: var(--pv-plat-gold-edge);
+  stroke-width: 0.7;
+  opacity: 0.8;
+}
+
+.pv-plat-medal-glint {
+  fill: rgba(255, 255, 255, 0.85);
+  transform: translateX(-8px) skewX(-20deg);
+  animation: pv-plat-medal-glint 5.5s ease-in-out infinite;
+  animation-delay: var(--pv-fx-phase, 0s);
+}
+
+.pv-plat-medal-spark {
+  position: absolute;
+  inset-block-start: -3px;
+  inset-inline-end: -4px;
+  inline-size: 9px;
+  block-size: 9px;
+  color: var(--pv-plat-star);
+  opacity: 0;
+  transform: scale(0);
+  filter: drop-shadow(0 0 1px var(--pv-plat-star-glow)) drop-shadow(0 0 2px var(--pv-plat-star-glow));
+  animation: pv-plat-twinkle 5.5s ease-in-out infinite;
+  animation-delay: calc(var(--pv-fx-phase, 0s) + 2.9s);
+}
+
+/* One glint across the medal, timed to follow the line's shine reaching its end */
+@keyframes pv-plat-medal-glint {
+  0%,
+  50% {
+    transform: translateX(-8px) skewX(-20deg);
+  }
+  70%,
+  100% {
+    transform: translateX(26px) skewX(-20deg);
+  }
+}
+
 /* Slow light running along the bar */
 .pv-plat-bar-shine {
   position: absolute;

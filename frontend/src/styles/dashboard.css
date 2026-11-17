@@ -913,24 +913,24 @@
   cursor: progress;
 }
 
-/* The count of live streams in the line of the Twitch label: a small live dot in Twitch violet and the number in the label's font. With Twitch
-   credentials every Twitch cell holds the room of the widest count ("300+") whether the game has a count or not, so nothing moves when a count
-   arrives or changes. What shows depends on the width of the cell (the tile): from 108 px "Twitch" + dot + number, narrower icon + dot +
-   number, narrowest icon + number. */
+/* The count of live streams beside the Twitch logo: a small live dot in Twitch violet and the number. With Twitch credentials the cell is
+   marked --live: its logo stays exactly where the logos of the other cells are (centred), and the count is laid out of the flow next to it,
+   so nothing moves when a count arrives, changes or goes away. What shows depends on the width of the cell (the tile):
+   under 80 px the number sits centred under the logo (no dot); from 80 px right of the logo; from 108 px with the dot; from 120 px a
+   little larger; the word "Twitch" only from 176 px, where it fits beside the centred logo AND the count (then the count is at the end). */
 .pv-bar-count {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0.1875rem;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.1875rem;
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-weight: 500;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-}
-
-.pv-bar-num {
-  display: inline-block;
-  inline-size: 2.3em;
-  text-align: start;
+  pointer-events: none;
 }
 
 .pv-bar-live-dot {
@@ -942,58 +942,64 @@
   background: var(--brand-twitch);
 }
 
-.pv-bar-seg--live {
-  gap: 0.125rem;
-  padding-inline: 0.0625rem;
-}
-
 .pv-bar-seg--live .pv-bar-label {
   display: none;
 }
 
-@container pv-bar-seg (min-width: 3.9rem) {
-  .pv-bar-seg--live {
-    gap: 0.1875rem;
-  }
-
+@container pv-bar-seg (min-width: 5rem) {
   .pv-bar-count {
-    font-size: 0.75rem;
+    inset-inline: calc(50% + 0.8125rem) auto;
+    inset-block: 50% auto;
+    transform: translateY(-50%);
+    justify-content: flex-start;
+    font-size: 0.6875rem;
   }
+}
 
+@container pv-bar-seg (min-width: 6.75rem) {
   .pv-bar-live-dot {
     display: block;
   }
 }
 
-@container pv-bar-seg (min-width: 5.125rem) {
+@container pv-bar-seg (min-width: 7.5rem) {
   .pv-bar-count {
-    font-size: inherit;
+    font-size: 0.75rem;
   }
 }
 
-@container pv-bar-seg (min-width: 6.5rem) {
-  .pv-bar-seg--live {
-    font-size: 0.8125rem;
-    gap: 0.1875rem;
-  }
-}
-
-@container pv-bar-seg (min-width: 6.75rem) {
+@container pv-bar-seg (min-width: 11rem) {
   .pv-bar-seg--live .pv-bar-label {
     display: inline;
   }
-}
 
-@container pv-bar-seg (min-width: 7.75rem) {
-  .pv-bar-seg--live {
-    font-size: 0.875rem;
-    gap: 0.375rem;
+  .pv-bar-count {
+    inset-inline: auto 0.5rem;
+    font-size: 0.8125rem;
   }
 }
 
-/* In the icon group at the end of a list row the Twitch cell is wider by the room of the count, and the column with it */
+/* In the icon group at the end of a list row the Twitch cell is wider by the room of the count (and the column with it); its logo sits in the
+   middle of the first 3 rem, where the logos of the other cells are, and the count is beside it */
 .pv-bar-group > .pv-bar-cell:has(.pv-bar-seg--live) {
   flex-basis: 5.25rem;
+}
+
+.pv-bar-group .pv-bar-seg--live {
+  justify-content: flex-start;
+  padding-inline: calc(1.5rem - 0.5625rem) 0;
+}
+
+.pv-bar-group .pv-bar-count {
+  inset-inline: calc(1.5rem + 0.5625rem + 0.25rem) auto;
+  inset-block: 50% auto;
+  transform: translateY(-50%);
+  justify-content: flex-start;
+  font-size: 0.75rem;
+}
+
+.pv-bar-group .pv-bar-count .pv-bar-live-dot {
+  display: block;
 }
 
 .pv-dl:has(.pv-bar-seg--live) {
@@ -1349,4 +1355,178 @@
 
 .pv-card.pv-empty {
   padding: 1.5rem;
+}
+
+/* ---------------------------------------------------------------- compact bar of the controls (components/DashboardCompactBar.tsx)
+   Appears under the header while the controls row has scrolled away. Fixed, so it lies over the content and nothing moves when it comes or
+   goes; the same shared controls in one row of 48 px targets. Calm: the header's surface and a 1 px line, no shadow. */
+.pv-dash-cbar {
+  position: fixed;
+  inset-block-start: var(--pv-header-h, 3.75rem);
+  inset-inline: 0;
+  z-index: 35;
+  background: var(--bg-frame);
+  border-block-end: 1px solid var(--border-subtle);
+  /* Scroll-linked hand-over (utils/useScrollHandoff.ts writes --pv-cbar-p, 0 to 1, from the controls row's position under the header): the
+     bar follows the scroll exactly, no timer. It also lifts in by a few pixels. */
+  opacity: var(--pv-cbar-p, 0);
+  transform: translateY(calc((1 - var(--pv-cbar-p, 0)) * -0.5rem));
+}
+
+.pv-dash-cbar[data-moving] {
+  will-change: opacity, transform;
+}
+
+/* In use (focus inside, a menu open): fully there whatever the scroll position says; taken hold of and let go it eases for a moment */
+.pv-dash-cbar[data-engaged='true'] {
+  opacity: 1;
+  transform: none;
+}
+
+.pv-dash-cbar[data-easing='true'] {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.pv-dash-cbar[inert] {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-dash-cbar,
+  .pv-dash-cbar[data-easing='true'] {
+    transition: none;
+    transform: none;
+  }
+}
+
+.pv-dash-cbar-in {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-block-size: 3.5rem;
+  padding: 0.25rem 1.75rem;
+}
+
+.pv-dash-cbar .pv-dash-search {
+  flex: 1 1 12rem;
+  max-inline-size: 28rem;
+}
+
+/* The folded search and its open field take the room of the row */
+.pv-dash-cbar-in > .pv-dash-search:only-of-type {
+  max-inline-size: none;
+}
+
+.pv-dash-cbar .pv-dash-switch {
+  flex: 0 0 auto;
+}
+
+/* The tile size without its caption (the slider keeps its name for screen readers) */
+.pv-dash-cbar .pv-size {
+  flex: 0 0 auto;
+}
+
+.pv-dash-cbar .pv-size-label {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.pv-dash-cbar .pv-size-value {
+  min-inline-size: 5.5rem;
+}
+
+.pv-dash-cbar .pv-sort {
+  flex: 0 0 auto;
+  inline-size: auto;
+  margin-inline-start: auto;
+}
+
+.pv-dash-cbar .pv-sort-select {
+  inline-size: 14rem;
+  flex: 0 0 auto;
+}
+
+.pv-dash-cbar .pv-icon-btn {
+  flex: none;
+}
+
+/* The folded search carries a thin accent line while a filter is active */
+.pv-cbar-search-btn {
+  position: relative;
+}
+
+.pv-cbar-search-btn[data-active='true']::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0.75rem;
+  inset-block-end: 0.25rem;
+  block-size: 2px;
+  background: var(--ind);
+}
+
+/* Narrow windows: the sort control takes what is left, the order's icon goes, a little smaller type so no order name is cut */
+.pv-dash-cbar[data-narrow='true'] .pv-dash-cbar-in {
+  gap: 0.25rem;
+  padding-inline: 0.75rem;
+}
+
+.pv-dash-cbar[data-narrow='true'] .pv-sort {
+  flex: 1 1 0;
+  min-inline-size: 0;
+}
+
+.pv-dash-cbar[data-narrow='true'] .pv-sort-select {
+  flex: 1 1 0;
+  inline-size: auto;
+  min-inline-size: 0;
+  gap: 0.375rem;
+  padding-inline: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.pv-dash-cbar[data-narrow='true'] .pv-sort-icon {
+  display: none;
+}
+
+/* The popover with the parts that did not fit (a portal in <body>) */
+.pv-cbar-pop {
+  position: fixed;
+  z-index: 85;
+  box-sizing: border-box;
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-pop);
+}
+
+.pv-cbar-pop .pv-dash-switch {
+  inline-size: 100%;
+}
+
+.pv-cbar-pop .pv-dash-switch > button {
+  flex: 1 1 0;
+  padding-inline: 0.5rem;
+}
+
+.pv-cbar-pop .pv-size {
+  inline-size: 100%;
+}
+
+.pv-cbar-pop .pv-size-range {
+  flex: 1 1 auto;
+  inline-size: auto;
+}
+
+@media print {
+  .pv-dash-cbar {
+    display: none;
+  }
 }

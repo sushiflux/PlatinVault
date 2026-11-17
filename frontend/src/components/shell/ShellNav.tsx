@@ -4,18 +4,15 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
   IconBook,
-  IconChartBar,
   IconCoins,
   IconCompass,
   IconListDetails,
-  IconLayoutDashboard,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
   IconLockOpen,
   IconMapSearch,
   IconPuzzle,
   IconSwords,
-  IconTrophy,
   IconUsers,
   IconWorld,
   IconX,
@@ -27,9 +24,7 @@ import { TruncatedText } from '../ui/TruncatedText'
 import { ChapterTrailing } from './ChapterMarks'
 import { RailGroupFlyout } from './RailGroupFlyout'
 import {
-  LIVE_TROPHIES_TAB_SLUG,
   LORE_TAB_SLUG,
-  STATS_TAB_SLUG,
   buildSections,
   chapterItemsOf,
   gameTabHref,
@@ -70,17 +65,17 @@ function NavEntry({
   label,
   current,
   rail,
-  hint,
 }: {
   to: string
   icon: ReactNode
   label: string
   current: boolean
   rail: boolean
-  hint?: string
 }) {
+  // replace: moving between the chapters of a game never adds history entries (like the page's own tab changes), so the page's
+  // back button leaves the game instead of stepping through the chapters seen before
   const link = (
-    <Link to={to} className="pv-ni" aria-current={current ? 'page' : undefined} aria-label={rail ? label : undefined} data-hint={hint}>
+    <Link to={to} replace className="pv-ni" aria-current={current ? 'page' : undefined} aria-label={rail ? label : undefined}>
       <span className="pv-ni-icon" aria-hidden="true">
         {icon}
       </span>
@@ -116,9 +111,9 @@ function SkeletonRows({ count }: { count: number }) {
 }
 
 /**
- * The navigation of one game page (left side): back to the overview, then the tree of this game - live trophies, statistics, the guide
- * chapters under their group headings, Story & Lore. Collapsed it is an icon rail (the chapters of a group open as a small flyout), on a
- * phone it is a drawer. Pages without a game have no side navigation at all.
+ * The navigation of one game page (left side): the tree of this game - the guide chapters under their group headings, Story & Lore.
+ * (Live trophies and statistics are the area bar in the game head, the way back is its back button.) Collapsed it is an icon rail
+ * (the chapters of a group open as a small flyout), on a phone it is a drawer. Pages without a game have no side navigation at all.
  */
 export function ShellNav({ rail: railWanted, onToggleRail, drawer, onCloseDrawer, slug, id }: ShellNavProps) {
   const { t } = useTranslation(['shell', 'game'])
@@ -134,7 +129,6 @@ export function ShellNav({ rail: railWanted, onToggleRail, drawer, onCloseDrawer
   const chapters = useMemo(() => chapterItemsOf(openGame, failedIds), [openGame, failedIds])
   const { sections, headings } = useMemo(() => buildSections(chapters), [chapters])
   const activeTab = resolveGameTab(openGame, tabParamToSlug(searchParams.get('tab')))
-  const hasSteam = Boolean(openGame?.steamAppId)
 
   const toggleLabel = drawer ? t('nav.menuClose') : rail ? t('nav.expand') : t('nav.collapse')
   const title = openGame?.title ?? ''
@@ -163,28 +157,11 @@ export function ShellNav({ rail: railWanted, onToggleRail, drawer, onCloseDrawer
       </div>
 
       <div className="pv-snav-list" data-pv-scroll="nav" data-hint="game-nav">
-        <ul>
-          <li>
-            <NavEntry to="/" icon={<IconLayoutDashboard size={20} />} label={t('nav.overview')} current={false} rail={rail} />
-          </li>
-        </ul>
-        <div className="pv-nsep" role="presentation" />
-
         {!openGame ? (
           // The rows of the answer keep their room while it is on its way, so the entries below never jump
           <SkeletonRows count={rail ? 5 : 8} />
         ) : (
           <ul aria-label={t('nav.chapters', { game: title })} className="pv-gametree">
-            {hasSteam && (
-              <li>
-                <NavEntry to={gameTabHref(slug, LIVE_TROPHIES_TAB_SLUG)} icon={<IconTrophy size={20} />} label={t('nav.live')} current={activeTab === LIVE_TROPHIES_TAB_SLUG} rail={rail} hint="game-live" />
-              </li>
-            )}
-            {hasSteam && (
-              <li>
-                <NavEntry to={gameTabHref(slug, STATS_TAB_SLUG)} icon={<IconChartBar size={20} />} label={t('nav.stats')} current={activeTab === STATS_TAB_SLUG} rail={rail} />
-              </li>
-            )}
             {rail
               ? sections.map((section) => (
                   <li key={section.key ?? 'all'}>
@@ -203,7 +180,7 @@ export function ShellNav({ rail: railWanted, onToggleRail, drawer, onCloseDrawer
                     <ul>
                       {section.tabs.map(({ chapter }) => (
                         <li key={chapter.slug}>
-                          <Link to={gameTabHref(slug, chapter.slug)} className="pv-ni pv-ni--chapter" aria-current={activeTab === chapter.slug ? 'page' : undefined}>
+                          <Link to={gameTabHref(slug, chapter.slug)} replace className="pv-ni pv-ni--chapter" aria-current={activeTab === chapter.slug ? 'page' : undefined}>
                             <span className="pv-ni-label">{chapter.title}</span>
                             <ChapterTrailing chapter={chapter} />
                           </Link>

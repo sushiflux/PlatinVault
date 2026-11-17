@@ -239,11 +239,9 @@ Hover over an icon and a short hint explains what it does. The tools of a single
 
 ### The navigation on the game page
 
-Only on the page of a game is there a navigation on the left - it belongs to that one game. The overview, **All games**, the settings and **About PlatinVault** have no navigation; you move on from there with the header. From top to bottom:
+Only on the page of a game is there a navigation on the left - it belongs to that one game and holds only the guide. The overview, **All games**, the settings and **About PlatinVault** have no navigation; you move on from there with the header. You can reach the overview at any time with a click on the logo in the header. From top to bottom:
 
 - **Game head:** the cover and the title of the game.
-- **Overview:** leads back to your favourites (5.2).
-- **Live trophies** and **Statistics** (only for games with Steam achievements).
 - **Chapters:** the chapters of the guide under their group headings (if a guide has only one group there are no headings). Next to a chapter a number shows how much of it you have ticked; a warning symbol means the research of that chapter failed (6.2).
 - **Story & Lore** (6.5).
 
@@ -264,14 +262,15 @@ The page **Overview** and the page **All games** look the same and have the same
 - The figures (games, trophies, platinum games) always refer to the chosen page. For "All games" PlatinVault evaluates your library in the background; while that runs it says
   "Library is being evaluated".
 - With the **Tile size** slider you choose between Large, Compact, Very compact, List and Text only.
-- The **search** filters the current view; under the row "Showing x of y" says how many games you see right now, and **Reset filter** clears the search again. When you scroll down,
-  a slim bar under the header takes over the search, the view and the slider.
+- The **search** filters the current view; under the row "Showing x of y" says how many games you see right now, and **Reset filter** clears the search again.
+- **Compact bar:** when you scroll down, a slim bar fades in under the header, step by step, exactly as the search row moves out of view. When you scroll back up, it fades out in the same way. While you type in it or have one of its menus open, it stays visible. It holds the search, **Favourites / All games**, the sorting and the tile size. In narrow windows the search is a magnifier button, and tile size and view sit behind the button **View and tile size**.
 - **Sorting:** to the right of the count line you choose the order of the tiles - in both views. You can pick **Completion** (unlocked Steam achievements in percent),
-  **Alphabetical**, **Playtime**, **Last played**, **Release date**, **Size**, **Metacritic score** and **Steam reviews**; for the favourites **Own order** comes first.
+  **Alphabetical**, **Playtime**, **Last played**, **Release date**, **Size**, **Metacritic score**, **Steam reviews**, **IGDB critics**, **IGDB players** and **Overall rating**; for the favourites **Own order** comes first.
   The button next to it reverses the direction; every order starts with the useful end first (highest completion, A to Z, newest, largest, best). Games that have no value
   (for example without a Metacritic score, or not installed) always stay at the end - in both directions. A line under the count line says in words how the tiles are sorted and
   how many games without a value are at the end; while PlatinVault is still loading values it says how far it is, and the list fills in by itself. Your choice is saved (per view) and is the same in the
   Windows program and in the browser. You can **drag** tiles only in **Own order** (favourites, no search filter) - in every other order dragging is off.
+- **The rating orders:** **IGDB critics** sorts by the score of the press and critics on IGDB, **IGDB players** by the score of the IGDB users (both only with the credentials of your own Twitch application, see 6.4). The **Overall rating** is the average of all ratings a game has: Steam reviews (share of positive reviews in percent), Metacritic, IGDB critics and IGDB players. If a game has only one rating, that one is used. Games with no rating at all stay at the end.
 - **Where the values come from:** playtime, last played and completion come from Steam itself. Release date, Metacritic score, Steam reviews and the size on disk are read by
   PlatinVault, where it can, from the files of the Steam program on the gaming PC - directly in the Windows program, on an Unraid server through the bridge. Where that is missing,
   PlatinVault asks Steam's store slowly in the background for release date and reviews. **The size exists only with Steam on this PC or the bridge:**
@@ -302,7 +301,7 @@ From top to bottom a tile consists of: **cover**, **rating strip**, **bar with P
 sizes large and compact – fixed lines: playtime, last played, release date, **size** and, for the favourites, the estimated time for 100 %. At the very bottom is your **trophy line** with a progress bar.
 Everything you can sort by (5.2) is also on the tile: the completion in the trophy bar, the other values in these lines. Every tile shows the same lines
 with the same symbols, so that all tiles look alike: where a value is missing (not played yet, no data from Steam, no estimate), a grey dash "–" stands there,
-and a hint on hover names the reason. You recognise games with every trophy by the **Platinum** plaque at the top right of the cover, next to which a short sparkle flashes now and then, and by the trophy row at the bottom of the tile: the platinum symbol (a trophy with a sparkle) stands there instead of the golden cup, and the line below it becomes a thick golden line with a slowly travelling shimmer of light and small twinkling stars (in the light colour scheme almost white stars with a dark-gold glow). With "reduce animations" switched on in Windows the line stays calm and does not move.
+and a hint on hover names the reason. You recognise games with every trophy by the **Platinum** plaque at the top right of the cover, next to which a short sparkle flashes now and then, and by the trophy row at the bottom of the tile: the platinum symbol (a trophy with a sparkle) stands there instead of the golden cup, and the line below it becomes a thick golden line with a slowly travelling shimmer of light and small twinkling stars. At the end of the line sits a small golden medal (a rosette) on which a glint flashes now and then (in the light colour scheme with a dark-gold glow). With "reduce animations" switched on in Windows the line stays calm and does not move.
 
 - **Size:** if the game is installed, the real **size on disk** stands there (written the way Steam writes it, for example "48.3 GB"). If it is not
   installed, you see the **install size** with "approx.": PlatinVault estimates it from the data Steam itself holds about the game (Windows, main
@@ -321,7 +320,7 @@ symbol on narrow tiles, a hint names the field). **Play** (green) starts the gam
 That field is only there while starting can work, that is when the bridge is connected or PlatinVault runs directly on the
 gaming PC; otherwise the other two share the bar. If you entered the credentials of your own Twitch application in the settings under **Twitch & IGDB** and
 "Live streams" is on, **Twitch** shows a number right in the field, next to the Twitch symbol: how many streams are live for this game right now ("12"; from 300 on it says "300+").
-On normally sized tiles only the symbol and the number are shown; the word "Twitch" only appears in very wide fields. At 0 there is no number, and the hint says that nobody is streaming it. The field always keeps the room for the number free, so nothing shifts. The numbers arrive in the background and refresh every few minutes; without
+On normally sized tiles only the symbol and the number are shown; the word "Twitch" only appears in very wide fields. At 0 there is no number, and the hint says that nobody is streaming it. The symbol sits centred in the field, just like the symbols of the other fields; the small live dot next to the number only appears from a certain tile width. The field always keeps the room for the number free, so nothing shifts. The numbers arrive in the background for every tile you scroll to – also far down in "All games" – and refresh every few minutes. If Twitch has no category for a game, no number is shown; PlatinVault then does not claim that nobody is streaming it; without
 credentials the field stays as it was.
 
 ## 5.5 Trophy cabinet
@@ -343,12 +342,16 @@ The trophy cabinet shows every game you brought to **100 %**, like a display cas
 
 ## 6.1 Layout
 
-At the top are the cover, the title, the **Play** button and a calm row with the game's tools (icons with a hint on hover: complete guide, add chapter, export, Twitch, print/PDF, reset progress). Below it a line shows your trophy progress with the tiers. The content of the chosen page follows.
+At the very top of the game head is the **Back** button. It takes you to the page you came from – or to the overview if you opened the game directly. Below it are the cover, the title, the **Play** button and a calm row with the game's tools (icons with a hint on hover: complete guide, add chapter, export, Twitch, print/PDF, reset progress). Below it a line shows your trophy progress with the tiers. The content of the chosen page follows.
 
-Which page of the game you see is chosen in the **navigation on the left** (it exists only on the game page, 5.1). It has these entries:
+At the bottom of the game head you switch between the areas of the game with the **area bar**. It only appears for games linked to Steam:
 
-- **Live trophies** – the game's Steam achievements (6.3),
-- **Statistics** (6.4),
+- **Guide** – the guide's chapters (6.2). A click takes you back to the chapter you read last in this game.
+- **Live trophies** – the game's Steam achievements (6.3).
+- **Statistics** (6.4).
+
+The **navigation on the left** (it exists only on the game page, 5.1) holds only the guide. It has these entries:
+
 - the guide's **chapters** (6.2), sorted under small headings such as **Getting started**, **Story & world**, **Combat & tactics** or **Progression & unlocks** (a guide with only one group has no headings). A number next to each chapter shows how much you have ticked off,
 - **Story & Lore** (6.5).
 

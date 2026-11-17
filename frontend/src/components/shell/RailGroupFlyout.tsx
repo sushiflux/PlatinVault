@@ -106,6 +106,7 @@ function Flyout({ anchor, menuId, label, gameSlug, chapters, activeSlug, onClose
         <Link
           key={chapter.slug}
           to={gameTabHref(gameSlug, chapter.slug)}
+          replace
           role="menuitem"
           className="pv-flyout-item"
           aria-current={activeSlug === chapter.slug ? 'page' : undefined}

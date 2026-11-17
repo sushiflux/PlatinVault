@@ -41,3 +41,18 @@ export function ratingSlots(game: RatingSource, igdbConfigured: boolean): Rating
   }
   return slots
 }
+
+/**
+ * The overall rating of a game: the plain arithmetic mean of the ratings it HAS among Steam reviews (% positive), Metacritic, IGDB critics
+ * and IGDB players, all on 0-100 (user decision 2026-11-17: no weighting by the number of sources). It reads exactly the slots the tile's
+ * rating strip shows (`ratingSlots`, so the strip and the sort agree on which values exist and on their rounding); one source gives that
+ * value, none gives null. Rounded to one decimal, so the order keeps its resolution and no floating-point noise decides a tie.
+ * `igdbConfigured` must be the same value the strip gets (Twitch credentials present): the server sends stored IGDB ratings whether or not
+ * credentials exist, so without the flag old values would count here that no tile shows.
+ */
+export function overallRating(game: RatingSource, igdbConfigured: boolean): number | null {
+  const slots = ratingSlots(game, igdbConfigured)
+  if (slots.length === 0) return null
+  const mean = slots.reduce((sum, slot) => sum + slot.value, 0) / slots.length
+  return Math.round(mean * 10) / 10
+}
