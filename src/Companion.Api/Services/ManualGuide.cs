@@ -10,7 +10,7 @@ namespace Companion.Api.Services;
 // Nothing here talks to an AI provider: the prompts are made from the same building blocks as the real AI calls, the answers are read, checked and
 // saved through the same code as AI results (normalizer, group, placeholder replacement).
 
-/// <summary>A prompt for the chat of the user's subscription. Kind = "blueprint" or "chapter".</summary>
+/// <summary>A prompt for the chat of the user's subscription. Kind = "blueprint", "chapter" or "lore" (all four Story &amp; Lore parts in one prompt).</summary>
 public sealed record ManualPromptDto(string Kind, string Prompt, string FileName, string Language, int? SteamAppId, string Title);
 
 /// <summary>One finding about a pasted answer: what is wrong (or worth knowing) in the language of the UI, with the technical text apart and up to 3 examples (e.g. the sentences in the wrong language).</summary>
@@ -26,6 +26,15 @@ public sealed record ManualBlueprintCheckDto(bool Ok, List<ManualIssueDto> Error
 /// FixPrompt = a ready prompt for the chat that asks it to rewrite the sentences in the wrong language and to output the same JSON again (null = nothing to fix).
 /// </summary>
 public sealed record ManualChapterCheckDto(bool Ok, List<ManualIssueDto> Errors, List<ManualIssueDto> Warnings, ManualChapterPreviewDto? Preview, string? NotApplicable = null, string? FixPrompt = null);
+
+/// <summary>One part of a Story &amp; Lore answer as the check read it: the part's title (as the tab shows it) and how many readable sections it has.</summary>
+public sealed record ManualLorePartPreviewDto(string Title, int SectionCount);
+
+/// <summary>What a Story &amp; Lore answer contains once read (in the fixed part order); MissingParts = titles of the parts that are not in the answer (they are saved without).</summary>
+public sealed record ManualLorePreviewDto(List<ManualLorePartPreviewDto> Parts, List<string> MissingParts);
+
+/// <summary>FixPrompt = a ready prompt that asks the chat to rewrite the sentences in the wrong language and to output the same JSON object again (null = nothing to fix).</summary>
+public sealed record ManualLoreCheckDto(bool Ok, List<ManualIssueDto> Errors, List<ManualIssueDto> Warnings, ManualLorePreviewDto? Preview, string? FixPrompt = null);
 
 public sealed record ManualAnswerRequest(string? Text);
 

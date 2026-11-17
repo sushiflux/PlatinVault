@@ -17,7 +17,7 @@ const game = {
     extendGroup: 'Guide erweitern',
     complete: {
       label: 'Guide vervollständigen',
-      description: 'Guide-Baukasten: die KI prüft alle Standard-Themen (Waffen, Rüstung, Taktik, Bestiarium, Level …) und schlägt vor, was noch fehlt',
+      description: 'Guide-Baukasten: die KI prüft alle Standard-Themen (Waffen, Rüstung, Taktik, Bestiarium, Level …) und schlägt vor, was noch fehlt. Vorher wählst du, ob die KI über einen API-Key oder dein eigenes KI-Abo arbeitet.',
     },
     addTab: {
       label: 'Tab ergänzen',

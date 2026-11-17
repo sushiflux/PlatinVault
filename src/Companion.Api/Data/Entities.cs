@@ -42,6 +42,8 @@ public sealed class GameEntity
     // From IGDB (only with Twitch credentials): average hours to 100 % completion and the critics' rating 0-100
     public double? CompletionHours { get; set; }
     public int? IgdbRating { get; set; }
+    /// <summary>IGDB users' average rating (IGDB <c>rating</c>), 0-100, rounded; null = IGDB has none or the card was not refreshed yet.</summary>
+    public int? IgdbUserRating { get; set; }
 
     // The game's genres from the Steam store in the language they were fetched in (SteamGenresLanguage), for the dashboard card; IGDB's (English)
     // only while Steam has none. Refreshed with the other card facts, so the card needs no Steam call per request. GenreTags (AI) stays as is.

@@ -45,6 +45,7 @@ const game = (n: number, patch: Partial<GameSummaryDto>): GameSummaryDto =>
     releaseDate: null,
     completionHours: null,
     igdbRating: null,
+    igdbUserRating: null,
     updatedAt: '2026-11-01T10:00:00Z',
     ...patch,
   }) as GameSummaryDto
@@ -143,7 +144,12 @@ describe('DashboardPage look', () => {
     const open = tiles.find((tile) => tile.textContent?.includes('Bravo'))!
     expect(platinum.getAttribute('data-platin')).toBe('true')
     expect(platinum.querySelector('.pv-pbar')?.getAttribute('data-complete')).toBe('true')
-    expect(within(platinum).getByText('Platin')).toBeTruthy()
+    // The label of the progress line and the plaque on the cover
+    expect(within(platinum).getAllByText('Platin').length).toBe(2)
+    expect(platinum.querySelector('.pv-tile-cover .pv-plat-chip')).toBeTruthy()
+    // The gold line lives on the trophy progress line at the bottom, only for the finished game
+    expect(platinum.querySelector('.pv-pbar .pv-plat-line')).toBeTruthy()
+    expect(open.querySelector('.pv-plat-line')).toBeNull()
     expect(open.getAttribute('data-platin')).toBeNull()
     expect(open.querySelector('.pv-pbar')?.getAttribute('data-complete')).toBeNull()
     expect(within(open).getByText(/3 \/ 12/)).toBeTruthy()

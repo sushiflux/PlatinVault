@@ -23,7 +23,7 @@ const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), [tabin
  * The popover itself. Its CSS is in px on purpose (index.css .pv-scalepop): it must keep its size AND its place while the page
  * behind it re-flows, so a second click on "+" lands on the same button again. The position is taken once, when it opens.
  */
-function ScalePopover({ anchor, popoverId, onClose }: { anchor: HTMLElement; popoverId: string; onClose: () => void }) {
+export function ScalePopover({ anchor, popoverId, onClose }: { anchor: HTMLElement; popoverId: string; onClose: () => void }) {
   const { t } = useTranslation('shell')
   const format = useFormat()
   // "110 %" (German, with a no-break space so the figure never wraps away from its sign) / "110%" (English)

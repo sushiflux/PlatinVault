@@ -1,9 +1,9 @@
 import { useCallback, useState } from 'react'
 
-// Below this width the tree navigation is a drawer, opened by the menu button in the header (phones, narrow windows)
+// Below this width the game page's tree navigation is a drawer, opened by the menu button in the header (phones, narrow windows)
 export const DRAWER_QUERY = '(max-width: 767px)'
 
-// Remembered per browser: the tree navigation collapsed to an icon rail
+// Remembered per browser: the game navigation collapsed to an icon rail
 export const RAIL_KEY = 'pv_nav_rail_v1'
 
 function readRail(): boolean {

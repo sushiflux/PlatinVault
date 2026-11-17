@@ -1,25 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import type { GameSummaryDto, GuideTabDto } from '../../api/types'
+import type { GuideTabDto } from '../../api/types'
 import {
   LIVE_TROPHIES_TAB_SLUG,
   LORE_TAB_SLUG,
   STATS_TAB_SLUG,
   buildSections,
   chapterItemsOf,
-  filterTree,
   gameTabHref,
   guideChapters,
   resolveGameTab,
   slugToTabParam,
   tabParamToSlug,
-  treeGames,
   type ChapterItem,
 } from './navModel'
 
 const tab = (slug: string, extra: Partial<GuideTabDto> = {}): GuideTabDto =>
   ({ id: slug, slug, title: slug, icon: '', checkedItemsCount: 0, totalCheckableItems: 0, sections: [], isAchievementList: false, groupKey: null, ...extra }) as GuideTabDto
-
-const game = (slug: string, title: string, isFavorite = true): GameSummaryDto => ({ id: slug, slug, title, isFavorite }) as unknown as GameSummaryDto
 
 describe('tab params', () => {
   it('returns a crafted ?tab= that names an Object.prototype member as the plain string, never the inherited value', () => {
@@ -82,30 +78,5 @@ describe('buildSections', () => {
   it('takes the leading number off the titles and marks failed chapters', () => {
     const items = chapterItemsOf({ tabs: [tab('x', { title: '3. Bosse', id: 't1' })] }, new Set(['t1']))
     expect(items[0]).toMatchObject({ title: 'Bosse', failed: true })
-  })
-})
-
-describe('treeGames / filterTree', () => {
-  const games = [game('alpha', 'Alpha Quest'), game('beta', 'Bravo Pokémon'), game('charlie', 'Charlie', false)]
-  const chapters: ChapterItem[] = [
-    { slug: 'walkthrough', title: 'Komplettlösung', checked: 0, total: 0, groupKey: null },
-    { slug: 'bosses', title: 'Bosse', checked: 0, total: 0, groupKey: null },
-  ]
-
-  it('lists the favourites and adds the open game at the end when it is none', () => {
-    expect(treeGames(games, 'alpha').map((g) => g.slug)).toEqual(['alpha', 'beta'])
-    expect(treeGames(games, 'charlie').map((g) => g.slug)).toEqual(['alpha', 'beta', 'charlie'])
-  })
-
-  it('finds games without accents and case, and the open game by one of its chapters', () => {
-    const favourites = treeGames(games, 'alpha')
-    expect(filterTree(favourites, 'alpha', chapters, 'pokemon').games.map((g) => g.slug)).toEqual(['beta'])
-    const byChapter = filterTree(favourites, 'alpha', chapters, 'boss')
-    expect(byChapter.games.map((g) => g.slug)).toEqual(['alpha'])
-    expect(byChapter.chapters.map((c) => c.slug)).toEqual(['bosses'])
-    // The open game matched by its own title shows all of its chapters
-    expect(filterTree(favourites, 'alpha', chapters, 'alpha').chapters).toHaveLength(2)
-    expect(filterTree(favourites, 'alpha', chapters, 'zzz')).toMatchObject({ games: [], any: false })
-    expect(filterTree(favourites, 'alpha', chapters, '  ')).toMatchObject({ games: favourites, chapters, any: true })
   })
 })

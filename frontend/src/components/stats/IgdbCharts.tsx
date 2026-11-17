@@ -226,13 +226,14 @@ export function RatingCompare({ igdb, stats, order }: RatingsProps) {
       value: igdb.aggregatedRating,
       text: String(Math.round(igdb.aggregatedRating)),
     })
-  if (igdb.totalRating !== null)
+  // Players = IGDB users only ("rating"), never total_rating, which also contains the critics row above
+  if (igdb.rating != null)
     rows.push({
       key: 'players',
       label: t('ratings.players'),
-      sub: igdb.totalRatingCount ? t('ratings.count', { count: igdb.totalRatingCount }) : t('ratings.average'),
-      value: igdb.totalRating,
-      text: String(Math.round(igdb.totalRating)),
+      sub: igdb.ratingCount ? t('ratings.count', { count: igdb.ratingCount }) : t('ratings.average'),
+      value: igdb.rating,
+      text: String(Math.round(igdb.rating)),
     })
   if (stats.reviewPercentPositive !== null)
     rows.push({

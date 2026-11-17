@@ -1691,6 +1691,134 @@ Recherche-Regeln:
 
 JSON-Struktur:
 { "sections": [ ... ] }
+=====[manual lore de]=====
+Du schreibst den kompletten Reiter „Story & Lore“ für „Suncraft“ – für Spieler, die die Handlung und die Hintergründe wirklich verstehen wollen. Er besteht aus 4 Teilen (L1–L4), alle in diesem einen Chat. SPOILER sind ausdrücklich gewünscht (Wendungen, Enden, Schicksale der Figuren). Schreibe ALLE Texte auf Deutsch.
+
+Bekannte Fakten aus Steam:
+Steam-AppID: 4078110
+Genres laut Steam: Simulation
+
+So arbeitest du: Alle Teile stehen am Ende unter „Teile“, jeder mit seinem Auftrag. Schreibe jeden Teil für sich nach seinem Auftrag und nach der folgenden Vorgabe – sie gilt für JEDEN Teil. Das Ergebnis eines Teils ist eine Liste von Abschnitten („sections“); alle Teile zusammen bilden EIN JSON-Objekt (siehe „Ausgabe in diesem Chat“). Die App setzt vor jeden Teil selbst eine Überschrift mit dem Titel des Teils – schreibe sie nicht noch einmal.
+
+Schreibstil: Deutsch, einfache und klare Sprache, Absätze mit 2–5 Sätzen, keine Stichwortlisten im Fließtext.
+Namen und Begriffe nach der Sprachregel unten.
+
+Erlaubte Bausteine (nur diese Typen):
+- "story": Fließtext – { "type": "story", "title": "...", "paragraphs": ["Absatz 1", "Absatz 2"] }
+- "cards_grid": Karten – { "type": "cards_grid", "columns": 2, "cards": [
+    { "title": "...", "badgeText": "...", "badgeVariant": "s | a | b | ok", "introText": "...",
+      "bullets": [ { "icon": "mdi:...", "title": "...", "body": "..." } ] } ] }
+- "checklist_table": reine Nachschlagetabelle mit "checkable": false – { "type": "checklist_table", "table": {
+    "tableId": "kurze-id", "caption": "...", "checkable": false, "searchPlaceholder": "Suchen...",
+    "categoryFilterLabel": "Alle Kategorien", "categories": ["..."],
+    "columns": [ { "key": "name", "label": "...", "isRowHeader": true }, { "key": "info", "label": "..." } ],
+    "rows": [ { "itemId": "eindeutige-id", "filterCategory": "...", "cells": { "name": "...", "info": "..." } } ] } }
+
+Plattform (verbindliche Regel): Der Spieler spielt die STEAM-Version auf dem PC.
+- Erfolge sind Steam-Erfolge. Schreibe nie über PlayStation-Trophäen, eine Platin-Trophäe, Xbox-Erfolge oder Gamerscore;
+  „100 %“ heißt alle Steam-Erfolge (plus die Spiel-Fortschritte, die sie brauchen).
+- Steuerung ist Tastatur und Maus (oder ein Controller am PC). Nutze nie Konsolen-Tastennamen (Kreuz, Quadrat, Dreieck, R1, A/B/X/Y …), außer die
+  PC-Version zeigt sie selbst an.
+- Lass reine Konsolen-Inhalte weg: Konsolen-Exklusives, Konsolen-Patchstände, PSN-/Xbox-exklusive DLCs, Boni oder Events, Cross-Save,
+  Konsolen-Leistungsmodi. Unterscheidet sich die PC-Version (Patchstand, DLC, Inhalt), gilt die PC-Version.
+- Konsolen-Seiten (PSNProfiles, PlayStationTrophies.org, PowerPyx-Trophäen-Guides, TrueAchievements, Xbox-Guides …) darfst du für alles nutzen, was am PC
+  genauso ist (Story, Route, Verpassbares, Boss-Taktiken, Reihenfolge), nennst sie im Text aber nicht als „PS4-/PS5-/PlayStation-/Xbox-Guide“ – nenne den
+  Fakt, nicht die Konsole. Die Erfolgsliste, die Namen und die Bedingungen kommen NUR von Steam: weicht eine Konsolen-Trophäe ab, gilt Steam.
+- Zeitangaben („Stunden bis 100 %“) gelten für alle Steam-Erfolge am PC – nie „Stunden bis zur Platin-Trophäe“.
+
+Sprache (verbindliche Regel): Der ganze Guide ist auf Deutsch – jeder Satz, jede Überschrift, jede Tabellenzelle, jeder Schritt, jedes Ziel und jede Anweisung.
+- Schreibe in eigenen Worten. Übernimm nie Sätze aus fremdsprachigen Quellen oder aus der fremdsprachigen Fassung des Spiels (auch keine Ziele oder
+  Questtexte wie „Go to the town …“) – formuliere sie auf Deutsch neu.
+- Namen von Orten, Gegenständen, Gegnern, Figuren, Quests und Fähigkeiten: so, wie sie in der deutschen Fassung des Spiels heißen, wenn es eine gibt
+  (siehe „Deutsche Fassung laut Steam“ in den Fakten; fehlt die Zeile, prüfe es selbst). Gibt es keine deutsche Fassung, nimm den Namen aus dem Spiel
+  und erkläre ihn beim ersten Vorkommen kurz auf Deutsch.
+- Den Originalnamen (meist Englisch) schreibst du höchstens EINMAL pro Kapitel in Klammern dazu, beim ersten Vorkommen – nur bei Eigennamen, nie bei
+  Sätzen, Zielen oder Anweisungen, und danach nicht wiederholen. Kapitel-Titel, Überschriften und Tab-Namen bekommen keinen Klammerzusatz.
+- Steam-API-Namen, itemIds, URLs, Codes und Zahlen bleiben genau, wie sie sind.
+
+Recherche-Regeln:
+- Schritt 1 – vor allen anderen Quellen: Suche ein Wiki speziell zu DIESEM Spiel, von Fans oder offiziell (zum Beispiel das Fandom-Wiki des Spiels, ein
+  offizielles Spiel-Wiki oder ein Fan-Wiki von der Art wie ffresonance.wiki für Final Fantasy Resonance – viele Spiele haben keins). Hat es eine deutsche
+  Fassung (Sprachpfad wie /de/ oder Sprachumschalter), nimm diese. Nenne ein Wiki nur, wenn deine Suche es wirklich gefunden hat; gibt es keins,
+  überspring diesen Schritt ohne Erwähnung. Erfinde nie eine Wiki-Adresse.
+  Solche Wikis sind oft Fan-Seiten: Prüfe Zahlen (HP, Level, Drop-Raten, Preise) mit einer zweiten Quelle, wo es eine gibt, und sag es, wenn sie sich
+  widersprechen; schreibe in eigenen Worten und übernimm nie ihren Text; führe jede benutzte Wiki-Seite im Abschnitt "sources" des Kapitels auf (wo die
+  Antwort einen hat).
+- Schritt 2 – recherchiere live im Internet. Gute Startpunkte (Hinweise, suche selbst weiter): zuerst deutsche Quellen – pcgames.de (Komplettlösungen, PC-Fokus),
+  spieletipps.de und GIGA (Komplettlösungen, Tipps), gameswelt.de (Tipps, Komplettlösungen, teils Steam-Erfolge), deutsche Steam-Community-Guides
+  (Sprache Deutsch, Kategorie Erfolge), mein-mmo.de (nur MMO-/Online-Spiele); dann englische als Ergänzung – Game8 (Komplettlösungen), Fextralife (Wikis),
+  PowerPyx (Roadmaps, Sammelobjekte), PSNProfiles und PlayStationTrophies.org (Roadmaps, Verpassbares). Englische Inhalte gibst du immer in eigenen
+  deutschen Worten wieder (Sprachregel).
+- Erfinde NICHTS. Wenn es zu einem Punkt (noch) keine verlässliche Quelle gibt – z. B. weil das Spiel gerade erst erschienen ist –,
+  schreibe ausdrücklich „Noch nicht dokumentiert (Stand <heutiges Datum>)“ statt Orte, Werte oder Namen zu raten.
+- Berücksichtige den aktuellen Patch-Stand; markiere Inhalte, die sich durch Updates geändert haben.
+- Sei ERSCHÖPFEND: vollständige Listen statt Beispiele (alle Waffen, alle Bosse, alle Sammelobjekte) – eine Tabelle mit
+    60 Zeilen ist besser als eine mit 8 ausgewählten.
+- Gib bei jedem Eintrag an, AB WANN er erreichbar ist (Kapitel, Gebiet, Level oder Story-Fortschritt) und ob er
+  VERPASSBAR ist – der Spieler will sehen: „Das kann ich in diesem Kapitel schon holen, darauf muss ich jetzt achten.“
+- Schreibe wie ein erfahrener Spieler: konkrete Praxis-Tipps, Zeitsparer, typische Fehler, Reihenfolgen.
+- Nebenquests: Ihre vollständige Lösung (Schritte, Kämpfe, Belohnungen) steht NUR im Kapitel zu den Nebenquests. In der Komplettlösung wird eine Nebenquest
+  nur in einem kompakten "alert" mit "kind": "side_quests" an der Stelle genannt, an der sie verfügbar wird – { "type": "alert", "kind": "side_quests", "title": "Nebenquests hier",
+  "quests": [ { "title": "Name", "availableFrom": "ab wann", "missable": "Zeitfenster / bis wann (nur wenn verpassbar)", "reward": "kurz" } ] } – mehr nicht.
+  In anderen Kapiteln nenne die Quest kurz und verweise auf das Nebenquest-Kapitel.
+- Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt, ohne Markdown-Codeblock und ohne Text davor oder danach.
+
+Ausgabe in diesem Chat (das gilt zusätzlich und hat bei der Ausgabe Vorrang vor dem Satz „ohne Markdown-Codeblock“ oben):
+- Gemeint ist genau dieses Spiel: „Suncraft“, Steam-AppID 4078110 – die Steam-Version auf dem PC. Prüfe vor dem Schreiben, dass du dieses Spiel meinst – nicht ein gleichnamiges Spiel, einen Vorgänger, Nachfolger, ein Remake oder eine Demo.
+- Die Ausgabe ist EIN JSON-Objekt mit den Feldern „game“, „steamAppId“ und „parts“, in dieser Reihenfolge. „parts“ enthält GENAU einen Eintrag pro Teil in der Reihenfolge der Liste; jeder Eintrag hat das Feld „part“ (die Kennung aus der Liste, exakt, z. B. „L1“) und das Feld „sections“ (die Abschnitte dieses Teils). Beginne jeden Teil in einer neuen Zeile. Im Objekt steht sonst nichts – kein Text, keine Kommentare, keine Platzhalter. So (verkürzt, schreibe die echten Inhalte): { "game": "Suncraft", "steamAppId": 4078110, "parts": [ { "part": "L1", "sections": [...] }, { "part": "L2", "sections": [...] }, { "part": "L3", "sections": [...] }, { "part": "L4", "sections": [...] } ] }
+- Kann dein Chat Code ausführen oder Dateien erzeugen: Liefere das Objekt als EINE Datei zum Herunterladen mit dem Namen „platinvault-suncraft-lore.json“. Baue sie Teil für Teil auf – hänge jeden fertigen Teil an die Datei an, damit kein einzelner Schritt alles auf einmal tragen muss – und prüfe am Ende, dass die ganze Datei gültiges JSON ist (z. B. indem du sie einliest). Schreibe den Inhalt dann nicht zusätzlich in den Chat; schreibe nur die Abschlusszeile.
+- NUR wenn dein Chat keine Datei erzeugen kann: Schreibe dasselbe Objekt in EINEN ```json-Codeblock in EINER Antwort, im Block nichts außer dem Objekt. Passt nicht alles hinein, höre nach einem vollständigen Teil auf (schneide nie mitten in einem Teil ab), schließe „parts“ und das Objekt und schreibe als allerletzte Zeile „NOCH OFFEN: L3–L4“ (mit den echten Kennungen der fehlenden Teile). Schreibe ich dann „weiter“, antworte mit einem NEUEN Objekt derselben Form („game“, „steamAppId“, „parts“) nur mit den offenen Teilen, nach denselben Regeln.
+- Wenn alle Teile fertig sind, schreibe als allerletzte Zeile: „ALLE TEILE FERTIG: L1–L4“.
+- Schreibe echte Inhalte, keine Platzhalter wie "..." – die Strukturbeschreibung oben ist nur das Muster. Was du nicht belegen kannst: „Noch nicht dokumentiert (Stand <heutiges Datum>)“ – erfinde nichts.
+- Nutze die Websuche deines Chats, falls es eine gibt – für jeden Teil zuerst nach einem Wiki speziell zu diesem Spiel (Schritt 1 der Recherche-Regeln; gibt es keins, überspring ihn ohne Erwähnung); ohne Websuche kennzeichne die Quellenlage als dünn.
+
+Teile (4), in dieser Reihenfolge:
+- L1 | "Die Story einfach erklärt"
+  Auftrag:
+  Erkläre die komplette Handlung von Anfang bis Ende so, dass sie auch jemand versteht, der das Spiel nur halb verfolgt hat.
+  - Beginne mit einer "story"-Section „Kurzfassung“ (1–2 Absätze).
+  - Gliedere danach nach den Akten bzw. Kapiteln des Spiels: pro Akt/Kapitel genau eine "story"-Section
+    (title z. B. „Akt 2 – Titel“ oder „Kapitel 7 – Titel“) mit 3–6 Absätzen.
+  - Erkläre Fachbegriffe und Namen beim ersten Auftreten kurz in einfachen Worten, und erkläre WARUM Figuren handeln
+    und was eine Wendung bedeutet – nicht nur WAS passiert.
+  - Das Ende (bei mehreren Enden: jedes, plus wie man es erreicht) und alle großen Wendungen gehören ausdrücklich hinein.
+  - Ist das Spiel Teil einer Reihe, ordne es in 1–2 Sätzen ein (was davor geschah), ohne andere Spiele auszubreiten.
+- L2 | "Charaktere & Beziehungen"
+  Auftrag:
+  Erstelle ein "cards_grid" (columns 2) mit einer Karte pro wichtiger Figur (Hauptfiguren, wichtige Nebenfiguren,
+  Gegenspieler; typisch 6–14 Karten):
+  - title = Name der Figur (wie in der deutschen Fassung; Originalname höchstens hier einmal in Klammern), badgeText = Rolle (z. B. Protagonist, Gegenspieler), badgeVariant: s = Hauptfigur,
+    a = wichtige Nebenfigur, b = Randfigur.
+  - introText = Rolle, Hintergrund und Motive in 2–4 Sätzen.
+  - bullets = Beziehungen zu anderen Figuren: pro Bullet icon (z. B. "mdi:account-heart"), title „Beziehung zu <Figur>“
+    mit der Art der Beziehung, body 1–2 Sätze inklusive Entwicklung im Spielverlauf.
+  Danach – empfohlen bei vielen Figuren – eine "checklist_table" mit "checkable": false als Beziehungsübersicht:
+  Spalten figur_a (Figur A, isRowHeader), beziehung (Beziehung), figur_b (Figur B), hinweis (Hinweis / Entwicklung);
+  jede Zeile mit eindeutiger "itemId" in kebab-case und "filterCategory" aus "categories"
+  (z. B. Familie, Freundschaft, Liebe, Feindschaft, Allianz).
+- L3 | "Welt, Fraktionen & Begriffe"
+  Auftrag:
+  Beschreibe Welt und Hintergründe:
+  - Eine "story"-Section „Die Welt im Überblick“ (2–4 Absätze: Setting, Geschichte der Welt, Besonderheiten wie Technik
+    oder Magie).
+  - Ein "cards_grid" (columns 2 oder 3) für Fraktionen, Organisationen, Völker und wichtige Orte (introText plus bullets
+    mit Zielen, Anführern und Verbindungen untereinander).
+  - Eine "checklist_table" mit "checkable": false als Glossar: Spalten begriff (Begriff DE / EN, isRowHeader),
+    bedeutung (Bedeutung), kategorie (z. B. Ort, Organisation, Technik, Magie, Ereignis); 15–40 Einträge mit allen
+    wichtigen Spielbegriffen, jede Zeile mit eindeutiger "itemId" in kebab-case.
+- L4 | "Insiderwissen & Entwicklung"
+  Auftrag:
+  Sammle Insiderwissen und Hintergründe zur Entstehung:
+  - Easter Eggs und versteckte Hinweise, Referenzen und Anspielungen (andere Spiele, Filme, Bücher, frühere Teile),
+    geschnittene oder veränderte Inhalte.
+  - Entwicklungsgeschichte (Studio, Team, Entwicklungszeit, Engine, Meilensteine, Verschiebungen), Behind-the-Scenes-
+    Geschichten, Verkaufs- und Rezeptionsfakten (Verkaufszahlen, Wertungen, Auszeichnungen, Kontroversen).
+  - Form: "story"-Sections für zusammenhängende Themen (z. B. Entwicklungsgeschichte), "cards_grid" für Listen
+    (Easter Eggs, Referenzen, Trivia; pro Karte bullets mit: wo / was / warum interessant).
+  STRENGE QUELLENREGEL für diesen Teil: Nimm nur belegte Fakten auf (Entwickler-Interviews, Making-ofs, Wikis,
+  Fachpresse). Erfinde KEINE Anekdoten, Zitate, Zahlen oder Easter Eggs. Ist etwas nicht belegt oder nur ein Gerücht,
+  schreibe „nicht belegt“ bzw. „Gerücht (nicht bestätigt)“. Nenne die Quelle kurz in Klammern
+  (z. B. „laut Interview mit dem Director, IGN 2020“). Lieber weniger Einträge, dafür belegt.
 =====[tips de]=====
 Für „Suncraft“ liegt die offizielle Steam-Erfolgsliste vor (API-Name | Titel | Bedingung):
 ACH_FIRST | Erster Schritt | Beende das erste Kapitel.
@@ -3642,6 +3770,131 @@ Research rules:
 
 JSON structure:
 { "sections": [ ... ] }
+=====[manual lore en]=====
+You are writing the complete "Story & Lore" tab for "Suncraft" – for players who really want to understand the plot and the background. It consists of 4 parts (L1–L4), all of them in this one chat. SPOILERS are explicitly wanted (twists, endings, fates of the characters). Write ALL texts in English.
+
+Known facts from Steam:
+Steam AppID: 4078110
+Genres according to Steam: Simulation
+
+How this works: all parts are listed at the end under "Parts", each with its assignment. Write each part on its own, following its assignment and the specification below – the specification applies to EVERY part. The result of a part is a list of sections ("sections"); all parts together form ONE JSON object (see "Output in this chat"). The app puts a heading with the title of the part in front of every part itself – do not write it again.
+
+Writing style: English, simple and clear language, paragraphs of 2–5 sentences, no keyword lists inside running text.
+Names and terms follow the language rule below.
+
+Allowed building blocks (only these types):
+- "story": running text – { "type": "story", "title": "...", "paragraphs": ["Paragraph 1", "Paragraph 2"] }
+- "cards_grid": cards – { "type": "cards_grid", "columns": 2, "cards": [
+    { "title": "...", "badgeText": "...", "badgeVariant": "s | a | b | ok", "introText": "...",
+      "bullets": [ { "icon": "mdi:...", "title": "...", "body": "..." } ] } ] }
+- "checklist_table": pure reference table with "checkable": false – { "type": "checklist_table", "table": {
+    "tableId": "short-id", "caption": "...", "checkable": false, "searchPlaceholder": "Search...",
+    "categoryFilterLabel": "All categories", "categories": ["..."],
+    "columns": [ { "key": "name", "label": "...", "isRowHeader": true }, { "key": "info", "label": "..." } ],
+    "rows": [ { "itemId": "unique-id", "filterCategory": "...", "cells": { "name": "...", "info": "..." } } ] } }
+
+Platform (mandatory rule): the player plays the STEAM version on PC.
+- Achievements are Steam achievements. Never write about PlayStation trophies, a platinum trophy, Xbox achievements or Gamerscore;
+  "100%" means all Steam achievements (plus the in-game completion they need).
+- Controls are keyboard and mouse (or a controller on PC). Never use console button names (Cross, Square, Triangle, R1, A/B/X/Y …) unless the
+  PC version itself shows them.
+- Leave out console-only content: console exclusives, console patch states, PSN/Xbox-only DLC, bonuses or events, cross-save, console
+  performance modes. If the PC version differs (patch state, DLC, content), the PC version counts.
+- Console sites (PSNProfiles, PlayStationTrophies.org, PowerPyx trophy guides, TrueAchievements, Xbox guides …) may be used for everything that is
+  identical on PC (story, route, missables, boss tactics, order) and are then not named as "PS4/PS5/PlayStation/Xbox guide" in the text – name the fact,
+  not the console. The achievement list, the names and the conditions come ONLY from Steam: if a console trophy differs, Steam wins.
+- Time estimates ("hours to 100%") are for all Steam achievements on PC – never "hours to the platinum trophy".
+
+Language (mandatory rule): the whole guide is in English – every sentence, heading, table cell, step, objective and instruction.
+- Write in your own words. Never copy sentences from sources in another language or from another language version of the game (also no
+  objectives or quest texts) – rewrite them in English.
+- Names of places, items, enemies, characters, quests and abilities: as they are called in the English version of the game, if the game has one
+  (see "English version according to Steam" in the facts; without that line check it yourself). If there is no English version, use the in-game name
+  and explain it briefly in English at its first mention.
+- The original name in another language may be added in brackets at most ONCE per chapter, at its first mention – only for proper names, never for
+  sentences, objectives or instructions, and never repeated. Chapter titles, headings and tab names get no bracketed addition.
+- Steam API names, itemIds, URLs, codes and numbers stay exactly as they are.
+
+Research rules:
+- Step 1 – before all other sources: look for a wiki dedicated to THIS game, made by fans or official (for example the game's Fandom wiki, an official
+  game wiki, or a fan wiki of the kind of ffresonance.wiki for Final Fantasy Resonance – many games have none). If it has an English version (often
+  the default without a language path, otherwise a language switcher or a path like /en/), use that one. Name a wiki only when your search really
+  found it; if there is none, skip this step without mentioning it. Never invent a wiki URL.
+  Such wikis are often fan sites: cross-check numbers (HP, levels, drop rates, prices) with a second source where one exists and say so when they
+  disagree; write in your own words and never copy their text; list every wiki page you used in the chapter's "sources" section (where the answer has one).
+- Step 2 – research live on the internet. Good starting points (hints, keep searching on your own): Steam community guides (category Achievements),
+  Game8 (walkthroughs), Fextralife (wikis), PowerPyx (roadmaps, collectibles), PSNProfiles and PlayStationTrophies.org (roadmaps, missables),
+  official patch notes and Reddit.
+- Invent NOTHING. If there is (as yet) no reliable source for a point – e.g. because the game has just been released –
+  write explicitly "Not documented yet (as of <today's date>)" instead of guessing locations, values or names.
+- Take the current patch state into account; mark content that has changed through updates.
+- Be EXHAUSTIVE: complete lists instead of examples (all weapons, all bosses, all collectibles) – a table with
+    60 rows is better than one with 8 selected ones.
+- For every entry state FROM WHEN it is available (chapter, area, level or story progress) and whether it is
+  MISSABLE – the player wants to see: "I can already get this in this chapter, I have to watch out for this now."
+- Write like an experienced player: concrete practical tips, time savers, typical mistakes, orders.
+- Side quests: their complete solution (steps, fights, rewards) belongs ONLY in the side quest chapter. In the walkthrough a side quest is only
+  named in a compact "alert" with "kind": "side_quests" at the spot where it becomes available – { "type": "alert", "kind": "side_quests", "title": "Side quests here",
+  "quests": [ { "title": "Name", "availableFrom": "from when", "missable": "time window / until when (only if missable)", "reward": "short" } ] } – nothing more.
+  In other chapters name the quest briefly and refer to the side quest chapter.
+- Answer EXCLUSIVELY with a valid JSON object, without a Markdown code block and without text before or after it.
+
+Output in this chat (this applies in addition and wins over the sentence "without a Markdown code block" above):
+- The game is exactly this one: "Suncraft", Steam AppID 4078110 – the Steam version on PC. Before writing, make sure you mean this game – not a game with the same name, a predecessor, a successor, a remake or a demo.
+- The output is ONE JSON object with the fields "game", "steamAppId" and "parts", in this order. "parts" contains EXACTLY one entry per part, in the order of the list; every entry has the field "part" (the id from the list, exactly, e.g. "L1") and the field "sections" (the sections of this part). Start every part on a new line. Nothing else is in the object – no text, no comments, no placeholders. Like this (shortened, write the real content): { "game": "Suncraft", "steamAppId": 4078110, "parts": [ { "part": "L1", "sections": [...] }, { "part": "L2", "sections": [...] }, { "part": "L3", "sections": [...] }, { "part": "L4", "sections": [...] } ] }
+- If your chat can run code or create files: deliver the object as ONE downloadable file named "platinvault-suncraft-lore.json". Build it part by part – append each finished part to the file, so that no single step has to hold everything at once – and at the end check that the whole file is valid JSON (e.g. by reading it back in). Do not write the content into the chat as well; write only the final line.
+- ONLY if your chat cannot create a file: write the same object into ONE ```json code block in ONE answer, nothing but the object inside the block. If everything does not fit, stop after a complete part (never cut off in the middle of a part), close "parts" and the object and write as the very last line "STILL OPEN: L3–L4" (with the real ids of the missing parts). When I then write "continue", answer with a NEW object of the same shape ("game", "steamAppId", "parts") containing only the open parts, following the same rules.
+- When all parts are done, write as the very last line: "ALL PARTS DONE: L1–L4".
+- Write real content, no placeholders like "..." – the structure description above is only the pattern. What you cannot back up: "Not documented yet (as of <today's date>)" – invent nothing.
+- Use the web search of your chat if it has one - for every part first for a wiki dedicated to this game (step 1 of the research rules; skip it silently when there is none); without web search mark the source situation as thin.
+
+Parts (4), in this order:
+- L1 | "The story explained simply"
+  Assignment:
+  Explain the complete plot from start to finish so that even someone who only half followed the game understands it.
+  - Start with a "story" section "In short" (1–2 paragraphs).
+  - Then follow the acts or chapters of the game: exactly one "story" section per act/chapter
+    (title e.g. "Act 2 – Title" or "Chapter 7 – Title") with 3–6 paragraphs.
+  - Explain technical terms and names briefly in simple words when they first appear, and explain WHY characters act
+    and what a twist means – not only WHAT happens.
+  - The ending (with several endings: each one, plus how to reach it) and all big twists explicitly belong in it.
+  - If the game is part of a series, place it in 1–2 sentences (what happened before) without spreading out about other games.
+- L2 | "Characters & relationships"
+  Assignment:
+  Create a "cards_grid" (columns 2) with one card per important character (main characters, important supporting
+  characters, antagonists; typically 6–14 cards):
+  - title = name, badgeText = role (e.g. protagonist, antagonist), badgeVariant: s = main character,
+    a = important supporting character, b = minor character.
+  - introText = role, background and motives in 2–4 sentences.
+  - bullets = relationships to other characters: per bullet an icon (e.g. "mdi:account-heart"), title "Relationship with <character>"
+    naming the kind of relationship, body 1–2 sentences including how it develops during the game.
+  Then – recommended with many characters – a "checklist_table" with "checkable": false as a relationship overview:
+  columns figur_a (Character A, isRowHeader), beziehung (Relationship), figur_b (Character B), hinweis (Note / development);
+  every row with a unique "itemId" in kebab-case and a "filterCategory" from "categories"
+  (e.g. Family, Friendship, Love, Enmity, Alliance).
+- L3 | "World, factions & terms"
+  Assignment:
+  Describe the world and its background:
+  - A "story" section "The world at a glance" (2–4 paragraphs: setting, history of the world, particularities such as
+    technology or magic).
+  - A "cards_grid" (columns 2 or 3) for factions, organisations, peoples and important places (introText plus bullets
+    with goals, leaders and connections to each other).
+  - A "checklist_table" with "checkable": false as a glossary: columns begriff (Term, isRowHeader),
+    bedeutung (Meaning), kategorie (e.g. Place, Organisation, Technology, Magic, Event); 15–40 entries covering all
+    important game terms, every row with a unique "itemId" in kebab-case.
+- L4 | "Insider knowledge & development"
+  Assignment:
+  Collect insider knowledge and background on how the game was made:
+  - Easter eggs and hidden hints, references and allusions (other games, films, books, earlier instalments),
+    cut or changed content.
+  - Development history (studio, team, development time, engine, milestones, delays), behind-the-scenes
+    stories, sales and reception facts (sales figures, ratings, awards, controversies).
+  - Form: "story" sections for connected topics (e.g. development history), "cards_grid" for lists
+    (easter eggs, references, trivia; per card bullets with: where / what / why it is interesting).
+  STRICT SOURCE RULE for this part: include only documented facts (developer interviews, making-ofs, wikis,
+  specialist press). Do NOT invent anecdotes, quotes, numbers or easter eggs. If something is not documented or only a
+  rumour, write "not documented" or "rumour (unconfirmed)". Name the source briefly in brackets
+  (e.g. "according to an interview with the director, IGN 2020"). Fewer entries that are documented are better.
 =====[tips en]=====
 The official Steam achievement list for "Suncraft" is available (API name | title | condition):
 ACH_FIRST | Erster Schritt | Beende das erste Kapitel.

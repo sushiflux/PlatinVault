@@ -43,7 +43,6 @@ const dashboard = {
     },
     played: { label: 'Gespielt', value: '{{time}} gespielt' },
     lastPlayed: { label: 'Zuletzt gespielt', value: 'Zuletzt gespielt: {{when}}' },
-    rating: { label: 'Bewertung', review: '{{description}} ({{percent}})', percent: '{{percent}} positiv', metacritic: 'Metacritic {{score}}', igdb: 'IGDB {{score}}' },
     released: { label: 'Erschienen', value: 'Erschienen: {{date}}' },
     // Size: the real size on disk of an installed game; for a game that is not installed the install size estimated from Steam's data
     size: {
@@ -56,6 +55,15 @@ const dashboard = {
       installNote: 'Noch nicht installiert: geschätzt aus den Daten von Steam (Windows, Hauptsprache, ohne DLC). Auf der Platte kann es abweichen.',
     },
     duration: { label: 'Dauer für 100 %', average: '100 %: ca. {{time}}', estimate: '100 %: {{text}}', short: 'ca. {{time}}', approx: 'ca.' },
+  },
+  // The rating strip between a tile's cover and its action bar: only the ratings a game has are shown
+  ratings: {
+    label: 'Bewertungen',
+    none: 'Noch keine Bewertungen',
+    steam: { name: 'Steam-Rezensionen', value: '{{percent}} positive Rezensionen', verdict: '{{verdict}}: {{percent}} positive Rezensionen' },
+    metacritic: { name: 'Metacritic', value: '{{score}} von 100 Punkten' },
+    igdbCritics: { name: 'IGDB, Kritiker', value: 'Kritikerwertung auf IGDB: {{score}} von 100 Punkten' },
+    igdbPlayers: { name: 'IGDB, Spieler', value: 'Spielerwertung auf IGDB: {{score}} von 100 Punkten' },
   },
   // Tile size slider
   tiles: {

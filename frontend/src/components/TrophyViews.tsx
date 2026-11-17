@@ -51,7 +51,7 @@ export const TROPHY_GRID: Record<TrophyDensity, string> = {
   3: 'grid grid-cols-[repeat(auto-fill,minmax(min(100%,28rem),1fr))] gap-3',
   2: 'grid grid-cols-[repeat(auto-fill,minmax(min(100%,22rem),1fr))] gap-3',
   1: 'grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-3',
-  0: 'pv-alist',
+  0: 'pv-surface pv-alist',
 }
 
 // The view size as ONE connected segmented bar (the four names: live:density.<id>)

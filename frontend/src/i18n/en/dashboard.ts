@@ -38,7 +38,6 @@ const dashboard = {
     },
     played: { label: 'Played', value: '{{time}} played' },
     lastPlayed: { label: 'Last played', value: 'Last played: {{when}}' },
-    rating: { label: 'Rating', review: '{{description}} ({{percent}})', percent: '{{percent}} positive', metacritic: 'Metacritic {{score}}', igdb: 'IGDB {{score}}' },
     released: { label: 'Released', value: 'Released: {{date}}' },
     // Size: the real size on disk of an installed game; for a game that is not installed the install size estimated from Steam's data
     size: {
@@ -51,6 +50,15 @@ const dashboard = {
       installNote: "Not installed yet: estimated from Steam's data (Windows, main language, without DLC). On disk it can differ.",
     },
     duration: { label: 'Time to 100%', average: '100%: approx. {{time}}', estimate: '100%: {{text}}', short: 'approx. {{time}}', approx: 'approx.' },
+  },
+  // The rating strip between a tile's cover and its action bar: only the ratings a game has are shown
+  ratings: {
+    label: 'Ratings',
+    none: 'No ratings yet',
+    steam: { name: 'Steam reviews', value: '{{percent}} positive reviews', verdict: '{{verdict}}: {{percent}} positive reviews' },
+    metacritic: { name: 'Metacritic', value: '{{score}} out of 100' },
+    igdbCritics: { name: 'IGDB critics', value: 'Critics rating on IGDB: {{score}} out of 100' },
+    igdbPlayers: { name: 'IGDB players', value: 'Players rating on IGDB: {{score}} out of 100' },
   },
   tiles: {
     sizeLabel: 'Tile size',

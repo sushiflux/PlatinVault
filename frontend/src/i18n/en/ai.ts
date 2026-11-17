@@ -28,6 +28,7 @@ const ai = {
     mixed: 'Uses every AI that has a key, mixed.',
     ask: 'Asks which AI before it starts.',
     oneOff: 'Uses {{provider}} – this time only.',
+    manual: 'Uses your own AI subscription: copy the prompt, paste the answer.',
   },
 
   selection: {
@@ -75,6 +76,11 @@ const ai = {
     unhealthy: '{{provider}}: {{state}}. You had better choose another AI.',
     lastUsed: 'Used last',
     start: 'Start with {{provider}}',
+    manual: {
+      title: 'My AI plan',
+      hint: 'The prompt is copied into your own chat – no API key, no costs here.',
+      start: 'Continue with my AI plan',
+    },
   },
 
   button: {
@@ -84,6 +90,9 @@ const ai = {
     mixedName: 'Mixed',
     noKeyName: 'No key',
     standardTag: 'Default',
+    manualName: 'AI plan',
+    manualEntry: 'My AI plan',
+    manualDetail: 'Copy the prompt, paste the answer – no API key',
   },
 
   progress: {
@@ -241,6 +250,28 @@ const ai = {
       copied: 'Correction prompt copied – paste it into the same chat and put the new answer in here.',
       selected: 'Your browser does not allow copying here. The prompt is selected below – press Ctrl+C (Cmd+C on a Mac).',
       promptLabel: 'The correction prompt',
+    },
+    lore: {
+      title: 'Story & Lore with your AI subscription (no API key)',
+      step: 'One prompt, one answer',
+      replaceNote: 'This game already has Story & Lore. Saving replaces the tab with the new version.',
+      promptHeading: '1. Copy the prompt and paste it into the chat of your subscription',
+      answerHeading: '2. Paste the answer of the chat here',
+      preview: 'Preview: {{parts}}',
+      part_one: '“{{title}}” ({{count}} section)',
+      part_other: '“{{title}}” ({{count}} sections)',
+      missing: 'Some parts are still missing: {{parts}}. You can save anyway, or ask the same chat for the missing parts and paste the new answer here.',
+      save: 'Save Story & Lore',
+      saveFailed: 'Story & Lore could not be saved: {{reason}}',
+      saveFailedList: 'Story & Lore could not be saved:',
+      confirm: {
+        title: 'Replace Story & Lore?',
+        message: 'The existing Story & Lore of “{{title}}” is replaced completely by this answer. This cannot be undone.',
+        missing: 'The new answer is still missing: {{parts}} – these parts will be gone afterwards.',
+        confirm: 'Replace',
+      },
+      saved: 'Story & Lore is saved.',
+      savedReplaced: 'Story & Lore is saved – the previous version was replaced.',
     },
     answer: {
       label: 'Answer of the chat',

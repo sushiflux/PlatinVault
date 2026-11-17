@@ -1,8 +1,10 @@
 import { useId, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IconAlertTriangle, IconBook, IconEye, IconRefresh, IconSparkles } from '@tabler/icons-react'
-import type { AiProviderId, GuideSectionDto, GuideTabDto } from '../../api/types'
+import type { GuideSectionDto, GuideTabDto } from '../../api/types'
 import { AiRunButton } from '../ai/AiRunButton'
+import { rememberedHow } from '../ai/aiProviders'
+import type { AiHow } from '../ai/aiProviders'
 import { Switch } from '../ui/Switch'
 import { Tooltip } from '../ui/Tooltip'
 import './lore.css'
@@ -12,7 +14,8 @@ interface LorePanelProps {
   revealed: boolean
   busy: boolean
   onReveal: (remember: boolean) => void
-  onResearch: (oneOff?: AiProviderId) => void
+  // oneOff may be 'manual': the player's own AI subscription
+  onResearch: (oneOff?: AiHow) => void
   // The guide page's renderer for every section that is not plain story text (alerts, puzzles, headings ...)
   renderSection: (section: GuideSectionDto, position: string) => ReactNode
 }
@@ -23,8 +26,9 @@ export function LorePanel({ tab, revealed, busy, onReveal, onResearch, renderSec
   const { t } = useTranslation('game')
   const headingId = useId()
   const [remember, setRemember] = useState(false)
-  // The AI picked for this one research ("Mit Claude"); the setting itself stays as it is
-  const [oneOff, setOneOff] = useState<AiProviderId | undefined>(undefined)
+  // The AI picked for this one research ("Mit Claude"); the setting itself stays as it is. Starts on "Mein KI-Abo" when that was the
+  // way taken last time
+  const [oneOff, setOneOff] = useState<AiHow | undefined>(rememberedHow)
 
   if (!tab) {
     return (
@@ -36,6 +40,7 @@ export function LorePanel({ tab, revealed, busy, onReveal, onResearch, renderSec
         <p>{t('lore.noneHint')}</p>
         <div className="pv-lore-gate__actions">
           <AiRunButton
+            manual
             tone="pv-btn-emerald"
             busy={busy}
             oneOff={oneOff}
@@ -75,6 +80,7 @@ export function LorePanel({ tab, revealed, busy, onReveal, onResearch, renderSec
       <div className="pv-lore__bar no-print">
         <Tooltip label={t('lore.redo.label')} description={t('lore.redo.description')}>
           <AiRunButton
+            manual
             quiet
             busy={busy}
             oneOff={oneOff}

@@ -126,6 +126,24 @@ describe('Settings page (variant Kristall)', () => {
     expect(screen.getByRole('button', { name: 'Links oben' }).getAttribute('aria-pressed')).toBe('false')
   })
 
+  it('draws a popup silhouette in every cell at the spot of that cell (a mini screen, no checkbox squares)', async () => {
+    fetchSettings.mockResolvedValue(settings(5))
+    renderPage()
+    const grid = (await screen.findByRole('group', { name: 'Popup-Position' })) as HTMLElement
+    const spots = [...grid.querySelectorAll('button')].map((button) => {
+      const shape = button.querySelector('.pv-set-pos__shape')
+      expect(shape).toBeTruthy()
+      expect(shape!.getAttribute('aria-hidden')).toBe('true')
+      return shape!.getAttribute('data-pos')
+    })
+    expect(spots).toEqual([
+      'top-left', 'top-center', 'top-right', 'center-left', 'center', 'center-right', 'bottom-left', 'bottom-center', 'bottom-right',
+    ])
+    expect(grid.querySelector('.pv-set-pos__dot')).toBeNull()
+    // The selected spot is the one named by the saved setting; its silhouette sits in the pressed button
+    expect(screen.getByRole('button', { name: 'Rechts oben' }).querySelector('[data-pos="top-right"]')).toBeTruthy()
+  })
+
   it('confirms a save in a fixed slot of the header and keeps the user on the same tab', async () => {
     fetchSettings.mockResolvedValue(settings(5))
     updateSettings.mockResolvedValue(settings(5))

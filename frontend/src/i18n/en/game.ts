@@ -17,7 +17,7 @@ const game = {
     extendGroup: 'Extend the guide',
     complete: {
       label: 'Complete the guide',
-      description: 'Guide builder: the AI checks all standard topics (weapons, armour, tactics, bestiary, levels …) and suggests what is still missing',
+      description: 'Guide builder: the AI checks all standard topics (weapons, armour, tactics, bestiary, levels …) and suggests what is still missing. First you choose whether the AI works through an API key or your own AI subscription.',
     },
     addTab: {
       label: 'Add chapter',

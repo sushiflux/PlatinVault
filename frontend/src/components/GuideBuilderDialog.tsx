@@ -10,6 +10,7 @@ import { AiProgressLines, AiProgressOverlay } from './ai/AiProgress'
 import { useAiProgress } from './ai/useAiProgress'
 import { ErrorDetails } from './ui/ErrorDetails'
 import { AiRunButton } from './ai/AiRunButton'
+import { isAiProvider } from './ai/aiProviders'
 import { keyOf, TopicGroup, usePlanSelection } from './ai/PlanTopics'
 import { Tooltip } from './ui/Tooltip'
 
@@ -30,7 +31,8 @@ export function GuideBuilderDialog({ slug, gameTitle, provider, onClose, onDone,
   const { t } = useTranslation(['game', 'common', 'ai'])
   const pickAi = useAiPicker()
   // The AI picked for this one research ("Mit Claude"); the setting itself stays as it is
-  const [oneOff, setOneOff] = useState<AiProviderId | undefined>(undefined)
+  // Starts with the AI chosen before the builder opened, so the button names the AI that will really do the work
+  const [oneOff, setOneOff] = useState<AiProviderId | undefined>(isAiProvider(provider) ? provider : undefined)
   const [plan, setPlan] = useState<GuidePlanDto | null>(null)
   const { groups, selectable, chosen, selected, toggle, setSelected, tickRecommended } = usePlanSelection(plan)
   // A failure is shown completely at the top of the dialog (never in a cut-off line): our sentence, a note that another AI was tried first, the
@@ -64,7 +66,8 @@ export function GuideBuilderDialog({ slug, gameTitle, provider, onClose, onDone,
   }, [slug])
 
   const research = async () => {
-    const picked = await pickAi(oneOff)
+    // The AI was chosen before the builder opened (the wand always asks): it is not asked again; a one-off pick of this button still counts
+    const picked = oneOff ?? provider ?? (await pickAi(oneOff))
     if (picked === null) return
     setResearching(true)
     setFailure(null)

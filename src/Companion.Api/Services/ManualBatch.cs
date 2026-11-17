@@ -283,7 +283,7 @@ internal static partial class ManualBatchReader
     private static readonly HashSet<string> IdentifyingFields = new(["chapter", "title", "reason"], StringComparer.Ordinal);
 
     /// <summary>A string that only stands for a value in the prompt's pattern: "...", "…", "mdi:...", "&lt;key from the list&gt;" or an example reason.</summary>
-    private static bool IsPlaceholder(string value)
+    internal static bool IsPlaceholder(string value)
     {
         var t = value.Trim();
         return t is "..." or "…" || PatternReasons.Contains(t) || t.StartsWith("mdi:...", StringComparison.Ordinal) || (t.Length is > 2 and < 80 && t[0] == '<' && t[^1] == '>');
@@ -313,7 +313,7 @@ internal static partial class ManualBatchReader
     // A skeleton of sections has dozens of placeholder values; a real chapter has none or at most the odd "…" cell
     private const int SkeletonPlaceholders = 5;
 
-    private static int CountPlaceholders(JsonNode? node, int depth)
+    internal static int CountPlaceholders(JsonNode? node, int depth)
     {
         if (depth > 14)
         {
@@ -391,7 +391,7 @@ internal static partial class ManualBatchReader
     /// A span that cannot be parsed and is the prompt's pattern: a bare "..." / "…" outside of strings ("sections": [...]; a real chapter never has one) or a
     /// placeholder as the top-level value of "chapter", "title" or "reason". A "…" inside a text or table cell of a cut-off or broken real chapter does not count, so that chapter is reported.
     /// </summary>
-    private static bool IsPatternSpan(string span)
+    internal static bool IsPatternSpan(string span)
     {
         var depth = 0;
         var inString = false;

@@ -43,6 +43,7 @@ const game = (n: number, patch: Partial<GameSummaryDto>): GameSummaryDto =>
     releaseDate: null,
     completionHours: null,
     igdbRating: null,
+    igdbUserRating: null,
     updatedAt: '2026-11-01T10:00:00Z',
     ...patch,
   }) as GameSummaryDto
@@ -245,8 +246,9 @@ describe('DashboardPage sort orders', () => {
     const text = document.body.textContent ?? ''
     expect(text).toContain('5 GB auf der Platte')
     expect(text).toContain('ca. 3,5 GB Installationsgröße')
-    // The rating row of a game without Steam rating says why it is a dash
-    expect(text).toContain('Bewertung: Keine Angabe von Steam')
+    // The ratings are no fact row any more: a game without any has the strip's one calm line, and nothing is said twice
+    expect(text).toContain('Noch keine Bewertungen')
+    expect(text).not.toContain('Bewertung:')
     expect(screen.queryByRole('button', { name: /löschen|delete/i })).toBeNull()
   })
 

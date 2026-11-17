@@ -301,7 +301,7 @@
   inline-size: 17rem;
   block-size: 5rem;
   margin-inline-end: 0.75rem;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid transparent;
   border-radius: var(--radius-md);
 }
 
@@ -337,9 +337,6 @@
   /* As high as its entries, at most the visible page height: the list inside scrolls */
   max-block-size: calc(100dvh - var(--pv-header-h, 3.75rem) - 3rem - var(--pv-dock-h, 0px));
   overflow: hidden;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
   transition: inline-size 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   animation: pv-gpins-in 0.26s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }

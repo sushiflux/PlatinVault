@@ -1,6 +1,6 @@
 import { THEME_EVENT } from './utils/themeEvent'
 import { useEffect, useState } from 'react'
-import { BrowserRouter, Route, Routes } from 'react-router'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { fetchLiveEvents, fetchLiveStatus, fetchSettings } from './api/client'
@@ -16,7 +16,6 @@ import { LaunchProvider } from './components/launch/LaunchProvider'
 import { ConfirmProvider } from './components/ui/ConfirmDialog'
 import { AppShell } from './components/shell/AppShell'
 import { AboutPage } from './pages/AboutPage'
-import { CabinetPage } from './pages/CabinetPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { GameGuidePage } from './pages/GameGuidePage'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -167,6 +166,25 @@ function GameStartSwitchBridge() {
   return null
 }
 
+/** The routes of the app. Every page lives in the app shell; /overlay never gets here (main.tsx renders it alone). */
+export function AppRoutes({ theme, onToggleTheme }: { theme: string; onToggleTheme: () => void }) {
+  return (
+    <Routes>
+      {/* The header is on every page; a game page also has the side navigation of its game */}
+      <Route element={<AppShell theme={theme} onToggleTheme={onToggleTheme} />}>
+        <Route path="/" element={<DashboardPage view="favorites" />} />
+        <Route path="/library" element={<DashboardPage view="all" />} />
+        <Route path="/games/:slug" element={<GameGuidePage />} />
+        {/* The cabinet is a full-screen window over any page (?cabinet=1); the old address of the page version leads there */}
+        <Route path="/cabinet" element={<Navigate to="/?cabinet=1" replace />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Route>
+    </Routes>
+  )
+}
+
 // Root application component managing the global pastel theme state, SignalR trophy overlay, and client-side routing.
 export function App() {
   // Light or dark, nothing else. public/theme-init.js has already settled the stored value before the first paint (a first visit
@@ -211,18 +229,7 @@ export function App() {
             <WhatsNewGate />
             <BrowserRouter>
               <GameStartSwitchBridge />
-              <Routes>
-                {/* Every page lives in the app shell (header + tree navigation). /overlay never gets here (main.tsx renders it alone). */}
-                <Route element={<AppShell theme={theme} onToggleTheme={handleToggleTheme} />}>
-                  <Route path="/" element={<DashboardPage view="favorites" />} />
-                  <Route path="/library" element={<DashboardPage view="all" />} />
-                  <Route path="/games/:slug" element={<GameGuidePage />} />
-                  <Route path="/cabinet" element={<CabinetPage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="/about" element={<AboutPage />} />
-                  <Route path="*" element={<NotFoundPage />} />
-                </Route>
-              </Routes>
+              <AppRoutes theme={theme} onToggleTheme={handleToggleTheme} />
             </BrowserRouter>
             </LaunchProvider>
           </LanguageGate>

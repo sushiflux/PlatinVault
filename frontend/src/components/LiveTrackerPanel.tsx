@@ -221,9 +221,9 @@ export function LiveTrackerPanel({
           </div>
 
           {isLoading || !notesSettingReady ? (
-            <div className="pv-live-empty">{t('tracker.loading')}</div>
+            <div className="pv-surface pv-live-empty">{t('tracker.loading')}</div>
           ) : filteredAchievements.length === 0 ? (
-            <div className="pv-live-empty">{t('tracker.empty')}</div>
+            <div className="pv-surface pv-live-empty">{t('tracker.empty')}</div>
           ) : (
             <div className={TROPHY_GRID[density]}>
               {filteredAchievements.map((ach) => {

@@ -288,7 +288,7 @@ const onboarding = {
     },
     dashboardCabinet: {
       title: 'Trophy cabinet',
-      text: 'In the navigation: all games you have completed to 100% stand here in the display case – with date and key facts.',
+      text: 'The trophy symbol at the top of the header opens the display case: all games you have completed to 100% stand in it – with date and key facts.',
     },
     headerLanguage: {
       title: 'Language',
@@ -300,11 +300,11 @@ const onboarding = {
     },
     gameNav: {
       title: 'Chapters',
-      text: 'The open game unfolds in the navigation on the left: live trophies, statistics, the chapters of the guide and Story & Lore. PlatinVault remembers your ticks.',
+      text: 'Every game has its own navigation on the left: live trophies, statistics, the chapters of the guide and Story & Lore. Collapsed to the slim bar, the icon of a group opens a small list of its chapters. PlatinVault remembers your ticks.',
     },
     gameNavPhone: {
       title: 'Chapters',
-      text: 'This button opens the navigation – with the chapters of the guide, live trophies and statistics. PlatinVault remembers your ticks.',
+      text: 'This button opens the navigation of this game – with the chapters of the guide, live trophies and statistics. PlatinVault remembers your ticks.',
     },
     gameLive: {
       title: 'Live trophies',
@@ -316,7 +316,7 @@ const onboarding = {
     },
     settings: {
       title: 'Settings',
-      text: 'At the bottom of the navigation: here you enter your Steam ID and keys, set up popups and switch features on or off.',
+      text: 'The gear at the top of the header: here you enter your Steam ID and keys, set up popups and switch features on or off.',
     },
   },
 } satisfies Translation<typeof de>

@@ -494,6 +494,62 @@ public static partial class ServerTexts
             "The walkthrough exists only once per guide; a second entry for it in the same list is not saved.");
 
         private const int MaxTitleLength = 240;
+
+        // ---- Story & Lore: one prompt for all four parts, one pasted answer -------------------------------------------------
+
+        public static readonly Msg LoreNoParts = M(
+            "Die Antwort enthält keine Teile: „parts“ fehlt oder ist leer. Für Story & Lore gehört jeder Teil als { \"part\": \"L1\", \"sections\": [ … ] } in die Liste „parts“. Bitte die KI, die Antwort nach dem Aufbau des Prompts noch einmal auszugeben.",
+            "The answer contains no parts: “parts” is missing or empty. For Story & Lore every part belongs in the list “parts” as { \"part\": \"L1\", \"sections\": [ … ] }. Ask the AI to output the answer again following the structure of the prompt.");
+
+        public static readonly Msg LoreSectionsWithoutParts = M(
+            "Die Antwort hat „sections“ auf oberster Ebene, aber keine Liste „parts“ – sie sieht wie die Antwort auf einen Kapitel-Prompt aus. Hier gehört die Antwort auf den Story-&-Lore-Prompt hin: ein Objekt mit „parts“, pro Teil { \"part\": \"L1\", \"sections\": [ … ] }.",
+            "The answer has “sections” at the top level but no list “parts” – it looks like the answer to a chapter prompt. The answer to the Story & Lore prompt belongs here: one object with “parts”, per part { \"part\": \"L1\", \"sections\": [ … ] }.");
+
+        public static readonly Msg LorePatternPasted = M(
+            "Das ist das Muster aus dem Prompt (mit „...“ oder Platzhaltern), nicht die Antwort der KI. Kopiere den Prompt in den Chat deines KI-Abos und füge hier die Antwort des Chats ein.",
+            "This is the pattern from the prompt (with “...” or placeholders), not the answer of the AI. Copy the prompt into the chat of your AI subscription and paste the chat's answer here.");
+
+        public static Msg LorePartPrefix(string id, string title) => new($"Teil {id} „{title}“: ", $"Part {id} “{title}”: ");
+
+        public static Msg LoreUnknownPart(string id, string allowed) => new(
+            $"Ein Eintrag in „parts“ hat die unbekannte Kennung „{id}“ (erlaubt: {allowed}) und wird ignoriert.",
+            $"An entry in “parts” has the unknown id “{id}” (allowed: {allowed}) and is ignored.");
+
+        public static Msg LorePartNoId(string allowed) => new(
+            $"Ein Eintrag in „parts“ hat keine Kennung („part“, erlaubt: {allowed}) und wird ignoriert.",
+            $"An entry in “parts” has no id (“part”, allowed: {allowed}) and is ignored.");
+
+        public static Msg LorePartTwice(string id, string title) => new(
+            $"Teil {id} „{title}“ steht mehrfach in der Antwort; die letzte lesbare Fassung wird verwendet.",
+            $"Part {id} “{title}” appears more than once in the answer; the last readable version is used.");
+
+        public static Msg LorePartUnreadable(string id, string title) => new(
+            $"Teil {id} „{title}“ hat keine lesbaren Abschnitte („sections“ fehlt, ist leer oder jeder Abschnitt ist unbrauchbar) und wird weggelassen.",
+            $"Part {id} “{title}” has no readable sections (“sections” is missing, empty or every section is unusable) and is left out.");
+
+        public static Msg LorePartsMissing(string parts) => new(
+            $"Es fehlen Teile: {parts}. Gespeichert wird nur, was in der Antwort steht – der Reiter „Story & Lore“ enthält diese Teile dann nicht. Du kannst den Prompt noch einmal benutzen und die Antwort ergänzen lassen.",
+            $"Parts are missing: {parts}. Only what is in the answer is saved – the “Story & Lore” tab then will not contain these parts. You can use the prompt again and have the answer completed.");
+
+        public static readonly Msg LoreNoReadableParts = M(
+            "Kein Teil der Antwort hat lesbare Abschnitte – es gibt nichts zu speichern. Die Hinweise unten sagen, was bei den Teilen fehlt.",
+            "No part of the answer has readable sections – there is nothing to save. The notes below say what is missing in the parts.");
+
+        public static Msg LoreExtraBlockBroken(int number) => new(
+            $"Ein weiterer JSON-Block (Nr. {number}) im eingefügten Text ist abgeschnitten oder ungültig und wird ignoriert.",
+            $"A further JSON block (no. {number}) in the pasted text is cut off or invalid and is ignored.");
+
+        public static Msg LoreTooManyEntries(int max) => new(
+            $"Die Antwort hat mehr als {max} Einträge in „parts“ – eine Story-&-Lore-Antwort hat vier. Gelesen wurden nur die ersten {max}, der Rest wird ignoriert.",
+            $"The answer has more than {max} entries in “parts” – a Story & Lore answer has four. Only the first {max} were read, the rest is ignored.");
+
+        public static Msg LoreOtherLanguage(string guideLanguage) => new(
+            $"Die Antwort scheint {(guideLanguage == Lang.English ? "auf Deutsch" : "auf Englisch")} geschrieben zu sein, dieser Guide ist aber {(guideLanguage == Lang.English ? "englisch" : "deutsch")}. Bitte die KI, Story & Lore in der Sprache des Guides zu schreiben.",
+            $"The answer seems to be written in {(guideLanguage == Lang.English ? "German" : "English")}, but this guide is {(guideLanguage == Lang.English ? "English" : "German")}. Ask the AI to write Story & Lore in the language of the guide.");
+
+        public static Msg LoreNotSaved(string reasons) => new(
+            $"„Story & Lore“ wurde nicht gespeichert, weil die Antwort noch Fehler hat: {reasons}",
+            $"“Story & Lore” was not saved because the answer still has errors: {reasons}");
     }
 
     // ---- Steam ---------------------------------------------------------------------------------------------------------

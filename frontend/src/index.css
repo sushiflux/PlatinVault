@@ -2,6 +2,8 @@
 
 /* Variant "Kristall": two weights only, 500 and 600 (never 700/800). Tailwind's bold/extrabold/black map to 600. */
 @theme {
+  /* UI font: bundled Inter (styles/fonts.css), the operating system's UI font as fallback while it loads or when a glyph is missing */
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-weight-bold: 600;
   --font-weight-extrabold: 600;
   --font-weight-black: 600;
@@ -24,9 +26,11 @@
   /* Design tokens, variant A "Kristall" (light, calm surfaces with thin straight accent lines; crystal blue = action and active
      colour, gold is reserved for trophies). Token NAMES are kept so every component follows; only the values changed.
      Contrast is computed: text >= 4.5:1 and UI parts >= 3:1 on --bg-primary, --bg-surface and --bg-elevated, both themes. */
-  --bg-primary: light-dark(#f4f6fa, #0f1524);
-  --bg-surface: light-dark(#ffffff, #182036);
-  --bg-elevated: light-dark(#eef1f6, #1e2842);
+  /* Page = the grey ground, card = --bg-surface (lighter in both themes, a card has no frame, see .pv-surface in styles/base.css),
+     panel inside a card = --bg-elevated. The three steps are the ones of the Festivo reference ("ganz leicht"). */
+  --bg-primary: light-dark(#f2f4f8, #0b1120);
+  --bg-surface: light-dark(#ffffff, #141d35);
+  --bg-elevated: light-dark(#eef1f6, #1b2644);
   /* Frame of the app shell (header and tree sidebar) and the fill of form fields */
   --bg-frame: light-dark(#ffffff, #141b2d);
   --bg-input: light-dark(#ffffff, #0c1220);
@@ -132,8 +136,8 @@ html[data-theme="light"] {
 
 /* Overlay scrollbars (variant "Kristall"): no reserved gutter and no native bar. Every scrolling area - the page, the tree sidebar,
    dialogs - shows one slim own thumb that takes no layout space and appears only while scrolling or when the pointer is near the
-   right edge (components/shell/OverlayScrollbars.tsx). Thumb vs. surface: light #7f8aa0 on #ffffff 3.4:1 / on #f4f6fa 3.2:1,
-   dark #6b7a9c on #182036 3.6:1 / on #0f1524 4.1:1 (all >= 3:1). Scrolling itself (wheel, touch, keyboard) is unchanged. */
+   right edge (components/shell/OverlayScrollbars.tsx). Thumb vs. surface: light #7f8aa0 on #ffffff 3.5:1 / on #f2f4f8 3.2:1,
+   dark #6b7a9c on #141d35 3.9:1 / on #0b1120 4.4:1 (all >= 3:1). Scrolling itself (wheel, touch, keyboard) is unchanged. */
 :root {
   --pv-scroll-thumb: light-dark(#7f8aa0, #6b7a9c);
   --pv-scroll-thumb-hover: light-dark(#4a5568, #a9b5cb);
@@ -220,7 +224,7 @@ body {
   margin: 0;
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
   line-height: 1.6;
   min-block-size: 100dvh;
   -webkit-font-smoothing: antialiased;
@@ -1356,12 +1360,9 @@ ol.pv-md-list {
   background: var(--bg-elevated);
 }
 
+/* Surface, frame and radius of a card come from the shared .pv-surface / .pv-card rule in styles/base.css */
 .pv-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
   padding: 1.25rem 1.5rem;
-  box-shadow: none;
 }
 
 .pv-card-header {

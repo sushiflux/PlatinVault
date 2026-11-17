@@ -4,7 +4,7 @@ import type de from '../de/shell'
 // Namespace "shell": English texts, typed against the German source file.
 const shell = {
   header: {
-    utilsToolbar: 'Language, colour scheme, settings and help',
+    utilsToolbar: 'Trophy cabinet, settings, language, colour scheme and help',
     theme: {
       label: 'Colour scheme: {{current}}',
       description: 'Click to switch to “{{next}}”',
@@ -42,6 +42,15 @@ const shell = {
         download: 'Download the Linux package',
       },
     },
+    info: {
+      label: 'About PlatinVault',
+      description: 'Version, what is new and licences',
+    },
+    // The overflow menu of the top bar on narrow windows
+    more: {
+      label: 'More',
+      menu: 'More',
+    },
     handbook: {
       label: 'Handbook',
       description: 'Open the handbook as a PDF right here in the app',
@@ -71,7 +80,6 @@ const shell = {
     copyright: '© {{year}} {{company}}',
     licenses: 'Licences',
     licensesHint: 'Licence (GNU AGPL v3), source code and notices for the open-source components included',
-    infoLabel: 'Info on version and licences',
     about: 'About {{name}}',
     // The version as a button with its popover (components/updates/VersionCheck.tsx)
     version: {
@@ -89,28 +97,18 @@ const shell = {
     heart: 'heart',
   },
   nav: {
-    label: 'Main navigation',
+    label: 'Game navigation',
     skip: 'Skip to content',
     brandHome: 'PlatinVault – to the overview',
     overview: 'Overview',
     library: 'All games',
-    myGames: 'My games',
-    noFavorites: 'No favourites yet. Star a game in “All games”.',
     live: 'Live trophies',
     stats: 'Statistics',
     lore: 'Story & Lore',
     chapters: 'Chapters of {{game}}',
     chapterProgress: '{{checked}} of {{total}} done',
     failed: 'Research failed',
-    cabinet: 'Trophy cabinet',
-    settings: 'Settings',
-    info: 'About the version, what is new and licences',
-    search: {
-      label: 'Search games or chapters',
-      placeholder: 'Search games or chapters …',
-      clear: 'Clear search',
-      none: 'Nothing found for “{{query}}”.',
-    },
+    chaptersGroup: 'Chapters',
     collapse: 'Collapse navigation',
     expand: 'Expand navigation',
     menuOpen: 'Open navigation',

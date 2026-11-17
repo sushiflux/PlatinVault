@@ -11,7 +11,7 @@ import { useDialogParam } from '../utils/useDialogParam'
 import '../styles/pages.css'
 
 /**
- * About PlatinVault (route /about, the info symbol at the foot of the tree navigation): logo and name, then one light list of hairline
+ * About PlatinVault (route /about, the info icon in the top bar): logo and name, then one light list of hairline
  * rows - the running version with its channel symbol (a button: "Version & Updates"), what is new in this version, the credit line,
  * the licence and the source code. No copyright line in the UI.
  */

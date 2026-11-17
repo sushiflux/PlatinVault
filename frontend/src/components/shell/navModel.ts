@@ -1,6 +1,6 @@
-import type { GameDetailDto, GameSummaryDto, GuideTabDto } from '../../api/types'
+import type { GameDetailDto, GuideTabDto } from '../../api/types'
 
-// Pure model of the app shell's tree navigation and of the game page's tabs. Shared by the tree (components/shell/ShellNav.tsx) and the
+// Pure model of the game navigation (the side tree of a game page) and of the game page's tabs. Shared by the tree (components/shell/ShellNav.tsx) and the
 // game page (pages/GameGuidePage.tsx), so both always agree on which tab is active and in which order the chapters stand.
 
 /** Internal slugs of the three areas next to the guide chapters (the guide chapters use their own slug). */
@@ -102,49 +102,4 @@ export function chapterItemsOf(game: Pick<GameDetailDto, 'tabs'> | null | undefi
     groupKey: tab.groupKey ?? null,
     failed: failedTabIds.has(tab.id),
   }))
-}
-
-/** Lower case without accents, so "Pokemon" finds "Pokémon" and "ue" stays as typed. */
-export function normalizeSearch(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .trim()
-}
-
-export function matchesSearch(text: string, query: string): boolean {
-  const q = normalizeSearch(query)
-  if (!q) return true
-  return normalizeSearch(text).includes(q)
-}
-
-/** The games of "Meine Spiele": the favourites in their own order; the open game is added at the end when it is not one of them. */
-export function treeGames(games: GameSummaryDto[], currentSlug: string | null): GameSummaryDto[] {
-  const favourites = games.filter((game) => game.isFavorite)
-  if (!currentSlug || favourites.some((game) => game.slug === currentSlug)) return favourites
-  const current = games.find((game) => game.slug === currentSlug)
-  return current ? [...favourites, current] : favourites
-}
-
-export interface FilteredTree {
-  games: GameSummaryDto[]
-  // Chapters of the open game that match (all of them without a query)
-  chapters: ChapterItem[]
-  // Something matched at all (false = "nothing found")
-  any: boolean
-}
-
-/**
- * The tree filtered by the search row: a game stays when its title matches or (the open game) when one of its chapters matches; the
- * open game then shows only the matching chapters. Without a query everything stays.
- */
-export function filterTree(games: GameSummaryDto[], currentSlug: string | null, chapters: ChapterItem[], query: string): FilteredTree {
-  if (!normalizeSearch(query)) return { games, chapters, any: true }
-  const matchingChapters = chapters.filter((chapter) => matchesSearch(chapter.title, query))
-  const kept = games.filter((game) => matchesSearch(game.title, query) || (game.slug === currentSlug && matchingChapters.length > 0))
-  const current = kept.find((game) => game.slug === currentSlug)
-  // The open game matched by its own title: show all of its chapters; matched by a chapter: only those
-  const shownChapters = current && matchesSearch(current.title, query) ? chapters : matchingChapters
-  return { games: kept, chapters: shownChapters, any: kept.length > 0 }
 }

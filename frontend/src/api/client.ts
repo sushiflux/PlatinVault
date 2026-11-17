@@ -28,6 +28,7 @@ import type {
   ManualBatchPromptDto,
   ManualChapterCheckDto,
   ManualChapterSeed,
+  ManualIssueDto,
   ManualPromptDto,
   ManualSavedDto,
   GameSummaryDto,
@@ -96,14 +97,17 @@ export class ApiError extends Error {
   // AI failures: which provider failed ("gemini" / "claude" / "openai") and why ("quota" / "invalidKey" / "unavailable" / "other")
   readonly aiProvider?: string
   readonly aiFailure?: string
+  // A problem answer with a list of single findings (`errors`), e.g. what is wrong with a pasted answer; the message is all of them in one sentence
+  readonly issues?: { code: string; message: string }[]
 
-  constructor(message: string, status: number, providerMessage?: string, aiProvider?: string, aiFailure?: string) {
+  constructor(message: string, status: number, providerMessage?: string, aiProvider?: string, aiFailure?: string, issues?: { code: string; message: string }[]) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.providerMessage = providerMessage
     this.aiProvider = aiProvider
     this.aiFailure = aiFailure
+    this.issues = issues
   }
 }
 
@@ -122,16 +126,21 @@ async function handleResponse<T>(res: Response): Promise<T> {
     let providerMessage: string | undefined
     let aiProvider: string | undefined
     let aiFailure: string | undefined
+    let issues: { code: string; message: string }[] | undefined
     try {
-      const problem = (await res.json()) as { detail?: string; title?: string; providerMessage?: string; aiProvider?: string; aiFailure?: string }
+      const problem = (await res.json()) as { detail?: string; title?: string; providerMessage?: string; aiProvider?: string; aiFailure?: string; errors?: unknown }
       message = problem.detail || problem.title || message
       providerMessage = problem.providerMessage || undefined
       aiProvider = problem.aiProvider || undefined
       aiFailure = problem.aiFailure || undefined
+      if (Array.isArray(problem.errors)) {
+        const list = problem.errors.filter((entry): entry is { code: string; message: string } => typeof (entry as { message?: unknown } | null)?.message === 'string')
+        if (list.length > 0) issues = list
+      }
     } catch {
       // Fallback to status text
     }
-    throw new ApiError(message, res.status, providerMessage, aiProvider, aiFailure)
+    throw new ApiError(message, res.status, providerMessage, aiProvider, aiFailure, issues)
   }
   if (res.status === 204) {
     return undefined as T
@@ -500,6 +509,35 @@ export const checkManualChapter = (slug: string, text: string, seed: ManualChapt
 
 export const saveManualChapter = (slug: string, text: string, seed: ManualChapterSeed) =>
   postManual<ManualSavedDto>(slug, 'chapter-answer', { text, title: seed.title, icon: seed.icon, focus: seed.focus, topicId: seed.topicId, tabId: seed.tabId, replace: seed.replace })
+
+// Story & Lore with the own subscription: one prompt, the pasted answer is read (check) and saved (answer) as the tab "Story & Lore"
+export interface ManualLorePromptDto extends Omit<ManualPromptDto, 'kind'> {
+  kind: 'lore'
+}
+
+export interface ManualLoreCheckDto {
+  ok: boolean
+  errors: ManualIssueDto[]
+  warnings: ManualIssueDto[]
+  // A prompt that makes the chat correct what the check found; empty / missing = nothing to correct
+  fixPrompt?: string | null
+  // What was read: the parts with their section count, and the parts of the prompt the answer does not contain (null = nothing was read)
+  preview: { parts: { title: string; sectionCount: number }[]; missingParts: string[] } | null
+}
+
+export interface ManualLoreSavedDto {
+  game: GameDetailDto
+  tabId: string | null
+  // The tab existed and was replaced
+  replaced: boolean
+  dropped?: boolean
+}
+
+export const manualLorePrompt = (slug: string) => postManual<ManualLorePromptDto>(slug, 'lore-prompt', {})
+
+export const checkManualLore = (slug: string, text: string) => postManual<ManualLoreCheckDto>(slug, 'lore-check', { text })
+
+export const saveManualLore = (slug: string, text: string) => postManual<ManualLoreSavedDto>(slug, 'lore-answer', { text })
 
 // Batch mode: one prompt for many chapters; the pasted chat answers are read (check) and saved together (answer)
 export const manualBatchPrompt = (slug: string, chapters: ManualBatchChapterItem[]) =>

@@ -7,6 +7,45 @@
 <a name="english"></a>
 ## English
 
+## v2026.11.25.15.12074 (α)
+
+### ✨ New
+
+- **Before "Complete the guide", PlatinVault now always asks how you want to work:** with one of your AIs or with
+  **My AI plan**. **Add chapter** and **Story & Lore** also offer **My AI plan** in the menu of their button.
+- **Story & Lore with your own AI plan:** copy the prompt, paste it into your chat and paste the answer back into
+  PlatinVault. A preview shows the parts it found, and PlatinVault tells you which ones are missing.
+- If you chose **My AI plan** last time, it is preselected next time. If you pick an AI with a key again, PlatinVault
+  forgets it.
+
+### 🔄 Changed
+
+- **The navigation on the left now only appears on a game page:** game header, live trophies, statistics, the guide
+  chapters by group and Story & Lore. Overview, All games, Settings and "About PlatinVault" have no side bar and use the
+  full width.
+- **Everything else is in the top bar:** your Steam profile with picture and number of games, trophy cabinet, display
+  size, language, colour scheme, settings, help, handbook and info. In narrow windows some icons move into the **More**
+  menu.
+- The trophy cabinet opens again as a full-screen window over the page you are on. Its header now matches the new design
+  and shows platinum games, trophies and playtime.
+- The gear opens the settings on the tab you used last.
+- The active entry of the game navigation is marked more clearly with a wider line.
+- Cards now stand out only by a lighter surface, without a frame. The whole interface uses the Inter typeface that comes
+  with PlatinVault, also in the trophy pop-up over your game.
+- **New rating strip on the game tiles, directly below the cover:** Steam reviews, Metacritic, IGDB critics and IGDB
+  players. A missing rating is left out and the others share the space. The bar "Play | Favourite | Twitch" sits right
+  below it; the former "Rating" row is gone.
+- How many people are streaming on Twitch right now is shown as a number directly in the tile's Twitch field instead of a
+  badge in the corner.
+- Games at 100 % carry a platinum plaque with an occasional sparkle on the cover. Their trophy line turns into a golden
+  line with the platinum icon and small stars.
+- In Settings under **Live & sound**, every position tile shows a small preview of where the trophy pop-up appears.
+
+### 🔧 Fix
+
+- On the statistics page, "IGDB players" now really shows the rating of the IGDB players. Before, it showed a mixed value
+  of players and critics.
+
 ## v2026.11.24.13.28980 (α)
 
 ### 🔄 Changed
@@ -104,6 +143,45 @@
 
 <a name="deutsch"></a>
 ## Deutsch
+
+## v2026.11.25.15.12074 (α)
+
+### ✨ Neu
+
+- **Vor „Guide vervollständigen“ fragt PlatinVault jetzt immer, womit du arbeiten willst:** mit einer deiner KIs oder mit
+  **Mein KI-Abo**. Auch **Tab ergänzen** und **Story & Lore** bieten **Mein KI-Abo** im Menü des Knopfs an.
+- **Story & Lore mit deinem eigenen KI-Abo:** Prompt kopieren, im Chat einfügen, Antwort zurück in PlatinVault. Eine
+  Vorschau zeigt die erkannten Teile, fehlende meldet PlatinVault.
+- Hast du zuletzt **Mein KI-Abo** gewählt, ist es beim nächsten Mal vorgewählt. Nimmst du wieder eine KI mit Key,
+  vergisst PlatinVault das.
+
+### 🔄 Geändert
+
+- **Die Navigation links gibt es nur noch auf einer Spielseite:** Spielkopf, Live-Trophäen, Statistiken, die
+  Guide-Kapitel nach Gruppen und Story & Lore. Übersicht, Alle Spiele, Einstellungen und „Über PlatinVault“ kommen ohne
+  Seitenleiste aus und nutzen die ganze Breite.
+- **Alles andere findest du oben in der Kopfzeile:** dein Steam-Profil mit Bild und Zahl deiner Spiele, Trophäenschrank,
+  Darstellungsgröße, Sprache, Farbschema, Einstellungen, Hilfe, Handbuch und Info. In schmalen Fenstern wandern einige
+  Symbole in das Menü **Weitere Funktionen**.
+- Der Trophäenschrank öffnet sich wieder als Vollbild über der Seite, auf der du gerade bist. Seine Kopfzeile passt jetzt
+  zum neuen Design und zeigt Platin-Spiele, Trophäen und Spielzeit.
+- Das Zahnrad öffnet die Einstellungen auf dem Reiter, den du zuletzt benutzt hast.
+- Der aktive Eintrag der Spielnavigation ist mit einem breiteren Strich deutlicher markiert.
+- Karten heben sich nur noch durch eine hellere Fläche ab, ohne Rahmen. Die Oberfläche nutzt überall die Schrift Inter,
+  die mit PlatinVault mitkommt, auch im Trophäen-Popup über dem Spiel.
+- **Neue Bewertungsleiste auf den Spielkacheln direkt unter dem Cover:** Steam-Rezensionen, Metacritic, IGDB-Kritiker und
+  IGDB-Spieler. Fehlt eine Bewertung, fällt sie weg und die anderen teilen sich den Platz. Die Leiste „Spielen | Favorit |
+  Twitch“ sitzt direkt darunter, die frühere Zeile „Bewertung“ entfällt.
+- Wie viele gerade auf Twitch streamen, steht als Zahl direkt im Twitch-Feld der Kachel statt als Abzeichen in der Ecke.
+- Spiele mit 100 % tragen auf dem Cover ein Platin-Schild mit gelegentlichem Funkeln. Ihre Trophäenlinie wird zur
+  goldenen Linie mit Platin-Symbol und kleinen Sternen.
+- In den Einstellungen unter **Live & Sound** zeigt jede Positions-Kachel eine kleine Vorschau, wo das Trophäen-Popup
+  erscheint.
+
+### 🔧 Behoben
+
+- Auf der Statistikseite zeigt „IGDB-Spieler“ jetzt wirklich die Wertung der IGDB-Spieler. Bisher stand dort ein
+  Mischwert aus Spielern und Kritikern.
 
 ## v2026.11.24.13.28980 (α)
 

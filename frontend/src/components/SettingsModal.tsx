@@ -84,6 +84,16 @@ export type SettingsTab = 'live' | 'steam' | 'ki' | 'twitch' | 'bridge' | 'syste
 const SETTINGS_TABS: { id: SettingsTab }[] = [{ id: 'steam' }, { id: 'ki' }, { id: 'live' }, { id: 'twitch' }, { id: 'bridge' }, { id: 'system' }]
 const LAST_TAB_KEY = 'pv_settings_tab'
 
+/** The tab the settings were last left on in this browser (null = none yet); the header's gear opens the page on it. */
+export function rememberedSettingsTab(): SettingsTab | null {
+  try {
+    const value = localStorage.getItem(LAST_TAB_KEY)
+    return SETTINGS_TABS.some((tab) => tab.id === value) ? (value as SettingsTab) : null
+  } catch {
+    return null
+  }
+}
+
 interface SettingsModalProps {
   open: boolean
   // Tab to show when the modal opens (e.g. from the tour's setup checklist); otherwise the last used tab
@@ -655,7 +665,8 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
                   </Tooltip>
                 </SettingsRow>
 
-                {/* 3x3 position grid (one connected square) and the tenth way "fullscreen" as its own connected bar */}
+                {/* 3x3 position grid (one connected frame, every cell a mini screen with the popup silhouette in its spot) and the tenth way
+                    "fullscreen" as its own connected bar */}
                 <SettingsRow wide title={t('live.positionLabel')} help={t('live.positionHint')} titleId="pv-popup-position-label">
                   <div className="pv-set-pos-wrap">
                     <div className="pv-set-pos" role="group" aria-labelledby="pv-popup-position-label">
@@ -667,7 +678,8 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
                             aria-label={t(`live.positions.${pos}`)}
                             onClick={() => handleTestPosition(pos)}
                           >
-                            <span className="pv-set-pos__dot" aria-hidden="true" />
+                            {/* Mini screen preview: a small popup silhouette drawn at this cell's own spot (CSS places it from data-pos) */}
+                            <span className="pv-set-pos__shape" data-pos={pos} aria-hidden="true" />
                           </button>
                         </Tooltip>
                       ))}

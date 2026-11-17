@@ -226,7 +226,7 @@ function Column({ entries, pins, collapsed, onToggle, doneCount, onClear, onOpen
   }, [present, safeToRemove, reduce])
   const toggleLabel = collapsed ? t('pins.expand') : t('pins.collapse')
   return (
-    <aside className="pv-gpins no-print" data-leaving={present ? undefined : ''} aria-label={t('pins.region')} data-testid="pins-column" data-collapsed={collapsed ? 'true' : undefined}>
+    <aside className="pv-surface pv-gpins no-print" data-leaving={present ? undefined : ''} aria-label={t('pins.region')} data-testid="pins-column" data-collapsed={collapsed ? 'true' : undefined}>
       <div className="pv-gnav-head">
         {collapsed ? (
           <Tooltip label={t('pins.title')} description={t('pins.countLabel', { n: pins.names.length, max: pins.max })}>

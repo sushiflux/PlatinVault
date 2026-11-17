@@ -19,7 +19,7 @@ interface TwitchButtonProps {
   wrapperClassName?: string
   // A visible word after the logo (shown by the card's action bar where the segment is wide enough)
   labelText?: string
-  // How many streams are live for this game right now (only known with Twitch credentials): a small badge on the button. Unknown = no badge.
+  // How many streams are live for this game right now (only known with Twitch credentials): shown inline after the label: a small live dot and the number. Unknown = nothing.
   liveCount?: LiveCount
 }
 
@@ -46,8 +46,8 @@ export function TwitchButton({ name, size = 18, className, style, wrapperClassNa
       : liveCount.atLeast
         ? t('twitch.liveMany', { count: liveCount.count })
         : t('twitch.live', { count: liveCount.count })
-  // With Twitch credentials every Twitch segment of a card keeps a little room on its right for the badge (whether this game has one or not),
-  // so the label does not shift or run into the badge from game to game (.pv-bar-seg--live)
+  // With Twitch credentials every Twitch segment of a card holds the room of the widest count ("300+") after its label (whether this game
+  // has a count or not), so nothing shifts when a count arrives, changes or goes away (.pv-bar-seg--live, .pv-bar-count)
   const inBar = (className ?? '').includes('pv-bar-seg')
   const reserve = Boolean(settings?.hasTwitchKey) && inBar
   const badge = liveCount && liveCount.count > 0 ? `${fmt.number(liveCount.count)}${liveCount.atLeast ? '+' : ''}` : null
@@ -66,12 +66,12 @@ export function TwitchButton({ name, size = 18, className, style, wrapperClassNa
         {/* In a card's action bar the logo is neutral until the segment is hovered or focused (CSS); everywhere else it wears the Twitch violet */}
         <IconBrandTwitch size={size} className={inBar ? 'pv-bar-seg-icon' : undefined} style={inBar ? undefined : { color: 'var(--brand-twitch)' }} />
         {labelText && <span className="pv-bar-label">{labelText}</span>}
-        {/* Laid over the corner of the button (absolute): it appearing or changing never moves or resizes anything. Nothing for 0 streams -
-            the tooltip says that nobody is streaming it */}
-        {badge && (
-          <span className="pv-bar-live" aria-hidden="true">
-            <span className="pv-bar-live-dot" />
-            {badge}
+        {/* The count sits in the line of the label: the live dot in Twitch violet and the number in the label's font. Its room is always
+            reserved (see above); nothing for 0 streams - the tooltip says that nobody is streaming it */}
+        {inBar && (reserve || badge) && (
+          <span className="pv-bar-count" aria-hidden="true">
+            <span className="pv-bar-live-dot" style={badge ? undefined : { visibility: 'hidden' }} />
+            <span className="pv-bar-num">{badge}</span>
           </span>
         )}
       </a>

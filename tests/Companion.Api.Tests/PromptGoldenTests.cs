@@ -53,6 +53,9 @@ public sealed class PromptGoldenTests
             text.Append(AiGuideGeneratorService.BuildWalkthroughPartPrompt(plain, outline, 0, ["Waffen", "Sammelobjekte"]));
             text.Append($"\n=====[lore {language}]=====\n");
             text.Append(AiGuideGeneratorService.BuildLorePrompt(plain, AiGuideGeneratorService.LoreParts(language)[0]));
+            text.Append($"\n=====[manual lore {language}]=====\n");
+            text.Append(AiGuideGeneratorService.ComposeManualLorePrompt(plain,
+                new() { Title = "Suncraft", SteamAppId = 4078110, Slug = "suncraft", ContentLanguage = language, Tabs = [] }, language));
             text.Append($"\n=====[tips {language}]=====\n");
             text.Append(AiGuideGeneratorService.BuildAchievementTipsPrompt(plain));
             text.Append($"\n=====[batch {language}]=====\n");

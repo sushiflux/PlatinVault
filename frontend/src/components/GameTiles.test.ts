@@ -56,14 +56,15 @@ describe('missingFacts', () => {
     const missing = missingFacts({ ...full, playtimeMinutes: 0, lastPlayedAt: null })
     expect(missing.played).toBe('notPlayed')
     expect(missing.last).toBe('notPlayed')
-    expect(missing.rating).toBeUndefined()
+    // The ratings are no fact row any more (the rating strip shows them)
+    expect('rating' in missing).toBe(false)
     // Steam may stamp a launch without playtime: still not "played"
     expect(missingFacts({ ...full, playtimeMinutes: 0 }).last).toBe('notPlayed')
   })
 
   it('blames Steam for data it did not deliver', () => {
     const missing = missingFacts({ ...full, playtimeMinutes: null, lastPlayedAt: null, reviewScoreDesc: null, releaseDate: null })
-    expect(missing).toEqual({ played: 'steam', last: 'steam', rating: 'steam', release: 'steam' })
+    expect(missing).toEqual({ played: 'steam', last: 'steam', release: 'steam' })
   })
 
   it('knows a size from the real size on disk or from the estimated install size, and blames missing sources otherwise', () => {
@@ -72,16 +73,8 @@ describe('missingFacts', () => {
     expect(missingFacts({ ...full, sizeOnDiskBytes: 0, installSizeBytes: 0 }).size).toBe('size')
   })
 
-  it('takes the release date or the rating of the library data when the card has none of its own', () => {
+  it('takes the release date of the library data when the card has none of its own', () => {
     expect(missingFacts({ ...full, releaseDate: null, releaseAt: '2020-01-01T00:00:00Z' }).release).toBeUndefined()
-    expect(missingFacts({ ...full, reviewScoreDesc: null, sortReviewPercent: 90 }).rating).toBeUndefined()
-    expect(missingFacts({ ...full, reviewScoreDesc: null, sortMetacritic: 80 }).rating).toBeUndefined()
-  })
-
-  it('counts a Metacritic or IGDB score as a rating', () => {
-    expect(missingFacts({ ...full, reviewScoreDesc: null, metacriticScore: 88 }).rating).toBeUndefined()
-    expect(missingFacts({ ...full, reviewScoreDesc: null, igdbRating: 77 }).rating).toBeUndefined()
-    expect(missingFacts({ ...full, reviewScoreDesc: null }).rating).toBe('steam')
   })
 
   it('has no estimate without IGDB hours and with an open guide estimate', () => {

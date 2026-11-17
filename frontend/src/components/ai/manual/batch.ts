@@ -81,9 +81,10 @@ export interface StoredBatch {
   mode: ManualMode
 }
 
-// "plan" = chapters chosen from a blueprint answer, "failed" = the failed-chapter list, "chapter:<tabId>" = one chapter handed in on its own.
+// "plan" = chapters chosen from a blueprint answer, "failed" = the failed-chapter list, "chapter:<tabId>" = one chapter handed in on its own,
+// "new" = one new chapter the player typed ("Tab ergänzen"), "lore" = the pasted answer of Story & Lore.
 // Every list has its own scope so opening one never clears the pasted, unsaved text of another.
-export type BatchScope = 'plan' | 'failed' | `chapter:${string}`
+export type BatchScope = 'plan' | 'failed' | 'new' | 'lore' | `chapter:${string}`
 
 const recordKey = (slug: string, scope: BatchScope) => `${PREFIX}:${scope}:${slug}`
 const textKey = (slug: string, scope: BatchScope) => `${PREFIX}:text:${scope}:${slug}`

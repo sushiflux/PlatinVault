@@ -2,7 +2,7 @@
 // viewers, Steam account chip. German source of truth - en/shell.ts is typed against it.
 const shell = {
   header: {
-    utilsToolbar: 'Sprache, Farbschema, Einstellungen und Hilfe',
+    utilsToolbar: 'Trophäenschrank, Einstellungen, Sprache, Farbschema und Hilfe',
     theme: {
       label: 'Farbschema: {{current}}',
       description: 'Klicken wechselt zu „{{next}}“',
@@ -40,6 +40,15 @@ const shell = {
         download: 'Linux-Paket herunterladen',
       },
     },
+    info: {
+      label: 'Über PlatinVault',
+      description: 'Version, Neuigkeiten und Lizenzen',
+    },
+    // The overflow menu of the top bar on narrow windows
+    more: {
+      label: 'Weitere Funktionen',
+      menu: 'Weitere Funktionen',
+    },
     handbook: {
       label: 'Handbuch',
       description: 'Das Handbuch als PDF hier in der App öffnen',
@@ -70,8 +79,6 @@ const shell = {
     copyright: '© {{year}} {{company}}',
     licenses: 'Lizenzen',
     licensesHint: 'Lizenz (GNU AGPL v3), Quellcode und Hinweise zu den enthaltenen Open-Source-Komponenten',
-    // The info symbol at the foot of the side navigation (components/shell/ShellNav.tsx)
-    infoLabel: 'Info zu Version und Lizenzen',
     about: 'Über {{name}}',
     // The version as a button with its popover (components/updates/VersionCheck.tsx)
     version: {
@@ -89,30 +96,20 @@ const shell = {
     text: 'Mit <heart/> gemacht',
     heart: 'Herz',
   },
-  // The app shell (components/shell): header brand, the tree navigation on the left, its icon rail and the phone drawer
+  // The app shell (components/shell): the header (brand, tools, overflow menu) and the navigation of a game page with its icon rail, group flyouts and phone drawer
   nav: {
-    label: 'Hauptnavigation',
+    label: 'Spiel-Navigation',
     skip: 'Zum Inhalt springen',
     brandHome: 'PlatinVault – zur Übersicht',
     overview: 'Übersicht',
     library: 'Alle Spiele',
-    myGames: 'Meine Spiele',
-    noFavorites: 'Noch keine Favoriten. Setze in „Alle Spiele“ einen Stern.',
     live: 'Live-Trophäen',
     stats: 'Statistiken',
     lore: 'Story & Lore',
     chapters: 'Kapitel von {{game}}',
     chapterProgress: '{{checked}} von {{total}} erledigt',
     failed: 'Recherche fehlgeschlagen',
-    cabinet: 'Trophäenschrank',
-    settings: 'Einstellungen',
-    info: 'Info zu Version, Neuigkeiten und Lizenzen',
-    search: {
-      label: 'Spiel oder Kapitel suchen',
-      placeholder: 'Spiel oder Kapitel suchen …',
-      clear: 'Suche leeren',
-      none: 'Nichts gefunden für „{{query}}“.',
-    },
+    chaptersGroup: 'Kapitel',
     collapse: 'Navigation einklappen',
     expand: 'Navigation ausklappen',
     menuOpen: 'Navigation öffnen',

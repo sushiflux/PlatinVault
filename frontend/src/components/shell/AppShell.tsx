@@ -6,6 +6,7 @@ import { START_TOUR_EVENT, useOnboardingTour } from '../onboarding/useOnboarding
 import { useMediaQuery } from '../../utils/useMediaQuery'
 import { useStickyHeaderHeight } from '../../utils/useStickyHeaderHeight'
 import { OverlayScrollbars } from './OverlayScrollbars'
+import { rememberedSettingsTab } from '../SettingsModal'
 import { ShellContext, requestPageHints, settingsHref, type ShellApi } from './ShellContext'
 import { ShellHeader } from './ShellHeader'
 import { ShellNav } from './ShellNav'
@@ -20,9 +21,9 @@ interface AppShellProps {
 }
 
 /**
- * The frame around every page of the app (variant "Kristall"): the header on top, the tree navigation on the left (an icon rail when
- * collapsed, a drawer on phones), the page in the content area. The page scrolls the document; header and navigation stick.
- * It owns the one onboarding tour of the app and the overlay scrollbars.
+ * The frame around every page of the app (the light look): the header on top and the page in the content area, which uses the full width. Only a
+ * game page (/games/:slug) has a side navigation - the tree of that game on the left (an icon rail when collapsed, a drawer on phones). The page
+ * scrolls the document; header and navigation stick. It owns the one onboarding tour of the app and the overlay scrollbars.
  */
 export function AppShell({ theme, onToggleTheme }: AppShellProps) {
   const { t } = useTranslation('shell')
@@ -31,7 +32,10 @@ export function AppShell({ theme, onToggleTheme }: AppShellProps) {
   const gameMatch = useMatch('/games/:slug')
   const currentSlug = gameMatch?.params.slug ?? null
   const headerRef = useStickyHeaderHeight<HTMLElement>()
-  const drawer = useMediaQuery(DRAWER_QUERY)
+  // Only a game page has a side navigation; on phones that one is a drawer
+  const hasNav = currentSlug !== null
+  const phone = useMediaQuery(DRAWER_QUERY)
+  const drawer = phone && hasNav
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [rail, toggleRail] = useRailState()
   const menuReturnRef = useRef<HTMLElement | null>(null)
@@ -123,7 +127,7 @@ export function AppShell({ theme, onToggleTheme }: AppShellProps) {
 
   return (
     <ShellContext.Provider value={shell}>
-      <div className="pv-shell" data-rail={rail && !drawer ? 'true' : undefined} data-drawer={drawer ? 'true' : undefined}>
+      <div className="pv-shell" data-nav={hasNav ? 'true' : undefined} data-rail={hasNav && rail && !drawer ? 'true' : undefined} data-drawer={drawer ? 'true' : undefined} data-phone={phone ? 'true' : undefined}>
         <a href="#pv-main" className="pv-skip-link">
           {t('nav.skip')}
         </a>
@@ -132,15 +136,14 @@ export function AppShell({ theme, onToggleTheme }: AppShellProps) {
           theme={theme}
           onToggleTheme={onToggleTheme}
           onOpenSettings={(tab) => void navigate(settingsHref(tab))}
+          onOpenSettingsPage={() => void navigate(settingsHref(rememberedSettingsTab() ?? undefined))}
           onHelp={() => {
             if (!requestPageHints()) tour.start()
           }}
-          drawer={drawer}
-          drawerOpen={drawerOpen}
-          onOpenDrawer={openDrawer}
-          navId={NAV_ID}
+          menu={drawer ? { open: drawerOpen, onOpen: openDrawer, navId: NAV_ID } : null}
         />
         <div className="pv-shell-body">
+          {currentSlug && (
           <div
             ref={navRef}
             className="pv-shell-navwrap no-print"
@@ -149,8 +152,9 @@ export function AppShell({ theme, onToggleTheme }: AppShellProps) {
             aria-modal={drawer && drawerOpen ? true : undefined}
             aria-label={drawer && drawerOpen ? t('nav.drawerLabel') : undefined}
           >
-            <ShellNav id={NAV_ID} rail={rail} onToggleRail={toggleRail} drawer={drawer} onCloseDrawer={closeDrawer} currentSlug={currentSlug} />
+            <ShellNav id={NAV_ID} rail={rail} onToggleRail={toggleRail} drawer={drawer} onCloseDrawer={closeDrawer} slug={currentSlug} />
           </div>
+          )}
           {drawer && drawerOpen && <div className="pv-shell-drawer-backdrop no-print" aria-hidden="true" onClick={closeDrawer} />}
           <main id="pv-main" className="pv-shell-main" tabIndex={-1}>
             <Outlet />

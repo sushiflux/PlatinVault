@@ -17,6 +17,11 @@ internal static class Problems
 
     public static IResult BadRequest(string title, string detail) => Create(StatusCodes.Status400BadRequest, title, detail);
 
+    /// <summary>A 400 that also carries the full list of findings as <c>errors</c> ([{ code, message }]), for answers the user pasted and can still fix.</summary>
+    public static IResult BadRequestWithIssues(string title, string detail, IEnumerable<ManualIssueDto> issues) =>
+        Results.Problem(title: title, detail: detail, statusCode: StatusCodes.Status400BadRequest,
+            extensions: new Dictionary<string, object?> { ["errors"] = issues.Select(i => new { i.Code, i.Message }).ToList() });
+
     public static IResult GameNotFound(string slug) => NotFound(ServerTexts.GameNotFoundTitle, ServerTexts.GameNotFound(slug));
 
     /// <summary>

@@ -687,8 +687,23 @@ public sealed partial class AiGuideGeneratorService(
                 (first as AiProviderException)?.Kind);
         }
 
+        // The same merge as the answer of the user's own AI subscription (BuildManualLoreTab)
+        var loreTab = MergeLoreTab(game.Id, results.Select(r => new LorePartOutcome(r.Part, r.Sections, r.Error?.Message)).ToList(), language);
+        return (loreTab, run.Usage());
+    }
+
+    /// <summary>One part of the Story &amp; Lore tab: its sections, or (Sections null) the text of the error that kept it from being researched.</summary>
+    internal sealed record LorePartOutcome(LorePart Part, JsonArray? Sections, string? Failure);
+
+    /// <summary>
+    /// Builds the Story &amp; Lore tab from its parts, in the order given: before each part a crystal alert with its title and blurb, then its sections
+    /// (all spoilers, tables never checkable); a part without sections becomes a danger alert with the reason. The ONE place that decides how the tab
+    /// looks - used by the API research and by the answer pasted from the user's own AI subscription, so both produce the same tab.
+    /// </summary>
+    internal static GuideTabEntity MergeLoreTab(Guid gameId, IReadOnlyList<LorePartOutcome> parts, string language)
+    {
         var merged = new JsonArray();
-        foreach (var (part, sections, error) in results)
+        foreach (var (part, sections, failure) in parts)
         {
             merged.Add(LoreAlert("crystal", "mdi:book-open-page-variant", part.Title, part.Blurb));
             if (sections is null)
@@ -697,7 +712,7 @@ public sealed partial class AiGuideGeneratorService(
                     "danger",
                     "mdi:alert-circle-outline",
                     FailedLoreTitle(part.Title, language),
-                    FailedLoreText(error!.Message, language)));
+                    FailedLoreText(failure ?? string.Empty, language)));
                 continue;
             }
 
@@ -713,17 +728,16 @@ public sealed partial class AiGuideGeneratorService(
             }
         }
 
-        var loreTab = new GuideTabEntity
+        return new GuideTabEntity
         {
             Id = Guid.NewGuid(),
-            GameId = game.Id,
+            GameId = gameId,
             Slug = LoreTab.Slug,
             Title = LoreTab.Title,
             Icon = LoreTab.Icon,
             SortOrder = LoreTab.SortOrder,
             SectionsJson = merged.ToJsonString()
         };
-        return (loreTab, run.Usage());
     }
 
     private static JsonArray ParseLoreSections(string raw)

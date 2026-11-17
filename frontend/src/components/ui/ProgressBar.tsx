@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import '../../styles/progress.css'
 
@@ -9,13 +9,15 @@ interface ProgressBarProps {
   label?: string
   /** Layout hooks only (margins, flex); the look comes from styles/progress.css. */
   className?: string
+  /** Purely decorative overlay (absolutely positioned, aria-hidden), e.g. the platinum effect of a dashboard tile. */
+  overlay?: ReactNode
 }
 
 /**
  * The shared trophy progress line: thin, straight, square ends. The fill uses the progress colour and turns gold at 100 %
  * (data-complete), so a finished game is told apart by one gold line and nothing else. All the styling is in styles/progress.css.
  */
-export function ProgressBar({ percent, label, className }: ProgressBarProps) {
+export function ProgressBar({ percent, label, className, overlay }: ProgressBarProps) {
   const { t } = useTranslation('game')
   const value = Number.isFinite(percent) ? Math.min(100, Math.max(0, percent)) : 0
   const complete = value >= 100
@@ -34,6 +36,7 @@ export function ProgressBar({ percent, label, className }: ProgressBarProps) {
       <div className="progress-bar-track">
         <div className="progress-bar-fill" />
       </div>
+      {overlay}
     </div>
   )
 }

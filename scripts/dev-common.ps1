@@ -80,12 +80,18 @@ function Stop-ProcessTree([int]$ProcessId) {
 
 function Get-OwnAppProcesses {
     $frontend = (Join-Path $script:RootDir 'frontend').ToLowerInvariant()
+    # The hidden cmd.exe wrappers of a detached start (start.ps1 -Detached) hold the log files open. Killing only node
+    # leaves the wrapper waiting at "Terminate batch job (Y/N)?" with the log locked, and the next start then fails at
+    # once because cmd cannot open the log for writing. The desktop stack's logs (desktop-*.log) are not matched.
+    $logs = (Join-Path $script:RootDir '.logs').ToLowerInvariant()
+    $wrapperLogs = @("$logs\frontend.log", "$logs\backend.log")
     Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
         Where-Object {
             $line = if ($_.CommandLine) { $_.CommandLine.ToLowerInvariant() } else { '' }
             ($_.Name -eq 'Companion.Api.exe') -or
             ($_.Name -eq 'dotnet.exe' -and $line.Contains('watch') -and $line.Contains('companion.api')) -or
-            ($_.Name -eq 'node.exe' -and $line.Contains('vite') -and $line.Contains($frontend) -and -not $line.Contains('vite.desktop.config'))
+            ($_.Name -eq 'node.exe' -and $line.Contains('vite') -and $line.Contains($frontend) -and -not $line.Contains('vite.desktop.config')) -or
+            ($_.Name -eq 'cmd.exe' -and @($wrapperLogs | Where-Object { $line.Contains("`"$_`"") }).Count -gt 0)
         }
 }
 

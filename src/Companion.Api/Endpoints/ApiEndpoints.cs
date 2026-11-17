@@ -958,7 +958,7 @@ public static class ApiEndpoints
                 var existingGames = await db.Games
                     .AsNoTracking()
                     .Where(g => g.SteamAppId != null)
-                    .Select(g => new { AppId = g.SteamAppId!.Value, g.Slug, g.IsFavorite })
+                    .Select(g => new { AppId = g.SteamAppId!.Value, g.Slug, g.IsFavorite, g.IgdbRating, g.IgdbUserRating })
                     .ToListAsync(ct);
 
                 var appIdMap = new Dictionary<int, string>();
@@ -967,6 +967,7 @@ public static class ApiEndpoints
                     appIdMap[g.AppId] = g.Slug;
                 }
                 var favorites = existingGames.Where(g => g.IsFavorite).Select(g => g.AppId).ToHashSet();
+                var igdbByApp = existingGames.GroupBy(g => g.AppId).ToDictionary(x => x.Key, x => x.First());
 
                 var library = await steamClient.FetchOwnedGamesAsync(steamId, appIdMap, ct, favorites);
                 // Keeps the library-wide trophy figures current (only games played since their last check are asked)
@@ -986,6 +987,8 @@ public static class ApiEndpoints
                                 InstallSizeBytes = known?.InstallSizeBytes,
                                 SortMetacritic = known?.Metacritic,
                                 SortReviewPercent = known?.ReviewPercent,
+                                IgdbRating = igdbByApp.GetValueOrDefault(g.AppId)?.IgdbRating,
+                                IgdbUserRating = igdbByApp.GetValueOrDefault(g.AppId)?.IgdbUserRating,
                             };
                         })
                         .ToList()
@@ -1359,6 +1362,7 @@ public static class ApiEndpoints
             ReleaseDate: game.ReleaseDate,
             CompletionHours: game.CompletionHours,
             IgdbRating: game.IgdbRating,
+            IgdbUserRating: game.IgdbUserRating,
             UpdatedAt: game.UpdatedAt
         );
     }

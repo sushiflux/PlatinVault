@@ -40,6 +40,8 @@ public sealed record GameSummaryDto(
     // From IGDB (only with Twitch credentials): average hours to 100 % completion, and the critics' rating 0-100
     double? CompletionHours,
     int? IgdbRating,
+    // IGDB users' average rating 0-100 (IGDB "rating"), null = none or not refreshed yet
+    int? IgdbUserRating,
     DateTimeOffset UpdatedAt
 )
 {
@@ -376,6 +378,10 @@ public sealed record SteamOwnedGameDto(
     public long? InstallSizeBytes { get; init; }
     public int? SortMetacritic { get; init; }
     public int? SortReviewPercent { get; init; }
+
+    // IGDB ratings 0-100 of a game that is in the vault (critics, users); null = not in the vault, no IGDB data or not refreshed yet
+    public int? IgdbRating { get; init; }
+    public int? IgdbUserRating { get; init; }
 }
 
 /// <summary>Trophy figures of the whole Steam library for the dashboard; Scanning while the background run goes on.</summary>
@@ -941,6 +947,9 @@ public sealed record IgdbGameDto(
     int? AggregatedRatingCount,
     double? TotalRating,
     int? TotalRatingCount,
+    // IGDB users' average rating (IGDB "rating") and number of ratings; null when IGDB has none
+    double? Rating,
+    int? RatingCount,
     List<string> Genres,
     List<string> Themes,
     List<string> GameModes,

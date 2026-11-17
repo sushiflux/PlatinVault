@@ -27,15 +27,17 @@ interface AnswerBoxProps<T extends Checked> {
   // What to show when the answer was read (a short preview)
   renderOk: (result: T) => ReactNode
   disabled?: boolean
+  // Text the box starts with (what the player pasted before closing the dialog)
+  initialText?: string
 }
 
 /**
  * The paste area for the answer of a chat: a text field (or a file), checked live while the text is pasted or typed. The result panel has a fixed
  * height and scrolls inside, so a message appearing never moves anything around it. Every error and note is shown completely.
  */
-export function AnswerBox<T extends Checked>({ check, onResult, renderOk, disabled = false }: AnswerBoxProps<T>) {
+export function AnswerBox<T extends Checked>({ check, onResult, renderOk, disabled = false, initialText = '' }: AnswerBoxProps<T>) {
   const { t } = useTranslation(['ai', 'common'])
-  const [text, setText] = useState('')
+  const [text, setText] = useState(initialText)
   const [result, setResult] = useState<T | null>(null)
   const [checking, setChecking] = useState(false)
   const [failure, setFailure] = useState<{ message: string; details: string | null } | null>(null)

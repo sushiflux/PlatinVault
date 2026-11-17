@@ -5,7 +5,7 @@ import '../../styles/settings.css'
 /** The one light card of a settings tab: hairline rows inside (see styles/settings.css). */
 export function SettingsCard({ children, className = '', ...rest }: { children: ReactNode; className?: string } & React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div {...rest} className={`pv-set-card ${className}`.trim()}>
+    <div {...rest} className={`pv-surface pv-set-card ${className}`.trim()}>
       {children}
     </div>
   )

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { applyLanguage } from '../i18n'
 import { describeError } from '../utils/apiErrorText'
-import { ApiError, fetchGames, fetchSettings, updateSettings } from './client'
+import { ApiError, fetchGames, fetchSettings, saveManualLore, updateSettings } from './client'
 
 // The browser throws a bare TypeError when the server cannot be reached at all. The API client turns it into an ApiError (status 0) with
 // a localized sentence, so no screen ever shows "Failed to fetch".
@@ -74,5 +74,14 @@ describe('API client, server not reachable', () => {
     const error = (await fetchGames().catch((e: unknown) => e)) as ApiError
     expect(error.status).toBe(0)
     expect(error.message).toContain('nicht erreichbar')
+  })
+
+  it('carries the list of findings of a problem answer (errors) next to the one-sentence detail', async () => {
+    const body = { detail: 'Teil L2 fehlt. Teil L3 ist leer.', errors: [{ code: 'missing', message: 'Teil L2 fehlt.' }, { code: 'empty', message: 'Teil L3 ist leer.' }, { nope: 1 }] }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 400, headers: { 'Content-Type': 'application/problem+json' } })))
+    const error = (await saveManualLore('suncraft', 'x').catch((e: unknown) => e)) as ApiError
+    expect(error.status).toBe(400)
+    expect(error.message).toBe('Teil L2 fehlt. Teil L3 ist leer.')
+    expect(error.issues?.map((issue) => issue.message)).toEqual(['Teil L2 fehlt.', 'Teil L3 ist leer.'])
   })
 })

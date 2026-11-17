@@ -1,0 +1,155 @@
+/* Effects of a finished (100 %) game: the cover (plaque, burst) and the trophy line. Everything is absolutely positioned inside the cover (never changes the
+   layout) and ignores the pointer. Animations only run while data-active is set (cover on screen, page visible). The metallic
+   gradients stay literal on purpose: they belong to the platinum effect itself. */
+/* Metallic gold of the trophy line and its twinkles, per theme (light-dark(), the switch the project uses for all tokens).
+   Light: the darkest stop #8a5a0b is 5.9:1 against the white card; dark: #b7791f is 4.6:1 against #141d35. */
+:root {
+  --pv-plat-gold-edge: light-dark(#8a5a0b, #b7791f);
+  --pv-plat-gold-mid: light-dark(#c8901e, #f2c14e);
+  --pv-plat-gold-shine: light-dark(#f0c75e, #fff1b8);
+  /* Light: a near-white star with a dark-gold halo, a gold star vanishes on the gold line */
+  --pv-plat-star: light-dark(#fffaf0, #fff7d1);
+  --pv-plat-star-glow: light-dark(#7a4a05, var(--accent-gold));
+}
+
+.pv-plat-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* The gold line of the trophy progress (inside .pv-pbar, whose 3 px track it covers): 5 px, straight, square ends */
+.pv-plat-line {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: -1px;
+  block-size: 5px;
+  pointer-events: none;
+}
+
+.pv-plat-line-gold {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: linear-gradient(90deg, var(--pv-plat-gold-edge), var(--pv-plat-gold-mid) 30%, var(--pv-plat-gold-shine) 50%, var(--pv-plat-gold-mid) 70%, var(--pv-plat-gold-edge));
+}
+
+/* Slow light running along the bar */
+.pv-plat-bar-shine {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: 28%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.9), transparent);
+  transform: translateX(-100%);
+  animation: pv-plat-shine 5.5s ease-in-out infinite;
+  animation-delay: var(--pv-fx-phase, 0s);
+}
+
+.pv-plat-twinkle {
+  position: absolute;
+  inset-block-start: 50%;
+  color: var(--pv-plat-star);
+  opacity: 0;
+  transform: scale(0);
+  filter: drop-shadow(0 0 1px var(--pv-plat-star-glow)) drop-shadow(0 0 2px var(--pv-plat-star-glow));
+  animation: pv-plat-twinkle 3.6s ease-in-out infinite;
+  animation-delay: calc(var(--pv-fx-phase2, 0s) - var(--i, 0) * 1.1s);
+}
+
+/* Sparkle burst: one short flash every few seconds, each star a little later than the one before */
+.pv-plat-burst {
+  position: absolute;
+  color: #fde68a;
+  opacity: 0;
+  transform: scale(0);
+  filter: drop-shadow(0 0 3px rgba(125, 211, 252, 0.9));
+  animation: pv-plat-burst 7s ease-out infinite;
+  animation-delay: calc(var(--pv-fx-phase, 0s) + var(--i, 0) * 0.07s);
+}
+
+.pv-plat-chip-pos {
+  position: absolute;
+  inset-block-start: 0.75rem;
+  inset-inline-end: 0.625rem;
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* Light sweep over the plaque (the shimmering character it had before) */
+.pv-plat-chip {
+  position: relative;
+  overflow: hidden;
+}
+
+.pv-plat-chip[data-animated='true']::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: 45%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.85), transparent);
+  transform: translateX(-130%);
+  animation: pv-plat-chip-shine 4.2s ease-in-out infinite;
+}
+
+/* Paused unless the cover is on screen and the page is visible */
+.pv-plat-fx:not([data-active='true']) .pv-plat-anim,
+.pv-plat-line:not([data-active='true']) .pv-plat-anim {
+  animation-play-state: paused;
+}
+
+@keyframes pv-plat-shine {
+  0% {
+    transform: translateX(-100%);
+  }
+  60%,
+  100% {
+    transform: translateX(360%);
+  }
+}
+
+@keyframes pv-plat-twinkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1.15) rotate(45deg);
+  }
+  35% {
+    opacity: 0;
+    transform: scale(0.2) rotate(90deg);
+  }
+}
+
+@keyframes pv-plat-burst {
+  0%,
+  14%,
+  100% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  4% {
+    opacity: 1;
+    transform: scale(1.15) rotate(45deg);
+  }
+  11% {
+    opacity: 0;
+    transform: scale(0.25) rotate(90deg);
+  }
+}
+
+@keyframes pv-plat-chip-shine {
+  0%,
+  55% {
+    transform: translateX(-130%);
+  }
+  100% {
+    transform: translateX(330%);
+  }
+}

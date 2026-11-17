@@ -10,7 +10,7 @@ English: PlatinVault contains third-party open-source components and freely usab
 
 | Bereich | Komponenten | Enthalten in |
 | --- | --- | --- |
-| Browser-App (npm) | 46 | Docker-Image (Oberfläche) |
+| Browser-App (npm) | 47 | Docker-Image (Oberfläche) |
 | Server (NuGet) | 12 (von 32 im Abhängigkeitsbaum) | Docker-Image |
 | Bridge (NuGet) | 0 (von 1 im Abhängigkeitsbaum) | Bridge-Programm (ZIP-Download, auch im Docker-Image) |
 | Windows-Programm (NuGet, zusätzlich) | 1 (von 13 enthaltenen; die übrigen stehen beim Server) | Windows-Programm `PlatinVault.exe` |
@@ -63,13 +63,21 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Enthalten in: Browser-App (Oberfläche)
 - Lizenztext: L02
 
+### @fontsource/inter 5.3.0
+
+- Lizenz: OFL-1.1
+- Copyright: Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter) Inter-Italic[opsz,wght].ttf: Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
+- Quelle: https://github.com/fontsource/font-files
+- Enthalten in: Browser-App (Oberfläche)
+- Lizenztext: L03
+
 ### @microsoft/signalr 10.0.11
 
 - Lizenz: MIT
 - Copyright: Copyright (c) .NET Foundation and Contributors
 - Quelle: https://github.com/dotnet/aspnetcore
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L03
+- Lizenztext: L04
 - Hinweis: Das Paket enthält keine Lizenzdatei; Text aus https://github.com/dotnet/aspnetcore/blob/main/LICENSE.txt.
 
 ### @phosphor-icons/react 2.1.10
@@ -78,7 +86,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2020 Phosphor Icons
 - Quelle: https://github.com/phosphor-icons/react
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L04
+- Lizenztext: L05
 
 ### @remix-run/route-pattern 0.22.1
 
@@ -86,7 +94,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2025 Shopify Inc.
 - Quelle: https://github.com/remix-run/remix
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L05
+- Lizenztext: L06
 
 ### @tabler/icons 3.50.0
 
@@ -94,7 +102,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2020-2026 Paweł Kuna
 - Quelle: https://github.com/tabler/tabler-icons
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L06
+- Lizenztext: L07
 
 ### @tabler/icons-react 3.50.0
 
@@ -102,7 +110,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2020-2026 Paweł Kuna
 - Quelle: https://github.com/tabler/tabler-icons
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L06
+- Lizenztext: L07
 
 ### @tanstack/query-core 5.105.3
 
@@ -110,7 +118,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2021-present Tanner Linsley
 - Quelle: https://github.com/TanStack/query
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L07
+- Lizenztext: L08
 
 ### @tanstack/react-query 5.105.3
 
@@ -118,7 +126,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2021-present Tanner Linsley
 - Quelle: https://github.com/TanStack/query
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L07
+- Lizenztext: L08
 
 ### @types/canvas-confetti 1.9.0
 
@@ -126,7 +134,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) Microsoft Corporation.
 - Quelle: https://github.com/DefinitelyTyped/DefinitelyTyped
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L08
+- Lizenztext: L09
 
 ### abort-controller 3.0.0
 
@@ -134,7 +142,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2017 Toru Nagashima
 - Quelle: https://github.com/mysticatea/abort-controller
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L09
+- Lizenztext: L10
 
 ### canvas-confetti 1.9.4
 
@@ -142,7 +150,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2020, Kiril Vatev / copyright notice and this permission notice appear in all copies.
 - Quelle: https://github.com/catdad/canvas-confetti
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L10
+- Lizenztext: L11
 
 ### cookie-es 3.1.1
 
@@ -150,7 +158,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2012-2014 Roman Shtylman <shtylman@gmail.com> / Copyright (c) 2015 Douglas Christopher Wilson <doug@somethingdoug.com> / Copyright (c) 2015 Nathan Friedly <nathan@nfriedly.com> (http://nfriedly.com/)
 - Quelle: https://github.com/unjs/cookie-es
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L11
+- Lizenztext: L12
 
 ### country-flag-icons 1.6.20
 
@@ -158,7 +166,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2020 @catamphetamine <purecatamphetamine@gmail.com>
 - Quelle: https://gitlab.com/catamphetamine/country-flag-icons
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L12
+- Lizenztext: L13
 
 ### event-target-shim 5.0.1
 
@@ -166,7 +174,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2015 Toru Nagashima
 - Quelle: https://github.com/mysticatea/event-target-shim
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L13
+- Lizenztext: L14
 
 ### eventsource 2.0.2
 
@@ -174,7 +182,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) EventSource GitHub organisation
 - Quelle: https://github.com/EventSource/eventsource
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L14
+- Lizenztext: L15
 
 ### fetch-cookie 2.2.0
 
@@ -182,7 +190,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Autor laut package.json: Val (https://val.codejam.info)
 - Quelle: https://github.com/valeriangalliat/fetch-cookie
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L15
+- Lizenztext: L16
 
 ### framer-motion 14.9.0
 
@@ -190,7 +198,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2018 Framer B.V.
 - Quelle: https://github.com/motiondivision/motion/
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L17
+- Lizenztext: L18
 
 ### html-parse-stringify 4.0.1
 
@@ -198,7 +206,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2025 Henrik Joreteg <henrik@joreteg.com> / Copyright (c) 2026-present i18next (https://github.com/i18next)
 - Quelle: https://github.com/i18next/html-parse-stringify
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L18
+- Lizenztext: L19
 
 ### i18next 26.7.1
 
@@ -206,7 +214,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2011-present i18next
 - Quelle: https://github.com/i18next/i18next
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L19
+- Lizenztext: L20
 
 ### motion 14.9.0
 
@@ -214,7 +222,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2024 [Motion](https://motion.dev) B.V.
 - Quelle: https://github.com/motiondivision/motion
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L20
+- Lizenztext: L21
 
 ### motion-dom 14.9.0
 
@@ -222,7 +230,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2024 [Motion](https://motion.dev) B.V.
 - Quelle: https://github.com/motiondivision/motion
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L20
+- Lizenztext: L21
 
 ### motion-utils 14.7.0
 
@@ -230,7 +238,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2024 [Motion](https://motion.dev) B.V.
 - Quelle: https://github.com/motiondivision/motion
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L20
+- Lizenztext: L21
 
 ### node-fetch 2.7.0
 
@@ -238,7 +246,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2016 David Frank
 - Quelle: https://github.com/bitinn/node-fetch
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L21
+- Lizenztext: L22
 
 ### psl 1.15.0
 
@@ -246,7 +254,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2017 Lupo Montero lupomontero@gmail.com
 - Quelle: https://github.com/lupomontero/psl
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L25
+- Lizenztext: L26
 
 ### punycode 2.3.1
 
@@ -254,7 +262,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright Mathias Bynens <https://mathiasbynens.be/>
 - Quelle: https://github.com/mathiasbynens/punycode.js
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L26
+- Lizenztext: L27
 
 ### querystringify 2.2.0
 
@@ -262,7 +270,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2015 Unshift.io, Arnout Kazemier,  the Contributors.
 - Quelle: https://github.com/unshiftio/querystringify
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L27
+- Lizenztext: L28
 
 ### react 19.3.1
 
@@ -270,7 +278,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) Meta Platforms, Inc. and affiliates.
 - Quelle: https://github.com/react/react
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L28
+- Lizenztext: L29
 
 ### react-dom 19.3.1
 
@@ -278,7 +286,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) Meta Platforms, Inc. and affiliates.
 - Quelle: https://github.com/react/react
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L28
+- Lizenztext: L29
 
 ### react-i18next 17.1.11
 
@@ -286,7 +294,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2015-present i18next
 - Quelle: https://github.com/i18next/react-i18next
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L29
+- Lizenztext: L30
 
 ### react-router 8.5.1
 
@@ -294,7 +302,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) React Training LLC 2015-2019 / Copyright (c) Remix Software Inc. 2020-2021 / Copyright (c) Shopify Inc. 2022-2023
 - Quelle: https://github.com/remix-run/react-router
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L30
+- Lizenztext: L31
 
 ### requires-port 1.0.0
 
@@ -302,7 +310,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2015 Unshift.io, Arnout Kazemier,  the Contributors.
 - Quelle: https://github.com/unshiftio/requires-port
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L27
+- Lizenztext: L28
 
 ### scheduler 0.28.0
 
@@ -310,7 +318,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) Meta Platforms, Inc. and affiliates.
 - Quelle: https://github.com/react/react
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L28
+- Lizenztext: L29
 
 ### set-cookie-parser 2.7.3
 
@@ -318,7 +326,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2015 Nathan Friedly <nathan@nfriedly.com> (http://nfriedly.com/)
 - Quelle: https://github.com/nfriedly/set-cookie-parser
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L31
+- Lizenztext: L32
 
 ### tough-cookie 4.1.4
 
@@ -326,7 +334,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2015, Salesforce.com, Inc.
 - Quelle: https://github.com/salesforce/tough-cookie
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L16
+- Lizenztext: L17
 
 ### tr46 0.0.3
 
@@ -334,7 +342,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) Sebastian Mayr
 - Quelle: https://github.com/Sebmaster/tr46.js
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L22
+- Lizenztext: L23
 - Hinweis: Das Paket enthält keine Lizenzdatei; Text aus https://github.com/Sebmaster/tr46.js/blob/master/LICENSE.md.
 
 ### tslib 2.8.1
@@ -343,15 +351,15 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) Microsoft Corporation.
 - Quelle: https://github.com/Microsoft/tslib
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L32
+- Lizenztext: L33
 
 ### universalify 0.2.0
 
 - Lizenz: MIT
-- Copyright: Copyright (c) 2017, Ryan Zimmerman <opensrc@ryanzim.com> / COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+- Copyright: Copyright (c) 2017, Ryan Zimmerman <opensrc@ryanzim.com>
 - Quelle: https://github.com/RyanZim/universalify
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L33
+- Lizenztext: L34
 
 ### url-parse 1.5.10
 
@@ -359,7 +367,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2015 Unshift.io, Arnout Kazemier,  the Contributors.
 - Quelle: https://github.com/unshiftio/url-parse
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L27
+- Lizenztext: L28
 
 ### use-sync-external-store 1.7.0
 
@@ -367,7 +375,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) Meta Platforms, Inc. and affiliates.
 - Quelle: https://github.com/react/react
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L28
+- Lizenztext: L29
 
 ### webidl-conversions 3.0.1
 
@@ -375,7 +383,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2014, Domenic Denicola
 - Quelle: https://github.com/jsdom/webidl-conversions
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L23
+- Lizenztext: L24
 
 ### whatwg-url 5.0.0
 
@@ -383,7 +391,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2015–2016 Sebastian Mayr
 - Quelle: https://github.com/jsdom/whatwg-url
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L24
+- Lizenztext: L25
 
 ### ws 7.5.13
 
@@ -391,7 +399,7 @@ Quelle: `frontend/package-lock.json`, nur Produktionsabhängigkeiten. Lizenzart 
 - Copyright: Copyright (c) 2011 Einar Otto Stangvik <einaros@gmail.com>
 - Quelle: https://github.com/websockets/ws
 - Enthalten in: Browser-App (Oberfläche)
-- Lizenztext: L34
+- Lizenztext: L35
 
 ## Server (NuGet-Pakete)
 
@@ -403,7 +411,7 @@ Quelle: Abhängigkeitsliste (`deps.json`) des veröffentlichten Servers `Compani
 - Copyright: © Microsoft Corporation. All rights reserved.
 - Quelle: https://docs.microsoft.com/dotnet/standard/data/sqlite/
 - Enthalten in: Server (Docker-Image)
-- Lizenztext: L35
+- Lizenztext: L36
 - Hinweis: Das Paket enthält keine Lizenzdatei; Standardtext der Lizenz, Copyright-Zeile aus den Paketangaben (nuspec).
 
 ### Microsoft.EntityFrameworkCore 11.0.0
@@ -412,7 +420,7 @@ Quelle: Abhängigkeitsliste (`deps.json`) des veröffentlichten Servers `Compani
 - Copyright: © Microsoft Corporation. All rights reserved.
 - Quelle: https://docs.microsoft.com/ef/core/
 - Enthalten in: Server (Docker-Image)
-- Lizenztext: L35
+- Lizenztext: L36
 - Hinweis: Das Paket enthält keine Lizenzdatei; Standardtext der Lizenz, Copyright-Zeile aus den Paketangaben (nuspec).
 
 ### Microsoft.EntityFrameworkCore.Abstractions 11.0.0
@@ -421,7 +429,7 @@ Quelle: Abhängigkeitsliste (`deps.json`) des veröffentlichten Servers `Compani
 - Copyright: © Microsoft Corporation. All rights reserved.
 - Quelle: https://docs.microsoft.com/ef/core/
 - Enthalten in: Server (Docker-Image)
-- Lizenztext: L35
+- Lizenztext: L36
 - Hinweis: Das Paket enthält keine Lizenzdatei; Standardtext der Lizenz, Copyright-Zeile aus den Paketangaben (nuspec).
 
 ### Microsoft.EntityFrameworkCore.Relational 11.0.0
@@ -430,7 +438,7 @@ Quelle: Abhängigkeitsliste (`deps.json`) des veröffentlichten Servers `Compani
 - Copyright: © Microsoft Corporation. All rights reserved.
 - Quelle: https://docs.microsoft.com/ef/core/
 - Enthalten in: Server (Docker-Image)
-- Lizenztext: L35
+- Lizenztext: L36
 - Hinweis: Das Paket enthält keine Lizenzdatei; Standardtext der Lizenz, Copyright-Zeile aus den Paketangaben (nuspec).
 
 ### Microsoft.EntityFrameworkCore.Sqlite 11.0.0
@@ -439,7 +447,7 @@ Quelle: Abhängigkeitsliste (`deps.json`) des veröffentlichten Servers `Compani
 - Copyright: © Microsoft Corporation. All rights reserved.
 - Quelle: https://docs.microsoft.com/ef/core/
 - Enthalten in: Server (Docker-Image)
-- Lizenztext: L35
+- Lizenztext: L36
 - Hinweis: Das Paket enthält keine Lizenzdatei; Standardtext der Lizenz, Copyright-Zeile aus den Paketangaben (nuspec).
 
 ### Microsoft.EntityFrameworkCore.Sqlite.Core 11.0.0
@@ -448,7 +456,7 @@ Quelle: Abhängigkeitsliste (`deps.json`) des veröffentlichten Servers `Compani
 - Copyright: © Microsoft Corporation. All rights reserved.
 - Quelle: https://docs.microsoft.com/ef/core/
 - Enthalten in: Server (Docker-Image)
-- Lizenztext: L35
+- Lizenztext: L36
 - Hinweis: Das Paket enthält keine Lizenzdatei; Standardtext der Lizenz, Copyright-Zeile aus den Paketangaben (nuspec).
 
 ### Microsoft.Extensions.DependencyModel 11.0.0
@@ -457,7 +465,7 @@ Quelle: Abhängigkeitsliste (`deps.json`) des veröffentlichten Servers `Compani
 - Copyright: © Microsoft Corporation. All rights reserved.
 - Quelle: https://dot.net/
 - Enthalten in: Server (Docker-Image)
-- Lizenztext: L35
+- Lizenztext: L36
 - Weitere Hinweise: N01
 - Hinweis: Das Paket enthält keine Lizenzdatei; Standardtext der Lizenz, Copyright-Zeile aus den Paketangaben (nuspec).
 
@@ -467,7 +475,7 @@ Quelle: Abhängigkeitsliste (`deps.json`) des veröffentlichten Servers `Compani
 - Copyright: Copyright 2014-2026 SourceGear, LLC
 - Quelle: https://sqlite.org/
 - Enthalten in: Server (Docker-Image)
-- Lizenztext: L36, L37
+- Lizenztext: L37, L38
 - Hinweis: Die Lizenzdatei des Pakets verweist nur auf die Quelle; Text aus https://sqlite.org/copyright.html.
 
 ### SQLitePCLRaw.bundle_e_sqlite3 3.0.5
@@ -476,7 +484,7 @@ Quelle: Abhängigkeitsliste (`deps.json`) des veröffentlichten Servers `Compani
 - Copyright: copyright notice that is included in or attached to the work / copyright license to reproduce, prepare Derivative Works of, / (c) You must retain, in the Source form of any Derivative Works / Copyright [yyyy] [name of copyright owner]
 - Quelle: https://github.com/ericsink/SQLitePCL.raw
 - Enthalten in: Server (Docker-Image)
-- Lizenztext: L38
+- Lizenztext: L39
 - Hinweis: Das Paket enthält keine Lizenzdatei; Text aus https://github.com/ericsink/SQLitePCL.raw/blob/v3.0.5/LICENSE.TXT + NOTICE.TXT.
 
 ### SQLitePCLRaw.config.e_sqlite3 3.0.5
@@ -485,7 +493,7 @@ Quelle: Abhängigkeitsliste (`deps.json`) des veröffentlichten Servers `Compani
 - Copyright: copyright notice that is included in or attached to the work / copyright license to reproduce, prepare Derivative Works of, / (c) You must retain, in the Source form of any Derivative Works / Copyright [yyyy] [name of copyright owner]
 - Quelle: https://github.com/ericsink/SQLitePCL.raw
 - Enthalten in: Server (Docker-Image)
-- Lizenztext: L38
+- Lizenztext: L39
 - Hinweis: Das Paket enthält keine Lizenzdatei; Text aus https://github.com/ericsink/SQLitePCL.raw/blob/v3.0.5/LICENSE.TXT + NOTICE.TXT.
 
 ### SQLitePCLRaw.core 3.0.5
@@ -494,7 +502,7 @@ Quelle: Abhängigkeitsliste (`deps.json`) des veröffentlichten Servers `Compani
 - Copyright: copyright notice that is included in or attached to the work / copyright license to reproduce, prepare Derivative Works of, / (c) You must retain, in the Source form of any Derivative Works / Copyright [yyyy] [name of copyright owner]
 - Quelle: https://github.com/ericsink/SQLitePCL.raw
 - Enthalten in: Server (Docker-Image)
-- Lizenztext: L38
+- Lizenztext: L39
 - Hinweis: Das Paket enthält keine Lizenzdatei; Text aus https://github.com/ericsink/SQLitePCL.raw/blob/v3.0.5/LICENSE.TXT + NOTICE.TXT.
 
 ### SQLitePCLRaw.provider.e_sqlite3 3.0.5
@@ -503,7 +511,7 @@ Quelle: Abhängigkeitsliste (`deps.json`) des veröffentlichten Servers `Compani
 - Copyright: copyright notice that is included in or attached to the work / copyright license to reproduce, prepare Derivative Works of, / (c) You must retain, in the Source form of any Derivative Works / Copyright [yyyy] [name of copyright owner]
 - Quelle: https://github.com/ericsink/SQLitePCL.raw
 - Enthalten in: Server (Docker-Image)
-- Lizenztext: L38
+- Lizenztext: L39
 - Hinweis: Das Paket enthält keine Lizenzdatei; Text aus https://github.com/ericsink/SQLitePCL.raw/blob/v3.0.5/LICENSE.TXT + NOTICE.TXT.
 
 ## Bridge (NuGet-Pakete)
@@ -522,7 +530,7 @@ Quelle: Abhängigkeitslisten (`deps.json`) des veröffentlichten Windows-Program
 - Copyright: Copyright (C) Microsoft Corporation. All rights reserved. / copyright notice, this list of conditions and the following disclaimer
 - Quelle: https://aka.ms/webview
 - Enthalten in: Windows-Programm (PlatinVault.exe)
-- Lizenztext: L39
+- Lizenztext: L40
 
 ### Microsoft Edge WebView2 Runtime
 
@@ -538,7 +546,7 @@ Windows-Programm, Installer und Bridge sind eigenständig veröffentlicht (die L
 - Copyright: Copyright (c) .NET Foundation and Contributors
 - Quelle: https://github.com/dotnet/runtime
 - Enthalten in: Windows-Programm und Installer (eigenständig enthalten), Bridge (eigenständig in PlatinVault.Bridge.exe enthalten) und Docker-Image (offizielles Basis-Image mcr.microsoft.com/dotnet/aspnet:11.0)
-- Lizenztext: L03
+- Lizenztext: L04
 - Weitere Hinweise: N01
 
 ### .NET Windows Desktop Runtime (Microsoft.WindowsDesktop.App, Windows Forms) 11.0.0
@@ -547,7 +555,7 @@ Windows-Programm, Installer und Bridge sind eigenständig veröffentlicht (die L
 - Copyright: Copyright (c) .NET Foundation and Contributors
 - Quelle: https://github.com/dotnet/winforms
 - Enthalten in: Windows-Programm und Installer (eigenständig enthalten), Bridge (eigenständig in PlatinVault.Bridge.exe enthalten)
-- Lizenztext: L03
+- Lizenztext: L04
 
 ### ASP.NET Core Runtime (Microsoft.AspNetCore.App) 11.0.0
 
@@ -555,7 +563,7 @@ Windows-Programm, Installer und Bridge sind eigenständig veröffentlicht (die L
 - Copyright: Copyright (c) .NET Foundation and Contributors
 - Quelle: https://github.com/dotnet/aspnetcore
 - Enthalten in: Windows-Programm (eigenständig enthalten, Server im Programm) und Docker-Image (Server, offizielles Basis-Image mcr.microsoft.com/dotnet/aspnet:11.0)
-- Lizenztext: L03
+- Lizenztext: L04
 - Weitere Hinweise: N02
 
 ### Linux-Basis-Image des Docker-Images
@@ -573,8 +581,8 @@ Dateien, die als Teil des Produkts ausgeliefert werden und keine Pakete sind.
 - Lizenz: OFL-1.1
 - Copyright: Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
 - Quelle: https://github.com/rsms/inter
-- Enthalten in: Handbuch-PDFs (Schrift ist in die PDF-Dateien eingebettet)
-- Lizenztext: L40
+- Enthalten in: Browser-App und Windows-Programm (Oberfläche, mit der App ausgeliefert) und Handbuch-PDFs (Schrift ist in die PDF-Dateien eingebettet)
+- Lizenztext: L03
 
 ### JetBrains Mono (Schrift)
 
@@ -656,7 +664,106 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### L03 - MIT - Copyright (c) .NET Foundation and Contributors
+### L03 - OFL-1.1 - Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter) Inter-Italic[opsz,wght].ttf: Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
+
+Gilt für: @fontsource/inter@5.3.0, Inter (Schrift)
+
+```text
+Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter) Inter-Italic[opsz,wght].ttf: Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is copied below, and is also available with a FAQ at:
+http://scripts.sil.org/OFL
+
+-----------------------------------------------------------
+SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+-----------------------------------------------------------
+
+PREAMBLE
+The goals of the Open Font License (OFL) are to stimulate worldwide
+development of collaborative font projects, to support the font creation
+efforts of academic and linguistic communities, and to provide a free and
+open framework in which fonts may be shared and improved in partnership
+with others.
+
+The OFL allows the licensed fonts to be used, studied, modified and
+redistributed freely as long as they are not sold by themselves. The
+fonts, including any derivative works, can be bundled, embedded,
+redistributed and/or sold with any software provided that any reserved
+names are not used by derivative works. The fonts and derivatives,
+however, cannot be released under any other type of license. The
+requirement for fonts to remain under this license does not apply
+to any document created using the fonts or their derivatives.
+
+DEFINITIONS
+"Font Software" refers to the set of files released by the Copyright
+Holder(s) under this license and clearly marked as such. This may
+include source files, build scripts and documentation.
+
+"Reserved Font Name" refers to any names specified as such after the
+copyright statement(s).
+
+"Original Version" refers to the collection of Font Software components as
+distributed by the Copyright Holder(s).
+
+"Modified Version" refers to any derivative made by adding to, deleting,
+or substituting -- in part or in whole -- any of the components of the
+Original Version, by changing formats or by porting the Font Software to a
+new environment.
+
+"Author" refers to any designer, engineer, programmer, technical
+writer or other person who contributed to the Font Software.
+
+PERMISSION & CONDITIONS
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of the Font Software, to use, study, copy, merge, embed, modify,
+redistribute, and sell modified and unmodified copies of the Font
+Software, subject to the following conditions:
+
+1) Neither the Font Software nor any of its individual components,
+in Original or Modified Versions, may be sold by itself.
+
+2) Original or Modified Versions of the Font Software may be bundled,
+redistributed and/or sold with any software, provided that each copy
+contains the above copyright notice and this license. These can be
+included either as stand-alone text files, human-readable headers or
+in the appropriate machine-readable metadata fields within text or
+binary files as long as those fields can be easily viewed by the user.
+
+3) No Modified Version of the Font Software may use the Reserved Font
+Name(s) unless explicit written permission is granted by the corresponding
+Copyright Holder. This restriction only applies to the primary font name as
+presented to the users.
+
+4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
+Software shall not be used to promote, endorse or advertise any
+Modified Version, except to acknowledge the contribution(s) of the
+Copyright Holder(s) and the Author(s) or with their explicit written
+permission.
+
+5) The Font Software, modified or unmodified, in part or in whole,
+must be distributed entirely under this license, and must not be
+distributed under any other license. The requirement for fonts to
+remain under this license does not apply to any document created
+using the Font Software.
+
+TERMINATION
+This license becomes null and void if any of the above conditions are
+not met.
+
+DISCLAIMER
+THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
+OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
+DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
+OTHER DEALINGS IN THE FONT SOFTWARE.
+```
+
+### L04 - MIT - Copyright (c) .NET Foundation and Contributors
 
 Gilt für: @microsoft/signalr@10.0.11, .NET Runtime (Microsoft.NETCore.App), .NET Windows Desktop Runtime (Microsoft.WindowsDesktop.App, Windows Forms), ASP.NET Core Runtime (Microsoft.AspNetCore.App)
 
@@ -686,7 +793,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### L04 - MIT - Copyright (c) 2020 Phosphor Icons
+### L05 - MIT - Copyright (c) 2020 Phosphor Icons
 
 Gilt für: @phosphor-icons/react@2.1.10
 
@@ -714,7 +821,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### L05 - MIT - Copyright (c) 2025 Shopify Inc.
+### L06 - MIT - Copyright (c) 2025 Shopify Inc.
 
 Gilt für: @remix-run/route-pattern@0.22.1
 
@@ -742,7 +849,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### L06 - MIT - Copyright (c) 2020-2026 Paweł Kuna
+### L07 - MIT - Copyright (c) 2020-2026 Paweł Kuna
 
 Gilt für: @tabler/icons@3.50.0, @tabler/icons-react@3.50.0
 
@@ -770,7 +877,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### L07 - MIT - Copyright (c) 2021-present Tanner Linsley
+### L08 - MIT - Copyright (c) 2021-present Tanner Linsley
 
 Gilt für: @tanstack/query-core@5.105.3, @tanstack/react-query@5.105.3
 
@@ -798,7 +905,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### L08 - MIT - Copyright (c) Microsoft Corporation.
+### L09 - MIT - Copyright (c) Microsoft Corporation.
 
 Gilt für: @types/canvas-confetti@1.9.0
 
@@ -826,7 +933,7 @@ Gilt für: @types/canvas-confetti@1.9.0
     SOFTWARE
 ```
 
-### L09 - MIT - Copyright (c) 2017 Toru Nagashima
+### L10 - MIT - Copyright (c) 2017 Toru Nagashima
 
 Gilt für: abort-controller@3.0.0
 
@@ -854,7 +961,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### L10 - ISC - Copyright (c) 2020, Kiril Vatev
+### L11 - ISC - Copyright (c) 2020, Kiril Vatev
 
 Gilt für: canvas-confetti@1.9.4
 
@@ -876,7 +983,7 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 ```
 
-### L11 - MIT - Copyright (c) 2012-2014 Roman Shtylman <shtylman@gmail.com>
+### L12 - MIT - Copyright (c) 2012-2014 Roman Shtylman <shtylman@gmail.com>
 
 Gilt für: cookie-es@3.1.1
 
@@ -911,7 +1018,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### L12 - MIT - Copyright (c) 2020 @catamphetamine <purecatamphetamine@gmail.com>
+### L13 - MIT - Copyright (c) 2020 @catamphetamine <purecatamphetamine@gmail.com>
 
 Gilt für: country-flag-icons@1.6.20
 
@@ -940,7 +1047,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### L13 - MIT - Copyright (c) 2015 Toru Nagashima
+### L14 - MIT - Copyright (c) 2015 Toru Nagashima
 
 Gilt für: event-target-shim@5.0.1
 
@@ -968,7 +1075,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### L14 - MIT - Copyright (c) EventSource GitHub organisation
+### L15 - MIT - Copyright (c) EventSource GitHub organisation
 
 Gilt für: eventsource@2.0.2
 
@@ -997,7 +1104,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### L15 - Unlicense - fetch-cookie
+### L16 - Unlicense - fetch-cookie
 
 Gilt für: fetch-cookie@2.2.0
 
@@ -1028,7 +1135,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 For more information, please refer to <http://unlicense.org/>
 ```
 
-### L16 - BSD-3-Clause - Copyright (c) 2015, Salesforce.com, Inc.
+### L17 - BSD-3-Clause - Copyright (c) 2015, Salesforce.com, Inc.
 
 Gilt für: tough-cookie@4.1.4
 
@@ -1047,7 +1154,7 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-### L17 - MIT - Copyright (c) 2018 Framer B.V.
+### L18 - MIT - Copyright (c) 2018 Framer B.V.
 
 Gilt für: framer-motion@14.9.0
 
@@ -1075,7 +1182,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### L18 - MIT - Copyright (c) 2025 Henrik Joreteg <henrik@joreteg.com>
+### L19 - MIT - Copyright (c) 2025 Henrik Joreteg <henrik@joreteg.com>
 
 Gilt für: html-parse-stringify@4.0.1
 
@@ -1104,7 +1211,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### L19 - MIT - Copyright (c) 2011-present i18next
+### L20 - MIT - Copyright (c) 2011-present i18next
 
 Gilt für: i18next@26.7.1
 
@@ -1132,7 +1239,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### L20 - MIT - Copyright (c) 2024 [Motion](https://motion.dev) B.V.
+### L21 - MIT - Copyright (c) 2024 [Motion](https://motion.dev) B.V.
 
 Gilt für: motion@14.9.0, motion-dom@14.9.0, motion-utils@14.7.0
 
@@ -1160,7 +1267,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### L21 - MIT - Copyright (c) 2016 David Frank
+### L22 - MIT - Copyright (c) 2016 David Frank
 
 Gilt für: node-fetch@2.7.0
 
@@ -1188,7 +1295,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### L22 - MIT - Copyright (c) Sebastian Mayr
+### L23 - MIT - Copyright (c) Sebastian Mayr
 
 Gilt für: tr46@0.0.3
 
@@ -1216,7 +1323,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### L23 - BSD-2-Clause - Copyright (c) 2014, Domenic Denicola
+### L24 - BSD-2-Clause - Copyright (c) 2014, Domenic Denicola
 
 Gilt für: webidl-conversions@3.0.1
 
@@ -1235,7 +1342,7 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-### L24 - MIT - Copyright (c) 2015–2016 Sebastian Mayr
+### L25 - MIT - Copyright (c) 2015–2016 Sebastian Mayr
 
 Gilt für: whatwg-url@5.0.0
 
@@ -1263,7 +1370,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-### L25 - MIT - Copyright (c) 2017 Lupo Montero lupomontero@gmail.com
+### L26 - MIT - Copyright (c) 2017 Lupo Montero lupomontero@gmail.com
 
 Gilt für: psl@1.15.0
 
@@ -1279,7 +1386,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### L26 - MIT - Copyright Mathias Bynens <https://mathiasbynens.be/>
+### L27 - MIT - Copyright Mathias Bynens <https://mathiasbynens.be/>
 
 Gilt für: punycode@2.3.1
 
@@ -1306,7 +1413,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### L27 - MIT - Copyright (c) 2015 Unshift.io, Arnout Kazemier,  the Contributors.
+### L28 - MIT - Copyright (c) 2015 Unshift.io, Arnout Kazemier,  the Contributors.
 
 Gilt für: querystringify@2.2.0, requires-port@1.0.0, url-parse@1.5.10
 
@@ -1334,7 +1441,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### L28 - MIT - Copyright (c) Meta Platforms, Inc. and affiliates.
+### L29 - MIT - Copyright (c) Meta Platforms, Inc. and affiliates.
 
 Gilt für: react@19.3.1, react-dom@19.3.1, scheduler@0.28.0, use-sync-external-store@1.7.0
 
@@ -1362,7 +1469,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### L29 - MIT - Copyright (c) 2015-present i18next
+### L30 - MIT - Copyright (c) 2015-present i18next
 
 Gilt für: react-i18next@17.1.11
 
@@ -1390,7 +1497,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### L30 - MIT - Copyright (c) React Training LLC 2015-2019
+### L31 - MIT - Copyright (c) React Training LLC 2015-2019
 
 Gilt für: react-router@8.5.1
 
@@ -1420,7 +1527,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### L31 - MIT - Copyright (c) 2015 Nathan Friedly <nathan@nfriedly.com> (http://nfriedly.com/)
+### L32 - MIT - Copyright (c) 2015 Nathan Friedly <nathan@nfriedly.com> (http://nfriedly.com/)
 
 Gilt für: set-cookie-parser@2.7.3
 
@@ -1448,7 +1555,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-### L32 - 0BSD - Copyright (c) Microsoft Corporation.
+### L33 - 0BSD - Copyright (c) Microsoft Corporation.
 
 Gilt für: tslib@2.8.1
 
@@ -1467,7 +1574,7 @@ OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 ```
 
-### L33 - MIT - Copyright (c) 2017, Ryan Zimmerman <opensrc@ryanzim.com>
+### L34 - MIT - Copyright (c) 2017, Ryan Zimmerman <opensrc@ryanzim.com>
 
 Gilt für: universalify@0.2.0
 
@@ -1494,7 +1601,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### L34 - MIT - Copyright (c) 2011 Einar Otto Stangvik <einaros@gmail.com>
+### L35 - MIT - Copyright (c) 2011 Einar Otto Stangvik <einaros@gmail.com>
 
 Gilt für: ws@7.5.13
 
@@ -1522,7 +1629,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### L35 - MIT (Standardtext, ohne Copyright-Zeile)
+### L36 - MIT (Standardtext, ohne Copyright-Zeile)
 
 Gilt für: Microsoft.Data.Sqlite.Core@11.0.0, Microsoft.EntityFrameworkCore@11.0.0, Microsoft.EntityFrameworkCore.Abstractions@11.0.0, Microsoft.EntityFrameworkCore.Relational@11.0.0, Microsoft.EntityFrameworkCore.Sqlite@11.0.0, Microsoft.EntityFrameworkCore.Sqlite.Core@11.0.0, Microsoft.Extensions.DependencyModel@11.0.0
 
@@ -1543,7 +1650,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTI
 USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### L36 - siehe Lizenzdatei - SQLite
+### L37 - siehe Lizenzdatei - SQLite
 
 Gilt für: SQLite@3.53.4
 
@@ -1553,7 +1660,7 @@ SQLite is Public Domain
 https://sqlite.org/copyright.html
 ```
 
-### L37 - siehe Lizenzdatei - https://sqlite.org/copyright.html
+### L38 - siehe Lizenzdatei - https://sqlite.org/copyright.html
 
 Gilt für: SQLite@3.53.4
 
@@ -1593,7 +1700,7 @@ on file.  So the SQLite code base is clean and is
 uncontaminated with licensed code from other projects.
 ```
 
-### L38 - Apache-2.0 - copyright notice that is included in or attached to the work
+### L39 - Apache-2.0 - copyright notice that is included in or attached to the work
 
 Gilt für: SQLitePCLRaw.bundle_e_sqlite3@3.0.5, SQLitePCLRaw.config.e_sqlite3@3.0.5, SQLitePCLRaw.core@3.0.5, SQLitePCLRaw.provider.e_sqlite3@3.0.5
 
@@ -1847,7 +1954,7 @@ License for MS Open Tech
 // limitations under the License.
 ```
 
-### L39 - BSD-3-Clause - Copyright (C) Microsoft Corporation. All rights reserved.
+### L40 - BSD-3-Clause - Copyright (C) Microsoft Corporation. All rights reserved.
 
 Gilt für: Microsoft.Web.WebView2@1.0.4314.35
 
@@ -1879,105 +1986,6 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-```
-
-### L40 - OFL-1.1 - Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
-
-Gilt für: Inter (Schrift)
-
-```text
-Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter) Inter-Italic[opsz,wght].ttf: Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
-
-This Font Software is licensed under the SIL Open Font License, Version 1.1.
-This license is copied below, and is also available with a FAQ at:
-http://scripts.sil.org/OFL
-
------------------------------------------------------------
-SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
------------------------------------------------------------
-
-PREAMBLE
-The goals of the Open Font License (OFL) are to stimulate worldwide
-development of collaborative font projects, to support the font creation
-efforts of academic and linguistic communities, and to provide a free and
-open framework in which fonts may be shared and improved in partnership
-with others.
-
-The OFL allows the licensed fonts to be used, studied, modified and
-redistributed freely as long as they are not sold by themselves. The
-fonts, including any derivative works, can be bundled, embedded,
-redistributed and/or sold with any software provided that any reserved
-names are not used by derivative works. The fonts and derivatives,
-however, cannot be released under any other type of license. The
-requirement for fonts to remain under this license does not apply
-to any document created using the fonts or their derivatives.
-
-DEFINITIONS
-"Font Software" refers to the set of files released by the Copyright
-Holder(s) under this license and clearly marked as such. This may
-include source files, build scripts and documentation.
-
-"Reserved Font Name" refers to any names specified as such after the
-copyright statement(s).
-
-"Original Version" refers to the collection of Font Software components as
-distributed by the Copyright Holder(s).
-
-"Modified Version" refers to any derivative made by adding to, deleting,
-or substituting -- in part or in whole -- any of the components of the
-Original Version, by changing formats or by porting the Font Software to a
-new environment.
-
-"Author" refers to any designer, engineer, programmer, technical
-writer or other person who contributed to the Font Software.
-
-PERMISSION & CONDITIONS
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of the Font Software, to use, study, copy, merge, embed, modify,
-redistribute, and sell modified and unmodified copies of the Font
-Software, subject to the following conditions:
-
-1) Neither the Font Software nor any of its individual components,
-in Original or Modified Versions, may be sold by itself.
-
-2) Original or Modified Versions of the Font Software may be bundled,
-redistributed and/or sold with any software, provided that each copy
-contains the above copyright notice and this license. These can be
-included either as stand-alone text files, human-readable headers or
-in the appropriate machine-readable metadata fields within text or
-binary files as long as those fields can be easily viewed by the user.
-
-3) No Modified Version of the Font Software may use the Reserved Font
-Name(s) unless explicit written permission is granted by the corresponding
-Copyright Holder. This restriction only applies to the primary font name as
-presented to the users.
-
-4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
-Software shall not be used to promote, endorse or advertise any
-Modified Version, except to acknowledge the contribution(s) of the
-Copyright Holder(s) and the Author(s) or with their explicit written
-permission.
-
-5) The Font Software, modified or unmodified, in part or in whole,
-must be distributed entirely under this license, and must not be
-distributed under any other license. The requirement for fonts to
-remain under this license does not apply to any document created
-using the Font Software.
-
-TERMINATION
-This license becomes null and void if any of the above conditions are
-not met.
-
-DISCLAIMER
-THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
-OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
-COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
-DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
-OTHER DEALINGS IN THE FONT SOFTWARE.
 ```
 
 ### L41 - OFL-1.1 - Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)

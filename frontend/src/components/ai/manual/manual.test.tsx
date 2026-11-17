@@ -252,6 +252,46 @@ describe('ManualGuideDialog', () => {
     expect(screen.getByText('Gespeichert')).toBeTruthy()
   })
 
+  it('researches one NEW chapter (no tabId): its own storage scope, saved without tabId', async () => {
+    client.manualChapterPrompt.mockResolvedValue(prompt())
+    client.checkManualChapter.mockResolvedValue(okChapter('Angeln'))
+    const game = { slug: 'suncraft', tabs: [] } as unknown as GameDetailDto
+    client.saveManualChapter.mockResolvedValue({ game, tabId: 'tab-new', replaced: false })
+    const seed = { title: 'Angeln', icon: 'mdi:fish', focus: 'Alle Fische und Orte', topicId: null }
+    const onSaved = vi.fn()
+
+    wrap(<ManualGuideDialog slug="suncraft" gameTitle="Suncraft" language="de" chapter={seed} onClose={vi.fn()} onSaved={onSaved} />)
+
+    // the row says the chapter is new, not that it replaces a placeholder
+    expect(screen.queryByText('Ersetzt den Hinweis „nicht recherchiert“')).toBeNull()
+    expect(screen.getByText('Offen')).toBeTruthy()
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Prompt kopieren' })) })
+    expect(client.manualChapterPrompt).toHaveBeenCalledWith('suncraft', expect.not.objectContaining({ tabId: expect.anything() }))
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '{"title":"Angeln","sections":[{}]}' } })
+    await settle()
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Kapitel speichern' })) })
+    expect(client.saveManualChapter).toHaveBeenCalledWith('suncraft', expect.any(String), expect.not.objectContaining({ tabId: expect.anything() }))
+    expect(onSaved).toHaveBeenCalledWith(game)
+    expect(screen.getByText('Gespeichert')).toBeTruthy()
+  })
+
+  it('keeps the stored state of a new chapter apart from the failed-chapter list and from another new chapter', () => {
+    const failed = [
+      { title: 'A', icon: 'x', focus: 'a', topicId: null, tabId: 't1' },
+      { title: 'B', icon: 'x', focus: 'b', topicId: null, tabId: 't2' },
+    ]
+    // a leftover record of the failed list with one saved chapter
+    window.sessionStorage.setItem('pv_manual_batch_v1:failed:suncraft', JSON.stringify({ rows: failed.map((seed) => ({ key: seed.tabId, seed })), keys: { t1: 'K01', t2: 'K02' }, saved: ['t1'], mode: 'batch' }))
+    wrap(<ManualGuideDialog slug="suncraft" gameTitle="Suncraft" language="de" chapter={{ title: 'Angeln', icon: '', focus: 'x', topicId: null }} onClose={vi.fn()} onSaved={vi.fn()} />)
+    cleanup()
+
+    expect(window.sessionStorage.getItem('pv_manual_batch_v1:failed:suncraft')).not.toBeNull()
+    expect(window.sessionStorage.getItem('pv_manual_batch_v1:new:suncraft')).not.toBeNull()
+    // another new chapter does not inherit the first one
+    wrap(<ManualGuideDialog slug="suncraft" gameTitle="Suncraft" language="de" chapter={{ title: 'Kochen', icon: '', focus: 'y', topicId: null }} onClose={vi.fn()} onSaved={vi.fn()} />)
+    expect(screen.getByText('Offen')).toBeTruthy()
+  })
+
   it('sends tabId, replace and topicId in the chapter prompt of a redo seed', async () => {
     client.manualChapterPrompt.mockResolvedValue(prompt())
     const seed = { title: 'Waffen', icon: 'mdi:sword', focus: 'Waffen', topicId: 'weapons', tabId: 'tab-9', replace: true }

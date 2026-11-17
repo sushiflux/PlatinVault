@@ -4,13 +4,15 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AboutPage } from '../../pages/AboutPage'
 import { NotFoundPage } from '../../pages/NotFoundPage'
+import { AppRoutes } from '../../App'
 import { LaunchProvider } from '../launch/LaunchProvider'
 import { ConfirmProvider } from '../ui/ConfirmDialog'
 import { AppShell } from './AppShell'
 import { RAIL_KEY } from './useShellNav'
 
-// The app shell: the favourites in the tree, the open game unfolding with its areas and chapters, the rail remembered per browser, the
-// drawer on a phone, and the routes of the shell (about, 404, the Steam sign-in round trip landing on the settings).
+// The app shell: the header (cabinet, settings, Steam user, info) on every page, the side navigation ONLY on a game page - the tree of that
+// game with its chapters, the rail with group flyouts remembered per browser, the drawer on a phone - and the routes of the shell (about,
+// 404, the Steam sign-in round trip landing on the settings, the old /cabinet address).
 
 const GAMES = [
   { id: '1', slug: 'alpha', title: 'Alpha Quest', isFavorite: true, coverUrl: null, steamAppId: 10 },
@@ -36,6 +38,7 @@ const ALPHA = {
   slug: 'alpha',
   title: 'Alpha Quest',
   steamAppId: 10,
+  coverUrl: '',
   checkedItemKeys: [],
   tabs: [
     tab('t1', 'walkthrough', '1. Komplettlösung', { groupKey: 'start', checkedItemsCount: 2, totalCheckableItems: 5 }),
@@ -64,19 +67,24 @@ function stubServer() {
   )
 }
 
-function stubMedia(phone: boolean) {
+// A window of the given width: every "(max-width: Npx)" query matches when the width is at most N (the header's tiers and the drawer)
+function stubWidth(width: number) {
   vi.stubGlobal(
     'matchMedia',
-    vi.fn((query: string) => ({
-      matches: phone && query.includes('767'),
-      media: query,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      addListener: () => {},
-      removeListener: () => {},
-    }))
+    vi.fn((query: string) => {
+      const max = /max-width:\s*(\d+)px/.exec(query)
+      return {
+        matches: max ? width <= Number(max[1]) : false,
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        addListener: () => {},
+        removeListener: () => {},
+      }
+    })
   )
 }
+const stubMedia = (phone: boolean) => stubWidth(phone ? 390 : 1440)
 
 function LocationProbe() {
   const location = useLocation()
@@ -88,26 +96,28 @@ function renderShell(path: string) {
   return render(
     <QueryClientProvider client={client}>
       <ConfirmProvider>
-      <LaunchProvider>
-      <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route element={<AppShell theme="light" onToggleTheme={() => {}} />}>
-            <Route path="/" element={<LocationProbe />} />
-            <Route path="/library" element={<LocationProbe />} />
-            <Route path="/games/:slug" element={<LocationProbe />} />
-            <Route path="/settings" element={<LocationProbe />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-        </Routes>
-      </MemoryRouter>
-      </LaunchProvider>
+        <LaunchProvider>
+          <MemoryRouter initialEntries={[path]}>
+            <Routes>
+              <Route element={<AppShell theme="light" onToggleTheme={() => {}} />}>
+                <Route path="/" element={<LocationProbe />} />
+                <Route path="/library" element={<LocationProbe />} />
+                <Route path="/games/:slug" element={<LocationProbe />} />
+                <Route path="/settings" element={<LocationProbe />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/cabinet" element={<LocationProbe />} />
+                <Route path="*" element={<NotFoundPage />} />
+              </Route>
+            </Routes>
+          </MemoryRouter>
+        </LaunchProvider>
       </ConfirmProvider>
     </QueryClientProvider>
   )
 }
 
-const nav = () => screen.getByRole('navigation', { name: 'Hauptnavigation' })
+const nav = () => screen.getByRole('navigation', { name: 'Spiel-Navigation' })
+const header = () => document.querySelector('header') as HTMLElement
 
 beforeEach(() => {
   localStorage.clear()
@@ -124,106 +134,236 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('AppShell tree navigation', () => {
-  it('lists the favourites under "Meine Spiele" (not the other games) and marks the overview as the current page', async () => {
+describe('AppShell without a game', () => {
+  it.each(['/', '/library', '/settings', '/about', '/gibt-es-nicht'])('has no side navigation on %s', async (path) => {
     stubMedia(false)
-    renderShell('/')
-    const tree = nav()
-    expect(await within(tree).findByRole('link', { name: /Alpha Quest/ })).toBeTruthy()
-    expect(within(tree).getByRole('link', { name: /Bravo/ })).toBeTruthy()
-    expect(within(tree).queryByRole('link', { name: /Charlie/ })).toBeNull()
-    expect(within(tree).getByText('Meine Spiele')).toBeTruthy()
-    expect(within(tree).getByRole('link', { name: /Übersicht/ }).getAttribute('aria-current')).toBe('page')
-    // With a readable library there is "Alle Spiele"; the settings and the cabinet are entries of the tree
-    expect(await within(tree).findByRole('link', { name: /Alle Spiele/ })).toBeTruthy()
-    expect(within(tree).getByRole('link', { name: /Einstellungen/ }).getAttribute('href')).toBe('/settings')
-    expect(within(tree).getByRole('link', { name: /Trophäenschrank/ }).getAttribute('href')).toBe('/cabinet')
-    expect(within(tree).getByRole('link', { name: /Info zu Version/ }).getAttribute('href')).toBe('/about')
+    renderShell(path)
+    // The header is there; no navigation landmark and no menu button for a drawer
+    expect(header()).toBeTruthy()
+    expect(screen.queryByRole('navigation', { name: 'Spiel-Navigation' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Navigation öffnen' })).toBeNull()
+    expect(document.querySelector('.pv-shell-navwrap')).toBeNull()
+    expect(document.querySelector('.pv-shell')?.getAttribute('data-nav')).toBeNull()
   })
 
-  it('unfolds only the open game: areas, chapters under their groups (achievement list hidden, failed chapter marked), Story & Lore', async () => {
+  it('has no side navigation on a phone either, and no menu button', () => {
+    stubMedia(true)
+    renderShell('/')
+    expect(screen.queryByRole('button', { name: 'Navigation öffnen' })).toBeNull()
+    expect(document.querySelector('.pv-shell-navwrap')).toBeNull()
+  })
+})
+
+describe('AppShell header', () => {
+  it('holds the cabinet, settings, language, info and the Steam user (no "Meine Spiele", no cabinet or settings entry in a tree)', async () => {
+    stubMedia(false)
+    renderShell('/')
+    const bar = within(header())
+    expect(bar.getByRole('button', { name: 'Trophäenschrank' })).toBeTruthy()
+    expect(bar.getByRole('button', { name: 'Einstellungen' })).toBeTruthy()
+    expect(bar.getByRole('link', { name: 'Über PlatinVault' }).getAttribute('href')).toBe('/about')
+    expect(bar.getByRole('button', { name: 'Handbuch' })).toBeTruthy()
+    const user = await bar.findByRole('link', { name: /Player/ })
+    expect(user.getAttribute('href')).toBe('https://steamcommunity.com/id/x')
+    expect(user.getAttribute('target')).toBe('_blank')
+    expect(user.textContent).toContain('Player')
+    expect(user.textContent).toContain('12')
+    // No avatar URL: the placeholder user glyph, no broken image
+    expect(user.querySelector('img')).toBeNull()
+    expect(user.querySelector('.pv-avatar--empty')).toBeTruthy()
+    expect(screen.queryByText('Meine Spiele')).toBeNull()
+  })
+
+  it('shows a plain, non-link account without a profile address', async () => {
+    stubMedia(false)
+    const stub = globalThis.fetch
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: string) => {
+        if (String(input).split('?')[0] === '/api/steam/profile') {
+          return new Response(JSON.stringify({ steamId: '1', personaName: 'Player', avatarUrl: null, profileUrl: null, libraryGameCount: null }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+        }
+        return stub(input)
+      })
+    )
+    renderShell('/')
+    await waitFor(() => expect(header().querySelector('span.pv-user')).toBeTruthy())
+    expect(within(header()).queryByRole('link', { name: /Player/ })).toBeNull()
+    expect(header().querySelector('.pv-user-name')?.textContent).toBe('Player')
+  })
+
+  it('opens the settings page on the tab the user left them on', async () => {
+    stubMedia(false)
+    localStorage.setItem('pv_settings_tab', 'ki')
+    renderShell('/')
+    fireEvent.click(within(header()).getByRole('button', { name: 'Einstellungen' }))
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/settings?tab=ki'))
+    expect(within(header()).getByRole('button', { name: 'Einstellungen' }).getAttribute('aria-current')).toBe('page')
+  })
+
+  it('opens the trophy cabinet as a window over the current page, kept in the address (?cabinet=1), and closes it again', async () => {
+    stubMedia(false)
+    renderShell('/library?x=1')
+    fireEvent.click(within(header()).getByRole('button', { name: 'Trophäenschrank' }))
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/library?x=1&cabinet=1'))
+    const dialog = await screen.findByRole('dialog', { name: /Trophäenschrank/ })
+    expect(dialog).toBeTruthy()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Trophäenschrank schließen' }))
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/library?x=1'))
+  })
+
+  it('is open after a reload on ?cabinet=1', async () => {
+    stubMedia(false)
+    renderShell('/?cabinet=1')
+    expect(await screen.findByRole('dialog', { name: /Trophäenschrank/ })).toBeTruthy()
+  })
+
+  it('folds display size, handbook and info into one overflow menu on a narrow window, the rest stays', async () => {
+    stubWidth(800)
+    renderShell('/')
+    const bar = within(header())
+    expect(bar.queryByRole('button', { name: /Darstellungsgröße/ })).toBeNull()
+    expect(bar.queryByRole('button', { name: 'Handbuch' })).toBeNull()
+    expect(bar.getByRole('button', { name: 'Trophäenschrank' })).toBeTruthy()
+    expect(bar.getByRole('button', { name: 'Hilfe & Hinweise' })).toBeTruthy()
+    // The Steam user shrinks to its avatar
+    expect((await bar.findByRole('link', { name: /Player/ })).querySelector('.pv-user-name')).toBeNull()
+    fireEvent.click(bar.getByRole('button', { name: 'Weitere Funktionen' }))
+    const menu = await screen.findByRole('menu', { name: 'Weitere Funktionen' })
+    expect(within(menu).getByRole('menuitem', { name: 'Darstellungsgröße' })).toBeTruthy()
+    expect(within(menu).getByRole('menuitem', { name: 'Handbuch' })).toBeTruthy()
+    expect(within(menu).getByRole('menuitem', { name: 'Über PlatinVault' }).getAttribute('href')).toBe('/about')
+    expect(within(menu).queryByRole('menuitem', { name: /Farbschema/ })).toBeNull()
+    // Esc closes it and the focus returns to its button
+    fireEvent.keyDown(menu, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    expect(document.activeElement).toBe(bar.getByRole('button', { name: 'Weitere Funktionen' }))
+  })
+
+  it('on a phone also moves colour scheme, help and the Steam account into the menu, so every icon keeps its size', async () => {
+    stubWidth(390)
+    renderShell('/')
+    const bar = within(header())
+    expect(bar.queryByRole('button', { name: /Farbschema/ })).toBeNull()
+    expect(bar.queryByRole('button', { name: 'Hilfe & Hinweise' })).toBeNull()
+    expect(bar.queryByRole('link', { name: /Player/ })).toBeNull()
+    // What stays: cabinet, settings, language, the menu
+    for (const name of ['Trophäenschrank', 'Einstellungen', 'Weitere Funktionen']) expect(bar.getByRole('button', { name })).toBeTruthy()
+    expect(bar.getByRole('button', { name: /^Sprache/ })).toBeTruthy()
+    // The account is loaded before the menu opens, so it is there when the menu appears
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/steam/profile', expect.anything()))
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    fireEvent.click(bar.getByRole('button', { name: 'Weitere Funktionen' }))
+    const menu = await screen.findByRole('menu', { name: 'Weitere Funktionen' })
+    expect(within(menu).getByRole('menuitem', { name: /Farbschema: Hell/ })).toBeTruthy()
+    expect(within(menu).getByRole('menuitem', { name: 'Hilfe & Hinweise' })).toBeTruthy()
+    expect((await within(menu).findByRole('menuitem', { name: /Steam-Profil von Player/ })).getAttribute('href')).toBe('https://steamcommunity.com/id/x')
+    // Arrow keys move through the entries
+    const items = within(menu).getAllByRole('menuitem')
+    expect(document.activeElement).toBe(items[0])
+    fireEvent.keyDown(menu, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(items[1])
+    fireEvent.keyDown(menu, { key: 'End' })
+    expect(document.activeElement).toBe(items[items.length - 1])
+  })
+})
+
+describe('AppShell game navigation', () => {
+  it('is the tree of the open game: back to the overview, areas, chapters under their groups, Story & Lore - nothing else', async () => {
     stubMedia(false)
     renderShell('/games/alpha?tab=bosses')
     const tree = nav()
-    const subtree = await within(tree).findByRole('list', { name: 'Kapitel von Alpha Quest' })
-    const live = within(subtree).getByRole('link', { name: 'Live-Trophäen' })
-    expect(live.getAttribute('href')).toBe('/games/alpha?tab=live')
-    expect(within(subtree).getByRole('link', { name: 'Statistiken' }).getAttribute('href')).toBe('/games/alpha?tab=stats')
-    expect(within(subtree).getByRole('link', { name: /^Bosse/ }).getAttribute('aria-current')).toBe('page')
-    expect(within(subtree).getByRole('link', { name: /^Komplettlösung/ }).getAttribute('aria-current')).toBeNull()
-    expect(within(subtree).getByRole('link', { name: /^Komplettlösung/ }).textContent).toContain('2 von 5 erledigt')
-    expect(within(subtree).getByRole('link', { name: /Nebenquests/ }).textContent).toContain('Recherche fehlgeschlagen')
-    expect(within(subtree).queryByRole('link', { name: /Erfolge/ })).toBeNull()
-    expect(within(subtree).getByRole('link', { name: 'Story & Lore' }).getAttribute('href')).toBe('/games/alpha?tab=story')
-    // Group labels in the fixed order
-    expect(within(subtree).getByText('Kampf & Taktik')).toBeTruthy()
-    // One game open at a time
-    expect(within(tree).getByRole('link', { name: /Alpha Quest/ }).getAttribute('data-open')).toBe('true')
-    expect(within(tree).getByRole('link', { name: /Bravo/ }).getAttribute('data-open')).toBeNull()
+    const list = await within(tree).findByRole('list', { name: 'Kapitel von Alpha Quest' })
+    expect(within(tree).getByRole('link', { name: /Übersicht/ }).getAttribute('href')).toBe('/')
+    expect(within(list).getByRole('link', { name: 'Live-Trophäen' }).getAttribute('href')).toBe('/games/alpha?tab=live')
+    expect(within(list).getByRole('link', { name: 'Statistiken' }).getAttribute('href')).toBe('/games/alpha?tab=stats')
+    expect(within(list).getByRole('link', { name: /^Bosse/ }).getAttribute('aria-current')).toBe('page')
+    expect(within(list).getByRole('link', { name: /^Komplettlösung/ }).getAttribute('aria-current')).toBeNull()
+    expect(within(list).getByRole('link', { name: /^Komplettlösung/ }).textContent).toContain('2 von 5 erledigt')
+    expect(within(list).getByRole('link', { name: /Nebenquests/ }).textContent).toContain('Recherche fehlgeschlagen')
+    expect(within(list).queryByRole('link', { name: /Erfolge/ })).toBeNull()
+    expect(within(list).getByRole('link', { name: 'Story & Lore' }).getAttribute('href')).toBe('/games/alpha?tab=story')
+    // Group labels in the fixed order; the open game's title heads the tree
+    const labels = [...list.querySelectorAll('.pv-glabel')].map((el) => el.textContent)
+    expect(labels).toEqual(['Einstieg', 'Kampf & Taktik'])
+    expect(within(tree).getByText('Alpha Quest')).toBeTruthy()
+    // No list of games, no cabinet, no settings, no user, no info
+    expect(within(tree).queryByRole('link', { name: /Bravo/ })).toBeNull()
+    expect(within(tree).queryByText('Meine Spiele')).toBeNull()
+    for (const name of [/Trophäenschrank/, /Einstellungen/, /Info/, /Player/]) expect(within(tree).queryByRole('link', { name })).toBeNull()
+    expect(within(tree).queryByRole('searchbox')).toBeNull()
   })
 
-  it('opens the first chapter when the URL names no tab, and filters the tree by the search row', async () => {
+  it('opens the first chapter when the URL names no tab', async () => {
     stubMedia(false)
     renderShell('/games/alpha')
-    const tree = nav()
-    const subtree = await within(tree).findByRole('list', { name: 'Kapitel von Alpha Quest' })
-    expect(within(subtree).getByRole('link', { name: /^Komplettlösung/ }).getAttribute('aria-current')).toBe('page')
-
-    fireEvent.change(within(tree).getByRole('searchbox', { name: 'Spiel oder Kapitel suchen' }), { target: { value: 'boss' } })
-    expect(within(tree).queryByRole('link', { name: /Bravo/ })).toBeNull()
-    expect(within(tree).getByRole('link', { name: /^Bosse/ })).toBeTruthy()
-    expect(within(tree).queryByRole('link', { name: /^Komplettlösung/ })).toBeNull()
-
-    fireEvent.change(within(tree).getByRole('searchbox', { name: 'Spiel oder Kapitel suchen' }), { target: { value: 'xyz' } })
-    expect(within(tree).getByText('Nichts gefunden für „xyz“.')).toBeTruthy()
+    const list = await within(nav()).findByRole('list', { name: 'Kapitel von Alpha Quest' })
+    expect(within(list).getByRole('link', { name: /^Komplettlösung/ }).getAttribute('aria-current')).toBe('page')
   })
 
-  it('collapses to an icon rail and remembers it in this browser', async () => {
+  it('collapses to an icon rail, remembers it in this browser, and keeps live, statistics, lore and every chapter reachable', async () => {
     stubMedia(false)
-    renderShell('/')
-    await within(nav()).findByRole('link', { name: /Alpha Quest/ })
+    renderShell('/games/alpha?tab=bosses')
+    await within(nav()).findByRole('list', { name: 'Kapitel von Alpha Quest' })
     expect(nav().getAttribute('data-rail')).toBeNull()
     fireEvent.click(within(nav()).getByRole('button', { name: 'Navigation einklappen' }))
     expect(nav().getAttribute('data-rail')).toBe('true')
     expect(localStorage.getItem(RAIL_KEY)).toBe('1')
 
     cleanup()
-    renderShell('/')
-    expect(nav().getAttribute('data-rail')).toBe('true')
-    expect(within(nav()).getByRole('button', { name: 'Navigation ausklappen' })).toBeTruthy()
-    // The rail has no search row; the labels stay the accessible names of the entries
-    expect(within(nav()).queryByRole('searchbox')).toBeNull()
-    expect(within(nav()).getByRole('link', { name: /Übersicht/ })).toBeTruthy()
-  })
-})
-
-describe('AppShell user row', () => {
-  it('shows the Steam profile as a link with name and library size, the avatar fallback when there is no picture', async () => {
-    stubMedia(false)
-    renderShell('/')
-    const row = await within(nav()).findByRole('link', { name: /Player/ })
-    expect(row.getAttribute('href')).toBe('https://steamcommunity.com/id/x')
-    expect(row.getAttribute('target')).toBe('_blank')
-    expect(row.textContent).toContain('Player')
-    expect(row.textContent).toContain('12')
-    // No avatar URL: the placeholder user glyph, no broken image
-    expect(row.querySelector('img')).toBeNull()
-    expect(row.querySelector('.pv-avatar--empty')).toBeTruthy()
+    renderShell('/games/alpha?tab=bosses')
+    const tree = nav()
+    expect(tree.getAttribute('data-rail')).toBe('true')
+    expect(within(tree).getByRole('button', { name: 'Navigation ausklappen' })).toBeTruthy()
+    // The areas stay reachable as icons named for screen readers (and by tooltip)
+    expect((await within(tree).findByRole('link', { name: 'Live-Trophäen' })).getAttribute('href')).toBe('/games/alpha?tab=live')
+    expect(within(tree).getByRole('link', { name: 'Statistiken' }).getAttribute('href')).toBe('/games/alpha?tab=stats')
+    expect(within(tree).getByRole('link', { name: 'Story & Lore' }).getAttribute('href')).toBe('/games/alpha?tab=story')
+    expect(within(tree).getByRole('link', { name: 'Übersicht' }).getAttribute('href')).toBe('/')
+    // One icon per chapter group; the one that holds the open chapter carries the accent line
+    const combat = within(tree).getByRole('button', { name: 'Kampf & Taktik' })
+    expect(combat.getAttribute('data-active')).toBe('true')
+    expect(combat.getAttribute('aria-haspopup')).toBe('menu')
+    expect(within(tree).getByRole('button', { name: 'Einstieg' }).getAttribute('data-active')).toBeNull()
+    expect(within(tree).queryByRole('link', { name: /^Bosse/ })).toBeNull()
   })
 
-  it('shows a plain, non-link row without a profile address', async () => {
+  it('opens the chapters of a group as a flyout from the rail: Enter opens, arrows move, Esc closes and the focus returns', async () => {
     stubMedia(false)
-    const stub = globalThis.fetch
-    vi.stubGlobal('fetch', vi.fn(async (input: string) => {
-      if (String(input).split('?')[0] === '/api/steam/profile') {
-        return new Response(JSON.stringify({ steamId: '1', personaName: 'Player', avatarUrl: null, profileUrl: null, libraryGameCount: null }), { status: 200, headers: { 'Content-Type': 'application/json' } })
-      }
-      return stub(input)
-    }))
-    renderShell('/')
-    await waitFor(() => expect(nav().querySelector('span.pv-user')).toBeTruthy())
-    expect(within(nav()).queryByRole('link', { name: /Player/ })).toBeNull()
-    expect(nav().querySelector('.pv-user-name')?.textContent).toBe('Player')
+    localStorage.setItem(RAIL_KEY, '1')
+    renderShell('/games/alpha?tab=bosses')
+    const group = await within(nav()).findByRole('button', { name: 'Kampf & Taktik' })
+    expect(group.getAttribute('aria-expanded')).toBe('false')
+    group.focus()
+    fireEvent.click(group) // Enter / Space on a button end up as a click
+    const menu = await screen.findByRole('menu', { name: 'Kampf & Taktik' })
+    expect(group.getAttribute('aria-expanded')).toBe('true')
+    const items = within(menu).getAllByRole('menuitem')
+    expect(items.map((item) => item.textContent)).toEqual([expect.stringContaining('Bosse'), expect.stringContaining('Nebenquests')])
+    expect(items[0]!.getAttribute('href')).toBe('/games/alpha?tab=bosses')
+    expect(items[0]!.getAttribute('aria-current')).toBe('page')
+    expect(items[1]!.textContent).toContain('Recherche fehlgeschlagen')
+    // The open chapter has the focus; arrows move (and wrap), Esc closes
+    expect(document.activeElement).toBe(items[0])
+    fireEvent.keyDown(menu, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(items[1])
+    fireEvent.keyDown(menu, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(items[0])
+    fireEvent.keyDown(menu, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    expect(document.activeElement).toBe(group)
+    expect(group.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('follows a chapter of the flyout and closes it', async () => {
+    stubMedia(false)
+    localStorage.setItem(RAIL_KEY, '1')
+    renderShell('/games/alpha?tab=bosses')
+    fireEvent.click(await within(nav()).findByRole('button', { name: 'Einstieg' }))
+    const menu = await screen.findByRole('menu', { name: 'Einstieg' })
+    fireEvent.click(within(menu).getByRole('menuitem', { name: /Komplettlösung/ }))
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/games/alpha?tab=walkthrough'))
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
   })
 })
 
@@ -248,9 +388,9 @@ describe('AppShell introduction tour', () => {
 })
 
 describe('AppShell on a phone', () => {
-  it('is a drawer opened by the menu button in the header, closed by Esc and by following a link', async () => {
+  it('shows the game navigation as a drawer opened by the menu button in the header, closed by Esc and by following a link', async () => {
     stubMedia(true)
-    renderShell('/')
+    renderShell('/games/alpha')
     const wrap = nav().parentElement!
     expect(wrap.getAttribute('data-open')).toBe('false')
     const menu = screen.getByRole('button', { name: 'Navigation öffnen' })
@@ -263,11 +403,19 @@ describe('AppShell on a phone', () => {
     expect(wrap.getAttribute('data-open')).toBe('false')
 
     fireEvent.click(menu)
-    fireEvent.click(await within(nav()).findByRole('link', { name: /Alpha Quest/ }))
-    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/games/alpha'))
+    fireEvent.click(await within(nav()).findByRole('link', { name: /^Bosse/ }))
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/games/alpha?tab=bosses'))
     expect(wrap.getAttribute('data-open')).toBe('false')
     // The rail setting never applies to the drawer
     expect(nav().getAttribute('data-rail')).toBeNull()
+  })
+
+  it('goes back to the overview from the drawer', async () => {
+    stubMedia(true)
+    renderShell('/games/alpha')
+    fireEvent.click(screen.getByRole('button', { name: 'Navigation öffnen' }))
+    fireEvent.click(await within(nav()).findByRole('link', { name: /Übersicht/ }))
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/'))
   })
 })
 
@@ -281,7 +429,8 @@ describe('AppShell routes', () => {
     expect((await screen.findByRole('link', { name: /Quellcode von PlatinVault/ })).getAttribute('href')).toBe('https://github.com/sushiflux/PlatinVault')
     expect(screen.getByLabelText('Herz')).toBeTruthy()
     expect(document.body.textContent).not.toContain('©')
-    expect(within(nav()).getByRole('link', { name: /Info zu Version/ }).getAttribute('aria-current')).toBe('page')
+    // The info icon of the header marks the page it opened
+    expect(within(header()).getByRole('link', { name: 'Über PlatinVault' }).getAttribute('aria-current')).toBe('page')
   })
 
   it('answers an unknown address with the 404 page in English, also in a German interface', () => {
@@ -296,5 +445,26 @@ describe('AppShell routes', () => {
     stubMedia(false)
     renderShell('/?steamLink=error&reason=denied')
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/settings?tab=steam&steamLink=error&reason=denied'))
+  })
+})
+
+describe('App routes', () => {
+  it('sends the old /cabinet address to the overview with the cabinet open', async () => {
+    stubMedia(false)
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <ConfirmProvider>
+          <LaunchProvider>
+            <MemoryRouter initialEntries={['/cabinet']}>
+              <AppRoutes theme="light" onToggleTheme={() => {}} />
+              <LocationProbe />
+            </MemoryRouter>
+          </LaunchProvider>
+        </ConfirmProvider>
+      </QueryClientProvider>
+    )
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/?cabinet=1'))
+    expect(await screen.findByRole('dialog', { name: /Trophäenschrank/ })).toBeTruthy()
   })
 })

@@ -5,14 +5,19 @@ import { IconCheck, IconChevronDown, IconLoader2 } from '@tabler/icons-react'
 import type { AiProviderId, AiStatusDto } from '../../api/types'
 import { StackedLabel } from '../ui/StackedLabel'
 import { Tooltip } from '../ui/Tooltip'
-import { AI_PROVIDERS, providersWithKey, useProviderStateText } from './aiProviders'
+import { AI_PROVIDERS, MANUAL_AI, providersWithKey, useProviderStateText } from './aiProviders'
+import type { AiHow } from './aiProviders'
 import { useAiStatus } from './useAiStatus'
 import './ai.css'
 
-interface AiRunButtonProps {
-  // The one-off choice for this action ("Mit Claude"), kept by the caller so its handler can use it; undefined = the settings decide
-  oneOff: AiProviderId | undefined
-  onOneOffChange: (provider: AiProviderId | undefined) => void
+// The one-off choice for this action ("Mit Claude"), kept by the caller so its handler can use it; undefined = the settings decide.
+// An action that can also be done with the player's own AI subscription passes `manual`: the menu then has "Mein KI-Abo" and the choice
+// may be 'manual' (the caller's handler hands it to pickAi(oneOff, { manual: true })).
+type HowProps =
+  | { manual?: false; oneOff: AiProviderId | undefined; onOneOffChange: (provider: AiProviderId | undefined) => void }
+  | { manual: true; oneOff: AiHow | undefined; onOneOffChange: (how: AiHow | undefined) => void }
+
+type AiRunButtonProps = HowProps & {
   type?: 'button' | 'submit'
   form?: string
   onClick?: () => void
@@ -28,10 +33,11 @@ interface AiRunButtonProps {
 }
 
 /** The text that says which AI an action would use right now, e.g. for tooltips ("Uses Claude."); null while nothing is known yet. */
-export function useAiWhoText(oneOff?: AiProviderId): string | null {
+export function useAiWhoText(oneOff?: AiHow): string | null {
   const { t } = useTranslation('ai')
   const { data: status } = useAiStatus()
   if (!status) return null
+  if (oneOff === MANUAL_AI) return t('uses.manual')
   if (oneOff) return t('uses.oneOff', { provider: t(`providers.${oneOff}`) })
   if (status.mode === 'ask') return t('uses.ask')
   if (status.mode === 'mixed') return t('uses.mixed')
@@ -44,7 +50,10 @@ export function useAiWhoText(oneOff?: AiProviderId): string | null {
  * no second part: the click opens the chooser dialog (the caller's handler asks with useAiPicker()). The second part reserves the
  * width of its longest name, so the button never changes size when another AI is picked.
  */
-export function AiRunButton({ oneOff, onOneOffChange, type = 'button', form, onClick, busy = false, disabled = false, icon, label, tone = '', quiet = false }: AiRunButtonProps) {
+export function AiRunButton(props: AiRunButtonProps) {
+  const { oneOff, type = 'button', form, onClick, busy = false, disabled = false, icon, label, tone = '', quiet = false } = props
+  const manual = props.manual === true
+  const onOneOffChange = props.onOneOffChange as (how: AiHow | undefined) => void
   const { t } = useTranslation('ai')
   const { data: status } = useAiStatus()
   const [open, setOpen] = useState(false)
@@ -66,11 +75,13 @@ export function AiRunButton({ oneOff, onOneOffChange, type = 'button', form, onC
   }, [open])
 
   // Which name the second part shows: all names are drawn stacked so the part is as wide as the longest one
-  const names: string[] = [...AI_PROVIDERS.map((p) => t(`providers.${p}`)), t('button.mixedName'), t('button.noKeyName')]
-  const activeIndex = whoIndex(status, oneOff, keyed.length)
+  const names: string[] = [...AI_PROVIDERS.map((p) => t(`providers.${p}`)), t('button.mixedName'), t('button.noKeyName'), ...(manual ? [t('button.manualName')] : [])]
+  const activeIndex = whoIndex(status, oneOff, keyed.length, manual)
+  // Without any API key the subscription is the only way (the click goes there at once)
+  const manualActive = manual && (oneOff === MANUAL_AI || keyed.length === 0)
 
-  const choose = (provider: AiProviderId | undefined) => {
-    onOneOffChange(provider)
+  const choose = (how: AiHow | undefined) => {
+    onOneOffChange(how)
     setOpen(false)
     segmentRef.current?.focus()
   }
@@ -102,7 +113,7 @@ export function AiRunButton({ oneOff, onOneOffChange, type = 'button', form, onC
             <button
               ref={segmentRef}
               type="button"
-              disabled={busy || keyed.length === 0}
+              disabled={busy || (keyed.length === 0 && !manual)}
               aria-haspopup="menu"
               aria-expanded={open}
               aria-controls={open ? menuId : undefined}
@@ -136,11 +147,11 @@ export function AiRunButton({ oneOff, onOneOffChange, type = 'button', form, onC
                 }
               }}
             >
-              {status.mode === 'mixed' && (
+              {status.mode === 'mixed' && keyed.length > 0 && (
                 <MenuItem checked={oneOff === undefined} onSelect={() => choose(undefined)} title={t('button.standardEntry', { what: t('button.mixedName') })} />
               )}
               {keyed.map((provider) => {
-                const checked = status.mode === 'mixed' ? oneOff === provider.id : (oneOff ?? status.activeProvider) === provider.id
+                const checked = status.mode === 'mixed' ? oneOff === provider.id : oneOff !== MANUAL_AI && (oneOff ?? status.activeProvider) === provider.id
                 return (
                   <MenuItem
                     key={provider.id}
@@ -153,6 +164,12 @@ export function AiRunButton({ oneOff, onOneOffChange, type = 'button', form, onC
                   />
                 )
               })}
+              {manual && (
+                <>
+                  {(keyed.length > 0 || status.mode === 'mixed') && <div role="separator" className="my-1 h-px" style={{ background: 'var(--border-subtle)' }} />}
+                  <MenuItem checked={manualActive} onSelect={() => choose(MANUAL_AI)} title={t('button.manualEntry')} detail={t('button.manualDetail')} />
+                </>
+              )}
             </div>
           )}
         </>
@@ -161,10 +178,12 @@ export function AiRunButton({ oneOff, onOneOffChange, type = 'button', form, onC
   )
 }
 
-function whoIndex(status: AiStatusDto | undefined, oneOff: AiProviderId | undefined, keyedCount: number): number {
+function whoIndex(status: AiStatusDto | undefined, oneOff: AiHow | undefined, keyedCount: number, manual: boolean): number {
   const noKey = AI_PROVIDERS.length + 1
-  if (!status || keyedCount === 0) return noKey
-  if (oneOff) return AI_PROVIDERS.indexOf(oneOff)
+  const subscription = AI_PROVIDERS.length + 2
+  if (manual && oneOff === MANUAL_AI) return subscription
+  if (!status || keyedCount === 0) return manual && status ? subscription : noKey
+  if (oneOff && oneOff !== MANUAL_AI) return AI_PROVIDERS.indexOf(oneOff)
   if (status.mode === 'mixed') return AI_PROVIDERS.length
   const current = status.activeProvider ?? status.defaultProvider
   return current ? AI_PROVIDERS.indexOf(current) : noKey

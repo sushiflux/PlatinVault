@@ -55,7 +55,7 @@
     {
       "name": "Inter (Schrift)",
       "version": "5.3.0 (Fontsource-Paket @fontsource/inter)",
-      "usedIn": "Handbuch-PDFs (Schrift ist in die PDF-Dateien eingebettet)",
+      "usedIn": "Browser-App und Windows-Programm (Oberfläche, mit der App ausgeliefert) und Handbuch-PDFs (Schrift ist in die PDF-Dateien eingebettet)",
       "license": "OFL-1.1",
       "copyright": [
         "Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)"

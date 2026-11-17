@@ -41,7 +41,10 @@ public sealed partial class IgdbService
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { WriteIndented = false };
 
-    public sealed record GameCacheEntry(DateTimeOffset FetchedAt, IgdbGameDto? Game);
+    /// <summary>Schema = shape of the stored facts; entries older than <see cref="GameSchema"/> (null) lack IGDB's user rating and are refetched.</summary>
+    public sealed record GameCacheEntry(DateTimeOffset FetchedAt, IgdbGameDto? Game, int? Schema = null);
+
+    private const int GameSchema = 2;
     public sealed record IdCacheEntry(DateTimeOffset FetchedAt, int? IgdbId);
     public sealed record SteamSourceEntry(DateTimeOffset FetchedAt, int Id);
     public sealed record LanguageRef(string Name, string? NativeName);
@@ -134,7 +137,7 @@ public sealed partial class IgdbService
         }
 
         _games.TryGetValue(steamAppId, out var cached);
-        if (cached is not null && IsFresh(cached.FetchedAt, cached.Game is null))
+        if (cached is not null && IsFresh(cached.FetchedAt, cached.Game is null) && (cached.Game is null || cached.Schema >= GameSchema))
         {
             return cached.Game;
         }
@@ -215,7 +218,7 @@ public sealed partial class IgdbService
 
         using var gameDoc = await QueryAsync(
             "games",
-            "fields name,url,summary,storyline,aggregated_rating,aggregated_rating_count,total_rating,total_rating_count," +
+            "fields name,url,summary,storyline,aggregated_rating,aggregated_rating_count,total_rating,total_rating_count,rating,rating_count," +
             "genres.name,themes.name,game_modes.name,player_perspectives.name,franchise.name,franchises.name,collections.name," +
             "similar_games,cover.image_id,artworks.image_id,screenshots.image_id," +
             $"language_supports.language,language_supports.language_support_type; where id = {igdbId}; limit 1;",
@@ -240,6 +243,8 @@ public sealed partial class IgdbService
             AggregatedRatingCount: Int(game, "aggregated_rating_count"),
             TotalRating: Rating(game, "total_rating"),
             TotalRatingCount: Int(game, "total_rating_count"),
+            Rating: Rating(game, "rating"),
+            RatingCount: Int(game, "rating_count"),
             Genres: Names(game, "genres"),
             Themes: Names(game, "themes"),
             GameModes: Names(game, "game_modes"),
@@ -259,7 +264,7 @@ public sealed partial class IgdbService
 
     private async Task<IgdbGameDto?> StoreAsync(int steamAppId, IgdbGameDto? facts)
     {
-        _games[steamAppId] = new GameCacheEntry(DateTimeOffset.UtcNow, facts);
+        _games[steamAppId] = new GameCacheEntry(DateTimeOffset.UtcNow, facts, GameSchema);
         await SaveAsync();
         return facts;
     }
@@ -831,14 +836,18 @@ public sealed partial class IgdbService
             ? v
             : null;
 
+    /// <summary>
+    /// An IGDB rating 0-100. Anything else is left out: TryGetDouble turns "1e400" into Infinity, which the cache file and every answer then fail to
+    /// serialize (each later save of the whole cache would throw), and a value beyond 100 would end up on the card.
+    /// </summary>
     private static double? Rating(JsonElement element, string name) =>
-        element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var p) && p.ValueKind == JsonValueKind.Number && p.TryGetDouble(out var v) && v > 0
+        element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var p) && p.ValueKind == JsonValueKind.Number && p.TryGetDouble(out var v) && double.IsFinite(v) && v is > 0 and <= 100
             ? Math.Round(v, 1)
             : null;
 
-    /// <summary>IGDB reports seconds; the UI wants hours with one decimal.</summary>
+    /// <summary>IGDB reports seconds; the UI wants hours with one decimal. A non-finite value is left out (see <see cref="Rating"/>).</summary>
     private static double? Hours(JsonElement element, string name) =>
-        element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var p) && p.ValueKind == JsonValueKind.Number && p.TryGetDouble(out var seconds) && seconds > 0
+        element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var p) && p.ValueKind == JsonValueKind.Number && p.TryGetDouble(out var seconds) && double.IsFinite(seconds) && seconds > 0
             ? Math.Round(seconds / 3600.0, 1)
             : null;
 

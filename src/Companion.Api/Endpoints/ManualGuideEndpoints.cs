@@ -194,6 +194,52 @@ public static partial class ManualGuideEndpoints
             return Results.Ok(new ManualSavedDto(await ApiEndpoints.BuildDetailAsync(db, translations, reloaded, null, ct), saved.Id, replaced));
         });
 
+        // Story & Lore: ONE prompt for all four parts, one pasted answer
+        api.MapPost("/games/{slug}/manual/lore-prompt", async (string slug, CompanionDbContext db, AiGuideGeneratorService ai, CancellationToken ct) =>
+        {
+            var game = await LoadAsync(db, slug, ct);
+            if (game is null)
+            {
+                return Problems.GameNotFound(slug);
+            }
+            await AdoptLanguageAsync(db, game, ct);
+            return Results.Ok(await ai.BuildManualLorePromptAsync(game, ct));
+        });
+
+        // The pasted answer, checked live (nothing is saved)
+        api.MapPost("/games/{slug}/manual/lore-check", async (string slug, ManualAnswerRequest request, CompanionDbContext db, AiGuideGeneratorService ai, CancellationToken ct) =>
+        {
+            var game = await LoadAsync(db, slug, ct);
+            return game is null ? Problems.GameNotFound(slug) : Results.Ok(ai.CheckManualLore(game, request.Text).Dto);
+        });
+
+        // Saves the answer: creates the Story & Lore tab or replaces the existing one in place (the same code as the API research)
+        api.MapPost("/games/{slug}/manual/lore-answer", async (string slug, ManualAnswerRequest request, CompanionDbContext db, AiGuideGeneratorService ai, GuideTranslationService translations, CancellationToken ct) =>
+        {
+            var game = await db.Games.Include(g => g.Tabs).Include(g => g.ProgressChecks).FirstOrDefaultAsync(g => g.Slug == slug, ct);
+            if (game is null)
+            {
+                return Problems.GameNotFound(slug);
+            }
+            await AdoptLanguageAsync(db, game, ct);
+
+            var checkedAnswer = ai.CheckManualLore(game, request.Text);
+            if (checkedAnswer.Parts is null)
+            {
+                return Problems.BadRequestWithIssues(ServerTexts.Manual.NotSavedTitle, ServerTexts.Manual.LoreNotSaved(string.Join(" ", checkedAnswer.Dto.Errors.Select(e => e.Message))), checkedAnswer.Dto.Errors);
+            }
+
+            var saved = await AiActionEndpoints.SaveLoreTabAsync(db, game, ai.BuildManualLoreTab(game, checkedAnswer.Parts), ct);
+
+            db.ChangeTracker.Clear();
+            var reloaded = await db.Games
+                .AsNoTracking()
+                .Include(g => g.Tabs.OrderBy(t => t.SortOrder))
+                .Include(g => g.ProgressChecks)
+                .FirstAsync(g => g.Slug == slug, ct);
+            return Results.Ok(new ManualSavedDto(await ApiEndpoints.BuildDetailAsync(db, translations, reloaded, null, ct), saved.Tab.Id, saved.Replaced));
+        });
+
         // Batch mode: one prompt for many chapters, one field for all collected answers
         MapManualBatch(api);
     }

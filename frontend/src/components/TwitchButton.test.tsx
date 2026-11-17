@@ -26,18 +26,23 @@ describe('TwitchButton live count', () => {
     vi.unstubAllGlobals()
   })
 
-  it('stays exactly as before without a count (no credentials): the plain link, no badge', () => {
+  it('stays exactly as before without a count (no credentials): the plain link, no count', () => {
     renderButton(undefined)
     expect(link().getAttribute('aria-label')).toBe('Live auf Twitch: Portal 2')
-    expect(link().querySelector('.pv-bar-live')).toBeNull()
+    expect(link().querySelector('.pv-bar-count')).toBeNull()
   })
 
-  it('shows the number of live streams as a badge and says it in words', () => {
+  it('shows the number of live streams inline after the label and says it in words', () => {
     renderButton({ count: 12, atLeast: false })
-    expect(link().querySelector('.pv-bar-live')?.textContent).toBe('12')
+    const count = link().querySelector('.pv-bar-count')
+    expect(count?.textContent).toBe('12')
+    // In the line of the label (a child of the link next to it), not a corner badge laid over it
+    expect(count?.previousElementSibling?.className).toBe('pv-bar-label')
+    expect(count?.querySelector('.pv-bar-live-dot')).toBeTruthy()
+    expect(link().querySelector('.pv-bar-live')).toBeNull()
     expect(link().getAttribute('aria-label')).toBe('Live auf Twitch: Portal 2, 12 Streams live')
     // The badge is decoration for the eye; the words are on the link
-    expect(link().querySelector('.pv-bar-live')?.getAttribute('aria-hidden')).toBe('true')
+    expect(count?.getAttribute('aria-hidden')).toBe('true')
   })
 
   it('writes one stream in the singular and a capped count as "300+"', () => {
@@ -45,14 +50,25 @@ describe('TwitchButton live count', () => {
     expect(link().getAttribute('aria-label')).toContain('1 Stream live')
     cleanup()
     renderButton({ count: 300, atLeast: true })
-    expect(link().querySelector('.pv-bar-live')?.textContent).toBe('300+')
+    expect(link().querySelector('.pv-bar-count')?.textContent).toBe('300+')
     expect(link().getAttribute('aria-label')).toContain('Mehr als 300 Streams live')
   })
 
-  it('shows no badge for zero streams (the tooltip says that nobody is streaming) and keeps the label as it was', () => {
+  it('shows no number for zero streams (the tooltip says that nobody is streaming) and keeps the label as it was', () => {
     renderButton({ count: 0, atLeast: false })
-    expect(link().querySelector('.pv-bar-live')).toBeNull()
+    expect(link().querySelector('.pv-bar-count')).toBeNull()
     expect(link().getAttribute('aria-label')).toBe('Live auf Twitch: Portal 2')
+  })
+
+  it('reserves the room of the count with Twitch credentials, for a game with and without a count alike', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ twitchStreamsEnabled: true, hasTwitchKey: true }), { status: 200, headers: { 'Content-Type': 'application/json' } })))
+    renderButton(undefined)
+    await waitFor(() => expect(link().className).toContain('pv-bar-seg--live'))
+    expect(link().querySelector('.pv-bar-count')?.textContent).toBe('')
+    cleanup()
+    renderButton({ count: 7, atLeast: false })
+    await waitFor(() => expect(link().className).toContain('pv-bar-seg--live'))
+    expect(link().querySelector('.pv-bar-count')?.textContent).toBe('7')
   })
 
   it('speaks English when the app does', async () => {

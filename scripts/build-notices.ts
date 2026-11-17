@@ -137,11 +137,14 @@ function byName(a: { name: string; version: string }, b: { name: string; version
   return a.version < b.version ? -1 : a.version > b.version ? 1 : 0
 }
 
-// Copyright lines of a licence text: lines that start with "Copyright", "(c)" or the copyright sign (first few, unique)
+// Copyright lines of a licence text: lines that start with "Copyright", "(c)" or the copyright sign (first few, unique).
+// Wrapped lines of the OFL body start with its defined terms ("Copyright Holder(s)", "copyright statement(s)"); they are
+// licence wording, not a copyright notice, and are skipped.
 function extractCopyright(text: string): string[] {
   const found: string[] = []
   for (const raw of text.split('\n')) {
     const line = raw.trim().replace(/^[*#>\s-]+/, '')
+    if (/^copyright\s+(holder|statement)/i.test(line)) continue
     if (/^(copyright\b|\(c\)|©)/i.test(line)) {
       const shortened = line.length > 220 ? line.slice(0, 217) + '...' : line
       if (!found.includes(shortened)) found.push(shortened)

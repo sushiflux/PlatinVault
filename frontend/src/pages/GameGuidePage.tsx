@@ -37,7 +37,7 @@ import {
   toggleProgressItem,
 } from '../api/client'
 import { followAiJob } from '../api/aiJobs'
-import type { ManualChapterSeed, AiCompleteGuideResponse, AiJobDto, AiJobKind, AiProviderId, AiRedoChapterResponse, AiResultDto, AiRetryChaptersResponse, GameDetailDto, GuideSectionDto, GuideTableDto, GuideTabDto } from '../api/types'
+import type { ManualChapterSeed, AiCompleteGuideResponse, AiJobDto, AiJobKind, AiRedoChapterResponse, AiResultDto, AiRetryChaptersResponse, GameDetailDto, GuideSectionDto, GuideTableDto, GuideTabDto } from '../api/types'
 import { useFormat } from '../i18n/format'
 import { useGuideTranslation } from '../utils/useGuideTranslation'
 import type { UiLanguage } from '../i18n'
@@ -46,8 +46,10 @@ import { useAiPicker } from '../components/ai/AiChoice'
 import { AiProgressNotice, AiProgressOverlay } from '../components/ai/AiProgress'
 import { AiRunButton, useAiWhoText } from '../components/ai/AiRunButton'
 import { FailedChapterBlock, failedChapterSeeds, failedChapterTabs, RetryAllBanner } from '../components/ai/FailedChapter'
-import { providersWithKey, retryCandidates } from '../components/ai/aiProviders'
+import { MANUAL_AI, rememberedHow, retryCandidates } from '../components/ai/aiProviders'
+import type { AiHow } from '../components/ai/aiProviders'
 import { ManualGuideDialog } from '../components/ai/manual/ManualGuideDialog'
+import { ManualLoreDialog } from '../components/ai/manual/ManualLoreDialog'
 import { useAiSwitchNotice } from '../components/ai/useAiSwitchNotice'
 import { useAiProgress } from '../components/ai/useAiProgress'
 import { useAiStatus } from '../components/ai/useAiStatus'
@@ -101,7 +103,7 @@ import { PuzzleScopeContext } from '../components/guide/puzzleState'
 import { describeError } from '../utils/apiErrorText'
 import { errorCodeOf } from '../utils/errorReport'
 
-// The active tab lives in the URL (?tab=...), so a link (the tree navigation of the shell) or a reload lands on the same chapter /
+// The active tab lives in the URL (?tab=...), so a link (the game navigation of the shell) or a reload lands on the same chapter /
 // area; the rule which tab a URL means is shared with the tree (components/shell/navModel.ts).
 
 // The language the guide content is written in (GameDetailDto.contentLanguage); anything unknown counts as "not known" = no hint
@@ -120,7 +122,8 @@ interface PageNotice {
   // Offers "try again with <another AI>" (only when another provider has a key)
   retry?: { label: string; run: () => void }
   // Offers the guide with the player's own AI subscription (copy the prompt, paste the answer; no API key)
-  manual?: boolean
+  // 'lore' = the Story & Lore dialog, true = the guide dialog
+  manual?: boolean | 'lore'
 }
 
 // Dedicated 100% Master Companion Page for a single selected game in the harmonious 100-Prozent Pastel design.
@@ -149,7 +152,7 @@ export function GameGuidePage() {
   // The tab named in the URL (resolved against the guide further down, once it is loaded)
   const requestedTab = tabParamToSlug(searchParams.get('tab'))
   // Every tab change from inside the page (buttons, links between chapters) goes through here and is written to the URL without a
-  // history entry; the tree navigation of the shell links to the same URLs
+  // history entry; the game navigation of the shell links to the same URLs
   const selectTab = (slug: string) => {
     setSearchParams(
       (previous) => {
@@ -192,8 +195,13 @@ export function GameGuidePage() {
   const [expandOpen, setExpandOpen] = useState(false)
   const [newTabTitle, setNewTabTitle] = useState('')
   const [newTabPrompt, setNewTabPrompt] = useState('')
-  // The AI picked for this one action in the dialog ("Mit Claude"); the setting itself stays as it is
-  const [expandOneOff, setExpandOneOff] = useState<AiProviderId | undefined>(undefined)
+  // The AI picked for this one action in the dialog ("Mit Claude"); the setting itself stays as it is. Starts on "Mein KI-Abo"
+  // when that was the way taken last time (rememberedHow), read again each time the dialog opens
+  const [expandOneOff, setExpandOneOff] = useState<AiHow | undefined>(rememberedHow)
+  const openExpand = () => {
+    setExpandOneOff(rememberedHow())
+    setExpandOpen(true)
+  }
   const [expanding, setExpanding] = useState(false)
   // The reason a chapter could not be created, shown completely (with the provider's own text behind "technical details")
   const [expandError, setExpandError] = useState<{ message: string; details: string | null; notice?: string } | null>(null)
@@ -211,14 +219,17 @@ export function GameGuidePage() {
   const [steamLinkOpen, setSteamLinkOpen] = useState(false)
   const [builderOpen, setBuilderOpen] = useState(false)
   // The guide (or one failed chapter) with the player's own AI subscription: prompts to copy, answers to paste
-  const [manual, setManual] = useState<{ chapter?: ManualChapterSeed; chapters?: ManualChapterSeed[] } | null>(null)
+  // fresh = the one chapter is a new one typed in "Tab ergänzen" (after saving, the expand fields are cleared and the chapter is shown)
+  const [manual, setManual] = useState<{ chapter?: ManualChapterSeed; chapters?: ManualChapterSeed[]; fresh?: boolean } | null>(null)
+  // Story & Lore with the player's own AI subscription
+  const [loreManual, setLoreManual] = useState(false)
   // The AI chosen when the builder was opened (mode "ask"); undefined = the settings decide
   const [builderProvider, setBuilderProvider] = useState<string | undefined>(undefined)
   // The one onboarding tour lives in the shell; the settings are a page of the shell (/settings?tab=...)
   const shell = useShell()
   const openSettings = useOpenSettings()
   // Coach marks of this page: the first time it is seen (and while no intro / dialog is up), and on "?" any time
-  const hints = useScreenHints('game', shell.tourOpen || expandOpen || steamLinkOpen || builderOpen || manual !== null)
+  const hints = useScreenHints('game', shell.tourOpen || expandOpen || steamLinkOpen || builderOpen || manual !== null || loreManual)
 
   const {
     data: game,
@@ -316,8 +327,12 @@ export function GameGuidePage() {
   // `chosen` = the AI was named by the player already (a retry button): no chooser dialog in the mode "ask"
   const handleResearchLore = async (oneOff?: string, chosen = false) => {
     if (!game) return
-    const provider = chosen ? oneOff : await pickAi(oneOff)
+    const provider = chosen ? oneOff : await pickAi(oneOff, { manual: true })
     if (provider === null) return
+    if (provider === MANUAL_AI) {
+      setLoreManual(true)
+      return
+    }
     setLoreBusy(true)
     setPageJobKind('lore')
     setActionError(null)
@@ -327,7 +342,7 @@ export function GameGuidePage() {
       aiNotice.report(result.ai)
       selectTab(LORE_TAB_SLUG)
     } catch (err: unknown) {
-      showAiFailure(err, t('fail.lore'), provider, (next) => void handleResearchLore(next, true))
+      showAiFailure(err, t('fail.lore'), provider, (next) => void handleResearchLore(next, true), 'lore')
     } finally {
       setLoreBusy(false)
       pageProgress.reset()
@@ -337,7 +352,7 @@ export function GameGuidePage() {
 
   // A failed AI action: the reason in full (our sentence, the provider's text behind "technical details"), the note that another AI had been
   // tried first, the offers to try again with another AI or to look at the AI settings. What was finished before is saved: read the guide again.
-  const showAiFailure = (err: unknown, title: string, attempted: string | undefined, retry: (provider: string) => void, manual = false) => {
+  const showAiFailure = (err: unknown, title: string, attempted: string | undefined, retry: (provider: string) => void, manual: boolean | 'lore' = false) => {
     const switched = (err as { switchNotice?: string } | null)?.switchNotice
     if (switched) aiNotice.show(switched)
     void queryClient.invalidateQueries({ queryKey: ['game', slug] })
@@ -391,7 +406,7 @@ export function GameGuidePage() {
         if (job.kind === 'lore') selectTab(LORE_TAB_SLUG)
       }
     } catch (err: unknown) {
-      showAiFailure(err, job.kind === 'lore' ? t('fail.lore') : job.kind === 'retry' ? t('ai:retryChapters.failTitle') : job.kind === 'redo' ? t('ai:redoChapter.failed') : t('fail.complete'), undefined, () => {}, job.kind !== 'lore')
+      showAiFailure(err, job.kind === 'lore' ? t('fail.lore') : job.kind === 'retry' ? t('ai:retryChapters.failTitle') : job.kind === 'redo' ? t('ai:redoChapter.failed') : t('fail.complete'), undefined, () => {}, job.kind === 'lore' ? 'lore' : true)
     } finally {
       setLoreBusy(false)
       setCompleting(false)
@@ -465,18 +480,21 @@ export function GameGuidePage() {
     }
   }
 
-  // The guide builder analyses the game with the AI first, so in the mode "ask" the player chooses before it opens
-  // Without any API key the AI analysis cannot run: the guide goes through the player's own subscription
-  const noAiKey = aiStatus !== undefined && providersWithKey(aiStatus).length === 0
-
-  const openBuilder = async () => {
-    if (noAiKey) {
+  // The wand: how the guide is completed is chosen BEFORE anything runs, in every selection mode (an API provider or the player's own AI
+  // subscription; without any API key the subscription is the only way and opens at once). The chosen provider is handed on, so neither the quick
+  // path nor the builder asks again.
+  const handleWand = async () => {
+    const how = await pickAi(undefined, { manual: true, always: true })
+    if (how === null) return
+    if (how === MANUAL_AI) {
       setManual({})
       return
     }
-    const provider = await pickAi()
-    if (provider === null) return
-    setBuilderProvider(provider)
+    if (guideTabs.length === 0) {
+      void handleCompleteGuide(how, true)
+      return
+    }
+    setBuilderProvider(how)
     setBuilderOpen(true)
   }
 
@@ -592,8 +610,17 @@ export function GameGuidePage() {
       setExpandError({ message: t('expand.missing'), details: null })
       return
     }
-    const provider = await pickAi(expandOneOff)
+    const provider = await pickAi(expandOneOff, { manual: true })
     if (provider === null) return
+    if (provider === MANUAL_AI) {
+      // The same input, researched in the player's own chat: the expand dialog gives way to the subscription dialog with one new chapter
+      const title = newTabTitle.trim()
+      const topic = topics?.find((candidate) => candidate.title === title)
+      setExpandError(null)
+      setExpandOpen(false)
+      setManual({ chapter: { title, icon: topic?.icon ?? '', focus: newTabPrompt.trim(), topicId: topic?.id ?? null }, fresh: true })
+      return
+    }
     setExpanding(true)
     setExpandError(null)
     try {
@@ -611,7 +638,7 @@ export function GameGuidePage() {
       setExpandOpen(false)
       setNewTabTitle('')
       setNewTabPrompt('')
-      setExpandOneOff(undefined)
+      setExpandOneOff(rememberedHow())
     } catch (err: unknown) {
       const { message, details } = describeError(err, t('expand.failedFallback'))
       setExpandError({ message, details, notice: (err as { switchNotice?: string } | null)?.switchNotice })
@@ -732,16 +759,16 @@ export function GameGuidePage() {
               <IconButton
                 tone="emerald"
                 label={t('header.complete.label')}
-                description={[t('header.complete.description'), aiWho].filter(Boolean).join(' ')}
+                description={t('header.complete.description')}
                 busy={completing}
-                onClick={() => (guideTabs.length === 0 && !noAiKey ? void handleCompleteGuide() : void openBuilder())}
+                onClick={() => void handleWand()}
               >
                 <IconWand size={20} />
               </IconButton>
               <IconButton
                 label={t('header.addTab.label')}
                 description={[t('header.addTab.description'), aiWho].filter(Boolean).join(' ')}
-                onClick={() => setExpandOpen(true)}
+                onClick={openExpand}
               >
                 <IconSparkles size={20} />
               </IconButton>
@@ -769,7 +796,7 @@ export function GameGuidePage() {
 
       <PinsScope appId={game.steamAppId} onError={showPinFailure}>
       <div className="app-shell">
-        {/* Trophy progress and tiers of this game (the areas and chapters are entries of the tree navigation) */}
+        {/* Trophy progress and tiers of this game (the areas and chapters are entries of the game navigation) */}
         <GameTrophyBar data={liveTrophies} hasSteam={Boolean(game.steamAppId)} onRefresh={() => void refetchLiveTrophies()} refreshing={liveTrophiesFetching} />
 
         <div className="pv-gbody">
@@ -828,7 +855,7 @@ export function GameGuidePage() {
               <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
                 {t('noGuide.text')}
               </p>
-              <button type="button" onClick={() => setExpandOpen(true)} className="pv-btn pv-btn-emerald">
+              <button type="button" onClick={openExpand} className="pv-btn pv-btn-emerald">
                 <IconSparkles size={15} />
                 <span>{t('noGuide.button')}</span>
               </button>
@@ -987,7 +1014,8 @@ export function GameGuidePage() {
                       label: t('ai:manual.entry.builder'),
                       onClick: () => {
                         setActionError(null)
-                        setManual({})
+                        if (actionError.manual === 'lore') setLoreManual(true)
+                        else setManual({})
                       },
                     },
                   ]
@@ -1047,6 +1075,28 @@ export function GameGuidePage() {
           onSaved={(updated) => {
             queryClient.setQueryData(['game', slug], updated)
             void queryClient.invalidateQueries({ queryKey: ['games'] })
+            if (manual.fresh) {
+              // A chapter typed in "Tab ergänzen" is saved: the fields are empty again and the new chapter is shown, as after the API way
+              const added = updated.tabs.find((tab) => !game.tabs.some((known) => known.id === tab.id))
+              if (added) selectTab(added.slug)
+              setNewTabTitle('')
+              setNewTabPrompt('')
+              setExpandOneOff(rememberedHow())
+            }
+          }}
+        />
+      )}
+
+      {loreManual && (
+        <ManualLoreDialog
+          slug={game.slug}
+          gameTitle={game.title}
+          replacing={Boolean(loreTab)}
+          onClose={() => setLoreManual(false)}
+          onSaved={(result) => {
+            queryClient.setQueryData(['game', slug], result.game)
+            void queryClient.invalidateQueries({ queryKey: ['games'] })
+            selectTab(LORE_TAB_SLUG)
           }}
         />
       )}
@@ -1181,6 +1231,7 @@ export function GameGuidePage() {
                 </button>
                 <AiRunButton
                   type="submit"
+                  manual
                   tone="pv-btn-emerald"
                   busy={expanding}
                   oneOff={expandOneOff}

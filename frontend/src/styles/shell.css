@@ -1,4 +1,4 @@
-/* The app shell of variant "Kristall" (components/shell): header, tree navigation (icon rail, phone drawer), content area, overlay
+/* The app shell (components/shell): header, the game page's tree navigation (icon rail, flyouts, phone drawer), content area, overlay
    scrollbar thumb, settings page frame. The document scrolls; header and navigation stick. All colours are tokens (index.css). */
 
 :root {
@@ -87,7 +87,87 @@
   gap: 2px;
 }
 
-@media (max-width: 429px) {
+/* The Steam user: left of the tools (so it appearing never moves an icon), avatar + name + library size; avatar only on narrow windows */
+.pv-user-tip {
+  display: flex;
+  flex: none;
+  min-inline-size: 0;
+  margin-inline-end: 0.25rem;
+}
+
+.pv-user {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-block-size: 3rem;
+  max-inline-size: 14rem;
+  padding: 0.25rem 0.5rem;
+  color: var(--text-primary);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+}
+
+a.pv-user:hover .pv-user-name {
+  color: var(--link);
+}
+
+.pv-user:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.pv-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
+.pv-avatar--empty {
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+}
+
+.pv-user-text {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  line-height: 1.25;
+}
+
+.pv-user-name {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pv-user-sub {
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+/* The page the icon opens is marked like an active navigation entry: link colour and a thin straight line */
+.pv-shell-utils .pv-icon-btn[aria-current='page'] {
+  color: var(--link);
+}
+
+.pv-shell-utils .pv-icon-btn[aria-current='page']::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0.75rem;
+  inset-block-end: 0.25rem;
+  block-size: 2px;
+  background: var(--ind);
+}
+
+/* Phones: the wordmark gives way before an icon is cut */
+@media (max-width: 519px) {
   .pv-shell-word {
     display: none;
   }
@@ -120,7 +200,7 @@
   outline: none;
 }
 
-/* ---------- tree navigation ---------- */
+/* ---------- the game's tree navigation ---------- */
 .pv-snav {
   display: flex;
   flex-direction: column;
@@ -144,7 +224,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
 }
 
 .pv-snav[data-rail] .pv-snav-top {
@@ -152,61 +232,23 @@
   padding-inline: 0;
 }
 
-.pv-snav-search {
-  position: relative;
+/* The open game on top of the tree: small cover and title */
+.pv-snav-game {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   flex: 1;
   min-inline-size: 0;
 }
 
-.pv-snav-search-icon {
-  position: absolute;
-  inset-inline-start: 0.625rem;
-  inset-block-start: 50%;
-  translate: 0 -50%;
-  color: var(--text-muted);
-  pointer-events: none;
+.pv-snav-game-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
-.pv-input.pv-snav-search-input {
-  inline-size: 100%;
-  padding-inline: 2.25rem 2.5rem;
-  font-size: 0.875rem;
-  text-overflow: ellipsis;
-}
-
-/* Empty field: no clear button, so the placeholder gets that room */
-.pv-input.pv-snav-search-input:placeholder-shown {
-  padding-inline-end: 0.75rem;
-}
-
-.pv-snav-search-input::-webkit-search-cancel-button {
-  display: none;
-}
-
-.pv-snav-search-clear {
-  position: absolute;
-  inset-inline-end: 0.25rem;
-  inset-block-start: 50%;
-  translate: 0 -50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: 3rem;
-  block-size: 3rem;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-
-.pv-snav-search-clear:hover {
-  color: var(--link);
-}
-
-.pv-snav-search-clear:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: -2px;
+.pv-snav-game-skel {
+  inline-size: 55%;
 }
 
 .pv-snav-list {
@@ -214,14 +256,7 @@
   min-block-size: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 0.25rem 0 0.75rem;
-}
-
-.pv-snav-empty {
-  margin: 0;
-  padding: 0.25rem 1rem 0.5rem;
-  color: var(--text-muted);
-  font-size: 0.875rem;
+  padding: 0 0 0.75rem;
 }
 
 /* One entry: 48 px target, the active one has a thin straight line on the left and the link colour */
@@ -233,11 +268,16 @@
   inline-size: 100%;
   min-block-size: 3rem;
   padding: 0.375rem 1rem;
+  border: 0;
+  background: transparent;
   color: var(--text-primary);
+  font: inherit;
   font-size: 0.9375rem;
   font-weight: 500;
   line-height: 1.25;
+  text-align: start;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .pv-ni:hover {
@@ -249,17 +289,21 @@
   outline-offset: -2px;
 }
 
-.pv-ni[aria-current='page'] {
+.pv-ni[aria-current='page'],
+.pv-ni[data-active='true'],
+.pv-ni[aria-expanded='true'] {
   color: var(--link);
   font-weight: 600;
 }
 
-.pv-ni[aria-current='page']::before {
+.pv-ni[aria-current='page']::before,
+.pv-ni[data-active='true']::before {
   content: '';
   position: absolute;
-  inset-inline-start: 0;
-  inset-block: 0.5rem;
-  inline-size: 3px;
+  /* Inset from the sidebar edge so it never touches the border; 4 px, straight, square ends */
+  inset-inline-start: 0.375rem;
+  inset-block: 0.375rem;
+  inline-size: 4px;
   background: var(--ind);
 }
 
@@ -283,23 +327,13 @@
 
 .pv-ni-cover {
   display: block;
+  flex: none;
   inline-size: 1.5rem;
   block-size: 2.25rem;
   object-fit: cover;
   border-radius: 3px;
   border: 1px solid var(--border-subtle);
   background: var(--bg-elevated);
-}
-
-.pv-ni-chev {
-  display: inline-flex;
-  flex: none;
-  color: var(--text-muted);
-  transition: transform 0.15s ease;
-}
-
-.pv-ni[aria-expanded='true'] .pv-ni-chev {
-  transform: rotate(90deg);
 }
 
 .pv-ni-count {
@@ -320,48 +354,28 @@
   color: var(--accent-crimson);
 }
 
+/* Chapters stand under their group heading, their text in line with the labels of the entries above */
+.pv-ni--chapter {
+  padding-inline-start: 3.25rem;
+}
+
 /* Small-caps group label (same look as .pv-eyebrow) */
 .pv-glabel {
   padding: 0.875rem 1rem 0.25rem;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   line-height: 1.3;
   text-transform: uppercase;
   color: var(--text-muted);
 }
 
 .pv-nsep {
-  margin: 0.5rem 1rem;
+  margin: 0.25rem 1rem 0.5rem;
   border-block-start: 1px solid var(--border-subtle);
 }
 
-/* The open game: indented on a 1 px guide line; the active child's line sits on that guide line */
-/* Beats the reset of .pv-snav ul */
-.pv-snav .pv-subtree {
-  margin: 0 0 0.375rem 1.6875rem;
-  border-inline-start: 1px solid var(--border-subtle);
-}
-
-.pv-subtree .pv-ni {
-  padding-inline-start: 1rem;
-  font-weight: 500;
-}
-
-.pv-subtree .pv-ni[aria-current='page'] {
-  font-weight: 600;
-}
-
-.pv-subtree .pv-ni[aria-current='page']::before {
-  inset-inline-start: -1px;
-  inline-size: 2px;
-}
-
-.pv-subtree .pv-glabel {
-  padding: 0.75rem 1rem 0.125rem;
-}
-
-/* Placeholder rows while a list loads: the same 48 px as a real entry, a faint bar where the label will be */
+/* Placeholder rows while the game loads: the same 48 px as a real entry, a faint bar where the label will be */
 .pv-snav-skel {
   margin: 0;
   padding: 0;
@@ -383,123 +397,169 @@
   border-radius: var(--radius-sm);
 }
 
-.pv-snav .pv-snav-skel.pv-subtree {
-  margin-block-end: 0.375rem;
-}
-
-.pv-snav-foot {
-  flex: none;
-  border-block-start: 1px solid var(--border-subtle);
-}
-
-.pv-snav-inforow {
-  display: flex;
-  align-items: center;
-  padding-inline-end: 0.25rem;
-}
-
-.pv-user-tip {
-  display: flex;
-  flex: 1;
-  min-inline-size: 0;
-}
-
-.pv-user {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex: 1;
-  min-inline-size: 0;
-  min-block-size: 3.5rem;
-  padding: 0.25rem 0.25rem 0.25rem 1rem;
-  color: var(--text-primary);
-  text-decoration: none;
-  border-radius: var(--radius-md);
-}
-
-a.pv-user:hover .pv-user-name {
-  color: var(--link);
-}
-
-.pv-user:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: -2px;
-}
-
-.pv-user--empty {
-  min-block-size: 3.5rem;
-}
-
-.pv-avatar {
-  display: grid;
-  place-items: center;
-  flex: none;
-  inline-size: 2rem;
-  block-size: 2rem;
-  border-radius: var(--radius-sm);
-  object-fit: cover;
-}
-
-.pv-avatar--empty {
-  background: var(--bg-elevated);
-  color: var(--text-muted);
-}
-
-.pv-user-text {
-  display: flex;
-  flex-direction: column;
-  min-inline-size: 0;
-  line-height: 1.25;
-}
-
-.pv-user-name {
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pv-user-sub {
-  color: var(--text-muted);
-  font-size: 0.875rem;
-}
-
 /* ---------- icon rail (desktop, collapsed) ---------- */
 .pv-snav[data-rail] .pv-ni {
   justify-content: center;
   padding-inline: 0;
 }
 
-.pv-snav[data-rail] :is(.pv-ni-label, .pv-ni-chev, .pv-ni-count, .pv-user-text) {
+.pv-snav[data-rail] :is(.pv-ni-label, .pv-ni-count) {
   display: none;
 }
 
-.pv-snav[data-rail] .pv-glabel {
-  block-size: 0;
-  margin: 0.5rem 1rem;
-  padding: 0;
-  overflow: hidden;
-  border-block-start: 1px solid var(--border-subtle);
-  font-size: 0;
-}
-
-.pv-snav[data-rail] .pv-snav-inforow {
-  flex-direction: column;
+.pv-snav[data-rail] .pv-snav-skel > li {
   justify-content: center;
-  padding: 0 0 0.25rem;
+  padding-inline: 0;
 }
 
-.pv-snav[data-rail] .pv-user-tip {
+.pv-snav[data-rail] .pv-ni-skel {
+  inline-size: 1.5rem;
+}
+
+/* ---------- the chapters of one group, beside the rail (components/shell/RailGroupFlyout.tsx) ----------
+   Written in px on purpose, like the language menu: a change of the display size re-flows the page and the flyout keeps its size and place. */
+.pv-flyout {
+  position: fixed;
+  z-index: 85;
+  box-sizing: border-box;
+  inline-size: max-content;
+  min-inline-size: 240px;
+  max-inline-size: min(340px, calc(100vw - 100px));
+  max-block-size: calc(100dvh - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+}
+
+.pv-flyout-head {
+  padding: 8px 12px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  line-height: 1.3;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pv-flyout-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-block-size: 48px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pv-flyout-item:hover {
+  background: var(--bg-elevated);
+  color: var(--link);
+}
+
+.pv-flyout-item:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+/* The open chapter: the selection fill, a thin straight line at the left edge and the bold text, never colour alone */
+.pv-flyout-item[aria-current='page'] {
+  background: var(--sel-bg);
+  color: var(--sel-text);
+  font-weight: 600;
+}
+
+.pv-flyout-item[aria-current='page']::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 6px;
+  inset-block: 8px;
+  inline-size: 4px;
+  background: var(--ind);
+}
+
+/* ---------- overflow menu of the header: the language menu's look, entries with an icon (components/shell/HeaderOverflowMenu.tsx) ---------- */
+.pv-ovfmenu-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
   inline-size: 100%;
-  flex: none;
+  min-block-size: 48px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
 }
 
-.pv-snav[data-rail] .pv-user {
+.pv-ovfmenu-item:hover {
+  background: var(--bg-elevated);
+}
+
+.pv-ovfmenu-item:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.pv-ovfmenu-item[aria-current='page'] {
+  background: var(--sel-bg);
+  color: var(--sel-text);
+  font-weight: 600;
+}
+
+.pv-ovfmenu-item[aria-current='page']::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 6px;
+  inset-block: 8px;
+  inline-size: 4px;
+  background: var(--ind);
+}
+
+.pv-ovfmenu-icon {
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  padding: 0.5rem 0 0;
+  color: var(--text-secondary);
 }
 
-/* ---------- phone: the tree is a drawer under the header ---------- */
+.pv-ovfmenu-avatar {
+  display: block;
+  inline-size: 24px;
+  block-size: 24px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
+.pv-ovfmenu-text {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.pv-ovfmenu-sub {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* ---------- phone: the game's tree is a drawer under the header ---------- */
 .pv-shell[data-drawer] .pv-shell-navwrap {
   position: fixed;
   inset-block: var(--pv-header-h, 3.75rem) 0;
@@ -529,14 +589,13 @@ a.pv-user:hover .pv-user-name {
   background: var(--overlay);
 }
 
-.pv-shell[data-drawer] .pv-shell-main {
+.pv-shell[data-phone] .pv-shell-main {
   padding: 1rem 1rem 2.5rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .pv-shell[data-drawer] .pv-shell-navwrap,
-  .pv-shell[data-drawer] .pv-shell-navwrap[data-open='true'],
-  .pv-ni-chev {
+  .pv-shell[data-drawer] .pv-shell-navwrap[data-open='true'] {
     transition: none;
   }
 }

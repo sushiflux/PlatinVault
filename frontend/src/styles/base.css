@@ -48,10 +48,10 @@
 /* Small-caps section heading ("MEINE SPIELE", "GUIDE-KAPITEL"): the one heading look of groups and panels */
 .pv-eyebrow {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 600;
   line-height: 1.3;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
@@ -181,11 +181,17 @@
   --pv-accent: var(--accent-crimson);
 }
 
-/* Card surface without padding (lists inside a card bring their own rows): same frame as .pv-card */
-.pv-surface {
+/* THE card surface ("ganz leicht"): a card is told from the page only by its lighter fill (--bg-surface on --bg-primary), no visible frame
+   and no shadow. The frame is kept as a TRANSPARENT 1 px border: boxes keep their size, and forced-colors mode (high contrast) still
+   draws the edge. .pv-card = this surface + padding (index.css); .pv-surface = without padding (lists inside a card bring their own
+   rows). Panels with their own look (settings card, pins column, trophy list, empty state) add this class too and keep only their layout.
+   A panel INSIDE a card uses --bg-elevated instead, so it still separates. Floating things (menus, dialogs, pop-ups) keep their frame. */
+.pv-surface,
+.pv-card {
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid transparent;
   border-radius: var(--radius-lg);
+  box-shadow: none;
 }
 
 /* Page heading inside the content area (one per page) and its quieter subtitle */

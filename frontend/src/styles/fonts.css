@@ -1,0 +1,15 @@
+/* Inter, bundled (OFL-1.1, @fontsource/inter): works offline and in the WebView2 of the Windows program and the in-game overlay page.
+   Subsets: latin + latin-ext cover German/English text, greek covers the channel symbols (α β) of the version display;
+   the browser fetches a file only when a glyph needs it. Weights 400/500/600/700 - the UI itself only uses 500/600. */
+@import '@fontsource/inter/latin-400.css';
+@import '@fontsource/inter/latin-500.css';
+@import '@fontsource/inter/latin-600.css';
+@import '@fontsource/inter/latin-700.css';
+@import '@fontsource/inter/latin-ext-400.css';
+@import '@fontsource/inter/latin-ext-500.css';
+@import '@fontsource/inter/latin-ext-600.css';
+@import '@fontsource/inter/latin-ext-700.css';
+@import '@fontsource/inter/greek-400.css';
+@import '@fontsource/inter/greek-500.css';
+@import '@fontsource/inter/greek-600.css';
+@import '@fontsource/inter/greek-700.css';

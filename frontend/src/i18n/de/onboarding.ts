@@ -290,7 +290,7 @@ const onboarding = {
     },
     dashboardCabinet: {
       title: 'Trophäenschrank',
-      text: 'In der Navigation: Alle Spiele, die du komplett auf 100 % hast, stehen hier im Schaukasten – mit Datum und Eckdaten.',
+      text: 'Das Pokal-Symbol oben in der Kopfzeile öffnet den Schaukasten: Alle Spiele, die du komplett auf 100 % hast, stehen darin – mit Datum und Eckdaten.',
     },
     headerLanguage: {
       title: 'Sprache',
@@ -302,12 +302,12 @@ const onboarding = {
     },
     gameNav: {
       title: 'Kapitel',
-      text: 'Das geöffnete Spiel klappt in der Navigation links auf: Live-Trophäen, Statistiken, die Kapitel des Guides und Story & Lore. Deine Häkchen merkt sich PlatinVault.',
+      text: 'Jedes Spiel hat links seine eigene Navigation: Live-Trophäen, Statistiken, die Kapitel des Guides und Story & Lore. Schmal eingeklappt öffnet das Symbol einer Gruppe eine kleine Liste ihrer Kapitel. Deine Häkchen merkt sich PlatinVault.',
     },
-    // The same hint on a phone (under 768 px), where the tree navigation is a drawer opened by the menu button in the header
+    // The same hint on a phone (under 768 px), where the game navigation is a drawer opened by the menu button in the header
     gameNavPhone: {
       title: 'Kapitel',
-      text: 'Dieser Knopf öffnet die Navigation – darin die Kapitel des Guides, Live-Trophäen und Statistiken. Deine Häkchen merkt sich PlatinVault.',
+      text: 'Dieser Knopf öffnet die Navigation dieses Spiels – darin die Kapitel des Guides, Live-Trophäen und Statistiken. Deine Häkchen merkt sich PlatinVault.',
     },
     gameLive: {
       title: 'Live-Trophäen',
@@ -319,7 +319,7 @@ const onboarding = {
     },
     settings: {
       title: 'Einstellungen',
-      text: 'Unten in der Navigation: Hier trägst du Steam-ID und Schlüssel ein, stellst Popups ein und schaltest Funktionen an oder aus.',
+      text: 'Das Zahnrad oben in der Kopfzeile: Hier trägst du Steam-ID und Schlüssel ein, stellst Popups ein und schaltest Funktionen an oder aus.',
     },
   },
 } as const

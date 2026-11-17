@@ -6,8 +6,8 @@ import type { GuideTabDto } from '../../api/types'
 import { LorePanel } from './LorePanel'
 
 vi.mock('../ai/AiRunButton', () => ({
-  AiRunButton: ({ label, onClick }: { label: React.ReactNode; onClick?: () => void }) => (
-    <button type="button" onClick={onClick}>
+  AiRunButton: ({ label, onClick, manual }: { label: React.ReactNode; onClick?: () => void; manual?: boolean }) => (
+    <button type="button" onClick={onClick} data-manual={manual ? 'yes' : undefined}>
       {label}
     </button>
   ),
@@ -78,5 +78,28 @@ describe('LorePanel', () => {
     expect(screen.getByText('Noch keine Story & Lore für dieses Spiel.')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Story & Lore recherchieren' }))
     expect(props.onResearch).toHaveBeenCalled()
+  })
+
+  it('lets both the research and the redo button offer the AI subscription', () => {
+    renderPanel({ tab: undefined })
+    expect(screen.getByRole('button', { name: 'Story & Lore recherchieren' }).getAttribute('data-manual')).toBe('yes')
+    cleanup()
+    renderPanel({ revealed: true })
+    expect(screen.getByRole('button', { name: 'Neu recherchieren' }).getAttribute('data-manual')).toBe('yes')
+  })
+
+  it('starts on "Mein KI-Abo" when that was the way taken last time, otherwise the settings decide', () => {
+    localStorage.setItem('pv_ai_last_way', 'manual')
+    try {
+      const props = renderPanel({ tab: undefined })
+      fireEvent.click(screen.getByRole('button', { name: 'Story & Lore recherchieren' }))
+      expect(props.onResearch).toHaveBeenCalledWith('manual')
+    } finally {
+      localStorage.removeItem('pv_ai_last_way')
+    }
+    cleanup()
+    const props = renderPanel({ tab: undefined })
+    fireEvent.click(screen.getByRole('button', { name: 'Story & Lore recherchieren' }))
+    expect(props.onResearch).toHaveBeenCalledWith(undefined)
   })
 })

@@ -492,23 +492,13 @@ public static class AiActionEndpoints
         }
     }
 
-    private static async Task<object> RunLoreAsync(IServiceProvider sp, string slug, string? providerOverride, AiJobProgress progress, CancellationToken ct)
+    /// <summary>
+    /// Stores a freshly built Story &amp; Lore tab (API research or pasted answer): a new tab, or - when the game has one - the existing tab with the new
+    /// content in place (same id, address and place). Nothing else belongs to it: its tables are never checkable (no ticks) and its translations
+    /// (<c>guide_tab_translations</c>) are compared by a hash of title and sections, so the old ones simply stop counting as current.
+    /// </summary>
+    internal static async Task<(GuideTabEntity Tab, bool Replaced)> SaveLoreTabAsync(CompanionDbContext db, GameEntity game, GuideTabEntity researched, CancellationToken ct)
     {
-        var db = sp.GetRequiredService<CompanionDbContext>();
-        var ai = sp.GetRequiredService<AiGuideGeneratorService>();
-        var translations = sp.GetRequiredService<GuideTranslationService>();
-        var logger = sp.GetRequiredService<ILogger<AiGuideGeneratorService>>();
-
-        var game = await db.Games
-            .Include(g => g.Tabs)
-            .FirstOrDefaultAsync(g => g.Slug == slug, ct)
-            ?? throw new LocalizedException(ServerTexts.GameNotFound(slug));
-
-        ApiEndpoints.AdoptRequestLanguageIfEmpty(game);
-
-        var (researched, usage) = await ai.ResearchLoreTabAsync(game, providerOverride, progress, ct);
-
-        progress.Step("saving");
         // Item ids must be unique per game (checklist rows of the other tabs count); the old lore tab's ids are replaced
         ApiEndpoints.MakeItemIdsUnique([researched], ApiEndpoints.CollectTakenItemIds(game.Tabs.Where(t => t.Slug != LoreTab.Slug)));
 
@@ -526,7 +516,28 @@ public static class AiActionEndpoints
         }
         game.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        logger.LogInformation("Story & Lore für {Title} recherchiert ({Replaced}).", game.Title, existing is null ? "neu" : "ersetzt");
+        return (existing ?? researched, existing is not null);
+    }
+
+    private static async Task<object> RunLoreAsync(IServiceProvider sp, string slug, string? providerOverride, AiJobProgress progress, CancellationToken ct)
+    {
+        var db = sp.GetRequiredService<CompanionDbContext>();
+        var ai = sp.GetRequiredService<AiGuideGeneratorService>();
+        var translations = sp.GetRequiredService<GuideTranslationService>();
+        var logger = sp.GetRequiredService<ILogger<AiGuideGeneratorService>>();
+
+        var game = await db.Games
+            .Include(g => g.Tabs)
+            .FirstOrDefaultAsync(g => g.Slug == slug, ct)
+            ?? throw new LocalizedException(ServerTexts.GameNotFound(slug));
+
+        ApiEndpoints.AdoptRequestLanguageIfEmpty(game);
+
+        var (researched, usage) = await ai.ResearchLoreTabAsync(game, providerOverride, progress, ct);
+
+        progress.Step("saving");
+        var saved = await SaveLoreTabAsync(db, game, researched, ct);
+        logger.LogInformation("Story & Lore für {Title} recherchiert ({Replaced}).", game.Title, saved.Replaced ? "ersetzt" : "neu");
 
         // Reload so the answer is built from what is stored (not from tracked navigation fix-ups)
         db.ChangeTracker.Clear();

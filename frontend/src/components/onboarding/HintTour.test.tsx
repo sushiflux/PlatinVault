@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { applyLanguage } from '../../i18n'
 import { HintTour } from './HintTour'
 
-// The chapter hint points at the open game in the tree navigation on a wide screen and at the menu button of the header on a phone (under
+// The chapter hint points at the navigation of the open game on a wide screen and at the menu button of the header on a phone (under
 // 768 px, where the navigation is a drawer): on a phone its text must not talk about a panel on the left.
 
 function stubMedia(phone: boolean) {
@@ -46,7 +46,7 @@ describe('HintTour, chapter hint', () => {
   it('names the navigation on a wide screen', async () => {
     stubMedia(false)
     renderGameHints()
-    expect((await screen.findByText(/Das geöffnete Spiel klappt in der Navigation links auf/)).textContent).not.toMatch(/Knopf/)
+    expect((await screen.findByText(/Jedes Spiel hat links seine eigene Navigation/)).textContent).not.toMatch(/Knopf/)
   })
 
   it('says it is a button that opens the list on a phone, in German and English', async () => {

@@ -396,6 +396,7 @@ public sealed partial class AiGuideGeneratorService
     internal static string BuildLorePrompt(GameContext context, LorePart part)
     {
         var rules = ResearchRules(context.Language);
+        var styleAndBlocks = LoreStyleAndBlocks(context.Language);
 
         if (context.Language == Lang.English)
         {
@@ -410,19 +411,7 @@ public sealed partial class AiGuideGeneratorService
                 Assignment:
                 {{part.Brief}}
 
-                Writing style: English, simple and clear language, paragraphs of 2–5 sentences, no keyword lists inside running text.
-                Names and terms follow the language rule below.
-
-                Allowed building blocks (only these types):
-                - "story": running text – { "type": "story", "title": "...", "paragraphs": ["Paragraph 1", "Paragraph 2"] }
-                - "cards_grid": cards – { "type": "cards_grid", "columns": 2, "cards": [
-                    { "title": "...", "badgeText": "...", "badgeVariant": "s | a | b | ok", "introText": "...",
-                      "bullets": [ { "icon": "mdi:...", "title": "...", "body": "..." } ] } ] }
-                - "checklist_table": pure reference table with "checkable": false – { "type": "checklist_table", "table": {
-                    "tableId": "short-id", "caption": "...", "checkable": false, "searchPlaceholder": "Search...",
-                    "categoryFilterLabel": "All categories", "categories": ["..."],
-                    "columns": [ { "key": "name", "label": "...", "isRowHeader": true }, { "key": "info", "label": "..." } ],
-                    "rows": [ { "itemId": "unique-id", "filterCategory": "...", "cells": { "name": "...", "info": "..." } } ] } }
+                {{styleAndBlocks}}
 
                 {{rules}}
 
@@ -442,19 +431,7 @@ public sealed partial class AiGuideGeneratorService
             Auftrag:
             {{part.Brief}}
 
-            Schreibstil: Deutsch, einfache und klare Sprache, Absätze mit 2–5 Sätzen, keine Stichwortlisten im Fließtext.
-            Namen und Begriffe nach der Sprachregel unten.
-
-            Erlaubte Bausteine (nur diese Typen):
-            - "story": Fließtext – { "type": "story", "title": "...", "paragraphs": ["Absatz 1", "Absatz 2"] }
-            - "cards_grid": Karten – { "type": "cards_grid", "columns": 2, "cards": [
-                { "title": "...", "badgeText": "...", "badgeVariant": "s | a | b | ok", "introText": "...",
-                  "bullets": [ { "icon": "mdi:...", "title": "...", "body": "..." } ] } ] }
-            - "checklist_table": reine Nachschlagetabelle mit "checkable": false – { "type": "checklist_table", "table": {
-                "tableId": "kurze-id", "caption": "...", "checkable": false, "searchPlaceholder": "Suchen...",
-                "categoryFilterLabel": "Alle Kategorien", "categories": ["..."],
-                "columns": [ { "key": "name", "label": "...", "isRowHeader": true }, { "key": "info", "label": "..." } ],
-                "rows": [ { "itemId": "eindeutige-id", "filterCategory": "...", "cells": { "name": "...", "info": "..." } } ] } }
+            {{styleAndBlocks}}
 
             {{rules}}
 
@@ -462,6 +439,42 @@ public sealed partial class AiGuideGeneratorService
             { "sections": [ ... ] }
             """;
     }
+
+    /// <summary>
+    /// The writing style and the allowed building blocks of a Story &amp; Lore part - ONE text for the API prompt of a part and the manual prompt for all
+    /// parts, so both ask for the same sections.
+    /// </summary>
+    internal static string LoreStyleAndBlocks(string language) => language == Lang.English
+        ? """
+          Writing style: English, simple and clear language, paragraphs of 2–5 sentences, no keyword lists inside running text.
+          Names and terms follow the language rule below.
+
+          Allowed building blocks (only these types):
+          - "story": running text – { "type": "story", "title": "...", "paragraphs": ["Paragraph 1", "Paragraph 2"] }
+          - "cards_grid": cards – { "type": "cards_grid", "columns": 2, "cards": [
+              { "title": "...", "badgeText": "...", "badgeVariant": "s | a | b | ok", "introText": "...",
+                "bullets": [ { "icon": "mdi:...", "title": "...", "body": "..." } ] } ] }
+          - "checklist_table": pure reference table with "checkable": false – { "type": "checklist_table", "table": {
+              "tableId": "short-id", "caption": "...", "checkable": false, "searchPlaceholder": "Search...",
+              "categoryFilterLabel": "All categories", "categories": ["..."],
+              "columns": [ { "key": "name", "label": "...", "isRowHeader": true }, { "key": "info", "label": "..." } ],
+              "rows": [ { "itemId": "unique-id", "filterCategory": "...", "cells": { "name": "...", "info": "..." } } ] } }
+          """
+        : """
+          Schreibstil: Deutsch, einfache und klare Sprache, Absätze mit 2–5 Sätzen, keine Stichwortlisten im Fließtext.
+          Namen und Begriffe nach der Sprachregel unten.
+
+          Erlaubte Bausteine (nur diese Typen):
+          - "story": Fließtext – { "type": "story", "title": "...", "paragraphs": ["Absatz 1", "Absatz 2"] }
+          - "cards_grid": Karten – { "type": "cards_grid", "columns": 2, "cards": [
+              { "title": "...", "badgeText": "...", "badgeVariant": "s | a | b | ok", "introText": "...",
+                "bullets": [ { "icon": "mdi:...", "title": "...", "body": "..." } ] } ] }
+          - "checklist_table": reine Nachschlagetabelle mit "checkable": false – { "type": "checklist_table", "table": {
+              "tableId": "kurze-id", "caption": "...", "checkable": false, "searchPlaceholder": "Suchen...",
+              "categoryFilterLabel": "Alle Kategorien", "categories": ["..."],
+              "columns": [ { "key": "name", "label": "...", "isRowHeader": true }, { "key": "info", "label": "..." } ],
+              "rows": [ { "itemId": "eindeutige-id", "filterCategory": "...", "cells": { "name": "...", "info": "..." } } ] } }
+          """;
 
     internal static string BuildAchievementTipsPrompt(GameContext context)
     {

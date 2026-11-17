@@ -48,6 +48,14 @@ function OverlayLayer({ channel }: { channel: WebViewChannel | null }) {
   const reported = useRef<OverlayState | null>(null)
   const received = useRef(0)
 
+  // The page is warm long before the first popup: load the Inter faces now, so no popup swaps fonts while it is on screen over a game
+  // (document.fonts does not exist in every environment, e.g. jsdom)
+  useEffect(() => {
+    const fonts = typeof document === 'undefined' ? undefined : document.fonts
+    if (!fonts?.load) return
+    for (const weight of [400, 500, 600]) void fonts.load(`${weight} 1em Inter`).catch(() => undefined)
+  }, [])
+
   useEffect(() => {
     soundEngine.setEnabled(false)
     const report = (next: OverlayState) => {

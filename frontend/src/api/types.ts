@@ -195,9 +195,10 @@ export interface GameSummaryDto {
   reviewScoreDesc: string | null
   reviewPercent: number | null
   releaseDate: string | null
-  // From IGDB (only with Twitch credentials): average hours to 100 % completion, critics rating 0-100
+  // From IGDB (only with Twitch credentials): average hours to 100 % completion, critics' rating 0-100 and the players' rating 0-100
   completionHours: number | null
   igdbRating: number | null
+  igdbUserRating: number | null
   // Values of the dashboard's sort orders from the library data (null/missing = unknown): release date, size on disk of the installed
   // game, and the Metacritic score / share of positive reviews (the card's own value, else the library's)
   releaseAt?: string | null
@@ -479,6 +480,9 @@ export interface SteamOwnedGameDto {
   installSizeBytes?: number | null
   sortMetacritic?: number | null
   sortReviewPercent?: number | null
+  // IGDB ratings 0-100 (critics / players); present only if the server sends them for the library (needs Twitch credentials)
+  igdbRating?: number | null
+  igdbUserRating?: number | null
 }
 
 // Trophy figures of the whole Steam library (dashboard); scanning while the background evaluation runs
@@ -1217,6 +1221,10 @@ export interface IgdbGameDto {
   aggregatedRatingCount: number | null
   totalRating: number | null
   totalRatingCount: number | null
+  // IGDB users' own average (IGDB "rating") and its count; totalRating mixes users and critics.
+  // Optional: an IGDB cache entry written before this field existed answers without it.
+  rating?: number | null
+  ratingCount?: number | null
   genres: string[]
   themes: string[]
   gameModes: string[]

@@ -449,5 +449,5 @@ public sealed class LibrarySortDataTests : IDisposable
 
     private static GameSummaryDto Card(int? appId, int? metacritic, int? reviewPercent) => new(
         Guid.NewGuid(), "slug", "Title", "", appId, "", "", "emerald", "", "", "", "", "de", [], 0, 0, 0, 0, 0, 0, 0, null, null, true,
-        null, null, metacritic, null, reviewPercent, null, null, null, DateTimeOffset.UtcNow);
+        null, null, metacritic, null, reviewPercent, null, null, null, null, DateTimeOffset.UtcNow);
 }

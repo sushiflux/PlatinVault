@@ -84,7 +84,7 @@ export function resetSeenHints(): void {
   window.dispatchEvent(new Event(HINTS_RESET_EVENT))
 }
 
-/** The visible control of a hint: the first element with its data-hint that has a size and is not hidden (the tree navigation and the
+/** The visible control of a hint: the first element with its data-hint that has a size and is not hidden (the game navigation and the
  *  phone menu button may both carry one; only one of them is shown at a time). */
 export function findHintElement(target: string): HTMLElement | null {
   for (const element of document.querySelectorAll<HTMLElement>(`[data-hint="${target}"]`)) {

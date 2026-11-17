@@ -18,7 +18,7 @@ interface ManualGuideDialogProps {
   gameTitle: string
   // The language the guide is written in (the standard topics are listed in it)
   language: string
-  // One chapter (a failed one, researched again) instead of the whole guide
+  // One chapter (a failed one researched again, or a new one the player named) instead of the whole guide
   chapter?: ManualChapterSeed
   // Several given chapters (the failed ones of the guide, each with its tabId) instead of the whole guide: no blueprint step
   chapters?: ManualChapterSeed[]
@@ -45,7 +45,8 @@ interface Start {
 function startState(slug: string, scope: BatchScope, seeds: ManualChapterSeed[] | undefined): Start {
   const stored = readStoredBatch(slug, scope)
   if (seeds && seeds.length > 0) {
-    const defs = seeds.map((seed, index) => ({ key: seed.tabId ?? `seed-${index}`, seed }))
+    // A chapter without a tabId is a new one the player typed: its key carries what he typed, so another new chapter never inherits the stored answer
+    const defs = seeds.map((seed, index) => ({ key: seed.tabId ?? `new:${index}:${seed.title}|${seed.focus}`, seed }))
     const same = stored !== null && rowsSignature(stored.rows) === rowsSignature(defs)
     if (!same) clearStoredBatch(slug, scope)
     const keys = assignBatchKeys(defs.map((def) => def.key), same ? stored.keys : {})
@@ -76,7 +77,8 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, chapters
   const given = chapter ? [chapter] : chapters && chapters.length > 0 ? chapters : undefined
   const fixed = given !== undefined
   const single = chapter !== undefined
-  const scope: BatchScope = !fixed ? 'plan' : chapter?.tabId ? `chapter:${chapter.tabId}` : 'failed'
+  // A new chapter (no tabId) has its own scope so it never collides with the stored state of the failed-chapter list
+  const scope: BatchScope = !fixed ? 'plan' : chapter?.tabId ? `chapter:${chapter.tabId}` : chapter ? 'new' : 'failed'
   const [start] = useState(() => startState(slug, scope, given))
   const [step, setStep] = useState<'plan' | 'chapters'>(start.step)
   const [plan, setPlan] = useState<GuidePlanDto | null>(null)

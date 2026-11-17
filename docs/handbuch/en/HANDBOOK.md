@@ -3,7 +3,7 @@ title: PlatinVault
 subtitle: Handbook
 tagline: Live trophies for your Steam games and 100 % guides in one place – how to set up PlatinVault and use it every day.
 version: v2026.11.22
-date: 2026-11-03
+date: 2026-11-17
 status: Release
 copyright: © 2026 SushiFlux
 lang: en
@@ -117,7 +117,7 @@ PlatinVault was tested with Docker on Linux; we have not tried it on individual 
 
 # 4 First steps
 
-Open the **settings** with the entry **Settings** at the bottom of the navigation on the left (on every page; 5.1). The settings are a page of their own with tabs; the chosen tab is part of the address, so a reload brings you back to the same place. Settings that are
+Open the **settings** with the **gear** in the header (on every page; 5.1). The settings are a page of their own with tabs; the chosen tab is part of the address, so a reload brings you back to the same place. Settings that are
 simply on or off have a switch: **green with a check mark** means on, **red with a cross** means off; click it (or the text
 next to it) or flip it with the keyboard (space bar). Save with **Save settings**.
 
@@ -178,6 +178,13 @@ guide carry on quietly with the next AI in an emergency (and note it in the log)
 for example **Create chapter now · Claude ▾**. Clicking the part with the arrow lets you pick another AI for this action; your
 setting stays unchanged. If an action fails, the notice offers **"Try again with Claude"** as soon as another AI has a key.
 
+**Your AI subscription as a choice:** for actions you can also do without an API key, with your own AI subscription (**Complete the guide**,
+**Add chapter**, **Story & Lore**), there is one more entry, **My AI plan** ("Copy the prompt, paste the answer – no API key"). It opens the
+way by hand, where you copy the prompt into the chat of your subscription and paste the answer back (6.2 and 6.5). You find it in the choice window
+and in the arrow menu of the button. If you have not saved a key yet, this way opens right away. The wand **Complete the guide** **always** asks
+"Which AI do you want to use?" first, in every mode; your default AI is preselected there.
+If you last chose **My AI plan** in one of these three actions, PlatinVault remembers it: next time it is preselected (marked "Last used") and the buttons of **Add chapter** and **Story & Lore** start with it. If you then choose an AI with a key there, the memory is gone; cancelling changes nothing. Your default AI stays unchanged.
+
 ## 4.4 Research building blocks
 
 Further down in the tab you find the **research building blocks**. No free text is needed: you click ready-made blocks that
@@ -202,30 +209,9 @@ chapters are suggested; other fitting topics are listed under **More topics**, n
 
 # 5 Navigation and overview
 
-## 5.1 Navigation and header
+## 5.1 Header and navigation
 
-Every page has the same frame: a **header** at the top, a **navigation** on the left and, next to it, the content of the page.
-
-### The navigation on the left
-
-The navigation is a tree. From top to bottom:
-
-- **Search:** the field "Search game or chapter …" filters the tree while you type. Esc clears it.
-- **Overview:** your favourites as tiles (5.2).
-- **All games:** your whole Steam library (5.2). The entry appears once PlatinVault can read your library.
-- **My games:** your favourites (the games with a star), each with its cover. A click opens the game page. The open game unfolds below its name:
-  **Live trophies**, **Statistics**, the guide's **chapters** under their group headings (a guide with only one group has no headings) and
-  **Story & Lore**. A number next to a chapter shows how much of it you have ticked off; a warning symbol means that researching the chapter failed (6.2). The page you are on is highlighted.
-- **Trophy cabinet:** below a fine dividing line, opens the cabinet with all your games at 100 % (5.5).
-- **Settings:** at the very bottom (chapter 4).
-- **User row** at the bottom: your Steam account with avatar, name and – with a Steam key – the number of your games. A click opens your Steam profile.
-- **Info symbol** (an "i" in a circle) next to the user row: opens the page **About PlatinVault** (see below).
-
-**Narrow navigation.** The button at the top of the navigation (sidebar symbol) collapses it to a narrow rail with symbols only, so the content has more room. In the rail a hint on hover names each entry; the unfolded game with its chapters is not shown there. A second click unfolds it again. PlatinVault remembers your choice in this browser or program.
-
-**On a phone.** Below about 768 pixels of width the navigation is hidden. A **menu button** at the left of the header opens it as a drawer that slides in over the page from the left. It closes as soon as you choose an entry, with the button **Close navigation**, with Esc, or with a tap next to the drawer.
-
-**About PlatinVault.** This page shows the name, the running **version** (a click opens **Version & updates**, where you check for updates by hand, see chapter 12), **News** (opens **What’s new in this version**), "Made with ♥", the **licence** with the **Licences** button and the link to the **source code**. The app shows no copyright notice.
+Every page has the same **header** at the top. A **navigation** on the left exists only on the page of a game. There is no footer anywhere.
 
 ### The header
 
@@ -233,21 +219,48 @@ On the left the PlatinVault logo with the name; a click leads to the overview. O
 
 | Icon | Action |
 |---|---|
-| Arrow up with a green dot | **Update available** – only visible when there is a new version (chapter 12). The other icons do not move because of it. |
+| Profile picture with name | **Steam user** - your linked Steam account with profile picture, name and - with a Steam key - the number of your games. A click opens your Steam profile. Without a linked account the entry is missing. |
+| Arrow up with a green dot | **Update available** - only visible when there is a new version (chapter 12). It is always the first icon of the tool row, so the other icons do not move because of it. |
+| Trophy | **Trophy cabinet** - opens the cabinet with all your games at 100 % (5.5). |
 | Aa | **Display size** – opens a small window: with − and + or directly through the steps 80 / 90 / 100 / 110 / 125 % fonts and boxes become smaller or larger while the page width stays the same; "Reset to 100 %" restores the standard size. The window stays where it is while the page changes, so you can click several times in a row. When the size is not 100 %, a small badge on the icon shows the value. Handy on 4K monitors with high Windows scaling. |
 | Globe with code (DE / EN) | **Language** – opens a small list of all languages, each with its flag and its own name ("Deutsch", "English"); the one in use is highlighted and marked with a check. A click switches the whole app **at once**, without reloading, and remembers your choice. The language applies to the interface, date and number formats, the Steam achievement texts (Steam's own texts in that language) and the handbook, which opens in the chosen language. With the keyboard: arrow keys choose, Enter confirms, Esc closes. If saving fails, a message below the header names the reason and the previous language stays. |
-| Sun/moon | Colour scheme: switches between light and dark (you make the first choice on the welcome screen) |
-| Book | **Handbook** – this handbook right inside the app |
-| ? | Help: shows the hints for the current page again |
+| Sun/moon | **Colour scheme:** switches between light and dark (you make the first choice on the welcome screen) |
+| Gear | **Settings** - opens the settings (chapter 4) on the tab you used last. |
+| ? | **Help:** shows the hints for the current page again |
+| Book | **Handbook** - this handbook right inside the app |
+| "i" in a circle | **About PlatinVault** - opens the page with version, news and licences (see below). |
 
 Hover over an icon and a short hint explains what it does. The tools of a single page (for example **Import guide** on the overview or the actions of a game) are part of that page's content, not of the header.
+
+**Narrow windows.** When the window gets narrower, the less frequently used tools move into one shared menu with three dots (**More**), so every icon stays usable:
+
+- **Below 880 pixels of width:** display size, handbook and About PlatinVault. The Steam user then shows only the profile picture; name and number of games are in the hint.
+- **Below 640 pixels of width (phone):** additionally colour scheme, help and the Steam user.
+
+### The navigation on the game page
+
+Only on the page of a game is there a navigation on the left - it belongs to that one game. The overview, **All games**, the settings and **About PlatinVault** have no navigation; you move on from there with the header. From top to bottom:
+
+- **Game head:** the cover and the title of the game.
+- **Overview:** leads back to your favourites (5.2).
+- **Live trophies** and **Statistics** (only for games with Steam achievements).
+- **Chapters:** the chapters of the guide under their group headings (if a guide has only one group there are no headings). Next to a chapter a number shows how much of it you have ticked; a warning symbol means the research of that chapter failed (6.2).
+- **Story & Lore** (6.5).
+
+The page you are on is highlighted.
+
+**Narrow navigation.** The button at the top of the navigation (sidebar symbol) collapses it to a narrow rail with symbols only, so the content has more room. The rail has one symbol per chapter group. A click on it (or Enter or the space bar) opens a small list of that group's chapters beside it; the arrow keys choose a chapter, Esc closes the list. A hint on hover names every symbol. A second click on the button unfolds the navigation again. PlatinVault remembers your choice in this browser or program.
+
+**On a phone.** Below about 768 pixels of width the navigation is hidden. A **menu button** at the left of the header opens it as a drawer that slides in over the page from the left. It closes as soon as you choose an entry, with the button **Close navigation**, with Esc, or with a tap next to the drawer.
+
+**About PlatinVault.** This page shows the name, the running **version** (a click opens **Version & updates**: check for updates by hand there, see chapter 12), **What's new** (opens **What's new in this version**), "Made with ♥", the **licence** with the button **Licences** and the link to the **source code**. There is no copyright notice in the app.
 
 ## 5.2 Favourites and all games
 
 The page **Overview** and the page **All games** look the same and have the same tools. At the top is the page title, with the button **Import guide** next to it (load a guide file from another PlatinVault installation; it creates the game together with its guide). Below come the figures as small badges, then in one row the search, the switch between favourites and all games, and the slider for the tile size.
 
 - **Overview** shows your **favourites**: the games you marked with a **star**, as tiles.
-- **All games** shows your complete Steam library (needs the Steam key). You reach it through the navigation on the left or through the switch in the tool panel.
+- **All games** shows your complete Steam library (needs the Steam key). You reach it through the switch in the tool panel.
 - The figures (games, trophies, platinum games) always refer to the chosen page. For "All games" PlatinVault evaluates your library in the background; while that runs it says
   "Library is being evaluated".
 - With the **Tile size** slider you choose between Large, Compact, Very compact, List and Text only.
@@ -273,7 +286,7 @@ open the right place directly:
 1. **Connect your Steam account:** "Sign in with Steam" (or in the settings, Steam tab). Afterwards you land on the Steam tab of the settings again.
 2. **Enter your Steam Web API key:** you get the key from Steam for free (the link is right there), and you enter it in the
    settings, Steam tab. Without it PlatinVault cannot read your library.
-3. **Bring a game onto the dashboard with the star:** "Open all games" (also in the navigation on the left), sort by "last played", "most playtime" or name and tap
+3. **Bring a game onto the dashboard with the star:** "Open all games", sort by "last played", "most playtime" or name and tap
    the **star** on a game. The game appears as a tile right away – without AI costs. You create its guide afterwards on the game
    page (6.2) whenever you like.
 
@@ -285,11 +298,11 @@ The tour explains the same three steps; its checklist shows account and key with
 
 ## 5.4 What a tile shows
 
-Cover, name (up to two lines), below it the genres from Steam, your **trophies** with a progress bar and – in the sizes large and
-compact – fixed lines: playtime, last played, rating (Steam reviews, Metacritic), release date, **size** and, for the favourites, the estimated time for 100 %.
+From top to bottom a tile consists of: **cover**, **rating strip**, **bar with Play, Favourite and Twitch**, **name** (up to two lines) with the genres from Steam and – in the
+sizes large and compact – fixed lines: playtime, last played, release date, **size** and, for the favourites, the estimated time for 100 %. At the very bottom is your **trophy line** with a progress bar.
 Everything you can sort by (5.2) is also on the tile: the completion in the trophy bar, the other values in these lines. Every tile shows the same lines
 with the same symbols, so that all tiles look alike: where a value is missing (not played yet, no data from Steam, no estimate), a grey dash "–" stands there,
-and a hint on hover names the reason. Games with every trophy carry the **platinum** mark.
+and a hint on hover names the reason. You recognise games with every trophy by the **Platinum** plaque at the top right of the cover, next to which a short sparkle flashes now and then, and by the trophy row at the bottom of the tile: the platinum symbol (a trophy with a sparkle) stands there instead of the golden cup, and the line below it becomes a thick golden line with a slowly travelling shimmer of light and small twinkling stars (in the light colour scheme almost white stars with a dark-gold glow). With "reduce animations" switched on in Windows the line stays calm and does not move.
 
 - **Size:** if the game is installed, the real **size on disk** stands there (written the way Steam writes it, for example "48.3 GB"). If it is not
   installed, you see the **install size** with "approx.": PlatinVault estimates it from the data Steam itself holds about the game (Windows, main
@@ -298,24 +311,30 @@ and a hint on hover names the reason. Games with every trophy carry the **platin
 - In the smaller sizes: **Very compact** shows title, trophies and the size on the cover; **List** and **Text only** show trophies and size in the row
   (List also last played and the bar); the other values are in the sizes Large and Compact.
 
-Below the cover there is a slim bar of equally wide fields without divider lines: **Play**, **Favourite** and **Twitch** (only the
+**The rating strip** below the cover shows up to four ratings with a symbol and a number: **Steam reviews** (share of positive reviews in percent),
+**Metacritic**, **IGDB critics** and **IGDB players** (each from 0 to 100). On hover, the hint says where the number comes from. A rating that a game does not have is
+hidden; the remaining ones share the width of the strip. If a game has none at all, it says "No ratings yet". The two IGDB values only appear
+if you entered the credentials of your own Twitch application (see below and 6.4). The strip always has the same height, so the tiles of a row look alike.
+
+Directly below the rating strip there is a slim bar of equally wide fields without divider lines: **Play**, **Favourite** and **Twitch** (only the
 symbol on narrow tiles, a hint names the field). **Play** (green) starts the game (6.1) – also for the games under "All games".
 That field is only there while starting can work, that is when the bridge is connected or PlatinVault runs directly on the
 gaming PC; otherwise the other two share the bar. If you entered the credentials of your own Twitch application in the settings under **Twitch & IGDB** and
-"Live streams" is on, **Twitch** shows a small number in its corner: how many streams are live for this game right now ("12"; from 300 on it says "300+").
-At 0 there is no number, and the hint says that nobody is streaming it. The numbers arrive in the background and refresh every few minutes; without
+"Live streams" is on, **Twitch** shows a number right in the field, next to the Twitch symbol: how many streams are live for this game right now ("12"; from 300 on it says "300+").
+On normally sized tiles only the symbol and the number are shown; the word "Twitch" only appears in very wide fields. At 0 there is no number, and the hint says that nobody is streaming it. The field always keeps the room for the number free, so nothing shifts. The numbers arrive in the background and refresh every few minutes; without
 credentials the field stays as it was.
 
 ## 5.5 Trophy cabinet
 
 The trophy cabinet shows every game you brought to **100 %**, like a display case: behind glass doors the games stand on shelves with their covers. Under each cover are the name and the date of the platinum trophy, preceded by a small golden trophy; a short golden line marks the place on the shelf.
 
-- **Opening:** choose the entry **Trophy cabinet** in the navigation on the left. The cabinet is a page of the app: the navigation stays visible, and you leave the cabinet by choosing another entry. The cabinet loads first (a thin blue line), then the glass doors slide aside and the lights come on.
-- **Tool row:** at the top of the cabinet, side by side, are the size, the lighting, the switch **Show empty places** and the door button. PlatinVault remembers your choices.
+- **Opening:** click the **trophy** in the header (**Trophy cabinet**). The cabinet lies over the current page as a full-screen view; the page below stays as it was. It is part of the page address, so a reload keeps it open and the browser's Back button closes it. The cabinet loads first (a thin blue line), then the glass doors slide aside and the lights come on.
+- **Tool row:** at the top of the cabinet are the three figures (games at platinum, trophies, playtime), the size slider, the **View** button, the door button and the button that closes the cabinet. PlatinVault remembers your choices in this browser or program.
   - **Size:** the slider makes the games smaller (more per shelf) or larger. It has five steps from **Very small** to **Very large**; **Small** is preselected. In the smallest step only the name is shown under the cover, from **Small** on the date as well; the time of day is added in the largest step. In every step a hint on hover shows name, date and time.
-  - **Lighting:** a connected bar with two parts. **Spots** (preselected) hangs one lamp above every game, with a soft cone of light. **LED** runs one continuous strip above every shelf; the whole row switches on together, the shelves one after the other from top to bottom.
-  - **Show empty places:** when the switch is on, the places that are still free hold thinly outlined placeholders, and (with Spots) a lamp burns above them as well. So the cabinet looks like a display case waiting to be filled. Placeholders are decoration only (not clickable) and never push your games around. Off (the default), the free places stay empty and dark.
+  - **View - lighting:** the **View** button opens a small window. There you choose the lighting. **Spots** (preselected) hangs one lamp above every game, with a soft cone of light. **LED strip** runs one continuous strip above every shelf; the whole row switches on together, the shelves one after the other from top to bottom.
+  - **View - show empty places:** in the same window. When the switch is on, the places that are still free hold thinly outlined placeholders, and (with Spots) a lamp burns above them as well. So the cabinet looks like a display case waiting to be filled. Placeholders are decoration only (not clickable) and never push your games around. Off (the default), the free places stay empty and dark.
   - **Doors:** the door button closes and opens the glass doors again; when closing, the lights go out first. A click on the closed glass opens them.
+  - **Closing:** the button at the far right (X) or Esc closes the cabinet; if a details panel is open, Esc closes that first.
 - **New games:** if you brought a game to 100 % since your last visit, it does not simply appear: its place stays free first (a glassy card), then the game is set onto the shelf with a small flash. Several new games take their turn one after the other (faster when there are many, the whole show stays around five seconds). A golden **New** marks them until you leave the cabinet. After that they count as shown; on the same data (Windows program and browser) nothing is played twice. The first time you ever open the cabinet, games that are already at 100 % are put in without any animation. With "reduce animations" switched on in Windows the games just fade in calmly. Screen readers get one announcement, "New in the cabinet: …".
 - **Many games:** if not all games fit at once, the shelves scroll sideways together - in every size. Scroll with the mouse wheel, swipe on the touchpad or touchscreen, step from game to game with the left and right arrow keys, or click the **arrow buttons** at the left and right edge (each click moves about one page). A dark fade at the edge shows where there is more; a dimmed arrow means there is nothing more in that direction. When everything fits at once, the arrows and fades are not shown.
 - **Details:** a click on a game shows trophies, days to platinum, playtime and the rarest trophy – from the right in landscape, from the bottom in portrait. A second click on the game, the close button or Esc closes the details again.
@@ -326,14 +345,14 @@ The trophy cabinet shows every game you brought to **100 %**, like a display cas
 
 At the top are the cover, the title, the **Play** button and a calm row with the game's tools (icons with a hint on hover: complete guide, add chapter, export, Twitch, print/PDF, reset progress). Below it a line shows your trophy progress with the tiers. The content of the chosen page follows.
 
-Which page of the game you see is chosen in the **navigation on the left**: unfold the game there under **My games**. It has these pages:
+Which page of the game you see is chosen in the **navigation on the left** (it exists only on the game page, 5.1). It has these entries:
 
 - **Live trophies** – the game's Steam achievements (6.3),
 - **Statistics** (6.4),
 - the guide's **chapters** (6.2), sorted under small headings such as **Getting started**, **Story & world**, **Combat & tactics** or **Progression & unlocks** (a guide with only one group has no headings). A number next to each chapter shows how much you have ticked off,
 - **Story & Lore** (6.5).
 
-The chosen page is highlighted and stored in the address, so a reload or a bookmark brings you back to exactly that page. 5.1 explains the navigation itself, its narrow form and the phone drawer. Version, licences and "Made with ♥" are no longer on the game page; you find them on the page **About PlatinVault** (info symbol at the bottom of the navigation).
+The chosen page is highlighted and stored in the address, so a reload or a bookmark brings you back to exactly that page. 5.1 explains the navigation itself, its narrow form and the phone drawer. Version, licences and "Made with ♥" are not on the game page; you find them on the page **About PlatinVault** (info symbol in the header).
 
 **Start a game.** The Play button starts the game in Steam without walking over to the gaming PC. On the game page the same spot reads **Game running** (a pulsing green dot, not clickable) while exactly this game is running, and goes back to **Play** afterwards. The button (and the "game is
 running" hint) only shows while the bridge is connected or PlatinVault runs directly on the gaming PC, and it disappears by
@@ -350,14 +369,14 @@ from your collection and your Steam library.
 
 - **Chapters with checklists:** tick off what you have done; PlatinVault saves it immediately. The number next to each
   chapter shows how much of it is done. Ticks are your personal list – a game's progress follows its trophies.
-- **Complete the guide:** the **guide builder** analyses the game and suggests suitable chapters (recommended ones are
+- **Complete the guide:** the wand first asks "Which AI do you want to use?" (4.3); there you choose an AI with a key or **My AI plan**. With an AI, the **guide builder** opens. It analyses the game and suggests suitable chapters (recommended ones are
   preselected; the top says how many there are and which scope that matches). You choose with a click, the AI researches only the
   missing chapters. The **Typical** tag on a topic means: this often belongs to this kind of game – it is only suggested if the analysis
   confirms that the game has it.
 - **Guide with your AI subscription (no API key):** you copy a ready-made prompt into the chat of your subscription (for example ChatGPT, Claude or
   Gemini) and paste the answer back here – PlatinVault never accesses your subscription and sends nothing to an AI. This is allowed because you
   are the one sitting in the chat. You find it in the guide builder (**With your AI subscription (no API key)**), in the notice of a failed AI
-  action and on the note of a chapter that could not be researched; without a stored key, **Complete the guide** opens it directly.
+  action on the note of a chapter that could not be researched, in the choice window of **Complete the guide** (**My AI plan**) and in the arrow menu of **Add chapter**; without a stored key, **Complete the guide** opens it directly.
   - *Step 1, chapter list:* **Copy prompt**, paste it into the chat (ideally with web search switched on) and paste the answer into the field
     below – also with text before it or inside a json code block, or load it as a file. You see the suggested chapters as in the builder and
     tick what you want. If you do not want a blueprint prompt, choose the topics yourself.
@@ -451,7 +470,7 @@ from your collection and your Steam library.
 - **Language and titles:** a guide is written entirely in its own language – every sentence in its own words, not taken over from foreign-language
   sources. Names appear as they are called in that language's version of the game; the English original name appears at most once per chapter,
   in brackets at the first occurrence. Chapter titles are in the language of the guide only, without a translation in brackets.
-- **Add a tab:** let the AI research a single chapter on a topic – pick a topic or describe it yourself. Which AI does it is shown on the button (see 4.3).
+- **Add chapter:** let the AI research a single chapter on a topic – pick a topic or describe it yourself. Which AI does it is shown on the button (see 4.3); in the arrow menu of the button you can also choose **My AI plan**.
 - **Export / PDF:** share the guide as a file (without your progress) or print it.
 - **Reset progress:** removes all ticks of this game.
 - **Guide in your language:** A guide is written in the language it was researched in. If you open it in the other language of the app,
@@ -574,7 +593,7 @@ for reading them off and for screen readers. Hover over a chart (or select it wi
   lowest to its highest value. Gaps in the line mean PlatinVault was not running at that time.
 - **Reviews on Steam:** A split bar shows how many reviews are positive and how many negative (blue and orange instead of
   green and red, so they stay distinguishable with colour blindness).
-- **Ratings compared** *(only with IGDB)*: IGDB critics, IGDB players, Steam reviews and Metacritic on one common scale from
+- **Ratings compared** *(only with IGDB)*: IGDB critics (ratings of the specialist press), IGDB players (average of the IGDB users), Steam reviews and Metacritic on one common scale from
   0 to 100, with the number of votes. It appears as soon as at least two sources are available.
 
 ### Series *(only with IGDB)*
@@ -605,6 +624,18 @@ latest update and the newest news and patches from Steam.
 
 On request the AI researches a separate tab with story, characters, world and background. It **contains spoilers** and
 stays covered until you open it on purpose; PlatinVault asks per game.
+
+**Story & Lore with your AI subscription (no API key):** on the button for researching (and for researching again), choose **My AI plan** in the arrow menu.
+PlatinVault sends nothing to an AI.
+
+1. Copy the prompt and paste it into the chat of your subscription. It contains all four parts of the story.
+2. Paste the answer of the chat into the field below – also with text before it or inside a json code block, or load it as a file.
+3. Check the **preview**: it names every recognised part with the number of its sections.
+4. Click **Save Story & Lore**.
+
+If parts are missing because the answer was too long for one message, a warning appears. The chat then writes "STILL OPEN: …" at the end (in a German prompt: "NOCH OFFEN"). Write "continue" in
+the same chat and paste the new answer as well. You can also save with the parts you have. If the game already has Story & Lore, saving replaces the tab completely;
+a note and a confirmation show you that beforehand. This cannot be undone.
 
 # 7 Trophy popups and sounds
 
@@ -728,7 +759,7 @@ bridge. If `status` does not help, please tell us what it and the log show.
   to others over a network must offer the source code under the same licence. There is nothing to accept to use it. The
   source code is at `github.com/sushiflux/PlatinVault`.
 - **Licences:** You can read PlatinVault's licence (with the **Source code** button) and the licence texts of the bundled open-source components in the
-  app: open the **info symbol** at the bottom of the navigation (page **About PlatinVault**) and click **Licences**; or open the settings, tab **System**, and click **Open licences**. The same texts are in the bridge ZIP, in the bridge's program folder and in the Windows program's folder (`docs`) as `LICENSE` and
+  app: open the **info symbol** in the header (page **About PlatinVault**) and click **Licences**; or open the settings, tab **System**, and click **Open licences**. The same texts are in the bridge ZIP, in the bridge's program folder and in the Windows program's folder (`docs`) as `LICENSE` and
   `THIRD-PARTY-NOTICES.md`; any text editor opens them.
 
 # 10 Troubleshooting
@@ -960,10 +991,10 @@ If a newer version exists for your installation, a small **update icon** (arrow 
 itself. It shows the changes of the version that is running now, in the language of the app. A click on **Close**, the **Esc** key or a
 click beside the window closes it; it does not come back for that version. It does not appear after a fresh installation, in a local development
 version, or while the introduction tour of the first start is still running. You can read the text again at any time: a click on the version
-number on the page **About PlatinVault** (info symbol at the bottom of the navigation) opens **Version & updates**, where
+number on the page **About PlatinVault** (info symbol in the header) opens **Version & updates**, where
 **What’s new in this version** is. The texts are part of the program, so you need no internet connection for them.
 
-How often PlatinVault looks for updates by itself is set in this section under **Look for updates**: **At every start**, **Every 4 hours**, **Daily** (default), **Weekly**, **Monthly** or **Never (by hand only)**. It applies to every platform, including the Windows program. You check by hand with **Check for updates now** here - or via the version number on the page **About PlatinVault** (info symbol at the bottom of the navigation): a click opens **Version & updates** with the button **Check for updates**, the time of the last check and the result. If a new version is found, the update icon appears in the header at once.
+How often PlatinVault looks for updates by itself is set in this section under **Look for updates**: **At every start**, **Every 4 hours**, **Daily** (default), **Weekly**, **Monthly** or **Never (by hand only)**. It applies to every platform, including the Windows program. You check by hand with **Check for updates now** here - or via the version number on the page **About PlatinVault** (info symbol in the header): a click opens **Version & updates** with the button **Check for updates**, the time of the last check and the result. If a new version is found, the update icon appears in the header at once.
 
 ## 12.2 Windows program
 

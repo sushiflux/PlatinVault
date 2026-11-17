@@ -2,22 +2,25 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, use
 import { CopyErrorButton } from '../ui/CopyErrorButton'
 import { errorCodeOf } from '../../utils/errorReport'
 import type { AnimationEvent, CSSProperties, KeyboardEvent } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import type { MotionProps } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import {
+  IconAdjustmentsHorizontal,
   IconAlertTriangle,
   IconArrowRight,
   IconCalendarEvent,
+  IconCheck,
   IconChevronLeft,
   IconChevronRight,
   IconClock,
   IconDeviceGamepad2,
-  IconDiamond,
   IconDoor,
   IconDoorEnter,
+  IconDiamond,
   IconHourglassHigh,
   IconTrophy,
   IconUsers,
@@ -29,23 +32,12 @@ import { addCabinetPresented, fetchCabinetPresented } from '../../api/client'
 import type { ShowcaseGameDto } from '../../api/types'
 import { useFormat } from '../../i18n/format'
 import { TierTrophy } from '../platinum/TierTrophy'
-import { IconButton, iconButtonClass } from '../ui/IconButton'
 import { Switch } from '../ui/Switch'
+import { TierIcon } from '../ui/TierIcon'
 import { Tooltip } from '../ui/Tooltip'
 import { isFullyVisible, pageScrollTarget, revealScrollTarget, sameEdges, wallEdges, wallLayout, type WallEdges } from './wall'
 import { announcedNames, landingSchedule, needsBaseline, pendingGames, type LandingSchedule } from './presentation'
 import { preloadCovers, showcaseQueryOptions } from './showcaseQuery'
-import {
-  LIGHTING_MODES,
-  SIZE_STEPS,
-  loadLighting,
-  loadShowEmpty,
-  loadSize,
-  saveLighting,
-  saveShowEmpty,
-  saveSize,
-  type Lighting,
-} from './preferences'
 import './cabinet.css'
 
 const EASE = [0.22, 1, 0.36, 1] as const
@@ -53,8 +45,56 @@ const EASE = [0.22, 1, 0.36, 1] as const
 // The server-side memory of which completed games the cabinet has already presented
 const PRESENTED_KEY = ['showcase', 'presented'] as const
 
-// The doors: closed -> opening -> open -> closing -> closed
 type DoorPhase = 'closed' | 'opening' | 'open' | 'closing'
+
+// Five shelf sizes (the matching --cab-* values live in cabinet.css, data-size 0..4); left = smaller = more per shelf.
+// The names are texts: size.step.<key> in the "cabinet" namespace.
+const SIZE_STEPS = ['veryS', 'small', 'medium', 'large', 'veryL'] as const
+const DEFAULT_SIZE = 1
+const SIZE_KEY = 'pv_cabinet_size'
+// The lighting of the cabinet. A new mode is one entry here plus one block of CSS under .pv-cab[data-lighting='<id>']
+// (cabinet.css, section "Lighting modes"); nothing else in the code needs to know about it.
+const LIGHTING_KEY = 'pv_cabinet_lighting'
+// The name and hint of a mode are texts: view.<id>.name / view.<id>.hint in the "cabinet" namespace.
+const LIGHTING_MODES = ['spots', 'led'] as const
+type Lighting = (typeof LIGHTING_MODES)[number]
+const DEFAULT_LIGHTING: Lighting = 'spots'
+
+function loadLighting(): Lighting {
+  try {
+    const value = localStorage.getItem(LIGHTING_KEY)
+    return LIGHTING_MODES.find((mode) => mode === value) ?? DEFAULT_LIGHTING
+  } catch {
+    return DEFAULT_LIGHTING
+  }
+}
+
+function saveLighting(value: Lighting) {
+  try {
+    localStorage.setItem(LIGHTING_KEY, value)
+  } catch {
+    // Storage unavailable (private mode): the choice just is not remembered
+  }
+}
+
+// Optional view: show the still empty places of the shelves as quiet placeholders (default off)
+const EMPTY_KEY = 'pv_cabinet_empty_slots'
+
+function loadShowEmpty(): boolean {
+  try {
+    return localStorage.getItem(EMPTY_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function saveShowEmpty(value: boolean) {
+  try {
+    localStorage.setItem(EMPTY_KEY, value ? '1' : '0')
+  } catch {
+    // Storage unavailable (private mode): the choice just is not remembered
+  }
+}
 
 const MAX_PER_SHELF = 80
 // A cabinet always shows at least this many lit shelves, filled or not
@@ -63,6 +103,23 @@ const MIN_SHELVES = 3
 // ---------------------------------------------------------------------------------------------------------------
 // Small helpers
 // ---------------------------------------------------------------------------------------------------------------
+
+function loadSize(): number {
+  try {
+    const value = Number(localStorage.getItem(SIZE_KEY))
+    return localStorage.getItem(SIZE_KEY) !== null && Number.isInteger(value) && value >= 0 && value <= 4 ? value : DEFAULT_SIZE
+  } catch {
+    return DEFAULT_SIZE
+  }
+}
+
+function saveSize(value: number) {
+  try {
+    localStorage.setItem(SIZE_KEY, String(value))
+  } catch {
+    // Storage unavailable (private mode) - the size just isn't remembered
+  }
+}
 
 // Portrait: the details come up from the bottom (sheet); landscape: they slide in from the right
 function usePortrait(): boolean {
@@ -227,27 +284,6 @@ function LandingBurst() {
   )
 }
 
-// The lamps do not start in lockstep: a few fixed, uneven delays (0 - 0.24 s), one after the other by slot
-function lampDelay(index: number): string {
-  return `${(((index * 7) % 5) * 0.06).toFixed(2)}s`
-}
-
-// LED strip: ONE light per shelf. The shelves come on one after the other from top to bottom (0.1 s apart), but inside a
-// shelf the strip and every cover under it get exactly the same delay, so the whole row comes on as one.
-function rowDelay(row: number): string {
-  return `${(row * 0.1).toFixed(2)}s`
-}
-
-// Light timing of one place: uneven lamp delays for the spots, the shelf delay (the same for the whole row) for the LED strip
-function slotLightStyle(index: number, row: number): CSSProperties {
-  return { '--ld': lampDelay(index), '--rd': rowDelay(row) } as CSSProperties
-}
-
-// The continuous LED strip along the top of one shelf (the CSS shows it only in LED mode)
-function LedStrip({ row }: { row: number }) {
-  return <div className="pv-cab-led" aria-hidden="true" style={{ '--rd': rowDelay(row) } as CSSProperties} />
-}
-
 function Slot({
   game,
   selected,
@@ -275,7 +311,7 @@ function Slot({
   return (
     <motion.button
       type="button"
-      className="pv-cab-slot"
+      className={row === 0 ? 'pv-cab-slot pv-cab-slot--top' : 'pv-cab-slot'}
       layout="position"
       data-app-id={game.appId}
       data-new={isNew ? '' : undefined}
@@ -288,104 +324,119 @@ function Slot({
       <span className="pv-cab-lamp" aria-hidden="true" />
       <span className="pv-cab-beam" aria-hidden="true" />
       <motion.span className="pv-cab-stage" {...introStage(intro, reduce)}>
-        <span className="pv-cab-poster" aria-hidden="true">
-          <Cover game={game} />
-          {isNew && (
-            <motion.span
-              className="pv-cab-new"
-              initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={reduce ? { duration: 0.4, delay: 0.3 } : { type: 'spring', stiffness: 320, damping: 16, delay: 0.95 }}
-            >
-              {t('presented.badge')}
-            </motion.span>
-          )}
+        <span className="pv-cab-figure" aria-hidden="true">
+          <span className="pv-cab-poster">
+            <Cover game={game} />
+            <span className="pv-cab-shade" aria-hidden="true" />
+            {isNew && (
+              <motion.span
+                className="pv-cab-new"
+                initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={reduce ? { duration: 0.4, delay: 0.3 } : { type: 'spring', stiffness: 320, damping: 16, delay: 0.95 }}
+              >
+                {t('presented.badge')}
+              </motion.span>
+            )}
+          </span>
+          <span className="pv-cab-stand" />
         </span>
         {intro === 'land' && !reduce && <LandingBurst />}
       </motion.span>
       <motion.span className="pv-cab-front" {...introPlaque(intro, reduce)}>
         <span className="pv-cab-plaque">
+          <span className="pv-cab-plaque-sheen" aria-hidden="true" />
           <PlaqueName name={game.name} fit={fit} stamp={parts ? t('plaque.stamp', { date: parts[0], time: parts[1] }) : ''} />
-          {/* Always rendered so every caption keeps its height; empty when the time is unknown */}
+          {/* Always rendered so every plaque keeps its height; empty when the time is unknown */}
           <span className="pv-cab-plaque-date">
             {parts && (
               <>
-                <IconTrophy size="1em" aria-hidden="true" />
                 <span>{parts[0]}</span>
-                <span className="pv-cab-sep" aria-hidden="true">
-                  {' · '}
-                </span>
-                <span className="pv-cab-time">{parts[1]}</span>
+                <span className="pv-cab-sep"> · </span>
+                <span>{parts[1]}</span>
               </>
             )}
           </span>
+          <span className="pv-cab-shade" aria-hidden="true" />
         </span>
       </motion.span>
     </motion.button>
   )
 }
 
-// One cell of the shelf. A game that is about to move in gets a cell with two layers: the free place (it fades out once the game
-// has landed) and the game itself on top - so the place is reserved from the first frame and nothing else on the shelf ever shifts.
+// One cell of the shelf. A game that is about to move in gets a cell with two layers: the glass card of its free place (it
+// fades out once the game has landed) and the game itself on top - so the place is reserved from the first frame and nothing
+// else on the shelf ever shifts.
 function SlotCell(props: Parameters<typeof Slot>[0]) {
-  const { intro } = props
+  const { intro, index, row } = props
   if (!intro) return <Slot {...props} />
   return (
-    <div className="pv-cab-slot-wrap">
+    <div className={row === 0 ? 'pv-cab-slot-wrap pv-cab-slot-wrap--top' : 'pv-cab-slot-wrap'}>
       <motion.div
         className="pv-cab-reserved"
         initial={false}
         animate={{ opacity: intro === 'wait' ? 1 : 0 }}
         transition={{ duration: props.reduce ? 0.4 : 0.7, delay: intro === 'wait' ? 0 : 0.2 }}
       >
-        <EmptySlot reserved />
+        <EmptySlot index={index} row={row} reserved />
       </motion.div>
       <Slot {...props} />
     </div>
   )
 }
 
-// A still empty place on the shelf: a thin outlined placeholder (CSS shows it only in the "show empty places" view, or while a game
-// is about to move into it)
-function EmptySlot({ reserved = false, index = 0, row = 0 }: { reserved?: boolean; index?: number; row?: number }) {
+// The continuous LED strip along the top of one shelf compartment (the CSS shows it only in LED mode)
+function LedStrip({ row }: { row: number }) {
+  return <div className="pv-cab-led" aria-hidden="true" style={{ '--rd': rowDelay(row) } as CSSProperties} />
+}
+
+// The lamps do not start in lockstep: a few fixed, uneven delays (0 - 0.24 s), one after the other by slot
+function lampDelay(index: number): string {
+  return `${(((index * 7) % 5) * 0.06).toFixed(2)}s`
+}
+
+// LED strip: ONE light per shelf. The shelves come on one after the other from top to bottom (0.1 s apart), but inside a
+// shelf the strip and every cover under it get exactly the same delay, so the whole row flickers as one.
+function rowDelay(row: number): string {
+  return `${(row * 0.1).toFixed(2)}s`
+}
+
+// Light timing of one place: uneven lamp delays for the spots, the shelf delay (the same for the whole row) for the LED strip
+function slotLightStyle(index: number, row: number): CSSProperties {
+  return { '--ld': lampDelay(index), '--rd': rowDelay(row) } as CSSProperties
+}
+
+// A lit, still empty place on the shelf
+function EmptySlot({ index, row, reserved = false }: { index: number; row: number; reserved?: boolean }) {
   return (
     <div
-      className={`pv-cab-slot pv-cab-slot--empty${reserved ? ' pv-cab-slot--reserved' : ''}`}
+      className={`pv-cab-slot pv-cab-slot--empty${row === 0 ? ' pv-cab-slot--top' : ''}${reserved ? ' pv-cab-slot--reserved' : ''}`}
       aria-hidden="true"
       style={slotLightStyle(index, row)}
     >
-      {/* A place that is about to receive a game (reserved) has no lamp of its own: the lamp of the game lights it */}
-      {!reserved && <span className="pv-cab-lamp pv-cab-ghost" />}
-      {!reserved && <span className="pv-cab-beam pv-cab-ghost" />}
-      <span className="pv-cab-stage pv-cab-ghost">
-        <span className="pv-cab-poster pv-cab-poster--ghost" />
+      <span className="pv-cab-lamp" />
+      <span className="pv-cab-beam" />
+      <span className="pv-cab-stage">
+        {/* Placeholder (CSS shows it only in the "show empty places" view): a quiet glass card, no fake game */}
+        <span className="pv-cab-figure pv-cab-ghost">
+          <span className="pv-cab-poster pv-cab-poster--ghost">
+            <span className="pv-cab-ghost-glass" />
+            <span className="pv-cab-shade" />
+          </span>
+          <span className="pv-cab-stand" />
+        </span>
       </span>
       <span className="pv-cab-front pv-cab-ghost">
-        {/* The same reserved lines as a real caption, so a placeholder is exactly as big as a filled place */}
-        <span className="pv-cab-plaque">
+        <span className="pv-cab-plaque pv-cab-plaque--ghost">
+          <span className="pv-cab-plaque-sheen" />
+          {/* The same two reserved lines as a real plaque, so a placeholder plate is exactly as big as a filled one */}
           <span className="pv-cab-plaque-name">&nbsp;</span>
           <span className="pv-cab-plaque-date" />
+          <span className="pv-cab-plaque-line" />
+          <span className="pv-cab-shade" />
         </span>
       </span>
     </div>
-  )
-}
-
-// Discreet line drawing behind the wall: a few faint circles and lines, irregular, never mirrored, never in front of anything
-function CabinetDecoration() {
-  return (
-    <svg className="pv-cab-deco" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <g>
-        <circle cx="1010" cy="120" r="150" />
-        <circle cx="1010" cy="120" r="210" />
-        <circle cx="1010" cy="120" r="280" />
-        <path d="M0 560 L1200 430" />
-        <path d="M0 600 L1200 470" />
-        <path d="M-20 90 L220 -20" />
-        <circle cx="130" cy="640" r="90" />
-        <path d="M60 700 L420 520" />
-      </g>
-    </svg>
   )
 }
 
@@ -393,7 +444,7 @@ function CabinetDecoration() {
 // Information card of the selected game (only what is known is shown)
 // ---------------------------------------------------------------------------------------------------------------
 
-function InfoCard({ game }: { game: ShowcaseGameDto }) {
+function InfoCard({ game, onNavigate }: { game: ShowcaseGameDto; onNavigate: () => void }) {
   const { t } = useTranslation('cabinet')
   const fmt = useFormat()
   const text = useCabinetText()
@@ -477,7 +528,7 @@ function InfoCard({ game }: { game: ShowcaseGameDto }) {
       </ul>
 
       {game.existingSlug && (
-        <Link to={`/games/${game.existingSlug}`} className="pv-btn pv-btn-primary pv-cab-link">
+        <Link to={`/games/${game.existingSlug}`} className="pv-cab-link" onClick={onNavigate}>
           <span>{t('info.toGame')}</span>
           <IconArrowRight size="1.1em" aria-hidden="true" />
         </Link>
@@ -487,19 +538,120 @@ function InfoCard({ game }: { game: ShowcaseGameDto }) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
+// View choice in the header: an icon button with our own tooltip that opens a compact popover with the lighting
+// (segmented choice) and the switch "Show empty places"
+// ---------------------------------------------------------------------------------------------------------------
+
+function ViewMenu({
+  lighting,
+  onLighting,
+  showEmpty,
+  onShowEmpty,
+}: {
+  lighting: Lighting
+  onLighting: (value: Lighting) => void
+  showEmpty: boolean
+  onShowEmpty: (value: boolean) => void
+}) {
+  const { t } = useTranslation('cabinet')
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    // Esc closes the choice first (capture phase on the window, so the cabinet's own Esc handling does not also fire)
+    const onKeyDown = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      e.stopImmediatePropagation()
+      setOpen(false)
+      buttonRef.current?.focus()
+    }
+    const onPointerDown = (e: PointerEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown, true)
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown, true)
+      document.removeEventListener('pointerdown', onPointerDown)
+    }
+  }, [open])
+
+  return (
+    <div ref={wrapRef} className="pv-cab-light">
+      <Tooltip label={t('view.label')} description={t('view.description')} side="bottom" className="inline-flex">
+        <button
+          ref={buttonRef}
+          type="button"
+          className="pv-cab-hbtn"
+          aria-label={t('view.label')}
+          aria-haspopup="true"
+          aria-expanded={open}
+          aria-pressed={open}
+          onClick={() => setOpen((current) => !current)}
+        >
+          <IconAdjustmentsHorizontal size="1.25em" aria-hidden="true" />
+        </button>
+      </Tooltip>
+      {open && (
+        <div className="pv-cab-light-menu">
+          <div className="pv-cab-light-group" role="radiogroup" aria-label={t('view.lighting')}>
+            <span className="pv-cab-light-title" aria-hidden="true">
+              {t('view.lighting')}
+            </span>
+            {LIGHTING_MODES.map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                role="radio"
+                aria-checked={lighting === mode}
+                className="pv-cab-light-option"
+                onClick={() => onLighting(mode)}
+              >
+                <span className="pv-cab-light-check" aria-hidden="true">
+                  {lighting === mode && <IconCheck size="1em" stroke={3} />}
+                </span>
+                <span className="pv-cab-light-text">
+                  <span className="pv-cab-light-name">{t(`view.${mode}.name`)}</span>
+                  <span className="pv-cab-light-hint">{t(`view.${mode}.hint`)}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+          <div className="pv-cab-light-rule" aria-hidden="true" />
+          <Switch checked={showEmpty} onChange={onShowEmpty} className="pv-cab-light-option">
+            <span className="pv-cab-light-text">
+              <span className="pv-cab-light-name">{t('view.showEmpty.name')}</span>
+              <span className="pv-cab-light-hint">{t('view.showEmpty.hint')}</span>
+            </span>
+          </Switch>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------------------------------------------
 // The cabinet
 // ---------------------------------------------------------------------------------------------------------------
 
-function CabinetDialog() {
+function CabinetDialog({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation('cabinet')
   const { t: tc } = useTranslation('common')
   const fmt = useFormat()
   const text = useCabinetText()
   const reduce = useReducedMotion() ?? false
   const portrait = usePortrait()
-  const dialogRef = useRef<HTMLElement>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const closeRef = useRef(onClose)
   const selectedRef = useRef<number | null>(null)
+  // True while the housekeeping effect below is active (React StrictMode runs its cleanup once right after mounting)
+  const aliveRef = useRef(false)
+  // The element that had focus before the dialog opened (captured while rendering: the autofocused close button takes
+  // focus during the commit, before any effect runs)
+  const [opener] = useState(() => (document.activeElement instanceof HTMLElement ? document.activeElement : null))
   const [selectedId, setSelectedId] = useState<number | null>(null)
   // How many places of the chosen size are visible side by side (more games than that: the wall scrolls sideways)
   const [perShelf, setPerShelf] = useState(5)
@@ -516,11 +668,9 @@ function CabinetDialog() {
   // The cabinet starts CLOSED and dark; the doors only open once the data is in and the covers are decoded
   const [phase, setPhase] = useState<DoorPhase>('closed')
   const [wantOpen, setWantOpen] = useState(true)
-  // The lights: off while the doors are closed or opening, flickering on once they are open (spots: two short flashes, under 3
-  // in any second; LED: one gentle rise), then steady. Reduced motion: no flicker, the lights just fade.
+  // The lights: off while the doors are closed or opening, flickering on once they are open (under 3 flashes in any second,
+  // lamps and cones only), then steady. Reduced motion: no flicker, the lights just fade.
   const [lights, setLights] = useState<'off' | 'flicker' | 'on'>('off')
-  // The wall is settled a moment after it shows: only then do new games move into their places
-  const [settled, setSettled] = useState(false)
 
   const queryClient = useQueryClient()
   // A little fresher than for the prefetch: a game finished a minute ago should be in the cabinet when it is opened
@@ -543,11 +693,6 @@ function CabinetDialog() {
       cancelled = true
     }
   }, [data, ready, fmt.locale, presentedPending])
-  // The wall is built in several steps while it is still hidden (first without games, then with all of them), and the browser may
-  // re-snap the scroll position on the way: it always shows from its start
-  useLayoutEffect(() => {
-    if (ready && scrollRef.current) scrollRef.current.scrollLeft = 0
-  }, [ready])
   // A calm loader, but only if it takes a moment: an instant opening (second time, after the prefetch) never shows it
   const [showLoader, setShowLoader] = useState(false)
   useEffect(() => {
@@ -558,6 +703,10 @@ function CabinetDialog() {
     const timer = window.setTimeout(() => setShowLoader(true), 180)
     return () => window.clearTimeout(timer)
   }, [ready, error])
+
+  useEffect(() => {
+    closeRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
     selectedRef.current = selectedId
@@ -614,26 +763,26 @@ function CabinetDialog() {
     else if (phase === 'opening' || lights === 'flicker') skipOpening()
   }
 
-  // Data loaded and covers decoded: the wall shows (fades in), a moment later it is settled and new games may move in
+  // Modal housekeeping: page behind does not scroll, Esc closes the panel first and the cabinet second, focus comes
+  // back to the button that opened it
   useEffect(() => {
-    if (!ready || settled) return
-    if (reduce) {
-      const frame = requestAnimationFrame(() => setSettled(true))
-      return () => cancelAnimationFrame(frame)
-    }
-    const timer = window.setTimeout(() => setSettled(true), 420)
-    return () => window.clearTimeout(timer)
-  }, [ready, settled, reduce])
-
-  // Esc closes the details panel (the cabinet itself is a page, left through the navigation)
-  useEffect(() => {
+    // The page behind stands still by itself: index.css locks it while a .pv-cab is in the DOM (the gutter stays, nothing shifts)
+    aliveRef.current = true
     const onKeyDown = (e: globalThis.KeyboardEvent) => {
-      if (e.key !== 'Escape' || selectedRef.current === null) return
-      closePanel()
+      if (e.key !== 'Escape') return
+      if (selectedRef.current !== null) closePanel()
+      else closeRef.current()
     }
     document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [closePanel])
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      aliveRef.current = false
+      // Only a real unmount hands the focus back (a StrictMode re-run sets aliveRef again before this timer fires)
+      setTimeout(() => {
+        if (!aliveRef.current) opener?.focus()
+      }, 0)
+    }
+  }, [opener, closePanel])
 
   // The wall's arrows and edge fades follow what the scroller shows (read in the next frame, once per frame at most)
   const updateEdges = useCallback(() => {
@@ -665,12 +814,11 @@ function CabinetDialog() {
       // The slot width of the chosen size comes from the stylesheet (--cab-slot, in em)
       const slotEm = parseFloat(style.getPropertyValue('--cab-slot')) || 7.2
       const widthEm = element.clientWidth / fontPx
-      // One shelf = space above + poster (2:3) + caption, the same sum the stylesheet uses (--cab-shelf-min)
+      // One shelf = lamp zone + poster (2:3) + stand + front, the same sum the stylesheet uses (--cab-shelf-min)
       const posterEm = parseFloat(style.getPropertyValue('--cab-poster')) || 5.4
       const frontEm = parseFloat(style.getPropertyValue('--cab-front')) || 4.4
-      const topEm = parseFloat(style.getPropertyValue('--cab-shelf-top')) || 1.2
-      const shelfPx = (posterEm * 1.5 + topEm + frontEm) * fontPx
-      setFitRows(Math.max(1, Math.floor(element.clientHeight / shelfPx)))
+      const shelfPx = (posterEm * 1.5 + 2.4 + frontEm) * fontPx
+      setFitRows(Math.max(2, Math.floor(element.clientHeight / shelfPx)))
       setPerShelf(Math.min(MAX_PER_SHELF, Math.max(3, Math.floor(widthEm / slotEm))))
       updateEdges()
     }
@@ -767,7 +915,7 @@ function CabinetDialog() {
         queueRef.current.push(id)
       }
     }
-    canRunRef.current = settled && lights === 'on' && wantOpen
+    canRunRef.current = lights === 'on' && wantOpen
     if (!canRunRef.current || stepTimerRef.current !== null || queueRef.current.length === 0) return
 
     if (!scheduleRef.current) {
@@ -782,7 +930,7 @@ function CabinetDialog() {
     const schedule = scheduleRef.current
     const step = () => {
       stepTimerRef.current = null
-      if (!canRunRef.current) return // left the page or the doors are closing: the rest waits for the next time the cabinet is lit
+      if (!canRunRef.current) return // the doors are closing: the rest waits for the next time the cabinet is lit
       const nextId = queueRef.current[0]
       if (nextId === undefined) {
         scheduleRef.current = null
@@ -807,7 +955,7 @@ function CabinetDialog() {
       stepTimerRef.current = window.setTimeout(step, schedule.stepMs)
     }
     stepTimerRef.current = window.setTimeout(step, schedule.firstDelayMs)
-  }, [pendingKey, settled, lights, wantOpen, reduce, pending, pendingIds, flushPresented, revealPlace, fmt.locale, t])
+  }, [pendingKey, lights, wantOpen, reduce, pending, pendingIds, flushPresented, revealPlace, fmt.locale, t])
 
   // Leaving the cabinet: no further game starts; what already landed is saved, what was still on its way is shown again next time
   useEffect(
@@ -833,7 +981,7 @@ function CabinetDialog() {
   // The wall got longer or shorter, or the size changed: arrows and fades follow
   useLayoutEffect(() => {
     updateEdges()
-  }, [columns, perShelf, size, gridRows, ready, updateEdges])
+  }, [columns, perShelf, size, gridRows, phase, updateEdges])
 
   const scrollPage = useCallback(
     (direction: -1 | 1) => {
@@ -891,63 +1039,112 @@ function CabinetDialog() {
   const selected = games.find((g) => g.appId === selectedId) ?? null
   const toggle = useCallback((appId: number) => setSelectedId((current) => (current === appId ? null : appId)), [])
 
+  // Keep Tab inside the cabinet
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'Tab') return
+    const nodes = [
+      ...(dialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])') ?? []),
+    ].filter((node) => node.offsetParent !== null)
+    const first = nodes[0]
+    const last = nodes[nodes.length - 1]
+    if (!first || !last) return
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault()
+      last.focus()
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault()
+      first.focus()
+    }
+  }
+
   const gameCount = games.length
   // A game moves in (wait -> land) once its turn has come; every other game is simply there
   const pendingSet = useMemo(() => new Set(pendingIds), [pendingIds])
   const introOf = (appId: number): 'wait' | 'land' | undefined => (started.has(appId) ? 'land' : pendingSet.has(appId) ? 'wait' : undefined)
 
   return (
-    <section
+    <motion.div
       ref={dialogRef}
       className="pv-cab"
+      role="dialog"
+      aria-modal="true"
       aria-labelledby="pv-cab-title"
       data-size={size}
       data-lighting={lighting}
       data-empty={showEmpty ? 'on' : 'off'}
-      data-ready={ready ? 'on' : 'off'}
       data-lights={lights}
       data-doors={phase}
+      onKeyDown={onKeyDown}
+      initial={reduce ? { opacity: 0 } : { scale: 1.025 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 1.015 }}
+      transition={{ duration: reduce ? 0.12 : 0.45, ease: EASE }}
     >
-      <CabinetDecoration />
+      {/* The page never shines through: the cabinet is opaque at once, a dark veil fades away on top of it */}
+      {!reduce && (
+        <motion.div
+          className="pv-cab-veil"
+          aria-hidden="true"
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 0 }}
+          transition={{ duration: 0.45, ease: 'easeOut' }}
+        />
+      )}
       {/* One polite announcement of what is new in the cabinet (the places themselves are silent while they fill) */}
       <p className="sr-only" role="status" aria-live="polite">
         {announcement}
       </p>
       <header className="pv-cab-head">
         <div className="pv-cab-title">
-          <h1 id="pv-cab-title">{t('title')}</h1>
-          <p>{t('subtitle')}</p>
+          <TierIcon tier="Platinum" size="2em" className="pv-cab-logo" />
+          <div style={{ minWidth: 0 }}>
+            <h2 id="pv-cab-title">{t('title')}</h2>
+            <p>{t('subtitle')}</p>
+          </div>
         </div>
 
         {data && gameCount > 0 && (
           <div className="pv-cab-stats">
-            <Tooltip label={t('stats.games', { count: gameCount })} description={t('stats.gamesHint')} side="bottom">
-              <span className="pv-cab-stat" tabIndex={0} aria-label={t('stats.games', { count: gameCount })}>
-                <b>{fmt.number(gameCount)}</b>
-                <span>{t('figure.games', { count: gameCount })}</span>
+            <Tooltip
+              label={t('stats.games', { count: gameCount })}
+              description={t('stats.gamesHint')}
+              side="bottom"
+            >
+              <span className="pv-cab-stat" data-kind="platinum" tabIndex={0} aria-label={t('stats.games', { count: gameCount })}>
+                <TierIcon tier="Platinum" size="1.15em" />
+                <span className="pv-cab-stat-n">{fmt.number(gameCount)}</span>
+                <span className="pv-cab-stat-l">{t('stats.gamesLabel')}</span>
               </span>
             </Tooltip>
             <Tooltip label={t('stats.trophies', { count: data.totalTrophies })} description={t('stats.trophiesHint')} side="bottom">
-              <span className="pv-cab-stat" tabIndex={0} aria-label={t('stats.trophiesTotal', { count: data.totalTrophies })}>
-                <b>{fmt.number(data.totalTrophies)}</b>
-                <span>{t('figure.trophies', { count: data.totalTrophies })}</span>
+              <span className="pv-cab-stat" data-kind="trophies" tabIndex={0} aria-label={t('stats.trophiesTotal', { count: data.totalTrophies })}>
+                <IconTrophy size="1.15em" aria-hidden="true" />
+                <span className="pv-cab-stat-n">{fmt.number(data.totalTrophies)}</span>
+                <span className="pv-cab-stat-l">{t('stats.trophiesLabel')}</span>
               </span>
             </Tooltip>
             {data.totalPlaytimeHours != null && (
               <Tooltip label={t('stats.playtime', { time: text.hours(data.totalPlaytimeHours) })} description={t('stats.playtimeHint')} side="bottom">
-                <span className="pv-cab-stat" tabIndex={0} aria-label={t('stats.playtimeTotal', { time: text.hours(data.totalPlaytimeHours) })}>
-                  <b>{text.hours(data.totalPlaytimeHours)}</b>
-                  <span>{t('figure.playtime')}</span>
+                <span className="pv-cab-stat" data-kind="time" tabIndex={0} aria-label={t('stats.playtimeTotal', { time: text.hours(data.totalPlaytimeHours) })}>
+                  <IconClock size="1.15em" aria-hidden="true" />
+                  <span className="pv-cab-stat-n">{fmt.number(data.totalPlaytimeHours, data.totalPlaytimeHours < 10 ? 1 : 0)}</span>
+                  <span className="pv-cab-stat-l">{t('stats.hoursLabel')}</span>
                 </span>
               </Tooltip>
             )}
           </div>
         )}
 
-        <div className="pv-cab-tools">
-          <Tooltip label={t('size.label')} description={t('size.description')} side="bottom" className="pv-cab-size-wrap">
+        {/* One connected thin bar: shelf size | view | doors; the close button stands next to it */}
+        <div className="pv-cab-bar">
+          <Tooltip
+            label={t('size.label')}
+            description={t('size.description')}
+            side="bottom"
+            className="pv-cab-size-wrap"
+          >
             <span className="pv-cab-size">
-              <IconZoomOut size={18} aria-hidden="true" />
+              <IconZoomOut size="1.15em" aria-hidden="true" />
               <input
                 type="range"
                 min={0}
@@ -962,44 +1159,25 @@ function CabinetDialog() {
                 aria-label={t('size.label')}
                 aria-valuetext={t(`size.step.${SIZE_STEPS[size] ?? 'small'}`)}
                 className="pv-range"
+                style={{ '--p': `${(size / (SIZE_STEPS.length - 1)) * 100}%` } as CSSProperties}
               />
-              <IconZoomIn size={18} aria-hidden="true" />
+              <IconZoomIn size="1.15em" aria-hidden="true" />
             </span>
           </Tooltip>
 
-          {/* One connected bar: the lighting of the cabinet (remembered per browser) */}
-          <div className="pv-segmented pv-cab-lighting" role="group" aria-label={t('view.lighting')}>
-            {LIGHTING_MODES.map((mode) => (
-              <Tooltip key={mode} label={t(`view.${mode}.name`)} description={t(`view.${mode}.hint`)} side="bottom" className="pv-seg-tip">
-                <button
-                  type="button"
-                  aria-pressed={lighting === mode}
-                  onClick={() => {
-                    setLighting(mode)
-                    saveLighting(mode)
-                  }}
-                >
-                  {t(`view.${mode}.name`)}
-                </button>
-              </Tooltip>
-            ))}
-          </div>
+          <ViewMenu
+            lighting={lighting}
+            onLighting={(next) => {
+              setLighting(next)
+              saveLighting(next)
+            }}
+            showEmpty={showEmpty}
+            onShowEmpty={(next) => {
+              setShowEmpty(next)
+              saveShowEmpty(next)
+            }}
+          />
 
-          <Tooltip label={t('view.showEmpty.name')} description={t('view.showEmpty.hint')} side="bottom" className="pv-cab-empties-wrap">
-            <Switch
-              checked={showEmpty}
-              onChange={(next) => {
-                setShowEmpty(next)
-                saveShowEmpty(next)
-              }}
-              surface="dark"
-              className="pv-cab-empties"
-            >
-              {t('view.showEmpty.name')}
-            </Switch>
-          </Tooltip>
-
-          {/* The glass doors: pressed = closed. The name stays the same, the tooltip says what the next press does. */}
           <Tooltip
             label={wantOpen ? t('doors.close.label') : t('doors.open.label')}
             description={wantOpen ? t('doors.close.description') : t('doors.open.description')}
@@ -1008,24 +1186,32 @@ function CabinetDialog() {
           >
             <button
               type="button"
-              className={`${iconButtonClass()} pv-cab-doors`}
+              className="pv-cab-hbtn pv-cab-doors"
               aria-label={t('doors.closedState')}
               aria-pressed={!wantOpen}
               onClick={() => setWantOpen((current) => !current)}
             >
-              {wantOpen ? <IconDoor size={22} aria-hidden="true" /> : <IconDoorEnter size={22} aria-hidden="true" />}
+              {wantOpen ? <IconDoor size="1.25em" aria-hidden="true" /> : <IconDoorEnter size="1.25em" aria-hidden="true" />}
             </button>
           </Tooltip>
         </div>
+
+        <button type="button" className="pv-cab-hbtn pv-cab-hclose" onClick={onClose} aria-label={t('close')} autoFocus>
+          <IconX size="1.25em" aria-hidden="true" />
+        </button>
       </header>
 
       <div className="pv-cab-body">
-        <div className="pv-cab-case" onPointerDownCapture={onCasePointerDown}>
+        <div
+          className="pv-cab-case"
+          style={{ '--rows': gridRows, '--mid-row': Math.floor((gridRows - 1) / 2) } as CSSProperties}
+          onPointerDownCapture={onCasePointerDown}
+        >
           <div
             ref={scrollRef}
             className="pv-cab-scroll"
             tabIndex={-1}
-            inert={!ready || phase === 'closed' || phase === 'closing'}
+            inert={phase === 'closed' || phase === 'closing'}
             onScroll={updateEdges}
             onKeyDown={onWallKeyDown}
           >
@@ -1060,9 +1246,8 @@ function CabinetDialog() {
             </div>
           </div>
 
-          {/* More games than places: soft edge fades and arrows (the wheel, a swipe and the arrow keys scroll the wall as well). They are
-              always in the DOM and only change their look, so nothing ever jumps. The wall snaps to whole columns, so the fades never
-              cut a place in half - they only hint that there is more. */}
+          {/* More games than places: edge fades and arrows (the wheel, a swipe and the arrow keys scroll the wall as well). They are always
+              in the DOM and only change their look, so nothing ever jumps. */}
           <div className="pv-cab-edge pv-cab-edge--start" data-on={edges.canPrev ? '' : undefined} aria-hidden="true" />
           <div className="pv-cab-edge pv-cab-edge--end" data-on={edges.canNext ? '' : undefined} aria-hidden="true" />
           {(['prev', 'next'] as const).map((side) => (
@@ -1073,17 +1258,17 @@ function CabinetDialog() {
                 aria-label={t(`scroll.${side}`)}
                 aria-disabled={!(side === 'prev' ? edges.canPrev : edges.canNext)}
                 data-overflow={edges.overflow ? '' : undefined}
-                inert={!ready || !edges.overflow || phase === 'closed' || phase === 'closing'}
+                inert={phase === 'closed' || phase === 'closing' || !edges.overflow}
                 onClick={() => {
                   if (side === 'prev' ? edges.canPrev : edges.canNext) scrollPage(side === 'prev' ? -1 : 1)
                 }}
               >
-                {side === 'prev' ? <IconChevronLeft size={22} aria-hidden="true" /> : <IconChevronRight size={22} aria-hidden="true" />}
+                {side === 'prev' ? <IconChevronLeft size="1.4em" aria-hidden="true" /> : <IconChevronRight size="1.4em" aria-hidden="true" />}
               </button>
             </Tooltip>
           ))}
 
-          {/* A quiet line while it loads, but only if it takes a moment (no layout) */}
+          {/* Closed dark cabinet while it loads: a thin gold line and a quiet line of text above the glass (no layout) */}
           {showLoader && (
             <div className="pv-cab-loader" role="status">
               <span className="pv-cab-loader-line" aria-hidden="true" />
@@ -1094,14 +1279,14 @@ function CabinetDialog() {
           {error && !data && (
             <div className="pv-cab-empty">
               <div className="pv-cab-empty-card" role="alert">
-                <IconAlertTriangle size={28} style={{ color: 'var(--accent-crimson)' }} aria-hidden="true" />
-                <h2>{t('error.title')}</h2>
+                <IconAlertTriangle size="1.9em" style={{ color: '#fda4af' }} aria-hidden="true" />
+                <h3>{t('error.title')}</h3>
                 <p>{error instanceof Error ? error.message : t('error.unknown')}</p>
                 <CopyErrorButton
-                  color="var(--text-secondary)"
+                  color="#e2e8f0"
                   report={{ title: t('error.title'), message: error instanceof Error ? error.message : t('error.unknown'), code: errorCodeOf(error) }}
                 />
-                <button type="button" className="pv-btn" onClick={() => void refetch()} disabled={isFetching}>
+                <button type="button" className="pv-cab-retry" onClick={() => void refetch()} disabled={isFetching}>
                   {tc('retry')}
                 </button>
               </div>
@@ -1112,13 +1297,19 @@ function CabinetDialog() {
             <div className="pv-cab-empty">
               <div className="pv-cab-empty-card">
                 <TierTrophy tier="Platinum" calm className="pv-cab-empty-trophy" />
-                <h2>{t('empty.title')}</h2>
+                <h3>{t('empty.title')}</h3>
                 <p>{t('empty.text')}</p>
               </div>
             </div>
           )}
 
-          {/* Two glass doors that slide sideways in the case (CSS animations by state, one per pane; nothing else moves them) */}
+          <div className="pv-cab-gloss" aria-hidden="true" />
+
+          {/* The rails the glass doors run in: part of the cabinet, they stand still */}
+          <div className="pv-cab-rail pv-cab-rail--top" aria-hidden="true" />
+          <div className="pv-cab-rail pv-cab-rail--bottom" aria-hidden="true" />
+
+          {/* Two frameless smoked-glass doors that slide in the rails (CSS animations by state; one animation per pane, nothing else moves them) */}
           <div className="pv-cab-door pv-cab-door--l" aria-hidden="true" />
           <div className="pv-cab-door pv-cab-door--r" aria-hidden="true" onAnimationEnd={onDoorAnimationEnd} />
         </div>
@@ -1136,22 +1327,28 @@ function CabinetDialog() {
               exit={reduce ? { opacity: 0 } : portrait ? { opacity: 0, y: '100%' } : { opacity: 0, x: '100%' }}
               transition={{ duration: reduce ? 0.12 : 0.38, ease: EASE }}
             >
-              <IconButton label={t('info.close')} className="pv-cab-info-close" onClick={closePanel} autoFocus>
-                <IconX size={20} aria-hidden="true" />
-              </IconButton>
-              <InfoCard game={selected} />
+              <button
+                type="button"
+                className="pv-cab-close pv-cab-info-close"
+                aria-label={t('info.close')}
+                onClick={closePanel}
+                autoFocus
+              >
+                <IconX size="1.25em" aria-hidden="true" />
+              </button>
+              <InfoCard game={selected} onNavigate={onClose} />
             </motion.aside>
           )}
         </AnimatePresence>
       </div>
-    </section>
+    </motion.div>
   )
 }
 
 /**
- * The trophy cabinet: the page /cabinet, a fixed dark display surface with every game at 100 %, the shelf wall scrolling sideways.
- * Reached from the tree navigation (the shell prefetches its data on hover).
+ * The trophy cabinet: a full-screen glass display case with every game at 100 %. Opened from the header on every page;
+ * rendered into the body (the sticky header would otherwise become the containing block of the fixed overlay).
  */
-export function TrophyCabinet() {
-  return <CabinetDialog />
+export function TrophyCabinet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  return createPortal(<AnimatePresence>{open && <CabinetDialog key="cabinet" onClose={onClose} />}</AnimatePresence>, document.body)
 }

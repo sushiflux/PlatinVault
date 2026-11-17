@@ -1070,8 +1070,7 @@ public sealed partial class SteamLiveTrackerService(
                 if (await igdbService.GetBySteamAppIdAsync((int)appId, igdbTimeout.Token) is { } igdb)
                 {
                     game.CompletionHours = igdb.TimeToBeat?.CompletelyHours ?? game.CompletionHours;
-                    var rating = igdb.AggregatedRating ?? igdb.TotalRating;
-                    game.IgdbRating = rating is { } r ? (int)Math.Round(r) : game.IgdbRating;
+                    ApplyIgdbRatings(game, igdb);
                     // Only a game without any genre takes IGDB's (English names); Steam's are better and replace them as soon as there are some
                     if (game.SteamGenres.Count == 0 && CleanGenres(igdb.Genres) is { Count: > 0 } igdbGenres)
                     {
@@ -1092,6 +1091,19 @@ public sealed partial class SteamLiveTrackerService(
         game.FactsUpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
     }
+
+    /// <summary>
+    /// Critics (IGDB <c>aggregated_rating</c>, no fallback to <c>total_rating</c> which mixes in the users) and users (<c>rating</c>) are stored
+    /// separately, rounded. An IGDB answer without a value clears an old one: IgdbRating used to hold total_rating for some games.
+    /// </summary>
+    internal static void ApplyIgdbRatings(GameEntity game, IgdbGameDto igdb)
+    {
+        game.IgdbRating = CardRating(igdb.AggregatedRating);
+        game.IgdbUserRating = CardRating(igdb.Rating);
+    }
+
+    // Only a real 0-100 score goes on the card (a cache entry written by an older build was never range-checked)
+    private static int? CardRating(double? value) => value is { } v && double.IsFinite(v) && v is >= 0 and <= 100 ? (int)Math.Round(v) : null;
 
     /// <summary>Trimmed, distinct, at most eight genre names (a card has room for a few).</summary>
     private static List<string> CleanGenres(IEnumerable<string> genres) =>

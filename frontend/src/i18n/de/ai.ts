@@ -28,6 +28,7 @@ const ai = {
     mixed: 'Nutzt alle KIs mit Key, gemischt.',
     ask: 'Fragt vor dem Start, welche KI.',
     oneOff: 'Nutzt {{provider}} – nur dieses Mal.',
+    manual: 'Läuft mit deinem eigenen KI-Abo: Prompt kopieren, Antwort einfügen.',
   },
 
   // Settings > AI research > "AI selection"
@@ -77,6 +78,12 @@ const ai = {
     unhealthy: '{{provider}}: {{state}}. Am besten wählst du eine andere KI.',
     lastUsed: 'Zuletzt benutzt',
     start: 'Mit {{provider}} starten',
+    // The way without an API key: the prompt goes into the player's own chat
+    manual: {
+      title: 'Mein KI-Abo',
+      hint: 'Der Prompt wird in deinen eigenen Chat kopiert – ohne API-Key, hier entstehen keine Kosten.',
+      start: 'Mit meinem KI-Abo weiter',
+    },
   },
 
   // The "which AI" part of AI buttons (split button)
@@ -87,6 +94,9 @@ const ai = {
     mixedName: 'Gemischt',
     noKeyName: 'Kein Key',
     standardTag: 'Standard',
+    manualName: 'KI-Abo',
+    manualEntry: 'Mein KI-Abo',
+    manualDetail: 'Prompt kopieren, Antwort einfügen – ohne API-Key',
   },
 
   // Live progress of the AI actions that run as background jobs (no fixed time is ever promised)
@@ -246,6 +256,29 @@ const ai = {
       copied: 'Korrektur-Prompt kopiert – füge ihn im selben Chat ein und setze die neue Antwort hier ein.',
       selected: 'Dein Browser erlaubt das Kopieren hier nicht. Der Prompt ist unten markiert – drücke Strg+C (am Mac Cmd+C).',
       promptLabel: 'Der Korrektur-Prompt',
+    },
+    // Story & Lore with the own subscription: one prompt, one answer, saved as the tab "Story & Lore"
+    lore: {
+      title: 'Story & Lore mit deinem KI-Abo (ohne API-Key)',
+      step: 'Ein Prompt, eine Antwort',
+      replaceNote: 'Dieses Spiel hat schon Story & Lore. Speichern ersetzt den Reiter durch die neue Fassung.',
+      promptHeading: '1. Prompt kopieren und im Chat deines Abos einfügen',
+      answerHeading: '2. Antwort des Chats hier einfügen',
+      preview: 'Vorschau: {{parts}}',
+      part_one: '„{{title}}“ ({{count}} Abschnitt)',
+      part_other: '„{{title}}“ ({{count}} Abschnitte)',
+      missing: 'Es fehlen noch Teile: {{parts}}. Du kannst trotzdem speichern oder die fehlenden Teile im selben Chat nachfordern und die neue Antwort hier einfügen.',
+      save: 'Story & Lore speichern',
+      saveFailed: 'Story & Lore konnte nicht gespeichert werden: {{reason}}',
+      saveFailedList: 'Story & Lore konnte nicht gespeichert werden:',
+      confirm: {
+        title: 'Story & Lore ersetzen?',
+        message: 'Die vorhandene Story & Lore von „{{title}}“ wird vollständig durch diese Antwort ersetzt. Das lässt sich nicht rückgängig machen.',
+        missing: 'In der neuen Antwort fehlen noch: {{parts}} – diese Teile sind danach nicht mehr vorhanden.',
+        confirm: 'Ersetzen',
+      },
+      saved: 'Story & Lore ist gespeichert.',
+      savedReplaced: 'Story & Lore ist gespeichert – die bisherige Fassung wurde ersetzt.',
     },
     answer: {
       label: 'Antwort des Chats',
