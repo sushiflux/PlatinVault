@@ -22,10 +22,11 @@ interface ChapterHeadProps {
 export function ChapterHead({ gameTitle, groupKey, title, facts, children }: ChapterHeadProps) {
   const { t } = useTranslation('game')
   const context = groupKey ? `${gameTitle} · ${t(`chapters.groups.${groupKey}`)}` : gameTitle
-  const items: { key: string; icon: ReactNode; text: string }[] = []
-  if (facts?.missables) items.push({ key: 'missables', icon: <IconShieldCheck size={16} aria-hidden="true" />, text: facts.missables })
-  if (facts?.hours) items.push({ key: 'hours', icon: <IconClock size={16} aria-hidden="true" />, text: facts.hours })
-  if (facts?.difficulty) items.push({ key: 'difficulty', icon: <IconTrophy size={16} aria-hidden="true" />, text: facts.difficulty })
+  // tone = hook for the pill colour of the classic design (no style in the light design)
+  const items: { key: string; icon: ReactNode; text: string; tone: string }[] = []
+  if (facts?.missables) items.push({ key: 'missables', icon: <IconShieldCheck size={16} aria-hidden="true" />, text: facts.missables, tone: 'safe' })
+  if (facts?.hours) items.push({ key: 'hours', icon: <IconClock size={16} aria-hidden="true" />, text: facts.hours, tone: 'crystal' })
+  if (facts?.difficulty) items.push({ key: 'difficulty', icon: <IconTrophy size={16} aria-hidden="true" />, text: facts.difficulty, tone: 'gold' })
   return (
     <div className="pv-chapter-intro">
       <header className="pv-chapter-head">
@@ -39,7 +40,7 @@ export function ChapterHead({ gameTitle, groupKey, title, facts, children }: Cha
         <ul className="pv-chapter-facts" aria-label={t('chapterFacts')}>
           {facts?.genre && <li>{facts.genre}</li>}
           {items.map((item) => (
-            <li key={item.key}>
+            <li key={item.key} className={`pv-chapter-fact pv-chapter-fact--${item.tone}`}>
               {item.icon}
               <span>{item.text}</span>
             </li>

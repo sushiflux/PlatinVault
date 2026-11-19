@@ -20,8 +20,10 @@ import type { GameSummaryDto, SteamOwnedGameDto } from '../api/types'
 import { fixedT } from '../i18n'
 import { useFormat } from '../i18n/format'
 import { sizeOf, type SizeSource } from '../utils/dashboardSort'
+import { hasTrophies, isManualGame, platformLabelKey, platformOf, trophyKind } from '../utils/platforms'
 import { useLiveCount, useLiveCountWatch } from '../utils/useTwitchLiveCounts'
 import { isPlatinumGame, PlatinumCoverFx, PlatinumLineFx } from './platinum/platinum'
+import { PlatformBadge } from './platform/PlatformBadge'
 import { RatingStrip } from './RatingStrip'
 import { PlayButton } from './launch/PlayButton'
 import type { LaunchTarget } from './launch/LaunchProvider'
@@ -218,6 +220,8 @@ function useCardText() {
     }
     const trophies = (game: GameSummaryDto) => {
       if (game.trophiesTotal > 0) return `${fmt.number(game.trophiesUnlocked)} / ${fmt.number(game.trophiesTotal)}`
+      // A game added by hand: its list is researched on the game page (Nintendo Switch has none: guide only)
+      if (isManualGame(game)) return hasTrophies(platformOf(game)) ? t('card.noList') : t('card.guideOnly')
       return game.steamAppId ? '…' : t('card.noSteam')
     }
     return { hours, playtime, lastPlayed, trophies }
@@ -253,7 +257,7 @@ export function normalizeEstimate(raw: string, unit: string, approx: string): st
 
 export type FactKey = 'played' | 'last' | 'release' | 'size' | 'hours'
 // Why a fact has no value: facts.missing.<reason> in the "dashboard" namespace
-export type MissingReason = 'notPlayed' | 'steam' | 'estimate' | 'size'
+export type MissingReason = 'notPlayed' | 'steam' | 'estimate' | 'size' | 'notSteam' | 'manualRelease'
 
 // The placeholders of AiGuideContent.DefaultsFor (server) for "no estimate yet", lower case
 const NO_ESTIMATE = new Set(['offen', 'open'])
@@ -264,12 +268,14 @@ const NO_ESTIMATE = new Set(['offen', 'open'])
  */
 export function missingFacts(game: CardGame): Partial<Record<FactKey, MissingReason>> {
   const missing: Partial<Record<FactKey, MissingReason>> = {}
-  const neverPlayed = game.playtimeMinutes === 0
-  if (game.playtimeMinutes == null || game.playtimeMinutes <= 0) missing.played = neverPlayed ? 'notPlayed' : 'steam'
+  // A game added by hand has no Steam behind it: playtime, last played and size are never known, and the card says exactly that
+  const manual = isManualGame(game)
+  const neverPlayed = !manual && game.playtimeMinutes === 0
+  if (game.playtimeMinutes == null || game.playtimeMinutes <= 0) missing.played = manual ? 'notSteam' : neverPlayed ? 'notPlayed' : 'steam'
   // Steam also stamps a launch without playtime; "last played" only makes sense once there is playtime
-  if (!game.lastPlayedAt || neverPlayed) missing.last = neverPlayed ? 'notPlayed' : 'steam'
-  if (!game.releaseDate && !game.releaseAt) missing.release = 'steam'
-  if (sizeOf(game).kind === 'none') missing.size = 'size'
+  if (!game.lastPlayedAt || neverPlayed) missing.last = manual ? 'notSteam' : neverPlayed ? 'notPlayed' : 'steam'
+  if (!game.releaseDate && !game.releaseAt) missing.release = manual ? 'manualRelease' : 'steam'
+  if (sizeOf(game).kind === 'none') missing.size = manual ? 'notSteam' : 'size'
   // "Offen" / "Open" is the value the server stores while no estimate is known, in the language of the guide (data, not a UI text)
   const estimate = game.estimatedHours?.trim() ?? ''
   const hasEstimate = (game.completionHours != null && game.completionHours > 0) || (estimate !== '' && !NO_ESTIMATE.has(estimate.toLowerCase()))
@@ -310,11 +316,11 @@ function useFactRow(): FactRow {
 
 // The size row, the same on both kinds of cards. An installed game shows its real size on disk; a game that is not installed shows the
 // install size estimated from Steam's own data ("ca.", explained in the tooltip); without either the row is a dash.
-function useSizeFact(game: SizeSource, row: FactRow): CardFact {
+function useSizeFact(game: SizeSource, row: FactRow, noSizeReason: MissingReason = 'size'): CardFact {
   const { t } = useTranslation('dashboard')
   const fmt = useFormat()
   const size = sizeOf(game)
-  if (size.kind === 'none') return row('size', IconDatabase, t('facts.size.label'), '', '', 'size')
+  if (size.kind === 'none') return row('size', IconDatabase, t('facts.size.label'), '', '', noSizeReason)
   const formatted = fmt.bytes(size.bytes)
   if (size.kind === 'disk') {
     return row('size', IconDatabase, t('facts.size.label'), t('facts.size.onDisk', { size: formatted }), formatted)
@@ -349,7 +355,7 @@ function useCardFacts(game: GameSummaryDto): CardFact[] {
     row('played', IconPlayerPlay, t('facts.played.label'), t('facts.played.value', { time: played }), played, missing.played),
     row('last', IconHistory, t('facts.lastPlayed.label'), t('facts.lastPlayed.value', { when }), when, missing.last),
     row('release', IconCalendar, t('facts.released.label'), t('facts.released.value', { date: release }), release, missing.release),
-    useSizeFact(game, row),
+    useSizeFact(game, row, missing.size),
     row('hours', IconClock, t('facts.duration.label'), hours.value, hours.short, missing.hours),
   ]
 }
@@ -493,14 +499,29 @@ function TrophyCell({ platinum, text, percent }: { platinum: boolean; text: stri
 
 // The trophy line of a card: label (gold trophy; "Platin" for a finished game), the count on the right, and the thin progress line below
 // In the compact cards (150-250 px wide) the label is left to the icon and screen readers (the line and the count say the rest).
-function TileProgress({ platinum, text, value, narrow = false, seed }: { platinum: boolean; text: string; value: number; narrow?: boolean; seed: string }) {
+function TileProgress({
+  platinum,
+  text,
+  value,
+  narrow = false,
+  seed,
+  achievements = false,
+}: {
+  platinum: boolean
+  text: string
+  value: number
+  narrow?: boolean
+  seed: string
+  // A game added by hand on a platform that calls them achievements (Xbox, Epic, ...): "Erfolge" instead of "Trophäen"
+  achievements?: boolean
+}) {
   const { t } = useTranslation('dashboard')
   return (
     <div className="pv-tile-prog">
       <div className="pv-tile-prog-row">
         <span className="pv-tile-prog-k" data-platin={platinum ? 'true' : undefined}>
           {platinum ? <TierIcon tier="Platinum" size={16} /> : <IconTrophy size={16} aria-hidden="true" />}
-          <span className={narrow ? 'sr-only' : 'truncate'}>{platinum ? t('card.platinum') : t('card.trophies')}</span>
+          <span className={narrow ? 'sr-only' : 'truncate'}>{platinum ? t('card.platinum') : achievements ? t('card.achievements') : t('card.trophies')}</span>
         </span>
         <span className="pv-tile-prog-v">{text}</span>
       </div>
@@ -518,12 +539,16 @@ interface GameTileProps {
 // One game on the dashboard in the chosen size. The buttons are never inside the card's links (a button inside <a> is invalid): the
 // cards are a cover link, a link around the text and the action row; list rows are a link and the buttons beside it.
 export function GameTile({ game, density, onToggleFavorite }: GameTileProps) {
-  const { t } = useTranslation('dashboard')
+  const { t } = useTranslation(['dashboard', 'common'])
   const fmt = useFormat()
   const text = useCardText()
   const platinum = isPlatinumGame(game)
   const facts = useCardFacts(game)
   const titleId = useId()
+  const platformId = useId()
+  const platform = platformOf(game)
+  const achievements = isManualGame(game) && trophyKind(platform) === 'achievements'
+  const badge = <PlatformBadge platform={platform} variant={game.platformVariant} size={density <= 1 ? 'md' : 'sm'} />
   const favoriteLabel = game.isFavorite ? t('card.removeFavorite', { title: game.title }) : t('card.addFavorite', { title: game.title })
   const target: LaunchTarget = { kind: 'game', slug: game.slug }
   const trophyValue = game.trophiesTotal > 0 ? `${text.trophies(game)} (${fmt.percent(game.trophiesPercent)})` : text.trophies(game)
@@ -544,11 +569,17 @@ export function GameTile({ game, density, onToggleFavorite }: GameTileProps) {
           <FavoriteStar label={favoriteLabel} favorite={game.isFavorite} hint onClick={() => onToggleFavorite(game)} />
           <div className="pv-dl-c-title">
             {density === 1 && <Cover game={game} className="pv-dl-cover" />}
+            {density === 0 && badge}
             <div className="flex min-w-0 flex-col">
               <Link to={href} className="pv-dl-link">
                 <TruncatedText text={game.title} wrapperClassName="pv-dl-linktext" />
               </Link>
-              {density === 1 && <GenreLine game={game} className="pv-dl-gen" />}
+              {density === 1 && (
+                <div className="pv-dl-sub">
+                  {badge}
+                  <GenreLine game={game} className="pv-dl-gen" />
+                </div>
+              )}
             </div>
           </div>
           <FactCell fact={by('played')} className="pv-dl-c-play" />
@@ -572,6 +603,8 @@ export function GameTile({ game, density, onToggleFavorite }: GameTileProps) {
       {/* The cover is a second way in for the mouse (the text link is the one for keyboard and screen readers) */}
       <Link to={href} tabIndex={-1} aria-hidden="true" className="pv-tile-cover">
         <Cover game={game} className="h-full w-full" />
+        {/* The platform, top left on every size (the "Platin" plaque is top right) */}
+        <span className="pv-platform-badge-pos">{badge}</span>
         {platinum && <PlatinumCoverFx seed={game.slug} compact={density === 2} />}
       </Link>
 
@@ -584,12 +617,16 @@ export function GameTile({ game, density, onToggleFavorite }: GameTileProps) {
         {segments}
       </div>
 
-      <Link to={href} aria-labelledby={titleId} className="pv-tile-link">
+      <Link to={href} aria-labelledby={`${titleId} ${platformId}`} className="pv-tile-link">
         {/* Title first, then the genres as one calm line; both are one line, so every card has the same head */}
         <div className="pv-tile-head">
           <h3 id={titleId} className="pv-tile-title">
             <ClampedText text={game.title} />
           </h3>
+          {/* The cover (and the chip on it) is hidden from screen readers: the link names the platform here */}
+          <span id={platformId} className="sr-only">
+            {t(`common:platforms.${platformLabelKey(platform, game.platformVariant)}`)}
+          </span>
           {density !== 2 && <GenreLine game={game} className="pv-tile-gen" />}
         </div>
 
@@ -598,7 +635,7 @@ export function GameTile({ game, density, onToggleFavorite }: GameTileProps) {
         {large ? <CardFacts facts={facts} /> : density === 3 ? <CompactFacts facts={facts} /> : null}
 
         {/* Trophy progress from Steam (the only meter on a card) */}
-        <TileProgress seed={game.slug} platinum={platinum} text={density === 2 ? text.trophies(game) : trophyValue} value={game.trophiesPercent} narrow={density <= 3} />
+        <TileProgress seed={game.slug} platinum={platinum} text={density === 2 ? text.trophies(game) : trophyValue} value={game.trophiesPercent} narrow={density <= 3} achievements={achievements} />
       </Link>
     </div>
   )
@@ -682,6 +719,8 @@ export function LibraryTile({ game, density, busy, onToggleFavorite }: LibraryTi
     </>
   )
   const coverGame = { coverUrl: game.coverUrl }
+  // Every game of the Steam library is a Steam game: its chip says so, like the chips of the games added by hand
+  const badge = <PlatformBadge platform="steam" size={density <= 1 ? 'md' : 'sm'} />
 
   // The page of a game that is already in PlatinVault; for the others the same box without a link
   const wrap = (className: string, children: ReactNode, hidden = false, labelledBy?: string) =>
@@ -701,15 +740,19 @@ export function LibraryTile({ game, density, busy, onToggleFavorite }: LibraryTi
           <FavoriteStar label={label} favorite={game.isFavorite} busy={busy} onClick={() => onToggleFavorite(game)} />
           <div className="pv-dl-c-title">
             {density === 1 && <Cover game={coverGame} className="pv-dl-cover" />}
-            {game.existingSlug ? (
-              <Link to={`/games/${game.existingSlug}`} className="pv-dl-link">
-                <TruncatedText text={game.name} wrapperClassName="pv-dl-linktext" />
-              </Link>
-            ) : (
-              <span className="pv-dl-link pv-dl-link--plain">
-                <TruncatedText text={game.name} wrapperClassName="pv-dl-linktext" />
-              </span>
-            )}
+            {density === 0 && badge}
+            <div className="flex min-w-0 flex-col">
+              {game.existingSlug ? (
+                <Link to={`/games/${game.existingSlug}`} className="pv-dl-link">
+                  <TruncatedText text={game.name} wrapperClassName="pv-dl-linktext" />
+                </Link>
+              ) : (
+                <span className="pv-dl-link pv-dl-link--plain">
+                  <TruncatedText text={game.name} wrapperClassName="pv-dl-linktext" />
+                </span>
+              )}
+              {density === 1 && <div className="pv-dl-sub">{badge}</div>}
+            </div>
           </div>
           <FactCell fact={by('played')} className="pv-dl-c-play" />
           <FactCell fact={by('last')} className="pv-dl-c-last" />
@@ -735,6 +778,7 @@ export function LibraryTile({ game, density, busy, onToggleFavorite }: LibraryTi
         'pv-tile-cover',
         <>
           <Cover game={coverGame} className="h-full w-full" />
+          <span className="pv-platform-badge-pos">{badge}</span>
           {perfect && <PlatinumCoverFx seed={String(game.appId)} compact={density === 2} />}
         </>,
         true

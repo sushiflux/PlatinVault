@@ -1,0 +1,459 @@
+/* Design "Klassisch" - area file, see index.css for the rules (scope every rule under :root[data-design='classic'], look only). */
+/* Owner: settings - settings page and its sections, dialogs, first run / language screen, onboarding tour and hints, trophy cabinet
+   (header, toolbar and view popover only), licence and handbook viewers.
+   Look of commit 9fabf8e: tinted accent boxes with a crystal frame, extra-bold headings in the accent colour, bold labels, the large
+   radius, soft glows. The structure of the current pages (tab bar, one card of hairline rows) is kept; sizes only change where a rule says so.
+   Frames that would add width/height are drawn as an inset box-shadow, so nothing moves. */
+
+/* ================= settings page (components/SettingsModal.tsx, settings/*) ================= */
+
+:root[data-design='classic'] .pv-set-status {
+  font-weight: 700;
+}
+
+/* The selected tab: the crystal tint gets the crystal frame the old side tabs had */
+:root[data-design='classic'] .pv-set-tabs > button:is([aria-selected='true'], [aria-pressed='true'], [aria-current='page']) {
+  box-shadow: inset 0 0 0 1px var(--accent-crystal-border);
+}
+
+/* Row names are bold labels, topic headings extra-bold in the accent colour (the old card titles) */
+:root[data-design='classic'] .pv-set-row__title {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-set .pv-eyebrow,
+:root[data-design='classic'] .pv-set-section__title > :first-child {
+  color: var(--accent-crystal);
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-set-toggle {
+  font-weight: 600;
+}
+
+:root[data-design='classic'] .pv-set-range > output {
+  font-weight: 700;
+}
+
+/* ---------- popup position grid: a tinted panel, the selected position is the crystal tint with its frame ---------- */
+:root[data-design='classic'] .pv-set-pos {
+  background: var(--bg-elevated);
+}
+
+:root[data-design='classic'] .pv-set-pos > .pv-set-pos__cell {
+  border-color: var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-set-pos button {
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-set-pos button:hover {
+  background: var(--bg-surface);
+}
+
+:root[data-design='classic'] .pv-set-pos button[aria-pressed='true'] {
+  background: var(--accent-crystal-bg);
+  color: var(--accent-crystal);
+  box-shadow: inset 0 0 0 1px var(--accent-crystal-border);
+}
+
+:root[data-design='classic'] .pv-set-pos button[aria-pressed='true']::after {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-set-pos button:focus-visible {
+  outline-color: var(--accent-crystal);
+}
+
+/* ---------- guide boxes ("where does the key come from"): a framed panel, no line on the left, bold crystal links ---------- */
+:root[data-design='classic'] .pv-set-guide {
+  border-color: var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-set-guide::before {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-set-guide > :is(h4, .pv-set-guide__title) {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-set-guide a,
+:root[data-design='classic'] .pv-set a.pv-set-link {
+  color: var(--accent-crystal);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+:root[data-design='classic'] .pv-set-guide a:hover,
+:root[data-design='classic'] .pv-set a.pv-set-link:hover {
+  text-decoration: underline;
+}
+
+/* ---------- status chip: the old green badge (tint + frame), the frame drawn inside so the line height stays ---------- */
+:root[data-design='classic'] .pv-set-chip {
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--accent-emerald-bg);
+  box-shadow: inset 0 0 0 1px var(--accent-emerald-border);
+  font-weight: 700;
+}
+
+/* ---------- save problem laid over the content: tinted in the error colour, the heavy floating shadow ---------- */
+:root[data-design='classic'] .pv-set-banner {
+  border-color: var(--accent-crimson-border);
+  --shadow-pop: 0 18px 44px -10px rgba(8, 13, 23, 0.45), 0 4px 14px rgba(8, 13, 23, 0.22);
+}
+
+/* ================= first run / language screen (components/onboarding/LanguageScreen.tsx) ================= */
+/* The old screen was a brand cover: soft crystal glow top left, gold glow bottom right, a crystal-to-gold rule, heavy titles. It keeps
+   following the theme here (the screen itself offers the light/dark choice), so the glows are tints of the theme's own accents. */
+:root[data-design='classic'] .pv-first {
+  background:
+    radial-gradient(60rem 40rem at 12% -8%, color-mix(in srgb, var(--accent-crystal) 18%, transparent), transparent 62%),
+    radial-gradient(48rem 34rem at 96% 108%, color-mix(in srgb, var(--accent-gold) 14%, transparent), transparent 60%),
+    var(--bg-primary);
+}
+
+:root[data-design='classic'] .pv-first-bar,
+:root[data-design='classic'] .pv-first-foot {
+  background: var(--bg-glass);
+}
+
+:root[data-design='classic'] :is(.pv-first-form, .pv-first-brand) {
+  background: transparent;
+}
+
+:root[data-design='classic'] .pv-first-form {
+  background: var(--bg-glass);
+}
+
+:root[data-design='classic'] .pv-first-bar span {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+:root[data-design='classic'] .pv-first-form h1,
+:root[data-design='classic'] .pv-first-name {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+:root[data-design='classic'] .pv-first-label,
+:root[data-design='classic'] .pv-first-list b {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-first-line {
+  block-size: 3px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent-crystal), var(--accent-gold));
+}
+
+:root[data-design='classic'] .pv-first-note::before {
+  inline-size: 3px;
+  border-radius: 999px;
+}
+
+:root[data-design='classic'] .pv-first-hero img {
+  filter: drop-shadow(0 8px 22px color-mix(in srgb, var(--accent-crystal) 45%, transparent));
+}
+
+:root[data-design='classic'] .pv-first-list svg {
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-first-version {
+  font-weight: 700;
+}
+
+/* ================= onboarding tour (components/onboarding/OnboardingTour.tsx) ================= */
+/* Header and footer bar on the raised surface (inline style in the markup, hence !important), the step counter a crystal badge, the
+   chapter icon in a tinted box, the step dots round */
+:root[data-design='classic'] .pv-tour > :is(header, footer) {
+  background: var(--bg-elevated) !important;
+}
+
+:root[data-design='classic'] .pv-tour > header .pv-eyebrow {
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-sm);
+  background: var(--accent-crystal-bg);
+  box-shadow: inset 0 0 0 1px var(--accent-crystal-border);
+  color: var(--accent-crystal);
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-tour h2 {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-tour-icon {
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, currentColor 13%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 42%, transparent);
+}
+
+:root[data-design='classic'] .pv-tour > footer nav > button > span {
+  block-size: 0.625rem;
+  border-radius: 999px;
+}
+
+/* ================= coach marks (components/onboarding/HintTour.tsx) ================= */
+:root[data-design='classic'] .pv-hint-spot {
+  box-shadow:
+    0 0 0 100vmax rgba(8, 12, 22, 0.62),
+    0 0 0 2px var(--accent-crystal),
+    0 0 24px 2px var(--accent-crystal-bg);
+}
+
+:root[data-design='classic'] .pv-hint-card {
+  border-color: var(--accent-crystal-border);
+  box-shadow: 0 26px 50px -18px rgba(0, 0, 0, 0.5);
+}
+
+/* The line on the left edge is the light design's mark of the helper; the old card was framed in crystal instead */
+:root[data-design='classic'] .pv-hint-card::before {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-hint-meta {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+:root[data-design='classic'] .pv-hint-card h2 {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-hint-skip {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+:root[data-design='classic'] .pv-hint-links button {
+  color: var(--accent-crystal);
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-hint-links button:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+:root[data-design='classic'] :is(.pv-hint-skip, .pv-hint-links button):focus-visible {
+  outline-color: var(--accent-crystal);
+}
+
+/* ================= handbook and licence viewer (components/HandbookViewer.tsx, LicenseViewer.tsx) ================= */
+:root[data-design='classic'] .pv-doc-head {
+  background: var(--bg-glass);
+}
+
+:root[data-design='classic'] .pv-doc-title {
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-doc-title h2 {
+  font-weight: 700;
+}
+
+/* The text actions are the old light buttons again: surface, hairline frame (inside), crystal frame on hover */
+:root[data-design='classic'] .pv-doc-actions .pv-btn-text {
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+  color: var(--text-primary);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-doc-actions .pv-btn-text:hover {
+  background: var(--bg-elevated);
+  box-shadow: inset 0 0 0 1px var(--accent-crystal);
+  color: var(--text-primary);
+}
+
+:root[data-design='classic'] .pv-doc-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--pv-scroll-thumb) var(--pv-scroll-track);
+}
+
+:root[data-design='classic'] .pv-doc-scroll:focus-visible {
+  outline-color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-doc-source a {
+  color: var(--accent-crystal);
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-licence-plain .pv-licence-title,
+:root[data-design='classic'] .pv-md-h,
+:root[data-design='classic'] .pv-md-table th {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-md-table td {
+  color: var(--text-secondary);
+}
+
+/* ================= trophy cabinet: header, toolbar and view popover (components/cabinet/TrophyCabinet.tsx) =================
+   The cabinet is a fixed dark piece of furniture in both themes, and so is its old header: a brass-framed dark bar, figures as brass
+   pills, the controls as brass-framed buttons. Shelves, plaques, rails, lamps, doors and the landing animation are untouched. */
+:root[data-design='classic'] .pv-cab-head {
+  /* The bar is dark in both themes: the theme tokens used inside it (tier icons, switch) take their dark values */
+  color-scheme: dark;
+  border-block-end-color: rgba(201, 160, 74, 0.5);
+  background:
+    linear-gradient(180deg, rgba(246, 227, 164, 0.08), rgba(246, 227, 164, 0) 70%),
+    linear-gradient(180deg, #131c2f, #0d1424);
+  color: var(--cab-text);
+}
+
+:root[data-design='classic'] .pv-cab-head :focus-visible {
+  outline-color: var(--brass-hi);
+}
+
+:root[data-design='classic'] .pv-cab-title h2 {
+  color: #f7e9bd;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+:root[data-design='classic'] .pv-cab-title p {
+  color: var(--cab-muted);
+}
+
+/* Figures: brass pills instead of numbers separated by lines */
+:root[data-design='classic'] .pv-cab-stats {
+  gap: 0.45em;
+}
+
+:root[data-design='classic'] .pv-cab-stats > * + *::before {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-cab-stat {
+  padding-inline: 0.75em;
+  border-radius: var(--radius-md);
+  background: rgba(246, 227, 164, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(201, 160, 74, 0.45);
+  color: #f3e6bd;
+}
+
+:root[data-design='classic'] .pv-cab-stat > svg,
+:root[data-design='classic'] .pv-cab-stat[data-kind] > svg {
+  color: #e8c566;
+}
+
+:root[data-design='classic'] .pv-cab-stat-n {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-cab-stat-l {
+  color: var(--cab-muted);
+}
+
+/* Controls: no connected bar, each button is a brass-framed box (the frame is inside, the 3 rem boxes keep their size) */
+:root[data-design='classic'] .pv-cab-bar {
+  border-color: transparent;
+}
+
+:root[data-design='classic'] .pv-cab-light,
+:root[data-design='classic'] .pv-cab-doors-wrap {
+  border-inline-start-color: transparent;
+}
+
+:root[data-design='classic'] .pv-cab-hbtn {
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(201, 160, 74, 0.55);
+  color: #f3dc92;
+  transition: background-color 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-cab-hbtn:hover,
+:root[data-design='classic'] .pv-cab-hbtn[aria-pressed='true'],
+:root[data-design='classic'] .pv-cab-hbtn[aria-expanded='true'] {
+  background: rgba(246, 227, 164, 0.16);
+  color: #f3dc92;
+}
+
+:root[data-design='classic'] .pv-cab-hbtn[aria-pressed='true']::after,
+:root[data-design='classic'] .pv-cab-hbtn[aria-expanded='true']::after {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-cab-size {
+  color: #e8c566;
+}
+
+/* Size slider: brass track and a round brass thumb */
+:root[data-design='classic'] .pv-cab-size .pv-range::-webkit-slider-runnable-track {
+  background: linear-gradient(90deg, #e8c566 var(--p), rgba(201, 160, 74, 0.4) var(--p));
+}
+
+:root[data-design='classic'] .pv-cab-size .pv-range::-webkit-slider-thumb {
+  border-radius: 50%;
+  background: #e8c566;
+}
+
+:root[data-design='classic'] .pv-cab-size .pv-range::-moz-range-track {
+  background: rgba(201, 160, 74, 0.4);
+}
+
+:root[data-design='classic'] .pv-cab-size .pv-range::-moz-range-progress {
+  background: #e8c566;
+}
+
+:root[data-design='classic'] .pv-cab-size .pv-range::-moz-range-thumb {
+  border-radius: 50%;
+  background: #e8c566;
+}
+
+/* View popover: dark glass with a brass frame; colour-scheme dark makes the shared switch inside take its dark tokens */
+:root[data-design='classic'] .pv-cab-light-menu {
+  color-scheme: dark;
+  border-color: rgba(201, 160, 74, 0.55);
+  background: linear-gradient(180deg, #18223a, #0e1526);
+  color: var(--cab-text);
+  box-shadow: 0 14px 34px -10px rgba(0, 0, 0, 0.85);
+}
+
+:root[data-design='classic'] .pv-cab-light-title {
+  color: #d9c58a;
+}
+
+:root[data-design='classic'] .pv-cab-light-rule {
+  background: rgba(201, 160, 74, 0.28);
+}
+
+:root[data-design='classic'] .pv-cab-light-option {
+  color: var(--cab-text);
+}
+
+:root[data-design='classic'] .pv-cab-light-option:hover,
+:root[data-design='classic'] .pv-cab-light-option[role='radio'][aria-checked='true'] {
+  background: rgba(246, 227, 164, 0.12);
+}
+
+:root[data-design='classic'] .pv-cab-light-option[role='radio'][aria-checked='true']::before {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-cab-light-option:focus-visible {
+  outline-color: var(--brass-hi);
+}
+
+:root[data-design='classic'] .pv-cab-light-check {
+  color: #f3dc92;
+}
+
+:root[data-design='classic'] .pv-cab-light-name {
+  color: #f7e9bd;
+}
+
+:root[data-design='classic'] .pv-cab-light-hint {
+  color: var(--cab-muted);
+}

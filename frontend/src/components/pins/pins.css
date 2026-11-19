@@ -70,6 +70,14 @@
   object-fit: cover;
 }
 
+/* The tier glyph of a trophy without an icon file fills the same box (the box already is the panel and the frame) */
+.pv-pin-icon .pv-trophy-glyph {
+  inline-size: 100%;
+  block-size: 100%;
+  border: 0;
+  border-radius: 0;
+}
+
 /* The "done" mark in the corner of the icon: the same green tag as in the trophy list */
 .pv-pin-check {
   position: absolute;

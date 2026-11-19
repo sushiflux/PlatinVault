@@ -36,7 +36,8 @@ import { Switch } from '../ui/Switch'
 import { TierIcon } from '../ui/TierIcon'
 import { Tooltip } from '../ui/Tooltip'
 import { isFullyVisible, pageScrollTarget, revealScrollTarget, sameEdges, wallEdges, wallLayout, type WallEdges } from './wall'
-import { announcedNames, landingSchedule, needsBaseline, pendingGames, type LandingSchedule } from './presentation'
+import { announcedNames, cabinetKey, landingSchedule, needsBaseline, pendingGames, presentedPayload, type LandingSchedule } from './presentation'
+import { platformLabelKey } from '../../utils/platforms'
 import { preloadCovers, showcaseQueryOptions } from './showcaseQuery'
 import './cabinet.css'
 
@@ -300,7 +301,7 @@ function Slot({
   selected: boolean
   index: number
   row: number
-  onToggle: (appId: number) => void
+  onToggle: (key: string) => void
   intro?: Intro
   isNew?: boolean
   reduce?: boolean
@@ -313,13 +314,13 @@ function Slot({
       type="button"
       className={row === 0 ? 'pv-cab-slot pv-cab-slot--top' : 'pv-cab-slot'}
       layout="position"
-      data-app-id={game.appId}
+      data-cab-key={cabinetKey(game)}
       data-new={isNew ? '' : undefined}
       aria-pressed={selected}
       // While its place is still free the game is not there yet: nothing to focus or click
       inert={intro === 'wait'}
       style={slotLightStyle(index, row)}
-      onClick={() => onToggle(game.appId)}
+      onClick={() => onToggle(cabinetKey(game))}
     >
       <span className="pv-cab-lamp" aria-hidden="true" />
       <span className="pv-cab-beam" aria-hidden="true" />
@@ -445,12 +446,12 @@ function EmptySlot({ index, row, reserved = false }: { index: number; row: numbe
 // ---------------------------------------------------------------------------------------------------------------
 
 function InfoCard({ game, onNavigate }: { game: ShowcaseGameDto; onNavigate: () => void }) {
-  const { t } = useTranslation('cabinet')
+  const { t } = useTranslation(['cabinet', 'common'])
   const fmt = useFormat()
   const text = useCabinetText()
   return (
     <motion.div
-      key={game.appId}
+      key={cabinetKey(game)}
       style={{ display: 'flex', flex: 1, flexDirection: 'column', gap: '1em' }}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -472,6 +473,16 @@ function InfoCard({ game, onNavigate }: { game: ShowcaseGameDto; onNavigate: () 
       </div>
 
       <ul className="pv-cab-facts">
+        {/* A game added by hand says where it was played (a Steam game needs no line: that is the default) */}
+        {game.platform && game.platform !== 'steam' && (
+          <li className="pv-cab-fact">
+            <IconDeviceGamepad2 size="1.2em" aria-hidden="true" />
+            <div>
+              <div className="pv-cab-fact-label">{t('info.platform')}</div>
+              <div className="pv-cab-fact-value">{t(`common:platforms.${platformLabelKey(game.platform, game.platformVariant)}`)}</div>
+            </div>
+          </li>
+        )}
         <li className="pv-cab-fact">
           <IconTrophy size="1.2em" aria-hidden="true" />
           <div>
@@ -646,13 +657,13 @@ function CabinetDialog({ onClose }: { onClose: () => void }) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef(onClose)
-  const selectedRef = useRef<number | null>(null)
+  const selectedRef = useRef<string | null>(null)
   // True while the housekeeping effect below is active (React StrictMode runs its cleanup once right after mounting)
   const aliveRef = useRef(false)
   // The element that had focus before the dialog opened (captured while rendering: the autofocused close button takes
   // focus during the commit, before any effect runs)
   const [opener] = useState(() => (document.activeElement instanceof HTMLElement ? document.activeElement : null))
-  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   // How many places of the chosen size are visible side by side (more games than that: the wall scrolls sideways)
   const [perShelf, setPerShelf] = useState(5)
   // Sideways scrolling of the wall: is there more to the left / right (arrows, edge fades)
@@ -717,7 +728,7 @@ function CabinetDialog({ onClose }: { onClose: () => void }) {
     const id = selectedRef.current
     setSelectedId(null)
     if (id !== null) {
-      requestAnimationFrame(() => dialogRef.current?.querySelector<HTMLElement>(`[data-app-id="${id}"]`)?.focus())
+      requestAnimationFrame(() => dialogRef.current?.querySelector<HTMLElement>(`[data-cab-key="${id}"]`)?.focus())
     }
   }, [])
 
@@ -834,29 +845,29 @@ function CabinetDialog({ onClose }: { onClose: () => void }) {
   // on. A game counts as presented only after its landing really played; leaving early keeps what landed. With no stored state
   // the whole current collection becomes the baseline silently (see presentation.ts).
   const pending = useMemo(() => pendingGames(games, presentedState), [games, presentedState])
-  const pendingIds = useMemo(() => pending.map((game) => game.appId), [pending])
+  const pendingIds = useMemo(() => pending.map(cabinetKey), [pending])
   const pendingKey = pendingIds.join(',')
-  const [started, setStarted] = useState<ReadonlySet<number>>(() => new Set())
+  const [started, setStarted] = useState<ReadonlySet<string>>(() => new Set())
   const [announcement, setAnnouncement] = useState('')
-  const startedRef = useRef(new Set<number>())
-  const queueRef = useRef<number[]>([])
-  const queuedRef = useRef(new Set<number>())
-  const unsavedRef = useRef<number[]>([])
+  const startedRef = useRef(new Set<string>())
+  const queueRef = useRef<string[]>([])
+  const queuedRef = useRef(new Set<string>())
+  const unsavedRef = useRef<string[]>([])
   const savingRef = useRef(false)
   const stepTimerRef = useRef<number | null>(null)
   const landTimersRef = useRef<number[]>([])
   const scheduleRef = useRef<LandingSchedule | null>(null)
   const canRunRef = useRef(false)
   const baselineRef = useRef(false)
-  const namesRef = useRef(new Map<number, string>())
+  const namesRef = useRef(new Map<string, string>())
   const announcedRef = useRef(false)
 
   const autoScrollRef = useRef<number | null>(null)
   // Scrolls the wall so the place of a game is completely in view; returns how long to wait before it can land (0 = it is in view)
   const revealPlace = useCallback(
-    (appId: number): number => {
+    (key: string): number => {
       const element = scrollRef.current
-      const slot = element?.querySelector<HTMLElement>(`.pv-cab-slot[data-app-id="${appId}"]`)
+      const slot = element?.querySelector<HTMLElement>(`.pv-cab-slot[data-cab-key="${key}"]`)
       if (!element || !slot) return 0
       if (autoScrollRef.current !== null) {
         if (Math.abs(element.scrollLeft - autoScrollRef.current) > 2) return 150 // still on its way
@@ -878,7 +889,8 @@ function CabinetDialog({ onClose }: { onClose: () => void }) {
     const ids = unsavedRef.current.splice(0)
     savingRef.current = true
     let failed = false
-    addCabinetPresented(ids)
+    const { appIds, gameIds } = presentedPayload(ids)
+    addCabinetPresented(appIds, gameIds)
       .then((result) => queryClient.setQueryData(PRESENTED_KEY, result))
       .catch(() => {
         // Best effort: the games stay in the list and go along with the next save (or are shown again next time)
@@ -900,7 +912,8 @@ function CabinetDialog({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     if (!data || baselineRef.current || !needsBaseline(presentedState)) return
     baselineRef.current = true
-    addCabinetPresented(data.games.map((game) => game.appId))
+    const { appIds, gameIds } = presentedPayload(data.games.map(cabinetKey))
+    addCabinetPresented(appIds, gameIds)
       .then((result) => queryClient.setQueryData(PRESENTED_KEY, result))
       .catch(() => {
         // Not saved: the next opening tries again; until then nothing is animated (no state = nothing pending)
@@ -908,7 +921,7 @@ function CabinetDialog({ onClose }: { onClose: () => void }) {
   }, [data, presentedState, queryClient])
 
   useEffect(() => {
-    for (const game of pending) namesRef.current.set(game.appId, game.name)
+    for (const game of pending) namesRef.current.set(cabinetKey(game), game.name)
     for (const id of pendingIds) {
       if (!queuedRef.current.has(id)) {
         queuedRef.current.add(id)
@@ -1027,8 +1040,8 @@ function CabinetDialog({ onClose }: { onClose: () => void }) {
   const onWallKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
     const target = e.target as HTMLElement
-    if (!target.matches('.pv-cab-slot[data-app-id]')) return
-    const slots = [...e.currentTarget.querySelectorAll<HTMLElement>('.pv-cab-slot[data-app-id]:not([inert])')]
+    if (!target.matches('.pv-cab-slot[data-cab-key]')) return
+    const slots = [...e.currentTarget.querySelectorAll<HTMLElement>('.pv-cab-slot[data-cab-key]:not([inert])')]
     const next = slots[slots.indexOf(target) + (e.key === 'ArrowRight' ? 1 : -1)]
     if (!next) return
     e.preventDefault()
@@ -1036,8 +1049,8 @@ function CabinetDialog({ onClose }: { onClose: () => void }) {
   }
 
   // Nothing is shown up front: the panel exists only after a game was clicked (clicking it again closes it)
-  const selected = games.find((g) => g.appId === selectedId) ?? null
-  const toggle = useCallback((appId: number) => setSelectedId((current) => (current === appId ? null : appId)), [])
+  const selected = games.find((g) => cabinetKey(g) === selectedId) ?? null
+  const toggle = useCallback((key: string) => setSelectedId((current) => (current === key ? null : key)), [])
 
   // Keep Tab inside the cabinet
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -1060,7 +1073,7 @@ function CabinetDialog({ onClose }: { onClose: () => void }) {
   const gameCount = games.length
   // A game moves in (wait -> land) once its turn has come; every other game is simply there
   const pendingSet = useMemo(() => new Set(pendingIds), [pendingIds])
-  const introOf = (appId: number): 'wait' | 'land' | undefined => (started.has(appId) ? 'land' : pendingSet.has(appId) ? 'wait' : undefined)
+  const introOf = (key: string): 'wait' | 'land' | undefined => (started.has(key) ? 'land' : pendingSet.has(key) ? 'wait' : undefined)
 
   return (
     <motion.div
@@ -1227,15 +1240,15 @@ function CabinetDialog({ onClose }: { onClose: () => void }) {
               <div className="pv-cab-grid">
                 {games.map((game, index) => (
                   <SlotCell
-                    key={game.appId}
+                    key={cabinetKey(game)}
                     game={game}
                     index={index}
                     row={Math.floor(index / columns)}
                     fit={size === 0}
-                    selected={selected?.appId === game.appId}
+                    selected={selected !== null && cabinetKey(selected) === cabinetKey(game)}
                     onToggle={toggle}
-                    intro={introOf(game.appId)}
-                    isNew={started.has(game.appId)}
+                    intro={introOf(cabinetKey(game))}
+                    isNew={started.has(cabinetKey(game))}
                     reduce={reduce}
                   />
                 ))}

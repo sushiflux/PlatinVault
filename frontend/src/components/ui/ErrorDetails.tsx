@@ -27,7 +27,7 @@ export function ErrorDetails({ details, message, title, code, reserve = false }:
   const id = useId()
   if (!details && !message) return reserve ? <div className="mt-1.5 h-5" aria-hidden="true" /> : null
   return (
-    <div className="mt-1.5">
+    <div className="pv-errdetails mt-1.5">
       <div className="flex min-h-5 flex-wrap items-center gap-x-4 gap-y-1">
         {details && (
           <button
@@ -35,7 +35,7 @@ export function ErrorDetails({ details, message, title, code, reserve = false }:
             aria-expanded={open}
             aria-controls={id}
             onClick={() => setOpen((value) => !value)}
-            className="pv-hit inline-flex cursor-pointer items-center gap-1 text-sm font-medium underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+            className="pv-errdetails__toggle pv-hit inline-flex cursor-pointer items-center gap-1 text-sm font-medium underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
             style={{ color: 'var(--text-secondary)' }}
           >
             <IconChevronDown size={14} aria-hidden="true" className={`transition-transform ${open ? 'rotate-180' : ''}`} />

@@ -10,28 +10,28 @@ public sealed partial class AiGuideGeneratorService
     // walkthrough outline/parts/single, Story & Lore, achievement tips, the manual subscription prompts) - a test checks that.
 
     /// <summary>The mandatory rule "everything in the guide language, in own words; original names at most once per chapter", in the language of the guide.</summary>
-    internal static string LanguageRules(string language) => language == Lang.English
-        ? """
+    internal static string LanguageRules(string language, GamePlatformContext? platform = null) => language == Lang.English
+        ? $"""
           Language (mandatory rule): the whole guide is in English – every sentence, heading, table cell, step, objective and instruction.
           - Write in your own words. Never copy sentences from sources in another language or from another language version of the game (also no
             objectives or quest texts) – rewrite them in English.
           - Names of places, items, enemies, characters, quests and abilities: as they are called in the English version of the game, if the game has one
-            (see "English version according to Steam" in the facts; without that line check it yourself). If there is no English version, use the in-game name
+            {LanguageVersionHint(platform, language)}. If there is no English version, use the in-game name
             and explain it briefly in English at its first mention.
           - The original name in another language may be added in brackets at most ONCE per chapter, at its first mention – only for proper names, never for
             sentences, objectives or instructions, and never repeated. Chapter titles, headings and tab names get no bracketed addition.
-          - Steam API names, itemIds, URLs, codes and numbers stay exactly as they are.
+          - {KeptIdsWord(platform, language)}, itemIds, URLs, codes and numbers stay exactly as they are.
           """
-        : """
+        : $"""
           Sprache (verbindliche Regel): Der ganze Guide ist auf Deutsch – jeder Satz, jede Überschrift, jede Tabellenzelle, jeder Schritt, jedes Ziel und jede Anweisung.
           - Schreibe in eigenen Worten. Übernimm nie Sätze aus fremdsprachigen Quellen oder aus der fremdsprachigen Fassung des Spiels (auch keine Ziele oder
             Questtexte wie „Go to the town …“) – formuliere sie auf Deutsch neu.
           - Namen von Orten, Gegenständen, Gegnern, Figuren, Quests und Fähigkeiten: so, wie sie in der deutschen Fassung des Spiels heißen, wenn es eine gibt
-            (siehe „Deutsche Fassung laut Steam“ in den Fakten; fehlt die Zeile, prüfe es selbst). Gibt es keine deutsche Fassung, nimm den Namen aus dem Spiel
+            {LanguageVersionHint(platform, language)}. Gibt es keine deutsche Fassung, nimm den Namen aus dem Spiel
             und erkläre ihn beim ersten Vorkommen kurz auf Deutsch.
           - Den Originalnamen (meist Englisch) schreibst du höchstens EINMAL pro Kapitel in Klammern dazu, beim ersten Vorkommen – nur bei Eigennamen, nie bei
             Sätzen, Zielen oder Anweisungen, und danach nicht wiederholen. Kapitel-Titel, Überschriften und Tab-Namen bekommen keinen Klammerzusatz.
-          - Steam-API-Namen, itemIds, URLs, Codes und Zahlen bleiben genau, wie sie sind.
+          - {KeptIdsWord(platform, language)}, itemIds, URLs, Codes und Zahlen bleiben genau, wie sie sind.
           """;
 
     /// <summary>
@@ -39,7 +39,7 @@ public sealed partial class AiGuideGeneratorService
     /// German words), English guides the English ones. Hints only - the AI keeps searching on its own. The sites were checked as active on 2026-11-03.
     /// Console sites are allowed for what is the same on PC (see PlatformRules).
     /// </summary>
-    internal static string SourceHints(string language) => GameWikiRule(language) + "\n" + (language == Lang.English
+    internal static string SourceHints(string language, GamePlatformContext? platform = null) => GameWikiRule(language) + "\n" + (platform is not null ? ManualSourceHints(language, platform) : language == Lang.English
         ? """
           - Step 2 – research live on the internet. Good starting points (hints, keep searching on your own): Steam community guides (category Achievements),
             Game8 (walkthroughs), Fextralife (wikis), PowerPyx (roadmaps, collectibles), PSNProfiles and PlayStationTrophies.org (roadmaps, missables),
@@ -52,6 +52,40 @@ public sealed partial class AiGuideGeneratorService
             PowerPyx (Roadmaps, Sammelobjekte), PSNProfiles und PlayStationTrophies.org (Roadmaps, Verpassbares). Englische Inhalte gibst du immer in eigenen
             deutschen Worten wieder (Sprachregel).
           """);
+
+    /// <summary>
+    /// Step 2 of the research for a game added by hand: the same German-first rule as for Steam, with starting points for its platform instead of the
+    /// Steam community (trophy and achievement sites first for the platforms that have such lists). Hints only - the AI keeps searching on its own.
+    /// </summary>
+    private static string ManualSourceHints(string language, GamePlatformContext platform)
+    {
+        var english = language == Lang.English;
+        var listSites = platform switch
+        {
+            { IsPlayStation: true } => english
+                ? "PSNProfiles and PlayStationTrophies.org (trophy guides, roadmaps, missables), PowerPyx (trophy guides, collectibles), Exophase (trophy lists)"
+                : "PSNProfiles und PlayStationTrophies.org (Trophäen-Guides, Roadmaps, Verpassbares), PowerPyx (Trophäen-Guides, Sammelobjekte), Exophase (Trophäenlisten)",
+            { IsXbox: true } => english
+                ? "TrueAchievements (achievement guides, solutions), Exophase (achievement lists), PowerPyx (roadmaps, collectibles)"
+                : "TrueAchievements (Erfolgs-Guides, Lösungen), Exophase (Erfolgslisten), PowerPyx (Roadmaps, Sammelobjekte)",
+            { IsNintendo: true } => english
+                ? "Nintendo Life and the game's official Nintendo page (content of the Switch version)"
+                : "Nintendo Life und die offizielle Nintendo-Seite des Spiels (Inhalt der Switch-Version)",
+            _ => english
+                ? $"Exophase (achievement lists of {platform.Name}), PowerPyx (roadmaps, collectibles), the game's {platform.Name} store page"
+                : $"Exophase (Erfolgslisten von {platform.Name}), PowerPyx (Roadmaps, Sammelobjekte), die {platform.Name}-Store-Seite des Spiels",
+        };
+        return english
+            ? $"""
+              - Step 2 – research live on the internet. Good starting points (hints, keep searching on your own): {listSites}, Game8 (walkthroughs),
+                Fextralife (wikis), official patch notes and Reddit.
+              """
+            : $"""
+              - Schritt 2 – recherchiere live im Internet. Gute Startpunkte (Hinweise, suche selbst weiter): zuerst deutsche Quellen – pcgames.de, spieletipps.de und
+                GIGA (Komplettlösungen, Tipps), gameswelt.de (Tipps, Komplettlösungen), mein-mmo.de (nur MMO-/Online-Spiele); dann englische als Ergänzung – {listSites},
+                Game8 (Komplettlösungen), Fextralife (Wikis). Englische Inhalte gibst du immer in eigenen deutschen Worten wieder (Sprachregel).
+              """;
+    }
 
     /// <summary>
     /// Step 1 of every research (owner rule 2026-11-04): a wiki dedicated to THIS game first (fan-made or official), in the guide language when it has that

@@ -16,6 +16,12 @@ interface GameAreaSwitchProps {
   // Slugs of the guide chapters in display order (without Story & Lore)
   chapterSlugs: string[]
   onSelect: (tabSlug: string) => void
+  // The name of the trophy area: a Steam game's live trophies, or the trophies / achievements list of a game added by hand
+  liveLabel?: 'live' | 'trophies' | 'achievements'
+  // The statistics need a Steam link; a game added by hand has none
+  showStats?: boolean
+  // Where Guide leads for a game without any chapter: Story & Lore (default), or another slug, e.g. the page's "no guide yet" card
+  emptyGuideSlug?: string
 }
 
 const AREAS: { area: Area; icon: ReactNode }[] = [
@@ -25,12 +31,12 @@ const AREAS: { area: Area; icon: ReactNode }[] = [
 ]
 
 /**
- * The area switch of a game page, one connected thin bar in the game head: Guide | Live trophies | Statistics. Guide is active on every
+ * The area switch of a game page, one connected thin bar in the game head: Guide | Live trophies | Statistics (a game added by hand: Guide | Trophies, the statistics need a Steam link). Guide is active on every
  * chapter and on Story & Lore, and leads back to the guide tab that was open last for this game (else the first chapter, else Story &
- * Lore). Rendered only for games with a Steam link (the other two areas need one). Every label is drawn in both languages on top of each
+ * Lore). Rendered only for games with a trophy area (a Steam link, or a platform with trophies). Every label is drawn in both languages on top of each
  * other, so the bar never changes its width; when it does not fit the window it becomes the connected vertical list (useFitSegments).
  */
-export function GameAreaSwitch({ gameSlug, activeTab, chapterSlugs, onSelect }: GameAreaSwitchProps) {
+export function GameAreaSwitch({ gameSlug, activeTab, chapterSlugs, onSelect, liveLabel = 'live', showStats = true, emptyGuideSlug = LORE_TAB_SLUG }: GameAreaSwitchProps) {
   const { t } = useTranslation('game')
   const rootRef = useRef<HTMLDivElement>(null)
   useFitSegments(rootRef)
@@ -49,15 +55,15 @@ export function GameAreaSwitch({ gameSlug, activeTab, chapterSlugs, onSelect }: 
     if (area === 'stats') return onSelect(STATS_TAB_SLUG)
     const remembered = lastGuideTab.current?.game === gameSlug ? lastGuideTab.current.tab : ''
     const stillThere = remembered === LORE_TAB_SLUG || chapterSlugs.includes(remembered)
-    onSelect(stillThere ? remembered : (chapterSlugs[0] ?? LORE_TAB_SLUG))
+    onSelect(stillThere ? remembered : (chapterSlugs[0] ?? emptyGuideSlug))
   }
 
-  const label = (area: Area) => <LangStack align="center" render={(language) => fixedT(language, 'game')(`areas.${area}`)} />
+  const label = (area: Area) => <LangStack align="center" render={(language) => fixedT(language, 'game')(`areas.${area === 'live' ? liveLabel : area}`)} />
 
   return (
     <div ref={rootRef} className="pv-game-areas no-print">
       <div className="pv-segmented" role="group" aria-label={t('areas.group')}>
-        {AREAS.map(({ area, icon }) => (
+        {AREAS.filter(({ area }) => showStats || area !== 'stats').map(({ area, icon }) => (
           <button
             key={area}
             type="button"

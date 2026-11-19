@@ -1,12 +1,14 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { useTranslation } from 'react-i18next'
-import { IconBulb, IconCheck, IconEye, IconEyeOff, IconLanguage, IconNote, IconUsers, IconX } from '@tabler/icons-react'
+import { IconAlertTriangle, IconBulb, IconCheck, IconEye, IconEyeOff, IconLanguage, IconNote, IconUsers, IconX } from '@tabler/icons-react'
 import type { LiveAchievementItemDto, RarityTier } from '../api/types'
 import { useFormat } from '../i18n/format'
 import '../styles/live.css'
 import { PinIconButton, type PinControl } from './pins/PinIconButton'
 import { RowIconButton } from './pins/RowIconButton'
+import { TrophyCheckButton, type TrophyCheck } from './trophies/TrophyCheck'
+import { TrophyGlyph, trophyIconSrc } from './trophies/TrophyGlyph'
 import { ProgressBar } from './ui/ProgressBar'
 import { TIER_ICON_COLORS, TierIcon } from './ui/TierIcon'
 import { Tooltip } from './ui/Tooltip'
@@ -112,6 +114,13 @@ export interface TrophyItemProps {
   onOpen: () => void
   // "Im Blick" (pinned achievements): the pin button. Missing = this list has no pins (no button at all)
   pin?: PinControl
+  // A game added by hand: the check that ticks the trophy by hand. Missing = the list is read-only (every Steam list: Steam reports the unlocks)
+  check?: TrophyCheck
+}
+
+// A trophy of a game added by hand that can be missed for good (the researched list says so); a Steam achievement carries no such flag
+function isMissable(ach: LiveAchievementItemDto): boolean {
+  return (ach as { missable?: boolean }).missable === true
 }
 
 function hasCounter(ach: LiveAchievementItemDto): boolean {
@@ -159,6 +168,7 @@ function useTrophyText() {
       // string[]: t() returns the literal text type, which would otherwise become the array's element type
       const lines: string[] = [share === null ? tierName(ach.rarityTier) : t('trophy.detail.shareLine', { tier: tierName(ach.rarityTier), share })]
       lines.push(covered ? t('trophy.hiddenAchievementOpen') : ach.description || t('trophy.noDescription'))
+      if (isMissable(ach) && !covered) lines.push(t('trophy.missable.tooltip'))
       if (tip && !covered) lines.push(t('trophy.detail.howTo', { tip }))
       if (hasCounter(ach)) lines.push(t('trophy.detail.progress', { counter: counterText(ach) }))
       if (notesEnabled && ach.userNote) lines.push(t('trophy.detail.note', { note: ach.userNote }))
@@ -196,18 +206,22 @@ function UnlockTag({ size }: { size: number }) {
 function AchievementIcon({ ach, size, center = false }: { ach: LiveAchievementItemDto; size: number; center?: boolean }) {
   return (
     <span className={`relative inline-flex shrink-0 overflow-hidden ${center ? 'self-center' : 'self-start'}`} style={{ borderRadius: 'var(--radius-sm)' }}>
-      <img
-        src={ach.achieved ? ach.iconUrl : ach.iconGrayUrl || ach.iconUrl}
-        alt=""
-        className="object-cover"
-        style={{
-          inlineSize: size,
-          blockSize: size,
-          borderRadius: 'var(--radius-sm)',
-          filter: ach.achieved ? 'none' : 'grayscale(85%) opacity(75%)',
-          border: '1px solid var(--border-subtle)',
-        }}
-      />
+      {trophyIconSrc(ach) ? (
+        <img
+          src={trophyIconSrc(ach)}
+          alt=""
+          className="object-cover"
+          style={{
+            inlineSize: size,
+            blockSize: size,
+            borderRadius: 'var(--radius-sm)',
+            filter: ach.achieved ? 'none' : 'grayscale(85%) opacity(75%)',
+            border: '1px solid var(--border-subtle)',
+          }}
+        />
+      ) : (
+        <TrophyGlyph tier={ach.rarityTier} size={size} achieved={ach.achieved} />
+      )}
       {ach.achieved && <UnlockTag size={size >= 52 ? 18 : 14} />}
     </span>
   )
@@ -223,19 +237,25 @@ function HeroIcon({ ach, bare }: { ach: LiveAchievementItemDto; bare: boolean })
     <div className="flex shrink-0 items-center justify-center" style={{ inlineSize: bare ? '7.5rem' : 'clamp(6.5rem, 27%, 9.5rem)' }}>
       <span className="relative inline-flex w-full" style={{ maxInlineSize: natural ? `min(9rem, ${Math.round(natural * 1.5)}px)` : '9rem' }}>
         <span
-          className="relative block w-full overflow-hidden"
+          className="pv-hero-icon relative block w-full overflow-hidden"
+          data-tier={ach.rarityTier}
+          data-unlocked={ach.achieved ? '' : undefined}
           style={{
             borderRadius: 'var(--radius-md)',
             border: `1px solid ${ach.achieved ? `color-mix(in srgb, ${tier} 70%, var(--border-subtle))` : 'var(--border-subtle)'}`,
           }}
         >
-          <img
-            src={ach.achieved ? ach.iconUrl : ach.iconGrayUrl || ach.iconUrl}
-            alt=""
-            onLoad={(e) => setNatural(e.currentTarget.naturalWidth)}
-            className="block aspect-square w-full object-cover"
-            style={{ filter: ach.achieved ? 'none' : 'grayscale(85%) opacity(75%)' }}
-          />
+          {trophyIconSrc(ach) ? (
+            <img
+              src={trophyIconSrc(ach)}
+              alt=""
+              onLoad={(e) => setNatural(e.currentTarget.naturalWidth)}
+              className="block aspect-square w-full object-cover"
+              style={{ filter: ach.achieved ? 'none' : 'grayscale(85%) opacity(75%)' }}
+            />
+          ) : (
+            <TrophyGlyph tier={ach.rarityTier} achieved={ach.achieved} className="pv-trophy-glyph--fill" />
+          )}
           {ach.achieved && <UnlockTag size={26} />}
         </span>
       </span>
@@ -272,6 +292,14 @@ function MetaLine({ ach, roomy = false, unlock = false }: { ach: LiveAchievement
           <span className="inline-flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
             <IconEyeOff size={icon} aria-hidden="true" />
             {t('trophy.secret')}
+          </span>
+        </Tooltip>
+      )}
+      {isMissable(ach) && (
+        <Tooltip label={t('trophy.missable.tooltip')} className="inline-flex shrink-0">
+          <span className="inline-flex items-center gap-1" style={{ color: 'var(--accent-gold-text)' }}>
+            <IconAlertTriangle size={icon} aria-hidden="true" />
+            {t('trophy.missable.badge')}
           </span>
         </Tooltip>
       )}
@@ -337,7 +365,7 @@ export function AchievementProgress({ current, max }: { current: number; max: nu
 function CoverNotice({ onReveal }: { onReveal: () => void }) {
   const { t } = useTranslation('live')
   return (
-    <div className="pv-note pv-note--info flex flex-wrap items-center justify-between gap-x-3 gap-y-1 !py-1.5 text-sm" style={{ ['--pv-accent' as string]: 'var(--accent-purple)' }}>
+    <div className="pv-note pv-note--info pv-cover-notice flex flex-wrap items-center justify-between gap-x-3 gap-y-1 !py-1.5 text-sm" style={{ ['--pv-accent' as string]: 'var(--accent-purple)' }}>
       <span style={{ color: 'var(--text-muted)' }}>{t('trophy.hiddenAchievement')}</span>
       <button type="button" onClick={onReveal} className="pv-btn-text !min-h-12" style={{ color: 'var(--accent-purple)' }}>
         <IconEye size={16} /> {t('trophy.reveal')}
@@ -393,6 +421,7 @@ export function LargeCard({
   notesEnabled,
   onNote,
   pin,
+  check,
   bare = false,
 }: Omit<TrophyItemProps, 'onOpen'> & { bare?: boolean }) {
   const { t } = useTrophyText()
@@ -407,6 +436,7 @@ export function LargeCard({
           </h4>
           {pin && <PinIconButton name={ach.displayName} pin={pin} />}
           {notesEnabled && <NoteIconButton ach={ach} onNote={onNote} />}
+          {check && <TrophyCheckButton name={ach.displayName} check={check} />}
         </div>
 
         <MetaLine ach={ach} roomy />
@@ -456,9 +486,10 @@ export function LargeCard({
 // ---------------------------------------------------------------------------------------------------------------
 
 function CompactImage({ ach, size }: { ach: LiveAchievementItemDto; size: number }) {
+  if (!trophyIconSrc(ach)) return <TrophyGlyph tier={ach.rarityTier} size={size} achieved={ach.achieved} />
   return (
     <img
-      src={ach.achieved ? ach.iconUrl : ach.iconGrayUrl || ach.iconUrl}
+      src={trophyIconSrc(ach)}
       alt=""
       className="object-cover"
       style={{
@@ -482,6 +513,7 @@ function CompactHead({
   notesEnabled,
   onNote,
   pin,
+  check,
 }: {
   ach: LiveAchievementItemDto
   tip?: string
@@ -492,6 +524,7 @@ function CompactHead({
   notesEnabled: boolean
   onNote: () => void
   pin?: PinControl
+  check?: TrophyCheck
 }) {
   const { t } = useTranslation('live')
   return (
@@ -504,6 +537,7 @@ function CompactHead({
       )}
       {pin && <PinIconButton name={ach.displayName} pin={pin} />}
       {notesEnabled && <NoteIconButton ach={ach} onNote={onNote} />}
+      {check && <TrophyCheckButton name={ach.displayName} check={check} />}
     </div>
   )
 }
@@ -568,7 +602,7 @@ export type CompactProps = Omit<TrophyItemProps, 'onOpen' | 'onToggleOriginal'>
 
 // Kompakt: the icon is a calm panel flush with the left, top and bottom edge of the card, as tall as the card (the unlock marker is the
 // green tag in that panel). No bottom row at all: the unlock date closes the meta line. The card is as high as its content.
-export function CompactCard({ ach, tip, covered, showOriginal, onReveal, notesEnabled, onNote, pin }: CompactProps) {
+export function CompactCard({ ach, tip, covered, showOriginal, onReveal, notesEnabled, onNote, pin, check }: CompactProps) {
   const [expanded, setExpanded] = useState(false)
   const [tipOpen, setTipOpen] = useState(false)
 
@@ -590,6 +624,7 @@ export function CompactCard({ ach, tip, covered, showOriginal, onReveal, notesEn
           notesEnabled={notesEnabled}
           onNote={onNote}
           pin={pin}
+          check={check}
         />
         <div className="pe-3">
           <MetaLine ach={ach} unlock />
@@ -616,7 +651,7 @@ export function CompactCard({ ach, tip, covered, showOriginal, onReveal, notesEn
 // Kacheln: icon tiles in a dense grid; everything else in our tooltip (hover, focus) and the detail dialog (click)
 // ---------------------------------------------------------------------------------------------------------------
 
-export function TrophyTile({ ach, tip, covered, notesEnabled, onOpen, pin }: TrophyItemProps) {
+export function TrophyTile({ ach, tip, covered, notesEnabled, onOpen, pin, check }: TrophyItemProps) {
   const { t, tierName, percentText, detailText } = useTrophyText()
   return (
     <div className="relative flex min-w-0">
@@ -651,6 +686,7 @@ export function TrophyTile({ ach, tip, covered, notesEnabled, onOpen, pin }: Tro
       </Tooltip>
       {/* In the corner of the tile, beside the centred icon: the tile keeps its size */}
       {pin && <PinIconButton name={ach.displayName} pin={pin} className="absolute end-0 top-0 inline-flex" />}
+      {check && <TrophyCheckButton name={ach.displayName} check={check} className="absolute start-0 top-0 inline-flex" />}
     </div>
   )
 }
@@ -668,18 +704,20 @@ export function tierColorVar(tier: RarityTier): string {
 // Liste: one hairline row per achievement - icon, name with its text, tier and share, unlock state, pin
 // ---------------------------------------------------------------------------------------------------------------
 
-export function TrophyRow({ ach, tip, covered, notesEnabled, onOpen, pin }: TrophyItemProps) {
+export function TrophyRow({ ach, tip, covered, notesEnabled, onOpen, pin, check }: TrophyItemProps) {
   const { t, tierName, number, percentText, unlockStamp, detailText } = useTrophyText()
   const share = percentText(ach)
   const stamp = ach.achieved ? unlockStamp(ach) : null
   return (
     <div className="pv-arow" data-unlocked={ach.achieved ? '' : undefined}>
+      {/* The check of a game added by hand sits first, in a column of its own */}
+      {check && <TrophyCheckButton name={ach.displayName} check={check} className="pv-arow-check inline-flex" />}
       <Tooltip label={ach.displayName} description={detailText(ach, tip, covered, notesEnabled)} className="flex min-w-0 flex-1">
         <button
           type="button"
           onClick={onOpen}
           aria-label={t(ach.achieved ? 'trophy.itemLabelUnlocked' : 'trophy.itemLabelOpen', { name: ach.displayName, tier: tierName(ach.rarityTier) })}
-          className={`pv-arow-main ${pin ? 'pv-arow-main--pin' : ''}`}
+          className={`pv-arow-main ${pin ? 'pv-arow-main--pin' : ''} ${check ? 'pv-arow-main--check' : ''}`.trim()}
         >
           <AchievementIcon ach={ach} size={40} center />
           <span className="pv-arow-text">
@@ -696,6 +734,12 @@ export function TrophyRow({ ach, tip, covered, notesEnabled, onOpen, pin }: Trop
                 <span className="inline-flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
                   <IconUsers size={15} aria-hidden="true" />
                   {share}
+                </span>
+              )}
+              {isMissable(ach) && (
+                <span className="inline-flex items-center gap-1.5" style={{ color: 'var(--accent-gold-text)' }}>
+                  <IconAlertTriangle size={15} aria-hidden="true" />
+                  {t('trophy.missable.badge')}
                 </span>
               )}
             </span>
@@ -745,7 +789,8 @@ export function TrophyDetailDialog({ item, onClose }: { item: TrophyItemProps; o
         role="dialog"
         aria-modal="true"
         aria-label={item.ach.displayName}
-        className="pv-modal relative w-full max-w-lg p-5"
+        className="pv-modal pv-trophy-dialog relative w-full max-w-lg p-5"
+        data-unlocked={item.ach.achieved ? '' : undefined}
         onClick={(e) => e.stopPropagation()}
       >
         <button type="button" onClick={onClose} className="pv-btn pv-icon-btn absolute right-1 top-1" aria-label={t('close')} autoFocus>

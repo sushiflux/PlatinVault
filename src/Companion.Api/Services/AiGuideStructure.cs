@@ -31,23 +31,23 @@ public sealed partial class AiGuideGeneratorService
         : "Braucht ein Erfolg eine Beschaffungskette (Questreihe, Sammeln, ein besonderer Ort, Kämpfe), nennt der Tipp die Kette kurz in der richtigen Reihenfolge – inklusive jedes nötigen Kampfes.";
 
     /// <summary>The mandatory rule for boss cards.</summary>
-    internal static string BossRules(string language) => language == Lang.English
-        ? """
+    internal static string BossRules(string language, GamePlatformContext? platform = null) => language == Lang.English
+        ? $$"""
           Bosses (mandatory rule):
           - Every boss fight and every especially hard mandatory fight gets its own "boss" card – in the walkthrough directly after the step that leads to the
             fight; in other chapters (bestiary, bosses, acquisition paths) where the fight belongs.
           - Numbers only with evidence: every HP entry names the value, what it applies to ("appliesTo": difficulty, phase, version, NG+) and its source
             ("source"). Without a verified value write { "value": "Not documented" } – never invent numbers. Leave out every field you have nothing verified for.
-          - "tactics": the tactic as steps in whole sentences; "achievements": only exact Steam API names from the achievement list (if there is one), otherwise leave it out.
+          - "tactics": the tactic as steps in whole sentences; "achievements": only exact {{ApiNamesFromList(platform, language)}} (if there is one), otherwise leave it out.
           - "missable": true if the fight (or its reward) can be lost. Announce a surprise fight (no warning in the game) with an "alert" BEFORE it.
           """
-        : """
+        : $$"""
           Bosse (verbindliche Regel):
           - Jeder Bosskampf und jeder besonders schwere Pflichtkampf bekommt eine eigene "boss"-Karte – in der Komplettlösung direkt nach dem Schritt, der zum
             Kampf führt; in anderen Kapiteln (Bestiarium, Bosse, Beschaffungswege) dort, wo der Kampf hingehört.
           - Zahlen nur mit Beleg: Jeder HP-Eintrag nennt den Wert, wofür er gilt ("appliesTo": Schwierigkeit, Phase, Version, NG+) und die Quelle ("source").
             Ohne belegten Wert schreibe { "value": "Nicht dokumentiert" } – erfinde nie Zahlen. Lass jedes Feld weg, zu dem du nichts Belegtes weißt.
-          - "tactics": die Taktik als Schritte in ganzen Sätzen; "achievements": nur exakte Steam-API-Namen aus der Erfolgsliste (falls es eine gibt), sonst weglassen.
+          - "tactics": die Taktik als Schritte in ganzen Sätzen; "achievements": nur exakte {{ApiNamesFromList(platform, language)}} (falls es eine gibt), sonst weglassen.
           - "missable": true, wenn der Kampf (oder seine Belohnung) verloren gehen kann. Kündige einen Überraschungskampf (ohne Vorwarnung im Spiel) VORHER mit einem "alert" an.
           """;
 
@@ -174,19 +174,33 @@ public sealed partial class AiGuideGeneratorService
         var english = context.Language == Lang.English;
         if (context.Achievements.Count == 0)
         {
-            return english
-                ? "There is no official achievement list for this guide: leave \"apiName\" and \"achievements\" out."
-                : "Für diesen Guide liegt keine offizielle Erfolgsliste vor: lass \"apiName\" und \"achievements\" weg.";
+            return (context.Platform, english) switch
+            {
+                (null, true) => "There is no official achievement list for this guide: leave \"apiName\" and \"achievements\" out.",
+                (null, false) => "Für diesen Guide liegt keine offizielle Erfolgsliste vor: lass \"apiName\" und \"achievements\" weg.",
+                ({ IsNintendo: true }, true) => "The game has no trophies or achievements: leave \"apiName\" and \"achievements\" out.",
+                ({ IsNintendo: true }, false) => "Das Spiel hat keine Trophäen oder Erfolge: lass \"apiName\" und \"achievements\" weg.",
+                ({ IsPlayStation: true }, true) => "The app has no researched trophy list for this guide yet: leave \"apiName\" and \"achievements\" out.",
+                ({ IsPlayStation: true }, false) => "Für diesen Guide liegt der App noch keine recherchierte Trophäenliste vor: lass \"apiName\" und \"achievements\" weg.",
+                (_, true) => "The app has no researched achievement list for this guide yet: leave \"apiName\" and \"achievements\" out.",
+                _ => "Für diesen Guide liegt der App noch keine recherchierte Erfolgsliste vor: lass \"apiName\" und \"achievements\" weg.",
+            };
         }
         static string Short(string text) => text.Length <= 80 ? text : text[..77].TrimEnd() + "...";
         var lines = context.Achievements.Take(max).Select(a => $"{a.ApiName} | {a.DisplayName} | {Short(a.Description)}");
         var more = context.Achievements.Count > max
             ? english ? $"\n(+{context.Achievements.Count - max} more)" : $"\n(+{context.Achievements.Count - max} weitere)"
             : string.Empty;
-        return (english
-            ? "The official Steam achievements (API name | title | condition) – use ONLY these names for \"apiName\" and \"achievements\":\n"
-            : "Die offiziellen Steam-Erfolge (API-Name | Titel | Bedingung) – nutze für \"apiName\" und \"achievements\" NUR diese Namen:\n")
-            + string.Join("\n", lines) + more;
+        var header = (context.Platform, english) switch
+        {
+            (null, true) => "The official Steam achievements (API name | title | condition) – use ONLY these names for \"apiName\" and \"achievements\":\n",
+            (null, false) => "Die offiziellen Steam-Erfolge (API-Name | Titel | Bedingung) – nutze für \"apiName\" und \"achievements\" NUR diese Namen:\n",
+            ({ IsPlayStation: true } p, true) => $"The trophies of the {p.Name} version (id | title | condition) – use ONLY these ids for \"apiName\" and \"achievements\":\n",
+            ({ IsPlayStation: true } p, false) => $"Die Trophäen der {p.Name}-Version (ID | Titel | Bedingung) – nutze für \"apiName\" und \"achievements\" NUR diese IDs:\n",
+            ({ } p, true) => $"The {p.Name} achievements (id | title | condition) – use ONLY these ids for \"apiName\" and \"achievements\":\n",
+            ({ } p, false) => $"Die {p.Name}-Erfolge (ID | Titel | Bedingung) – nutze für \"apiName\" und \"achievements\" NUR diese IDs:\n",
+        };
+        return header + string.Join("\n", lines) + more;
     }
 
     /// <summary>

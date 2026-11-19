@@ -70,12 +70,16 @@ public sealed partial class IgdbService
         public SupportTypeTable? SupportTypes { get; set; }
         public GameTypeTable? GameTypes { get; set; }
         public Dictionary<int, SeriesCacheEntry> Series { get; set; } = [];
+
+        /// <summary>Facts of games looked up by their IGDB id (games added by hand), keyed by IGDB id; <see cref="Games"/> is keyed by Steam AppID.</summary>
+        public Dictionary<int, GameCacheEntry> GamesById { get; set; } = [];
     }
 
     private readonly TwitchAuthService _auth;
     private readonly ILogger<IgdbService> _logger;
     private readonly string _cacheFile;
     private readonly ConcurrentDictionary<int, GameCacheEntry> _games = new();
+    private readonly ConcurrentDictionary<int, GameCacheEntry> _gamesById = new();
     private readonly ConcurrentDictionary<int, IdCacheEntry> _ids = new();
     private readonly ConcurrentDictionary<int, SeriesCacheEntry> _series = new();
     private readonly ConcurrentDictionary<string, object> _inFlight = new();
@@ -216,25 +220,69 @@ public sealed partial class IgdbService
             return await StoreAsync(steamAppId, null);
         }
 
+        // The Steam path does not need the companies (the Steam store has them): one request less per game
+        return await StoreAsync(steamAppId, await BuildFactsAsync(igdbId.Value, withCompanies: false, ct));
+    }
+
+    /// <summary>
+    /// All IGDB facts for the game with this IGDB id (null = no credentials, or IGDB does not know the game). Used for games added by hand,
+    /// which have no Steam AppID. Cached like <see cref="GetBySteamAppIdAsync"/> (a week, a missing game a day, persisted); includes the
+    /// developers and publishers. Throws <see cref="TwitchApiException"/> when IGDB cannot be reached and no earlier result is cached.
+    /// </summary>
+    public async Task<IgdbGameDto?> GetByIgdbIdAsync(int igdbId, CancellationToken ct)
+    {
+        if (igdbId <= 0 || !IsConfigured)
+        {
+            return null;
+        }
+
+        _gamesById.TryGetValue(igdbId, out var cached);
+        if (cached is not null && IsFresh(cached.FetchedAt, cached.Game is null) && (cached.Game is null || cached.Schema >= GameSchema))
+        {
+            return cached.Game;
+        }
+
+        try
+        {
+            return await SharedAsync($"gameid:{igdbId}", async token =>
+            {
+                var facts = await BuildFactsAsync(igdbId, withCompanies: true, token);
+                _gamesById[igdbId] = new GameCacheEntry(DateTimeOffset.UtcNow, facts, GameSchema);
+                await SaveAsync();
+                return facts;
+            }, ct);
+        }
+        catch (TwitchApiException ex) when (cached?.Game is not null)
+        {
+            _logger.LogDebug("IGDB-Abruf für Spiel {IgdbId} fehlgeschlagen, nutze den älteren Stand: {Message}", igdbId, ex.Message);
+            return cached.Game;
+        }
+    }
+
+    /// <summary>The facts of one IGDB game (several single-level queries); null when IGDB has no such game. Never caches by itself.</summary>
+    private async Task<IgdbGameDto?> BuildFactsAsync(int igdbId, bool withCompanies, CancellationToken ct)
+    {
         using var gameDoc = await QueryAsync(
             "games",
-            "fields name,url,summary,storyline,aggregated_rating,aggregated_rating_count,total_rating,total_rating_count,rating,rating_count," +
+            "fields name,url,summary,storyline,first_release_date,aggregated_rating,aggregated_rating_count,total_rating,total_rating_count,rating,rating_count," +
             "genres.name,themes.name,game_modes.name,player_perspectives.name,franchise.name,franchises.name,collections.name," +
+            "platforms.name,platforms.abbreviation,platforms.slug," +
             "similar_games,cover.image_id,artworks.image_id,screenshots.image_id," +
             $"language_supports.language,language_supports.language_support_type; where id = {igdbId}; limit 1;",
             ct);
         var game = Items(gameDoc.RootElement).FirstOrDefault();
         if (game.ValueKind != JsonValueKind.Object)
         {
-            return await StoreAsync(steamAppId, null);
+            return null;
         }
 
         var similar = await FetchSimilarGamesAsync(game, ct);
-        var timeToBeat = await FetchTimeToBeatAsync(igdbId.Value, ct);
+        var timeToBeat = await FetchTimeToBeatAsync(igdbId, ct);
         var languages = await MapLanguagesAsync(game, ct);
+        var (developers, publishers) = withCompanies ? await FetchCompaniesAsync(igdbId, ct) : ([], []);
 
-        var facts = new IgdbGameDto(
-            IgdbId: igdbId.Value,
+        return new IgdbGameDto(
+            IgdbId: igdbId,
             Name: Clip(Str(game, "name"), 200) ?? $"IGDB {igdbId}",
             Url: SafeIgdbUrl(Str(game, "url")),
             Summary: Clip(Str(game, "summary"), 3000),
@@ -257,9 +305,31 @@ public sealed partial class IgdbService
             Screenshots: Images(game, "screenshots"),
             Languages: languages,
             TimeToBeat: timeToBeat,
-            FetchedAt: DateTimeOffset.UtcNow);
+            FetchedAt: DateTimeOffset.UtcNow,
+            FirstReleaseAt: UnixTime(game, "first_release_date"),
+            Platforms: MapPlatforms(game),
+            Developers: developers,
+            Publishers: publishers);
+    }
 
-        return await StoreAsync(steamAppId, facts);
+    private const int MaxCompanies = 5;
+
+    /// <summary>Developers and publishers of a game (involved_companies, single-level expansion), distinct, at most five each.</summary>
+    private async Task<(List<string> Developers, List<string> Publishers)> FetchCompaniesAsync(int igdbId, CancellationToken ct)
+    {
+        using var doc = await QueryAsync("involved_companies", $"fields company.name,developer,publisher; where game = {igdbId}; limit 50;", ct);
+        var developers = new List<string>();
+        var publishers = new List<string>();
+        foreach (var item in Items(doc.RootElement))
+        {
+            if (!item.TryGetProperty("company", out var company) || Clip(Str(company, "name"), 120) is not { } name)
+            {
+                continue;
+            }
+            if (Bool(item, "developer") && developers.Count < MaxCompanies && !developers.Contains(name, StringComparer.OrdinalIgnoreCase)) developers.Add(name);
+            if (Bool(item, "publisher") && publishers.Count < MaxCompanies && !publishers.Contains(name, StringComparer.OrdinalIgnoreCase)) publishers.Add(name);
+        }
+        return (developers, publishers);
     }
 
     private async Task<IgdbGameDto?> StoreAsync(int steamAppId, IgdbGameDto? facts)
@@ -372,12 +442,18 @@ public sealed partial class IgdbService
         }
 
         var igdbId = await GetIgdbIdAsync(steamAppId, ct);
-        if (igdbId is null)
+        return igdbId is null ? null : await GetSeriesByIgdbIdAsync(igdbId.Value, ct);
+    }
+
+    /// <summary>The series of the game with this IGDB id (games added by hand have no Steam AppID); same rules and cache as <see cref="GetSeriesAsync"/>.</summary>
+    public async Task<SeriesInfo?> GetSeriesByIgdbIdAsync(int igdbId, CancellationToken ct)
+    {
+        if (igdbId <= 0 || !IsConfigured)
         {
             return null;
         }
 
-        _series.TryGetValue(igdbId.Value, out var cached);
+        _series.TryGetValue(igdbId, out var cached);
         if (cached is not null && IsFresh(cached.FetchedAt, cached.Series is null))
         {
             return cached.Series;
@@ -385,11 +461,11 @@ public sealed partial class IgdbService
 
         try
         {
-            return await SharedAsync($"series:{igdbId}", token => FetchSeriesAsync(igdbId.Value, token), ct);
+            return await SharedAsync($"series:{igdbId}", token => FetchSeriesAsync(igdbId, token), ct);
         }
         catch (TwitchApiException ex) when (cached?.Series is not null)
         {
-            _logger.LogDebug("IGDB-Serie für App {AppId} nicht abrufbar, nutze den älteren Stand: {Message}", steamAppId, ex.Message);
+            _logger.LogDebug("IGDB-Serie für Spiel {IgdbId} nicht abrufbar, nutze den älteren Stand: {Message}", igdbId, ex.Message);
             return cached.Series;
         }
     }
@@ -765,6 +841,7 @@ public sealed partial class IgdbService
             }
 
             foreach (var (appId, entry) in saved.Games) _games[appId] = entry;
+            foreach (var (igdbId, entry) in saved.GamesById) _gamesById[igdbId] = entry;
             foreach (var (appId, entry) in saved.Ids) _ids[appId] = entry;
             _steamSource = saved.SteamSource;
             _languages = saved.Languages;
@@ -787,6 +864,7 @@ public sealed partial class IgdbService
             var state = new PersistedState
             {
                 Games = _games.Where(p => p.Value.FetchedAt > cutoff).ToDictionary(p => p.Key, p => p.Value),
+                GamesById = _gamesById.Where(p => p.Value.FetchedAt > cutoff).ToDictionary(p => p.Key, p => p.Value),
                 Ids = _ids.Where(p => p.Value.FetchedAt > cutoff).ToDictionary(p => p.Key, p => p.Value),
                 SteamSource = _steamSource,
                 Languages = _languages,
@@ -834,6 +912,16 @@ public sealed partial class IgdbService
     private static int? Int(JsonElement element, string name) =>
         element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var p) && p.ValueKind == JsonValueKind.Number && p.TryGetInt32(out var v)
             ? v
+            : null;
+
+    private static bool Bool(JsonElement element, string name) =>
+        element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var p) && p.ValueKind == JsonValueKind.True;
+
+    /// <summary>A unix timestamp (seconds) of IGDB as UTC; anything outside a plausible range is left out.</summary>
+    private static DateTimeOffset? UnixTime(JsonElement element, string name) =>
+        element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var p) && p.ValueKind == JsonValueKind.Number && p.TryGetInt64(out var seconds)
+        && seconds is > -2_208_988_800L and < 32_503_680_000L
+            ? DateTimeOffset.FromUnixTimeSeconds(seconds)
             : null;
 
     /// <summary>

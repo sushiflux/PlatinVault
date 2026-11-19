@@ -305,3 +305,13 @@
     border-inline-start: 0;
   }
 }
+
+/* The one total figure of a game added by hand without grades (components/TrophyTierPills.tsx, variant "total"): the neutral colour, no tier */
+.pv-fig[data-tier='Total'] .pv-fig-name {
+  color: var(--text-secondary);
+}
+
+.pv-fig-total-icon {
+  flex: none;
+  color: var(--text-muted);
+}

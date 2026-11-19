@@ -7,6 +7,33 @@
 <a name="english"></a>
 ## English
 
+## v2026.11.27.7.26985 (α)
+
+### ✨ New
+
+- **Games from other platforms:** with "+ Add game" on the overview you add games from PlayStation 5 and 4, Xbox, Epic
+  Games, GOG, Nintendo Switch, Ubisoft Connect, EA app and Battle.net. With your Twitch credentials you search for the game
+  in IGDB by name, number or link and get the cover and facts right away; without them you enter the title and platform and
+  upload your own cover.
+- **Trophy list by AI:** on the game page, "Research trophy list" fetches the game's trophies or achievements, with one of
+  your AIs or via "My AI plan". The sources are shown; the AI can be wrong. You then create the guide as usual, and
+  it builds on the list. Switch games have no trophies and get a guide only.
+- **Ticking by hand:** you tick the trophies yourself and get the same popup with sound as for a Steam achievement. On
+  PlayStation, platinum comes by itself as soon as every other trophy of the base game is ticked. Progress, platinum and the
+  trophy cabinet count these games too.
+- Every game tile shows the platform at the top left of the cover, for example "PS5", "Xbox" or "Steam".
+- **Two designs to choose from:** under Settings → System you pick "Minimal" or "Classic", the look from before the
+  redesign. The choice applies to the whole installation, also on your phone and in the Windows program.
+
+### 🔄 Changed
+
+- "All games" also shows the games you added by hand, and then works without a Steam library too.
+- You can remove a game you added by hand again and change its cover later.
+
+### 🔧 Fix
+
+- Menus, windows and popovers have their fine shadow again in the "Minimal" design and stand out from the background.
+
 ## v2026.11.26.7.3366 (α)
 
 ### ✨ New
@@ -170,6 +197,33 @@
 
 <a name="deutsch"></a>
 ## Deutsch
+
+## v2026.11.27.7.26985 (α)
+
+### ✨ Neu
+
+- **Spiele von anderen Plattformen:** Über „+ Spiel hinzufügen“ auf der Übersicht legst du Spiele von PlayStation 5 und 4,
+  Xbox, Epic Games, GOG, Nintendo Switch, Ubisoft Connect, EA app und Battle.net an. Mit deinen Twitch-Zugangsdaten suchst
+  du das Spiel in IGDB nach Name, Nummer oder Link und bekommst Cover und Fakten gleich mit; ohne sie gibst du Titel und
+  Plattform ein und lädst ein eigenes Cover hoch.
+- **Trophäenliste per KI:** Auf der Spielseite holt „Trophäenliste recherchieren“ die Trophäen oder Erfolge des Spiels, mit
+  einer deiner KIs oder über „Mein KI-Abo“. Die Quellen stehen dabei; die KI kann sich irren. Den Guide erstellst du danach
+  wie gewohnt, er baut auf der Liste auf. Switch-Spiele haben keine Trophäen und bekommen nur einen Guide.
+- **Abhaken von Hand:** Du hakst die Trophäen selbst ab und bekommst dasselbe Popup mit Ton wie bei einem Steam-Erfolg. Bei
+  PlayStation kommt Platin von selbst, sobald alle anderen Trophäen des Hauptspiels abgehakt sind. Fortschritt, Platin und
+  Trophäenschrank zählen diese Spiele mit.
+- Auf jeder Spielkachel steht oben links auf dem Cover die Plattform, zum Beispiel „PS5“, „Xbox“ oder „Steam“.
+- **Zwei Designs zur Wahl:** Unter Einstellungen → System wählst du „Leicht“ oder „Klassisch“, das Aussehen von vor dem
+  Umbau. Die Wahl gilt für die ganze Installation, auch auf dem Handy und im Windows-Programm.
+
+### 🔄 Geändert
+
+- „Alle Spiele“ zeigt auch die Spiele, die du von Hand angelegt hast, und geht dann auch ohne Steam-Bibliothek.
+- Ein von Hand angelegtes Spiel kannst du wieder entfernen und sein Cover später austauschen.
+
+### 🔧 Behoben
+
+- Menüs, Fenster und Popover haben im Design „Leicht“ wieder ihren feinen Schatten und heben sich so vom Hintergrund ab.
 
 ## v2026.11.26.7.3366 (α)
 

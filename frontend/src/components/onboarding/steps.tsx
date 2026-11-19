@@ -778,6 +778,7 @@ export function useTourSteps(): TourStep[] {
           { lead: t('steps.games.points.account.lead'), text: t('steps.games.points.account.text') },
           { lead: t('steps.games.points.key.lead'), text: t('steps.games.points.key.text') },
           { lead: t('steps.games.points.star.lead'), text: t('steps.games.points.star.text') },
+          { lead: t('steps.games.points.manual.lead'), text: t('steps.games.points.manual.text') },
         ],
         Visual: AddGamesVisual,
       },

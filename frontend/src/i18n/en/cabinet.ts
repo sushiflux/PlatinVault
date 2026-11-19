@@ -60,6 +60,7 @@ const cabinet = {
     panel: 'Details for {{name}}',
     close: 'Close details',
     platinumOn: 'Platinum on {{date}}',
+    platform: 'Platform',
     trophies: 'Trophies',
     unlocked: '{{n}} unlocked',
     duration: 'Duration',

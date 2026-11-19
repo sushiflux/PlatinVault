@@ -54,6 +54,16 @@ public sealed record GameSummaryDto(
     public long? InstallSizeBytes { get; init; }
     public int? SortMetacritic { get; init; }
     public int? SortReviewPercent { get; init; }
+
+    // Platform of the game (GamePlatforms): "steam" for every Steam library game, else a game added by hand. PlatformVariant "ps5"/"ps4" for PlayStation.
+    public string Platform { get; init; } = "steam";
+    public string? PlatformVariant { get; init; }
+    public int? IgdbId { get; init; }
+    // When the trophy list of a manual game was last researched; HasTrophyList = there is one (always false for Steam games)
+    public DateTimeOffset? TrophyListResearchedAt { get; init; }
+    public bool HasTrophyList { get; init; }
+    // First release (UTC) of a manual game; the release sort reads ReleaseAt, which falls back to it
+    public DateTimeOffset? FirstReleaseAt { get; init; }
 }
 
 /// <summary>Full game details including all custom tabs, dynamic content sections, and checked item keys.</summary>
@@ -84,7 +94,19 @@ public sealed record GameDetailDto(
     // Cross-chapter links (see GuideLinker): where a defining row is referenced from, and where a referenced row lives. Always present, empty when nothing is linked.
     Dictionary<string, List<GuideItemLinkDto>> ItemLinks,
     Dictionary<string, GuideRefTargetDto> RefTargets
-);
+)
+{
+    // Platform and the facts of a manual game (see GameSummaryDto); FactsSource "igdb" | "ai" | null
+    public string Platform { get; init; } = "steam";
+    public string? PlatformVariant { get; init; }
+    public int? IgdbId { get; init; }
+    public DateTimeOffset? TrophyListResearchedAt { get; init; }
+    public bool HasTrophyList { get; init; }
+    public string? Developer { get; init; }
+    public string? Publisher { get; init; }
+    public string? Summary { get; init; }
+    public string? FactsSource { get; init; }
+}
 
 /// <summary>
 /// A place that references a defining row: Kind "row" (a checklist row with Ref) or "quest" (a side_quests entry with Ref). Path = "part · area" from the
@@ -400,6 +422,13 @@ public sealed record LibrarySummaryDto(
     public bool MetaScanning { get; init; }
     public int MetaDone { get; init; }
     public int MetaTotal { get; init; }
+
+    // The games added by hand (any platform but Steam): how many there are, their trophies in total / ticked, and how many reached platinum.
+    // The Steam figures above never include them; "All games" adds both sides.
+    public int ManualGameCount { get; init; }
+    public int ManualTrophiesTotal { get; init; }
+    public int ManualTrophiesUnlocked { get; init; }
+    public int ManualPerfectGames { get; init; }
 }
 
 /// <summary>The linked Steam account for the page header; every field is null when Steam does not provide it
@@ -492,11 +521,11 @@ public sealed record LiveGameAchievementsDto(
 public sealed record LiveRarityStatusDto(string State, DateTimeOffset? FetchedAt, string? Message, string? Detail);
 
 /// <summary>The pinned achievements ("Im Blick") of one game in display order; Max = how many may be pinned per game.</summary>
-public sealed record PinnedAchievementsDto(uint AppId, IReadOnlyList<string> ApiNames, int Max);
+public sealed record PinnedAchievementsDto(uint AppId, IReadOnlyList<string> ApiNames, int Max, Guid? GameId = null);
 
-public sealed record PinAchievementRequest(uint AppId, string? ApiName);
+public sealed record PinAchievementRequest(uint AppId, string? ApiName, Guid? GameId = null);
 
-public sealed record UnpinAchievementsRequest(uint AppId, List<string>? ApiNames);
+public sealed record UnpinAchievementsRequest(uint AppId, List<string>? ApiNames, Guid? GameId = null);
 
 public sealed record LiveStatusDto(
     uint RunningAppId,
@@ -523,12 +552,16 @@ public sealed record LiveEventDto(
     LiveAchievementItemDto? Achievement,
     string? GameName,
     int AppId,
-    int? Total);
+    int? Total,
+    // "manual" = ticked by hand in a game added by hand (AppId 0); null = detected by Steam
+    string? Source = null);
 
 public sealed record SaveAchievementNoteRequest(
     uint AppId,
     string ApiName,
-    string Note
+    string Note,
+    // Manual games (no Steam AppID, AppId 0): the note is stored per game id and trophy key
+    Guid? GameId = null
 );
 
 /// <summary>Realtime bridge ("PlatinVault Bridge", PlatinVault.Bridge.exe): the running game plus the unlocked state of its achievements.</summary>
@@ -631,7 +664,9 @@ public sealed record SettingsResponseDto(
     // What happens to a pinned achievement when it is unlocked (setting "live.pins_after_unlock"): "keep" (default) / "remove"
     string PinsAfterUnlock = Settings.SettingsStore.DefaultPinsAfterUnlock,
     // How long a trophy popup stays on screen, in whole seconds (setting "live.popup_seconds", 2..10, default 5)
-    int PopupSeconds = Settings.SettingsStore.DefaultPopupSeconds
+    int PopupSeconds = Settings.SettingsStore.DefaultPopupSeconds,
+    // Visual design of the UI (setting "ui.design"): "light" (default) / "classic"
+    string UiDesign = Settings.SettingsStore.DefaultUiDesign
 );
 
 /// <summary>
@@ -731,7 +766,9 @@ public sealed record UpdateSettingsRequest(
     string? PinsAfterUnlock = null,
     // Trophy popup duration in whole seconds, 2..10 (anything else, a fraction included, is rejected with 400): null = keep what is stored.
     // A double on purpose: "5.5" reaches the validation and gets the bilingual message instead of a generic binding error.
-    double? PopupSeconds = null
+    double? PopupSeconds = null,
+    // "light" / "classic" (anything else is rejected with 400): null = keep what is stored
+    string? UiDesign = null
 );
 
 public sealed record AiProviderModelsRequestDto(
@@ -806,7 +843,10 @@ public sealed record GuideExportDocument(
     DateTimeOffset ExportedAt,
     string ExportedBy,
     GuideExportGame Game,
-    List<GuideExportTab> Tabs
+    List<GuideExportTab> Tabs,
+    // Only a game added by hand has them: its researched trophy list (never the ticks) and the sources of that list
+    List<GuideExportTrophy>? Trophies = null,
+    List<TrophySourceDto>? TrophySources = null
 );
 
 public sealed record GuideExportGame(
@@ -821,7 +861,34 @@ public sealed record GuideExportGame(
     string DifficultyInfo,
     string GenreTags,
     // "de" / "en": the language the guide text is written in (optional in files; files without it are read as German)
-    string? ContentLanguage = null
+    string? ContentLanguage = null,
+    // A game added by hand (all optional; a Steam game's file has none of them): platform (+ "ps5"/"ps4"), IGDB id, the facts and their source
+    string? Platform = null,
+    string? PlatformVariant = null,
+    int? IgdbId = null,
+    string? FactsSource = null,
+    string? Developer = null,
+    string? Publisher = null,
+    string? Summary = null,
+    DateTimeOffset? FirstReleaseAt = null,
+    string? ReleaseDate = null,
+    DateTimeOffset? TrophyListResearchedAt = null
+);
+
+/// <summary>One trophy of a researched list in a guide file (no tick: progress is not part of a file). Empty optional texts are left out.</summary>
+public sealed record GuideExportTrophy(
+    string Key,
+    string Name,
+    string? OriginalName,
+    string Description,
+    string? Grade,
+    int? Points,
+    double? RarityPercent,
+    bool? Hidden,
+    bool? Missable,
+    string? Group,
+    string? Category,
+    string? Tip
 );
 
 public sealed record GuideExportTab(
@@ -962,7 +1029,12 @@ public sealed record IgdbGameDto(
     List<IgdbImageDto> Screenshots,
     List<IgdbLanguageDto> Languages,
     IgdbTimeToBeatDto? TimeToBeat,
-    DateTimeOffset FetchedAt
+    DateTimeOffset FetchedAt,
+    // Added for manual games (all optional, missing in older cache entries): first release (UTC), the platforms with our mapping, the companies
+    DateTimeOffset? FirstReleaseAt = null,
+    List<IgdbPlatformDto>? Platforms = null,
+    List<string>? Developers = null,
+    List<string>? Publishers = null
 );
 
 public sealed record IgdbSimilarGameDto(int IgdbId, string Name, string? CoverUrl);

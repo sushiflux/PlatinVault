@@ -23,6 +23,7 @@ import {
   IconArrowsSort,
   IconFileImport,
   IconLoader2,
+  IconPlus,
   IconSearch,
   IconTrophy,
 } from '@tabler/icons-react'
@@ -54,6 +55,7 @@ import {
   type TileDensity,
 } from '../components/GameTiles'
 import { DashboardEmptyHelp } from '../components/DashboardEmptyHelp'
+import { AddGameDialog } from '../components/addgame/AddGameDialog'
 import { HintTour } from '../components/onboarding/HintTour'
 import { useScreenHints } from '../components/onboarding/useScreenHints'
 import { useOpenSettings, useShell } from '../components/shell/ShellContext'
@@ -63,6 +65,8 @@ import { ReservedText } from '../components/ui/ReservedText'
 import { Tooltip } from '../components/ui/Tooltip'
 import { isPlatinumGame } from '../components/platinum/platinum'
 import { describeError } from '../utils/apiErrorText'
+import { useDialogParam } from '../utils/useDialogParam'
+import { isManualGame } from '../utils/platforms'
 import {
   ORDERS_BY_VIEW,
   countMissing,
@@ -75,6 +79,9 @@ import { useDashboardSort } from '../utils/useDashboardSort'
 import { LiveCountProvider, useTwitchLiveCounts } from '../utils/useTwitchLiveCounts'
 import { useSteamReach } from '../utils/useSteamReach'
 import '../styles/dashboard.css'
+
+// One entry of "All games": a game of the Steam library, or a game added by hand (it is in the vault's own list; its star is the favourite flag of that list)
+type LibraryEntry = { kind: 'steam'; game: SteamOwnedGameDto } | { kind: 'manual'; game: GameSummaryDto }
 
 interface DashboardPageProps {
   // Which view the route shows: "/" = the favourites (Übersicht), "/library" = the whole Steam library (Alle Spiele)
@@ -173,6 +180,8 @@ export function DashboardPage({ view: routeView }: DashboardPageProps) {
   // The failure of the last action (reorder, favourite, delete, import) as a floating notice: what failed, why, the raw text
   const [failure, setFailure] = useState<{ title: string; message: string; details: string | null } | null>(null)
   const fail = (title: string, err: unknown) => setFailure({ title, ...describeError(err, t('notice.unknown')) })
+  // "+ Spiel hinzufügen": the dialog lives in the address (?dialog=addgame), so a reload keeps it open and Back closes it
+  const [addOpen, setAddOpen] = useDialogParam('addgame')
   const [importing, setImporting] = useState(false)
   const importInputRef = useRef<HTMLInputElement>(null)
   // The one onboarding tour lives in the shell; the coach marks of this page wait while it is open
@@ -207,6 +216,11 @@ export function DashboardPage({ view: routeView }: DashboardPageProps) {
 
   // "Favourites" = the starred games as tiles (route /), "All games" = the whole Steam library (route /library, needs the Steam key)
   const favoriteGames = games.filter((g) => g.isFavorite)
+  // The games added by hand (any platform but Steam): "All games" lists all of them, the favourites view the starred ones (above)
+  const manualGames = games.filter(isManualGame)
+  const manualGameCount = Math.max(librarySummary?.manualGameCount ?? 0, manualGames.length)
+  // The number behind "All games": the Steam library and the games added by hand
+  const libraryTotal = librarySummary ? librarySummary.libraryGameCount + manualGameCount : undefined
   // A reload on /library keeps the "All games" view while the library answer is still on its way (a loading card, never the favourites)
   const waitingForLibrary = routeView === 'all' && !hasLibrary && librarySummaryPending
   const view = routeView === 'all' && (hasLibrary || waitingForLibrary) ? 'all' : 'favorites'
@@ -337,14 +351,18 @@ export function DashboardPage({ view: routeView }: DashboardPageProps) {
 
   // Games already in PlatinVault use their stored (healed) cover
   const vaultCovers = new Map(games.filter((g) => g.steamAppId && g.coverUrl).map((g) => [g.steamAppId, g.coverUrl]))
-  const filteredLibrary = sortItems(
-    (library?.games ?? [])
+  // "All games" = the Steam library plus the games added by hand, sorted together (a manual game has no playtime or size: it goes with the unknowns)
+  const libraryEntries: LibraryEntry[] = [
+    ...(library?.games ?? [])
       .map((g) => (vaultCovers.has(g.appId) ? { ...g, coverUrl: vaultCovers.get(g.appId)! } : g))
-      .filter((g) => g.name.toLowerCase().includes(needle)),
-    libraryValues,
-    libraryChoice,
-    sortLocale
-  )
+      .filter((g) => g.name.toLowerCase().includes(needle))
+      .map((game): LibraryEntry => ({ kind: 'steam', game })),
+    ...manualGames
+      .filter((g) => `${g.title} ${gameGenres(g).join(' ')}`.toLowerCase().includes(needle))
+      .map((game): LibraryEntry => ({ kind: 'manual', game })),
+  ]
+  const entryValues = (entry: LibraryEntry) => (entry.kind === 'steam' ? libraryValues(entry.game) : favoriteValues(entry.game))
+  const filteredLibrary = sortItems(libraryEntries, entryValues, libraryChoice, sortLocale)
 
   // Live Twitch streams per card (the number on the Twitch buttons): the cards that are on screen report themselves and get their count in small
   // batches; only with Twitch credentials
@@ -356,7 +374,7 @@ export function DashboardPage({ view: routeView }: DashboardPageProps) {
   const shownCount = view === 'all' ? filteredLibrary.length : filteredGames.length
   const missingCount =
     view === 'all'
-      ? countMissing(filteredLibrary, libraryValues, activeOrder)
+      ? countMissing(filteredLibrary, entryValues, activeOrder)
       : countMissing(filteredGames, favoriteValues, activeOrder)
   // The server looks release dates / reviews up in the background, and rates the library's trophies; until that is done the list
   // is sorted by what is known so far and says so (instead of silently showing an incomplete order as if it were final)
@@ -428,14 +446,19 @@ export function DashboardPage({ view: routeView }: DashboardPageProps) {
 
   // Progress = Steam trophies only; the figures follow the chosen view: the favourites, or the whole library
   const showLibraryFigures = view === 'all' && librarySummary != null
-  const totalTrophiesAllGames = showLibraryFigures ? librarySummary.trophiesTotal : favoriteGames.reduce((sum, g) => sum + g.trophiesTotal, 0)
-  const unlockedTrophiesAllGames = showLibraryFigures ? librarySummary.trophiesUnlocked : favoriteGames.reduce((sum, g) => sum + g.trophiesUnlocked, 0)
+  // The library figures of the server are the Steam ones; the games added by hand come on top (manual* of the same answer)
+  const totalTrophiesAllGames = showLibraryFigures
+    ? librarySummary.trophiesTotal + (librarySummary.manualTrophiesTotal ?? 0)
+    : favoriteGames.reduce((sum, g) => sum + g.trophiesTotal, 0)
+  const unlockedTrophiesAllGames = showLibraryFigures
+    ? librarySummary.trophiesUnlocked + (librarySummary.manualTrophiesUnlocked ?? 0)
+    : favoriteGames.reduce((sum, g) => sum + g.trophiesUnlocked, 0)
   const overallPercent =
     totalTrophiesAllGames > 0 ? Math.floor((unlockedTrophiesAllGames / totalTrophiesAllGames) * 100) : 0
-  const completedGamesCount = showLibraryFigures ? librarySummary.perfectGames : favoriteGames.filter(isPlatinumGame).length
+  const completedGamesCount = showLibraryFigures ? librarySummary.perfectGames + (librarySummary.manualPerfectGames ?? 0) : favoriteGames.filter(isPlatinumGame).length
   const figures = {
     mode: showLibraryFigures ? ('library' as const) : ('favorites' as const),
-    games: showLibraryFigures ? librarySummary.libraryGameCount : favoriteGames.length,
+    games: showLibraryFigures ? librarySummary.libraryGameCount + manualGameCount : favoriteGames.length,
     unlocked: unlockedTrophiesAllGames,
     total: totalTrophiesAllGames,
     percent: overallPercent,
@@ -484,22 +507,29 @@ export function DashboardPage({ view: routeView }: DashboardPageProps) {
       {/* Page head: the title of the view and the guide import */}
       <div className="pv-dash-head">
         <h1 className="pv-page-title">{view === 'all' ? t('shell:nav.library') : t('hero.title')}</h1>
-        {/* Games come from the Steam library only (the star in "All games"); what is added here is a guide file */}
-        <IconButton
-          label={t('header.importGuide.label')}
-          description={t('header.importGuide.description')}
-          busy={importing}
-          onClick={() => importInputRef.current?.click()}
-        >
-          <IconFileImport size={20} />
-        </IconButton>
-        <input
-          ref={importInputRef}
-          type="file"
-          accept=".json,application/json"
-          className="hidden"
-          onChange={(e) => void handleImportFile(e.target.files?.[0])}
-        />
+        {/* Steam games come from the library (the star in "All games"); a game of another platform is added by hand with the text button, a guide file
+            with the icon beside it */}
+        <div className="pv-dash-head-act">
+          <IconButton
+            label={t('header.importGuide.label')}
+            description={t('header.importGuide.description')}
+            busy={importing}
+            onClick={() => importInputRef.current?.click()}
+          >
+            <IconFileImport size={20} />
+          </IconButton>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={(e) => void handleImportFile(e.target.files?.[0])}
+          />
+          <button type="button" className="pv-btn pv-dash-add" data-hint="dashboard-add-game" onClick={() => setAddOpen(true)}>
+            <IconPlus size={18} aria-hidden="true" />
+            <span>{t('addGame.open.label')}</span>
+          </button>
+        </div>
       </div>
 
       {/* The game that is running right now (only while a bridge or a local Steam says so) */}
@@ -544,7 +574,7 @@ export function DashboardPage({ view: routeView }: DashboardPageProps) {
             view={view}
             onSelect={selectView}
             favoritesCount={favoriteGames.length}
-            libraryCount={librarySummary?.libraryGameCount}
+            libraryCount={libraryTotal}
           />
         )}
         {reserveViewSwitch && <div className="pv-dash-switch-slot" aria-hidden="true" />}
@@ -558,7 +588,7 @@ export function DashboardPage({ view: routeView }: DashboardPageProps) {
           <div className="pv-dash-countline">
             <span className="pv-dash-hint">
               {view === 'all'
-                ? t('hero.showingLibrary', { shown: fmt.number(filteredLibrary.length), count: library?.games.length ?? 0 })
+                ? t('hero.showingLibrary', { shown: fmt.number(filteredLibrary.length), count: (library?.games.length ?? 0) + manualGames.length })
                 : t('hero.showingFavorites', { shown: fmt.number(filteredGames.length), count: favoriteGames.length })}
               {view === 'favorites' && favoriteGames.length > 1 && (
                 <Tooltip
@@ -612,7 +642,7 @@ export function DashboardPage({ view: routeView }: DashboardPageProps) {
         view={view}
         onSelectView={selectView}
         favoritesCount={favoriteGames.length}
-        libraryCount={librarySummary?.libraryGameCount}
+        libraryCount={libraryTotal}
         density={density}
         onDensity={handleDensityChange}
         sortView={view}
@@ -631,15 +661,20 @@ export function DashboardPage({ view: routeView }: DashboardPageProps) {
             </div>
           ) : (
             <TileContainer density={density}>
-              {filteredLibrary.map((game) => (
-                <LibraryTile
-                  key={game.appId}
-                  game={game}
-                  density={density}
-                  busy={busyAppIds.includes(game.appId)}
-                  onToggleFavorite={(g) => void handleToggleLibraryFavorite(g)}
-                />
-              ))}
+              {filteredLibrary.map((entry) =>
+                entry.kind === 'steam' ? (
+                  <LibraryTile
+                    key={`steam-${entry.game.appId}`}
+                    game={entry.game}
+                    density={density}
+                    busy={busyAppIds.includes(entry.game.appId)}
+                    onToggleFavorite={(g) => void handleToggleLibraryFavorite(g)}
+                  />
+                ) : (
+                  // A game added by hand: the same tile as on the overview, its star is the favourite flag of the vault's own list
+                  <GameTile key={`game-${entry.game.id}`} game={entry.game} density={density} onToggleFavorite={(g) => void handleToggleFavorite(g)} />
+                )
+              )}
             </TileContainer>
           )
         ) : isLoading ? (
@@ -651,6 +686,7 @@ export function DashboardPage({ view: routeView }: DashboardPageProps) {
               hasLibrary={hasLibrary}
               onOpenSettings={(tab) => openSettings(tab)}
               onShowLibrary={() => selectView('all')}
+              onAddGame={() => setAddOpen(true)}
             />
           </div>
         ) : (
@@ -694,6 +730,8 @@ export function DashboardPage({ view: routeView }: DashboardPageProps) {
           </DndContext>
         )}
       </LiveCountProvider>
+
+      {addOpen && <AddGameDialog onClose={() => setAddOpen(false)} />}
 
       <FloatingNoticeStack>
         {failure && (

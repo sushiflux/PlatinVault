@@ -46,7 +46,8 @@ public sealed partial class AiGuideGeneratorService
         var openExample = parts.Length > 2 ? $"{LorePartId(2)}–{last}" : last;
         var title = game.Title.Replace("\"", "'");
         var appId = game.SteamAppId is > 0 ? game.SteamAppId.Value.ToString() : "null";
-        var appIdLine = game.SteamAppId is > 0 ? T($"Steam-AppID {game.SteamAppId}", $"Steam AppID {game.SteamAppId}") : T("Steam-AppID unbekannt", "Steam AppID unknown");
+        // "Steam AppID 123 – the Steam version on PC" (unchanged for Steam games) or the platform version of a game added by hand
+        var identity = ManualIdentity(game, language);
         var answerFile = ManualLoreAnswerFileName(game);
         var partSkeletons = string.Join(", ", Enumerable.Range(0, parts.Length).Select(i => $"{{ \"part\": \"{LorePartId(i)}\", \"sections\": [...] }}"));
         var skeleton = $"{{ \"game\": \"{title}\", \"steamAppId\": {appId}, \"parts\": [ {partSkeletons} ] }}";
@@ -56,7 +57,7 @@ public sealed partial class AiGuideGeneratorService
             $"Du schreibst den kompletten Reiter „Story & Lore“ für „{game.Title}“ – für Spieler, die die Handlung und die Hintergründe wirklich verstehen wollen. Er besteht aus {parts.Length} Teilen ({first}–{last}), alle in diesem einen Chat. SPOILER sind ausdrücklich gewünscht (Wendungen, Enden, Schicksale der Figuren). Schreibe ALLE Texte auf Deutsch.",
             $"You are writing the complete \"Story & Lore\" tab for \"{game.Title}\" – for players who really want to understand the plot and the background. It consists of {parts.Length} parts ({first}–{last}), all of them in this one chat. SPOILERS are explicitly wanted (twists, endings, fates of the characters). Write ALL texts in English."));
         text.AppendLine();
-        text.AppendLine(T("Bekannte Fakten aus Steam:", "Known facts from Steam:"));
+        text.AppendLine(FactsHeader(context.Platform, language));
         text.AppendLine(context.FactsBlock);
         text.AppendLine();
         text.AppendLine(T(
@@ -65,15 +66,15 @@ public sealed partial class AiGuideGeneratorService
         text.AppendLine();
         text.AppendLine(LoreStyleAndBlocks(language));
         text.AppendLine();
-        text.AppendLine(ResearchRules(language));
+        text.AppendLine(ResearchRules(language, gamePlatform: context.Platform));
         text.AppendLine();
 
         text.AppendLine(T(
             "Ausgabe in diesem Chat (das gilt zusätzlich und hat bei der Ausgabe Vorrang vor dem Satz „ohne Markdown-Codeblock“ oben):",
             "Output in this chat (this applies in addition and wins over the sentence \"without a Markdown code block\" above):"));
         text.AppendLine(T(
-            $"- Gemeint ist genau dieses Spiel: „{game.Title}“, {appIdLine} – die Steam-Version auf dem PC. Prüfe vor dem Schreiben, dass du dieses Spiel meinst – nicht ein gleichnamiges Spiel, einen Vorgänger, Nachfolger, ein Remake oder eine Demo.",
-            $"- The game is exactly this one: \"{game.Title}\", {appIdLine} – the Steam version on PC. Before writing, make sure you mean this game – not a game with the same name, a predecessor, a successor, a remake or a demo."));
+            $"- Gemeint ist genau dieses Spiel: „{game.Title}“, {identity}. Prüfe vor dem Schreiben, dass du dieses Spiel meinst – nicht ein gleichnamiges Spiel, einen Vorgänger, Nachfolger, ein Remake oder eine Demo.",
+            $"- The game is exactly this one: \"{game.Title}\", {identity}. Before writing, make sure you mean this game – not a game with the same name, a predecessor, a successor, a remake or a demo."));
         text.AppendLine(T(
             $"- Die Ausgabe ist EIN JSON-Objekt mit den Feldern „game“, „steamAppId“ und „parts“, in dieser Reihenfolge. „parts“ enthält GENAU einen Eintrag pro Teil in der Reihenfolge der Liste; jeder Eintrag hat das Feld „part“ (die Kennung aus der Liste, exakt, z. B. „{first}“) und das Feld „sections“ (die Abschnitte dieses Teils). Beginne jeden Teil in einer neuen Zeile. Im Objekt steht sonst nichts – kein Text, keine Kommentare, keine Platzhalter. So (verkürzt, schreibe die echten Inhalte): {skeleton}",
             $"- The output is ONE JSON object with the fields \"game\", \"steamAppId\" and \"parts\", in this order. \"parts\" contains EXACTLY one entry per part, in the order of the list; every entry has the field \"part\" (the id from the list, exactly, e.g. \"{first}\") and the field \"sections\" (the sections of this part). Start every part on a new line. Nothing else is in the object – no text, no comments, no placeholders. Like this (shortened, write the real content): {skeleton}"));

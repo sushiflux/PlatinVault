@@ -33,7 +33,8 @@ public static class GuideTranslationEndpoints
 
             var language = Lang.NormalizeOr(lang, Lang.Current);
             var view = await GuideTranslations.EvaluateAsync(db, game, language, translations.GetJob(game.Id, language), ct);
-            if (view.State == "missing")
+            // The same job translates the trophy list of a game added by hand (D2): it starts as well when only the list needs a translation
+            if (view.State == "missing" || await TrophyListPendingAsync(db, game, language, ct))
             {
                 translations.TryStart(game.Id, language, force == true);
                 view = view with { Job = translations.GetJob(game.Id, language) };
@@ -59,5 +60,15 @@ public static class GuideTranslationEndpoints
             var view = await GuideTranslations.EvaluateAsync(db, game, language, translations.GetJob(game.Id, language), ct);
             return Results.Ok(view.ToDto());
         });
+    }
+
+    private static async Task<bool> TrophyListPendingAsync(CompanionDbContext db, GameEntity game, string language, CancellationToken ct)
+    {
+        if (!GamePlatforms.IsManual(game))
+        {
+            return false;
+        }
+        var trophies = await db.GameTrophies.AsNoTracking().Where(t => t.GameId == game.Id).ToListAsync(ct);
+        return (await TrophyTranslations.EvaluateAsync(db, game, trophies, language, null, ct)).State == "missing";
     }
 }

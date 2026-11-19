@@ -1,0 +1,621 @@
+/* Design "Klassisch" - area file, see index.css for the rules (scope every rule under :root[data-design='classic'], look only). */
+/* Owner: live - live trophies tab, trophy popups, fullscreen popup, platinum celebration, pins ("Im Blick"), in-game overlay. */
+/* The look of commit 9fabf8e for these elements: framed 11 px cards that turn emerald when unlocked, the gold "Im Blick" cards, the dark
+   tier-framed popup with its glow and sheen, the heavier weights of the old system. Sizes, paddings, grids and positions stay as the
+   current structure has them (rigid layout). Every colour is a token of tokens.css, so classic light and dark both follow them; the
+   popups and the cinema stages keep their fixed dark surface with literal light-on-dark colours, as they always did. */
+
+:root[data-design='classic'] {
+  /* The emerald tint of an unlocked card / gold tint of a done pin laid over the card surface (the tokens are translucent in dark) */
+  --pv-unl-tint: linear-gradient(var(--accent-emerald-bg), var(--accent-emerald-bg));
+  --pv-done-tint: linear-gradient(var(--accent-gold-bg), var(--accent-gold-bg));
+}
+
+/* ==================== row icon buttons (pin, note, tip, remove) ==================== */
+/* The old quiet icon button: no frame, a soft background on hover and the text colour stays; "set" (pinned, has a note) = crystal */
+:root[data-design='classic'] .pv-rowbtn {
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-rowbtn:hover {
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+}
+
+:root[data-design='classic'] .pv-rowbtn[data-on],
+:root[data-design='classic'] .pv-rowbtn[data-on]:hover {
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-rowbtn:focus-visible {
+  outline-color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-rowbtn[aria-disabled='true']:hover {
+  background: transparent;
+}
+
+:root[data-design='classic'] .pv-rowbtn-dot {
+  background: var(--accent-crystal);
+  box-shadow: 0 0 0 1.5px var(--bg-surface);
+}
+
+/* ==================== filter area of the live tab ==================== */
+/* The counter badge of the status segments is the small elevated pill again (no brackets); in the chosen segment a card-coloured pill
+   on the crystal tint */
+:root[data-design='classic'] .pv-lf .pv-tab-count {
+  padding: 0.125em 0.4em;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-lf .pv-tab-count::before,
+:root[data-design='classic'] .pv-lf .pv-tab-count::after {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-lf .pv-segmented > button[aria-pressed='true'] .pv-tab-count {
+  color: var(--accent-crystal);
+  background: var(--bg-surface);
+  opacity: 1;
+}
+
+/* A stacked choice keeps the hairline between its entries */
+:root[data-design='classic'] .pv-lf :is(.pv-lf-stackable, .pv-lf-fit) > button + button {
+  border-block-start-color: var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-lf-search > svg {
+  color: var(--text-muted);
+}
+
+:root[data-design='classic'] .pv-lf-switch {
+  font-weight: 600;
+}
+
+/* ==================== the four sizes of the achievement list ==================== */
+/* Cards: a hairline frame, the medium radius, the card surface; unlocked = the emerald tint (the old card colour), no extra line */
+:root[data-design='classic'] .pv-tr {
+  background: var(--bg-surface);
+  border-color: var(--border-subtle);
+  box-shadow: var(--shadow-card);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-tr[data-unlocked] {
+  background: var(--pv-unl-tint), var(--bg-surface);
+}
+
+:root[data-design='classic'] .pv-tr[data-unlocked]::before,
+:root[data-design='classic'] .pv-arow[data-unlocked]::before {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-tr-tile:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
+}
+
+:root[data-design='classic'] .pv-tr-tile[data-unlocked]:hover {
+  background: color-mix(in srgb, var(--accent-emerald) 20%, var(--bg-surface));
+}
+
+:root[data-design='classic'] .pv-tr-tile:focus-visible {
+  outline-color: var(--accent-crystal);
+}
+
+/* Kompakt: the icon panel is one step darker, and emerald-tinted next to an unlocked card, with the icon lifted by a soft shadow */
+:root[data-design='classic'] .pv-tr-iconpanel {
+  background: var(--bg-elevated);
+  border-inline-end-color: var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-tr[data-unlocked] .pv-tr-iconpanel {
+  background: color-mix(in srgb, var(--accent-emerald) 24%, var(--bg-elevated));
+  border-inline-end-color: color-mix(in srgb, var(--accent-emerald) 45%, var(--border-subtle));
+}
+
+:root[data-design='classic'] .pv-tr-iconpanel > img {
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.28);
+}
+
+/* Groß: the icon of an unlocked achievement wears its tier colour as a ring and a soft glow (the border colour stays the hairline) */
+:root[data-design='classic'] .pv-hero-icon {
+  --pv-ring: var(--tier-gold);
+  border-color: var(--border-subtle) !important;
+}
+
+:root[data-design='classic'] .pv-hero-icon[data-tier='Platinum'] {
+  --pv-ring: var(--tier-platinum);
+}
+
+:root[data-design='classic'] .pv-hero-icon[data-tier='Silver'] {
+  --pv-ring: var(--tier-silver);
+}
+
+:root[data-design='classic'] .pv-hero-icon[data-tier='Bronze'] {
+  --pv-ring: var(--tier-bronze);
+}
+
+:root[data-design='classic'] .pv-hero-icon[data-unlocked] {
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--pv-ring) 62%, transparent),
+    0 14px 30px -14px color-mix(in srgb, var(--pv-ring) 62%, transparent);
+}
+
+/* The spoiler cover line of a hidden achievement: a quiet elevated strip, not a tinted note */
+:root[data-design='classic'] .pv-note.pv-cover-notice {
+  background: var(--bg-elevated);
+  border-color: transparent;
+  border-radius: var(--radius-sm);
+}
+
+/* The dialog of one achievement takes the card colour of its state */
+:root[data-design='classic'] .pv-trophy-dialog[data-unlocked] {
+  background: var(--pv-unl-tint), var(--bg-surface);
+}
+
+/* Liste: one framed surface with hairline rows; an unlocked row carries the emerald tint, its date the bold emerald word */
+:root[data-design='classic'] .pv-alist {
+  overflow: clip;
+}
+
+:root[data-design='classic'] .pv-arow[data-unlocked] {
+  background: var(--accent-emerald-bg);
+}
+
+:root[data-design='classic'] .pv-arow[data-unlocked] .pv-arow-main:hover {
+  background: color-mix(in srgb, var(--accent-emerald) 12%, transparent);
+}
+
+:root[data-design='classic'] .pv-arow-main:focus-visible {
+  outline-color: var(--accent-crystal);
+}
+
+/* The tier word of a row is the small tinted badge of the old list (tint and ring from its own colour; only the width grows, never the height) */
+:root[data-design='classic'] .pv-arow-l1 > span:first-child {
+  padding-inline: 0.5rem;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 45%, transparent);
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-arow-state[data-done] {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-arow-counter > span:first-child {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-arow-bar {
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+:root[data-design='classic'] .pv-arow-bar > span {
+  background: var(--accent-crystal);
+  border-radius: 999px;
+}
+
+/* ==================== "Im Blick" (components/pins) ==================== */
+/* Entries: a done pin is the gold card (tint, gold word, gold check in the corner of the icon) instead of the emerald line */
+:root[data-design='classic'] .pv-pin[data-done] {
+  background: var(--pv-done-tint), var(--bg-surface);
+}
+
+:root[data-design='classic'] .pv-pin[data-done]::before {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-pin-main:hover {
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+}
+
+:root[data-design='classic'] .pv-pin-main:focus-visible {
+  outline-color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-pin-check {
+  inset-block: auto 0;
+  inset-inline: auto 0;
+  color: light-dark(#ffffff, #3b2603);
+  background: var(--accent-gold-text);
+  border-end-end-radius: 0;
+  border-start-start-radius: var(--radius-sm);
+}
+
+:root[data-design='classic'] .pv-pin-name {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-pin-foot {
+  font-weight: 600;
+}
+
+:root[data-design='classic'] .pv-pin[data-done] .pv-pin-state {
+  color: var(--accent-gold-text);
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-pin-counter-text {
+  color: var(--accent-crystal);
+}
+
+/* The progress line is the small round bar with an inner hairline again */
+:root[data-design='classic'] .pv-pin-bar {
+  background: var(--bg-elevated);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-pin-bar > span {
+  background: var(--accent-crystal);
+  border-radius: 999px;
+}
+
+/* Title line: heavy title, the count as a small pill */
+:root[data-design='classic'] .pv-pins-title {
+  font-weight: 800;
+}
+
+/* The head of the side column wears the small-caps look of the old side panels */
+:root[data-design='classic'] .pv-gpins .pv-gnav-head .pv-pins-title {
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+:root[data-design='classic'] .pv-pins-title svg {
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-pins-count {
+  padding: 0.16em 0.55em;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+/* "Geschaffte entfernen": the framed text button of the old look. The frame is a 2 rem box drawn inside the 48 px target, so nothing grows */
+:root[data-design='classic'] .pv-pins-clear {
+  position: relative;
+  isolation: isolate;
+  color: var(--text-secondary);
+  font-weight: 700;
+  transition: color 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-pins-clear::before {
+  content: '';
+  position: absolute;
+  inset-block: 0.5rem;
+  inset-inline: 0;
+  z-index: -1;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-pins-clear:hover {
+  color: var(--text-primary);
+  background: transparent;
+}
+
+:root[data-design='classic'] .pv-pins-clear:hover::before {
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
+}
+
+:root[data-design='classic'] .pv-pins-clear:focus-visible {
+  outline-color: var(--accent-crystal);
+}
+
+/* The dock: the frosted panel with the soft shadow on its upper edge (a shadow cannot sit in light-dark(), so dark has its own) */
+:root[data-design='classic'] .pv-gdock {
+  background: var(--bg-glass);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 -14px 26px -18px rgba(30, 41, 59, 0.3);
+}
+
+:root[data-design='classic'][data-theme='dark'] .pv-gdock {
+  box-shadow: 0 -14px 26px -18px rgba(0, 0, 0, 0.65);
+}
+
+:root[data-design='classic'] .pv-gdock-toggle:hover {
+  color: var(--text-primary);
+}
+
+:root[data-design='classic'] .pv-gdock-toggle:focus-visible {
+  outline-color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-gdock-row > .pv-pin {
+  border-color: var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-gdock-row > .pv-pin[data-done] {
+  border-color: var(--accent-gold-border);
+}
+
+/* The column: the medium radius of the old side panels (a card was 16 px, a side panel 11 px) */
+:root[data-design='classic'] .pv-gpins {
+  border-radius: var(--radius-md);
+}
+
+:root[data-design='classic'] .pv-pin-mini {
+  border-color: var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-pin-mini[data-done] {
+  border-color: var(--accent-gold-border);
+  box-shadow: 0 0 0 1px var(--accent-gold-border);
+}
+
+:root[data-design='classic'] .pv-pin-mini:focus-visible {
+  outline-color: var(--accent-crystal);
+}
+
+/* ==================== rarity notice ==================== */
+:root[data-design='classic'] .pv-rarity-title {
+  font-weight: 700;
+}
+
+/* ==================== time line of the popups (components/PopupCountdown.tsx) ==================== */
+/* The old one: a glowing line that fades from the tier colour to white at its front. The tier colour is --pv-tier of the popup. */
+:root[data-design='classic'] [data-popup-countdown-bar] {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--pv-tier) 80%, transparent) 0%, var(--pv-tier) 88%, #ffffff 100%) !important;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--pv-tier) 60%, transparent);
+}
+
+/* ==================== trophy card popup (components/TrophyNotification.tsx, also the in-game overlay and the tour) ==================== */
+/* The old popup: a fixed dark card in both themes with a tier-coloured frame, a tier glow and, for gold and platinum, a sheen gliding
+   over it twice. Its own tier colours are the old literal ones (they must read on the dark card whatever the theme). */
+:root[data-design='classic'] .pv-popup-card {
+  --tier-platinum: #38bdf8;
+  --tier-gold: #fbbf24;
+  --tier-silver: #cbd5e1;
+  --tier-bronze: #d97706;
+  --tier-platinum-text: #38bdf8;
+  --tier-gold-text: #fbbf24;
+  --tier-silver-text: #cbd5e1;
+  --tier-bronze-text: #d97706;
+  isolation: isolate;
+  color: #ffffff;
+  background: rgba(2, 6, 23, 0.95);
+  backdrop-filter: blur(24px);
+  border-color: var(--pv-tier);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--pv-tier) 55%, transparent),
+    0 18px 40px rgba(0, 0, 0, 0.8),
+    0 0 25px color-mix(in srgb, var(--pv-tier) 25%, transparent);
+}
+
+/* The tier line of the light card is gone; the pseudo-element carries the sheen instead (gold and platinum only) */
+:root[data-design='classic'] .pv-popup-card::before {
+  inset: 0;
+  inline-size: auto;
+  background: none;
+  border-radius: inherit;
+}
+
+:root[data-design='classic'] .pv-popup-card:is([data-tier='Gold'], [data-tier='Platinum'])::before {
+  background: linear-gradient(105deg, transparent 38%, color-mix(in srgb, var(--pv-tier) 20%, transparent) 50%, transparent 62%) no-repeat;
+  background-size: 300% 100%;
+  animation: pv-classic-sheen 1.1s ease-in-out 1.15s 2 both;
+}
+
+@keyframes pv-classic-sheen {
+  from {
+    background-position: 120% 0;
+  }
+
+  to {
+    background-position: -20% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-design='classic'] .pv-popup-card:is([data-tier='Gold'], [data-tier='Platinum'])::before {
+    animation: none;
+    background: none;
+  }
+}
+
+/* The soft tier-coloured halo behind the trophy */
+:root[data-design='classic'] .pv-popup-trophy::before {
+  content: '';
+  position: absolute;
+  inset: -0.75rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--pv-tier) 33%, transparent), transparent 68%);
+  pointer-events: none;
+}
+
+:root[data-design='classic'] .pv-popup-icon {
+  border: 2px solid var(--pv-tier);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--pv-tier) 50%, transparent);
+}
+
+:root[data-design='classic'] .pv-popup-kicker {
+  color: var(--pv-tier-text);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+:root[data-design='classic'] .pv-popup-percent {
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+:root[data-design='classic'] .pv-popup-name {
+  color: #ffffff;
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-popup-desc {
+  color: #cbd5e1;
+}
+
+:root[data-design='classic'] .pv-popup-stamp {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* The time line: the round 3 px line a little above the edge, its track the faint tier tint */
+:root[data-design='classic'] .pv-popup-card [data-popup-countdown] {
+  inset-inline: 1rem !important;
+  inset-block-end: 0.3rem !important;
+  block-size: 3px !important;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pv-tier) 20%, transparent) !important;
+}
+
+/* ==================== full-window popup (components/FullscreenAchievement.tsx) ==================== */
+/* The cinema stage stays dark in both themes. Old weights back: extra-bold eyebrow, black name, a rounded gradient rule, a rounded icon
+   with a glow. The tier colours are the ones of the card popup. */
+:root[data-design='classic'] [data-fullscreen-achievement] {
+  --pv-tier: #fbbf24;
+  --pv-tone: #fcd34d;
+}
+
+:root[data-design='classic'] [data-fullscreen-achievement][data-tier='Platinum'] {
+  --pv-tier: #38bdf8;
+  --pv-tone: #7dd3fc;
+}
+
+:root[data-design='classic'] [data-fullscreen-achievement][data-tier='Silver'] {
+  --pv-tier: #cbd5e1;
+  --pv-tone: #e2e8f0;
+}
+
+:root[data-design='classic'] [data-fullscreen-achievement][data-tier='Bronze'] {
+  --pv-tier: #d97706;
+  --pv-tone: #fdba74;
+}
+
+:root[data-design='classic'] .pv-fsa-eyebrow {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-fsa-name {
+  font-weight: 900;
+}
+
+:root[data-design='classic'] .pv-fsa-rule {
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--pv-tier), var(--pv-tone)) !important;
+}
+
+:root[data-design='classic'] .pv-fsa-icon {
+  border-radius: var(--radius-xl);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--pv-tier) 50%, transparent);
+}
+
+/* ==================== platinum celebration (components/PlatinumCelebration.tsx) ==================== */
+:root[data-design='classic'] .pv-pcel-kicker {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-pcel-title {
+  font-weight: 900;
+}
+
+:root[data-design='classic'] .pv-pcel-game {
+  font-weight: 800;
+}
+
+/* ==================== trophies of a game added by hand (check, glyph, empty state, source line) ==================== */
+/* The check: the old rounded box with a soft emerald gradient and halo when ticked; the 3 rem target and the 1.5 rem box stay as they are */
+:root[data-design='classic'] .pv-tcheck-box {
+  border-radius: var(--radius-md);
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-tcheck[aria-pressed='true'] .pv-tcheck-box {
+  background: linear-gradient(180deg, var(--accent-emerald), color-mix(in srgb, var(--accent-emerald) 78%, #000));
+  box-shadow: 0 0 0 3px var(--accent-emerald-bg);
+}
+
+:root[data-design='classic'] .pv-tcheck:focus-visible .pv-tcheck-box {
+  outline-color: var(--accent-crystal);
+}
+
+/* The glyph that stands in for a missing icon: the soft panel with a hairline and a small lift, like the icons of the old lists */
+:root[data-design='classic'] .pv-trophy-glyph {
+  background: linear-gradient(160deg, var(--bg-elevated), var(--bg-surface));
+  border-radius: var(--radius-md);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.22);
+}
+
+:root[data-design='classic'] .pv-pin-icon .pv-trophy-glyph {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* In the popup card the surface is dark in both themes */
+:root[data-design='classic'] .pv-popup-card .pv-trophy-glyph {
+  background: rgb(255 255 255 / 0.07);
+  box-shadow: none;
+}
+
+:root[data-design='classic'] .pv-hero-icon .pv-trophy-glyph {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* The empty state: the old crystal tinted icon tile, heavy headline, round step numbers */
+:root[data-design='classic'] .pv-tstate-ic {
+  color: var(--accent-crystal);
+  background: var(--accent-crystal-bg);
+  border: 1px solid var(--accent-crystal-border);
+  border-radius: var(--radius-lg);
+}
+
+:root[data-design='classic'] .pv-tstate h2,
+:root[data-design='classic'] .pv-tstate-h {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-tsteps-n {
+  font-weight: 800;
+  background: var(--bg-elevated);
+  border-radius: 999px;
+}
+
+:root[data-design='classic'] .pv-tsteps > li[data-now] .pv-tsteps-n {
+  color: var(--accent-crystal);
+  background: var(--accent-crystal-bg);
+  border-color: var(--accent-crystal-border);
+}
+
+:root[data-design='classic'] .pv-tsteps-t > b {
+  font-weight: 700;
+}
+
+/* The source line: heavier lead text, crystal links */
+:root[data-design='classic'] .pv-tsrc-t b {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-tsrc-t a {
+  color: var(--accent-crystal);
+  font-weight: 600;
+}
+
+:root[data-design='classic'] .pv-tsrc-t a:focus-visible {
+  outline-color: var(--accent-crystal);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-design='classic'] .pv-tcheck-box {
+    transition: none;
+  }
+}

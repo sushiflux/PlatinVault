@@ -114,7 +114,7 @@ describe('BossCard', () => {
 
   it('shows the API name of an achievement the Steam list does not know', () => {
     render(<BossCard section={{ type: 'boss', title: 'Golem', achievements: ['ACH_UNKNOWN'] }} />)
-    expect(screen.getByText('Steam-Erfolg ACH_UNKNOWN')).toBeTruthy()
+    expect(screen.getByText('Erfolg ACH_UNKNOWN')).toBeTruthy()
   })
 })
 
@@ -184,7 +184,7 @@ describe('HintAlert kinds', () => {
 
   it('still shows an achievement hint when the list is not available', () => {
     render(<HintAlert section={{ type: 'alert', kind: 'achievement', apiName: 'ACH_X', title: 'Der Ritter' }} />)
-    expect(screen.getByText('Steam-Erfolg ACH_X')).toBeTruthy()
+    expect(screen.getByText('Erfolg ACH_X')).toBeTruthy()
     expect(screen.getByText('Der Ritter')).toBeTruthy()
   })
 

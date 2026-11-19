@@ -22,4 +22,14 @@ describe('popupTarget: "Trophäen-Popup anzeigen"', () => {
     expect(showsPopupInWindow('app', true)).toBe(true)
     expect(showsPopupInWindow(null, true)).toBe(true)
   })
+
+  it('shows a trophy ticked by hand in the window whatever "Trophäen-Popup anzeigen" says (the server never sends it to the overlay)', () => {
+    for (const target of POPUP_TARGETS) {
+      expect(showsPopupInWindow(target, true, 'manual')).toBe(true)
+      expect(showsPopupInWindow(target, false, 'manual')).toBe(true)
+    }
+    // "only in the game" stays "only in the game" for everything Steam detected
+    expect(showsPopupInWindow('overlay', true, null)).toBe(false)
+    expect(showsPopupInWindow('overlay', true, undefined)).toBe(false)
+  })
 })

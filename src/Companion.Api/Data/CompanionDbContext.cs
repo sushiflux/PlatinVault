@@ -15,6 +15,9 @@ public sealed class CompanionDbContext(DbContextOptions<CompanionDbContext> opti
     public DbSet<GuideTabTranslationEntity> GuideTabTranslations => Set<GuideTabTranslationEntity>();
     public DbSet<GameTranslationEntity> GameTranslations => Set<GameTranslationEntity>();
     public DbSet<LeaseEntity> Leases => Set<LeaseEntity>();
+    public DbSet<GameTrophyEntity> GameTrophies => Set<GameTrophyEntity>();
+    public DbSet<GameCoverEntity> GameCovers => Set<GameCoverEntity>();
+    public DbSet<GameTrophyTranslationEntity> GameTrophyTranslations => Set<GameTrophyTranslationEntity>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -48,6 +51,58 @@ public sealed class CompanionDbContext(DbContextOptions<CompanionDbContext> opti
             entity.Property(x => x.ReviewScoreDesc).HasMaxLength(60);
             entity.Property(x => x.ReleaseDate).HasMaxLength(60);
             entity.HasIndex(x => x.SteamAppId);
+            // Every row from before manual games existed is a Steam game: the column default fills them in the migration
+            entity.Property(x => x.Platform).HasMaxLength(16).IsRequired().HasDefaultValue("steam");
+            entity.Property(x => x.PlatformVariant).HasMaxLength(8);
+            entity.Property(x => x.FactsSource).HasMaxLength(8);
+            entity.Property(x => x.Developer).HasMaxLength(240);
+            entity.Property(x => x.Publisher).HasMaxLength(240);
+            entity.Property(x => x.Summary).HasMaxLength(3000);
+            entity.HasIndex(x => x.IgdbId);
+        });
+
+        modelBuilder.Entity<GameTrophyEntity>(entity =>
+        {
+            entity.ToTable("game_trophies");
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => new { x.GameId, x.TrophyKey }).IsUnique();
+            entity.Property(x => x.TrophyKey).HasMaxLength(80).IsRequired();
+            entity.Property(x => x.Name).HasMaxLength(240).IsRequired();
+            entity.Property(x => x.OriginalName).HasMaxLength(240);
+            entity.Property(x => x.Description).HasMaxLength(1000).IsRequired();
+            entity.Property(x => x.Grade).HasMaxLength(12);
+            entity.Property(x => x.GroupName).HasMaxLength(120);
+            entity.Property(x => x.Category).HasMaxLength(60).IsRequired();
+            entity.Property(x => x.Tip).HasMaxLength(1500).IsRequired();
+            entity.HasOne(x => x.Game)
+                .WithMany(g => g.Trophies)
+                .HasForeignKey(x => x.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<GameCoverEntity>(entity =>
+        {
+            entity.ToTable("game_covers");
+            entity.HasKey(x => x.GameId);
+            entity.Property(x => x.ContentType).HasMaxLength(40).IsRequired();
+            entity.Property(x => x.Data).IsRequired();
+            entity.Property(x => x.Sha256).HasMaxLength(64).IsRequired();
+            entity.HasOne(x => x.Game)
+                .WithOne()
+                .HasForeignKey<GameCoverEntity>(x => x.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<GameTrophyTranslationEntity>(entity =>
+        {
+            entity.ToTable("game_trophy_translations");
+            entity.HasKey(x => new { x.GameId, x.Language });
+            entity.Property(x => x.Language).HasMaxLength(8).IsRequired();
+            entity.Property(x => x.SourceHash).HasMaxLength(64).IsRequired();
+            entity.HasOne(x => x.Game)
+                .WithMany()
+                .HasForeignKey(x => x.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<GuideTabEntity>(entity =>

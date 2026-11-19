@@ -89,6 +89,7 @@ public static partial class ManualGuideEndpoints
             {
                 return Problems.GameNotFound(slug);
             }
+            await LoadTrophiesAsync(db, game, ct);
             await AdoptLanguageAsync(db, game, ct);
 
             var checkedAnswer = ai.CheckManualChapter(game, request.Text, request.Title, request.TopicId, request.TabId is not null && request.Replace != true);
@@ -244,8 +245,25 @@ public static partial class ManualGuideEndpoints
         MapManualBatch(api);
     }
 
-    private static Task<GameEntity?> LoadAsync(CompanionDbContext db, string slug, CancellationToken ct) =>
-        db.Games.Include(g => g.Tabs).FirstOrDefaultAsync(g => g.Slug == slug, ct);
+    private static async Task<GameEntity?> LoadAsync(CompanionDbContext db, string slug, CancellationToken ct)
+    {
+        var game = await db.Games.Include(g => g.Tabs).FirstOrDefaultAsync(g => g.Slug == slug, ct);
+        await LoadTrophiesAsync(db, game, ct);
+        return game;
+    }
+
+    /// <summary>
+    /// A game added by hand: loads its trophy list into <c>game.Trophies</c>, because the check of a pasted chapter judges every <c>apiName</c> against the
+    /// keys of that list (<c>AiGuideGeneratorService.AchievementApiNames</c>, the counterpart of the Steam achievement list). Without it invented names pass
+    /// unchecked. A Steam game (no such list) and a missing game are left alone.
+    /// </summary>
+    internal static async Task LoadTrophiesAsync(CompanionDbContext db, GameEntity? game, CancellationToken ct)
+    {
+        if (game is not null && GamePlatforms.IsManual(game))
+        {
+            await db.Entry(game).Collection(g => g.Trophies).LoadAsync(ct);
+        }
+    }
 
     /// <summary>A tile without any researched chapter takes the language of the UI before its first prompt, so prompt and answer agree (see AdoptRequestLanguageIfEmpty).</summary>
     private static async Task AdoptLanguageAsync(CompanionDbContext db, GameEntity game, CancellationToken ct)

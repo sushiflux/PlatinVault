@@ -45,7 +45,9 @@
   --border-strong: light-dark(#7f8aa0, #6b7a9c);
   --track: light-dark(#d3dae6, #2a3752);
   --overlay: light-dark(rgba(15, 23, 42, 0.5), rgba(3, 6, 14, 0.7));
-  --shadow-pop: light-dark(0 10px 30px -8px rgba(15, 23, 42, 0.22), 0 10px 30px -8px rgba(0, 0, 0, 0.55));
+  /* Shadows are light values here and dark values under html[data-theme="dark"] below: light-dark() takes colours only, a shadow
+     inside it is invalid and the browser drops the whole declaration (dialogs and popovers then had no shadow at all) */
+  --shadow-pop: 0 10px 30px -8px rgba(15, 23, 42, 0.22);
 
   /* Kristall action set: --act = primary fill, --sel-* = selected segment / tree entry, --ind = the thin active line */
   --act: light-dark(#0369a1, #7dd3fc);
@@ -107,7 +109,7 @@
   /* The green heart of the credit line (components/MadeWith.tsx) */
   --heart: light-dark(#15803d, #4ade80);
 
-  --shadow-card: light-dark(0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(0, 0, 0, 0.25));
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04);
   /* Small radius scale: 4 px small parts, 6 px buttons/inputs/segments, 10 px cards and panels. Never pill-shaped. */
   --radius-lg: 10px;
   --radius-md: 6px;
@@ -128,6 +130,9 @@
 
 html[data-theme="dark"] {
   color-scheme: dark;
+  /* Dark counterparts of the shadow tokens in :root (see the note there) */
+  --shadow-pop: 0 10px 30px -8px rgba(0, 0, 0, 0.55);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 html[data-theme="light"] {

@@ -10,6 +10,7 @@ import {
   guideChapters,
   resolveGameTab,
   slugToTabParam,
+  GUIDE_TAB_SLUG,
   tabParamToSlug,
   type ChapterItem,
 } from './navModel'
@@ -29,9 +30,10 @@ describe('tab params', () => {
     expect(tabParamToSlug('live')).toBe(LIVE_TROPHIES_TAB_SLUG)
     expect(tabParamToSlug('stats')).toBe(STATS_TAB_SLUG)
     expect(tabParamToSlug('story')).toBe(LORE_TAB_SLUG)
+    expect(tabParamToSlug('guide')).toBe(GUIDE_TAB_SLUG)
     expect(tabParamToSlug('quests')).toBe('quests')
     expect(tabParamToSlug(null)).toBe('')
-    for (const slug of [LIVE_TROPHIES_TAB_SLUG, STATS_TAB_SLUG, LORE_TAB_SLUG, 'walkthrough']) {
+    for (const slug of [LIVE_TROPHIES_TAB_SLUG, STATS_TAB_SLUG, LORE_TAB_SLUG, GUIDE_TAB_SLUG, 'walkthrough']) {
       expect(tabParamToSlug(slugToTabParam(slug))).toBe(slug)
     }
     expect(gameTabHref('final fantasy', LIVE_TROPHIES_TAB_SLUG)).toBe('/games/final%20fantasy?tab=live')
@@ -57,6 +59,19 @@ describe('guideChapters / resolveGameTab', () => {
     expect(resolveGameTab({ steamAppId: 10, tabs: [] }, '')).toBe(LIVE_TROPHIES_TAB_SLUG)
     // No Steam link: no live trophies and no statistics
     expect(resolveGameTab({ steamAppId: null, tabs: [] }, STATS_TAB_SLUG)).toBe('')
+  })
+
+  it('gives a game added by hand its trophy tab when the platform has trophies, but never the statistics', () => {
+    const ps5 = { steamAppId: null, platform: 'playstation', tabs: [tab('walkthrough')] }
+    expect(resolveGameTab(ps5, LIVE_TROPHIES_TAB_SLUG)).toBe(LIVE_TROPHIES_TAB_SLUG)
+    expect(resolveGameTab(ps5, STATS_TAB_SLUG)).toBe('walkthrough')
+    expect(resolveGameTab({ steamAppId: null, platform: 'xbox', tabs: [] }, '')).toBe(LIVE_TROPHIES_TAB_SLUG)
+    // The guide itself: its first chapter, or nothing (the page's "no guide yet" card) - never the trophy tab
+    expect(resolveGameTab(ps5, GUIDE_TAB_SLUG)).toBe('walkthrough')
+    expect(resolveGameTab({ steamAppId: null, platform: 'playstation', tabs: [] }, GUIDE_TAB_SLUG)).toBe('')
+    // A Switch game has none: only the guide
+    expect(resolveGameTab({ steamAppId: null, platform: 'nintendo', tabs: [tab('walkthrough')] }, LIVE_TROPHIES_TAB_SLUG)).toBe('walkthrough')
+    expect(resolveGameTab({ steamAppId: null, platform: 'nintendo', tabs: [] }, LIVE_TROPHIES_TAB_SLUG)).toBe('')
   })
 })
 

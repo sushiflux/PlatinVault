@@ -277,7 +277,7 @@ export function PlatinumCelebration({ data, onDismiss, dismissHint = true }: Pla
           {/* Words */}
           <div className="relative z-10 flex max-w-full flex-col items-center" style={{ marginTop: 'max(0.9rem, 3.2vh)' }}>
             <motion.div
-              className="text-[11px] font-semibold uppercase text-sky-300 sm:text-xs"
+              className="pv-pcel-kicker text-[11px] font-semibold uppercase text-sky-300 sm:text-xs"
               style={{ letterSpacing: '0.32em' }}
               initial={{ opacity: 0, y: reduce ? 0 : 14 }}
               animate={{ opacity: 1, y: 0 }}
@@ -287,7 +287,7 @@ export function PlatinumCelebration({ data, onDismiss, dismissHint = true }: Pla
             </motion.div>
 
             <motion.h1
-              className="mt-2 font-semibold"
+              className="pv-pcel-title mt-2 font-semibold"
               style={{
                 fontSize: 'clamp(1.75rem, min(9vw, 10.5vh), 5rem)',
                 lineHeight: 1.05,
@@ -331,7 +331,7 @@ export function PlatinumCelebration({ data, onDismiss, dismissHint = true }: Pla
             >
               {cover && <CoverThumb key={cover} url={cover} />}
               <div className="min-w-0">
-                <div className="truncate text-lg font-semibold text-white sm:text-xl">{data.gameName}</div>
+                <div className="pv-pcel-game truncate text-lg font-semibold text-white sm:text-xl">{data.gameName}</div>
                 <div className="text-sm font-semibold text-slate-200">{summary}</div>
                 <div className="text-xs text-slate-400">{fmt.date(new Date(), 'dateLong')}</div>
               </div>

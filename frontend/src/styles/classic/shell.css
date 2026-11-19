@@ -1,0 +1,411 @@
+/* Design "Klassisch" - area file, see index.css for the rules (scope every rule under :root[data-design='classic'], look only). */
+/* Owner: shell - header and its tools, side navigation (tree, rail, flyout, drawer), about page, status pages (404 etc.),
+   update button and version popovers, language menu, release notes dialog.
+   The old look (commit 9fabf8e): a frosted glass header, the Steam user as a framed chip, header tools as boxless icons that get a
+   hairline box on hover, navigation entries as 700-weight rows with a crystal tint and a 3 px rounded marker for the active one,
+   count pills, 800-weight small-caps group headings, menus and popovers with the 16 px radius, the release notes as framed cards
+   with a tinted heading. Only look properties: the structure of today's shell (header on every page, navigation on game pages only,
+   rail, flyout, drawer) stays as it is. Floating menus take --shadow-pop (a real shadow; the old one was invalid and drew none). */
+
+/* ---------- header ---------- */
+:root[data-design='classic'] .pv-shell-header {
+  background: var(--bg-glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+:root[data-design='classic'] .pv-shell-logo {
+  border-radius: var(--radius-xl);
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+:root[data-design='classic'] .pv-shell-word {
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+/* The menu button of the game page (phones): the old "Kapitel" button, a boxed control with the strong frame */
+:root[data-design='classic'] .pv-shell-menu {
+  border-color: var(--border-strong);
+}
+
+/* The Steam user: the old account chip - a framed elevated box with a round avatar; the frame is an inset ring, so the size stays. */
+:root[data-design='classic'] .pv-user {
+  background: var(--bg-elevated);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+  transition: background-color 0.15s ease;
+}
+
+:root[data-design='classic'] a.pv-user:hover {
+  background: var(--bg-surface);
+}
+
+:root[data-design='classic'] .pv-avatar {
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-user-name {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-user-sub {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* The page the icon opens (settings, info): not the thin line of the light design but the old "pressed" box in crystal */
+:root[data-design='classic'] .pv-shell-utils .pv-icon-btn[aria-current='page'] {
+  background: var(--accent-crystal-bg);
+  border-color: var(--accent-crystal-border);
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-shell-utils .pv-icon-btn[aria-current='page']::after {
+  content: none;
+}
+
+/* Language button: the code beside the globe, bold */
+:root[data-design='classic'] .pv-langbtn-code {
+  font-weight: 700;
+}
+
+/* ---------- the game's tree navigation ---------- */
+/* Under the head (cover, title, collapse) the old "Guide-Kapitel" rule; an inset line, so the height stays */
+:root[data-design='classic'] .pv-snav-top {
+  box-shadow: inset 0 -1px 0 var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-snav-game-title {
+  font-weight: 800;
+}
+
+/* One entry: the old tab. Bold secondary text, a soft tint on hover, the crystal tint with crystal text when active; the tint is a
+   rounded box inset from the edges (a pseudo element behind the text), the marker a 3 px bar with rounded inner corners at the edge. */
+:root[data-design='classic'] .pv-ni {
+  isolation: isolate;
+  color: var(--text-secondary);
+  font-weight: 700;
+  transition: color 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-ni::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset-inline: 0.5rem;
+  inset-block: 0.125rem;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  pointer-events: none;
+  transition: background-color 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-ni:hover {
+  color: var(--text-primary);
+}
+
+:root[data-design='classic'] .pv-ni:hover::after {
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+}
+
+:root[data-design='classic'] .pv-ni:is([aria-current='page'], [data-active='true'], [aria-expanded='true']),
+:root[data-design='classic'] .pv-ni:is([aria-current='page'], [data-active='true'], [aria-expanded='true']):hover {
+  color: var(--accent-crystal);
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-ni:is([aria-current='page'], [data-active='true'], [aria-expanded='true'])::after {
+  background: var(--accent-crystal-bg);
+}
+
+:root[data-design='classic'] .pv-ni:is([aria-current='page'], [data-active='true'])::before {
+  inset-inline-start: 0;
+  inset-block: 0.125rem;
+  inline-size: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent-crystal);
+}
+
+/* Keyboard focus: the ring sits on the rounded tab (the pseudo element), inside the row, like the old tab's focus ring */
+:root[data-design='classic'] .pv-ni:focus-visible {
+  outline: none;
+}
+
+:root[data-design='classic'] .pv-ni:focus-visible::after {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: -2px;
+}
+
+/* Progress counter: a small calm pill; active = on the surface in crystal, all done = the success tint */
+:root[data-design='classic'] .pv-ni-count {
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+:root[data-design='classic'] .pv-ni:is([aria-current='page'], [data-active='true']) .pv-ni-count {
+  background: var(--bg-surface);
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-ni-count[data-done='true'] {
+  background: var(--accent-emerald-bg);
+  color: var(--accent-emerald);
+}
+
+:root[data-design='classic'] .pv-ni-cover {
+  border-radius: 5px;
+}
+
+/* Small-caps group heading: the heavy weight of the old look */
+:root[data-design='classic'] .pv-glabel {
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+/* ---------- group flyout beside the rail ---------- */
+:root[data-design='classic'] .pv-flyout {
+  font-weight: 600;
+}
+
+:root[data-design='classic'] .pv-flyout-head {
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+:root[data-design='classic'] .pv-flyout-item {
+  color: var(--text-secondary);
+  font-weight: 700;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-flyout-item:hover {
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  color: var(--text-primary);
+}
+
+:root[data-design='classic'] .pv-flyout-item[aria-current='page'],
+:root[data-design='classic'] .pv-flyout-item[aria-current='page']:hover {
+  background: var(--accent-crystal-bg);
+  color: var(--accent-crystal);
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-flyout-item[aria-current='page']::before {
+  inset-inline-start: 0;
+  inline-size: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent-crystal);
+}
+
+/* ---------- language menu and the header overflow menu (one look: the old popover) ---------- */
+:root[data-design='classic'] .pv-langmenu {
+  font-weight: 600;
+}
+
+:root[data-design='classic'] .pv-langmenu-item,
+:root[data-design='classic'] .pv-ovfmenu-item {
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* The language in use / the page you are on: the crystal tint, bold text and (language) the check; no line at the edge */
+:root[data-design='classic'] .pv-langmenu-item[aria-checked='true'],
+:root[data-design='classic'] .pv-ovfmenu-item[aria-current='page'] {
+  background: var(--accent-crystal-bg);
+  color: var(--accent-crystal);
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-langmenu-item[aria-checked='true']::before,
+:root[data-design='classic'] .pv-ovfmenu-item[aria-current='page']::before {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-ovfmenu-item[aria-current='page'] .pv-ovfmenu-icon {
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-ovfmenu-avatar {
+  border-radius: 50%;
+}
+
+/* ---------- phone drawer ---------- */
+/* The old drawer: rounded on the free side, a wide dark shadow, a softly blurred backdrop */
+:root[data-design='classic'] .pv-shell[data-drawer] .pv-snav {
+  overflow: hidden;
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  box-shadow: 0 0 48px rgba(0, 0, 0, 0.45);
+}
+
+:root[data-design='classic'] .pv-shell-drawer-backdrop {
+  background: rgba(8, 12, 22, 0.55);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+/* ---------- display size popover ---------- */
+:root[data-design='classic'] .pv-scalepop-title,
+:root[data-design='classic'] .pv-scalepop-value {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-scalepop-steps > button,
+:root[data-design='classic'] .pv-scalepop-reset {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-scalepop-step,
+:root[data-design='classic'] .pv-scalepop-reset {
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-hscale-badge {
+  border-radius: 999px;
+  font-weight: 800;
+}
+
+/* ---------- update icon and the version / update popovers ---------- */
+/* The tinted crystal box of the old update icon (it wins over the boxless ghost look of the other header icons) */
+:root[data-design='classic'] .pv-icon-btn.pv-icon-btn--ghost.pv-hupdate {
+  background: var(--accent-crystal-bg);
+  border-color: var(--accent-crystal-border);
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-icon-btn.pv-icon-btn--ghost.pv-hupdate:is(:hover, [aria-expanded='true']) {
+  background: var(--accent-crystal-bg);
+  border-color: var(--accent-crystal);
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-hupdate-dot {
+  border-radius: 999px;
+}
+
+:root[data-design='classic'] .pv-hpop-link {
+  font-weight: 700;
+}
+
+/* ---------- release notes dialog ("Das ist neu") ---------- */
+/* Header: a crystal wash with a framed icon tile; every category is a framed card with a heading in its own tint, round bullets */
+:root[data-design='classic'] .pv-notes-head {
+  background: linear-gradient(180deg, var(--accent-crystal-bg), transparent 140%);
+}
+
+:root[data-design='classic'] .pv-notes-headtile {
+  background: var(--bg-surface);
+  border: 1px solid var(--accent-crystal-border);
+  border-radius: var(--radius-md);
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-notes-title {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-notes-meta {
+  color: var(--text-secondary);
+}
+
+:root[data-design='classic'] .pv-notes-pill {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-notes-section {
+  overflow: hidden;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+:root[data-design='classic'] .pv-notes-section-head {
+  padding: 0.55rem 0.85rem;
+  background: var(--cat-bg);
+  border-block-end: 1px solid var(--cat-border);
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-notes-section-head::before {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-notes-tile {
+  background: var(--bg-surface);
+  border: 1px solid var(--cat-border);
+  border-radius: var(--radius-sm);
+}
+
+:root[data-design='classic'] .pv-notes-count {
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-notes-section-body {
+  padding: 0.35rem 0.85rem 0.8rem;
+}
+
+:root[data-design='classic'] .pv-notes-list li::before {
+  inset-inline-start: 0.1rem;
+  inset-block-start: 0.62em;
+  inline-size: 0.4rem;
+  block-size: 0.4rem;
+  border-radius: 50%;
+}
+
+:root[data-design='classic'] .pv-notes-foot {
+  background: var(--bg-elevated);
+}
+
+:root[data-design='classic'] .pv-notes-ghlink {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+:root[data-design='classic'] .pv-notes-ghlink:hover {
+  color: var(--text-primary);
+}
+
+/* ---------- about page ---------- */
+:root[data-design='classic'] .pv-about-logo {
+  border-radius: var(--radius-xl);
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+:root[data-design='classic'] .pv-about-k {
+  font-weight: 600;
+}
+
+:root[data-design='classic'] .pv-about-v {
+  font-weight: 600;
+}
+
+/* ---------- status pages (404 and friends, always English) ---------- */
+:root[data-design='classic'] .pv-status-code {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+/* The old brand rule: a short rounded line from crystal to gold */
+:root[data-design='classic'] .pv-status-bar {
+  block-size: 3px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent-crystal), var(--accent-gold));
+}
+
+:root[data-design='classic'] .pv-status-text {
+  color: var(--text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-design='classic'] :is(.pv-ni, .pv-flyout-item, .pv-user, .pv-langmenu-item, .pv-ovfmenu-item),
+  :root[data-design='classic'] .pv-ni::after {
+    transition: none;
+  }
+}

@@ -9,17 +9,17 @@ public sealed partial class AiGuideGeneratorService
     // half in one language. The JSON field names (type, variant, itemId ...) are the contract with the app and never change.
 
     // Rules shared by every research prompt: honesty over completeness, so brand-new games get gaps instead of inventions.
-    private static string ResearchRules(string language, ResearchBlocks.Selection? blocks = null)
+    private static string ResearchRules(string language, ResearchBlocks.Selection? blocks = null, GamePlatformContext? gamePlatform = null)
     {
         // The completeness bullet follows the chosen scope (without a choice: the long-standing "be exhaustive")
         var completeness = ResearchBlocks.CompletenessRule(blocks ?? ResearchBlocks.Selection.Empty, language);
-        // Steam/PC only: part of every research prompt, so no prompt can forget it (see AiGuidePlatform.cs)
-        var platform = PlatformRules(language);
+        // Steam/PC (or the platform of a game added by hand): part of every research prompt, so no prompt can forget it (see AiGuidePlatform.cs)
+        var platform = PlatformRules(language, gamePlatform);
         // Everything in the guide language, in own words (see AiGuideLanguage.cs)
-        var languageRule = LanguageRules(language);
+        var languageRule = LanguageRules(language, gamePlatform);
         var sideQuests = SideQuestRule(language);
         // Where to start researching, per guide language (hints only - the AI keeps searching on its own)
-        var sourceHints = SourceHints(language);
+        var sourceHints = SourceHints(language, gamePlatform);
         return language == Lang.English
         ? $"""
           {platform}
@@ -64,13 +64,8 @@ public sealed partial class AiGuideGeneratorService
         var profiles = Profiles(language);
         var topics = Topics(language);
 
-        var steamListNote = context.Achievements.Count > 0
-            ? english
-                ? "The app builds a chapter for the Steam achievements itself from the official Steam list – do not plan anything for it."
-                : "Ein eigenes Kapitel für die Steam-Erfolge baut die App selbst aus der offiziellen Steam-Liste – plane dafür nichts ein."
-            : english
-                ? "The app has no official achievement list: plan a chapter \"All achievements / trophies\" under extraChapters."
-                : "Die App hat keine offizielle Erfolgsliste: plane unter extraChapters ein Kapitel „Alle Erfolge / Trophäen“ ein.";
+        // The achievement chapter (Steam: built by the app; a game added by hand: the app shows its researched list itself), see AiGuidePlatform.cs
+        var steamListNote = ListNote(context);
 
         var profileList = string.Join("\n", profiles.Select(p => english
             ? $"- {p.Id}: {p.Name} (e.g. {p.Examples}) – typical: {string.Join(", ", p.Required)}; often fitting: {string.Join(", ", p.Recommended)}"
@@ -85,19 +80,15 @@ public sealed partial class AiGuideGeneratorService
                   "sie werden dann nicht noch einmal angelegt:\n" + string.Join("\n", existingChapters.Select(c => "- " + c))
             : english ? "The guide is new." : "Der Guide ist neu.";
 
-        var tagProfileNote = english
-            ? context.TagProfiles.Count > 0
-                ? "According to the Steam community tags these profiles are already set: " + string.Join(", ", context.TagProfiles) + " – only add more if they clearly fit."
-                : "The Steam tags give no clear profile – decide based on your research."
-            : context.TagProfiles.Count > 0
-                ? "Laut Steam-Community-Tags sind diese Profile bereits gesetzt: " + string.Join(", ", context.TagProfiles) + " – ergänze nur, wenn weitere eindeutig passen."
-                : "Aus den Steam-Tags ergibt sich kein eindeutiges Profil – entscheide anhand deiner Recherche.";
+        var tagProfileNote = TagProfileNote(context);
 
         var wish = string.IsNullOrWhiteSpace(customFocus)
             ? english ? "none in particular – a complete 100% guide" : "kein besonderer – vollständiger 100%-Guide"
             : customFocus;
         var wishesBlock = ResearchBlocks.BuildWishesBlock(context.Blocks, context.ResearchBase, ResearchBlocks.Scope.Blueprint, language);
-        var rules = ResearchRules(language, context.Blocks);
+        var rules = ResearchRules(language, context.Blocks, context.Platform);
+        var factsHeader = BlueprintFactsHeader(context.Platform, language);
+        var hoursExample = EstimatedHoursExample(context.Platform, language);
         // The walkthrough chapter does not count against the budget (callers pass the count without it)
         var budgetNote = ChapterBudget.PromptNote(context.Blocks.Scope, language, budgetCount ?? existingChapters.Count);
 
@@ -107,7 +98,7 @@ public sealed partial class AiGuideGeneratorService
                 You are the editor-in-chief for 100% walkthroughs. Your task is ONLY the blueprint for the guide to "{{context.Title}}".
                 Write ALL texts of your answer in English.
 
-                Known facts from Steam (Steam genres are rough – rely on your research):
+                {{factsHeader}}
                 {{context.FactsBlock}}
 
                 Step 1 – Analysis (research on the internet): What kind of game is this (genre, structure: linear/open world/missions,
@@ -145,7 +136,7 @@ public sealed partial class AiGuideGeneratorService
                 JSON structure:
                 {
                   "subtitle": "concise English subtitle",
-                  "estimatedHours": "e.g. approx. 80–120 hours for all Steam achievements",
+                  "estimatedHours": "{{hoursExample}}",
                   "missablesInfo": "e.g. 3 missable achievements",
                   "difficultyInfo": "e.g. difficulty does not matter, 1 playthrough + chapter select",
                   "genreTags": "e.g. Action RPG, Open World",
@@ -168,7 +159,7 @@ public sealed partial class AiGuideGeneratorService
         return $$"""
             Du bist Chef-Redakteur für 100%-Komplettlösungen. Deine Aufgabe ist NUR der Bauplan für den Guide zu „{{context.Title}}“.
 
-            Bekannte Fakten aus Steam (Steam-Genres sind grob – verlass dich auf deine Recherche):
+            {{factsHeader}}
             {{context.FactsBlock}}
 
             Schritt 1 – Analyse (recherchiere im Internet): Was für ein Spiel ist das (Genre, Struktur: linear/Open World/Missionen,
@@ -206,7 +197,7 @@ public sealed partial class AiGuideGeneratorService
             JSON-Struktur:
             {
               "subtitle": "prägnanter deutscher Untertitel",
-              "estimatedHours": "z. B. ca. 80–120 Stunden für alle Steam-Erfolge",
+              "estimatedHours": "{{hoursExample}}",
               "missablesInfo": "z. B. 3 verpassbare Erfolge",
               "difficultyInfo": "z. B. Schwierigkeit egal, 1 Durchgang + Kapitelauswahl",
               "genreTags": "z. B. Action-RPG, Open World",
@@ -229,7 +220,8 @@ public sealed partial class AiGuideGeneratorService
     internal static string BuildChapterPrompt(GameContext context, string chapterTitle, string focus, string sourceSituation, string? topicId = null)
     {
         var wishesBlock = ResearchBlocks.BuildWishesBlock(context.Blocks, context.ResearchBase, ResearchBlocks.Scope.Chapter, context.Language);
-        var rules = WithLinkRules(ResearchRules(context.Language, context.Blocks), context, chapterTitle + " " + focus, GuideLinker.ChapterPromptCap);
+        var rules = WithLinkRules(ResearchRules(context.Language, context.Blocks, context.Platform), context, chapterTitle + " " + focus, GuideLinker.ChapterPromptCap);
+        var factsHeader = FactsHeader(context.Platform, context.Language);
         var structure = ChapterStructureText(context);
         var sectionsJson = ChapterSectionsJson(context.Language);
         var puzzleRules = PuzzleRules(context.Language);
@@ -241,7 +233,7 @@ public sealed partial class AiGuideGeneratorService
             return $$"""
                 You are writing a chapter of a 100% walkthrough for "{{context.Title}}". Write ALL texts in English.
 
-                Known facts from Steam:
+                {{factsHeader}}
                 {{context.FactsBlock}}
                 Source situation according to the preliminary analysis: {{sourceSituation}}
 
@@ -270,7 +262,7 @@ public sealed partial class AiGuideGeneratorService
         return $$"""
             Du schreibst ein Kapitel einer 100%-Komplettlösung für „{{context.Title}}“.
 
-            Bekannte Fakten aus Steam:
+            {{factsHeader}}
             {{context.FactsBlock}}
             Quellenlage laut Vorab-Analyse: {{sourceSituation}}
 
@@ -308,7 +300,7 @@ public sealed partial class AiGuideGeneratorService
         var bossBlock = BossBlock(context.Language);
         var sourcesBlock = SourcesBlock(context.Language);
         var acquisition = AcquisitionRules(context.Language);
-        var bossRules = BossRules(context.Language);
+        var bossRules = BossRules(context.Language, context.Platform);
 
         if (context.Language == Lang.English)
         {
@@ -395,7 +387,8 @@ public sealed partial class AiGuideGeneratorService
 
     internal static string BuildLorePrompt(GameContext context, LorePart part)
     {
-        var rules = ResearchRules(context.Language);
+        var rules = ResearchRules(context.Language, gamePlatform: context.Platform);
+        var factsHeader = FactsHeader(context.Platform, context.Language);
         var styleAndBlocks = LoreStyleAndBlocks(context.Language);
 
         if (context.Language == Lang.English)
@@ -404,7 +397,7 @@ public sealed partial class AiGuideGeneratorService
                 You are writing one part of the "Story & Lore" tab for "{{context.Title}}" – for players who really want to understand the plot and
                 the background. SPOILERS are explicitly wanted (twists, endings, fates of the characters).
 
-                Known facts from Steam:
+                {{factsHeader}}
                 {{context.FactsBlock}}
 
                 Part: "{{part.Title}}"
@@ -424,7 +417,7 @@ public sealed partial class AiGuideGeneratorService
             Du schreibst einen Teil des Reiters „Story & Lore“ für „{{context.Title}}“ – für Spieler, die die Handlung und die
             Hintergründe wirklich verstehen wollen. SPOILER sind ausdrücklich gewünscht (Wendungen, Enden, Schicksale der Figuren).
 
-            Bekannte Fakten aus Steam:
+            {{factsHeader}}
             {{context.FactsBlock}}
 
             Teil: „{{part.Title}}“
@@ -479,7 +472,8 @@ public sealed partial class AiGuideGeneratorService
     internal static string BuildAchievementTipsPrompt(GameContext context)
     {
         var list = string.Join("\n", context.Achievements.Select(a => $"{a.ApiName} | {a.DisplayName} | {a.Description}"));
-        var rules = ResearchRules(context.Language);
+        // Only Steam games get this prompt (BuildAchievementsTabAsync never runs for a game added by hand); the platform is passed on all the same
+        var rules = ResearchRules(context.Language, gamePlatform: context.Platform);
 
         if (context.Language == Lang.English)
         {

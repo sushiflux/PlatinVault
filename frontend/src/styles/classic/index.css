@@ -1,0 +1,40 @@
+/* Design "Klassisch" (Settings > System > Design, <html data-design="classic">, src/utils/uiDesign.ts): the look of PlatinVault before
+   the "ganz leicht" redesign (commit 9fabf8e) on today's structure. Imported once from main.tsx AFTER every other stylesheet.
+   Rules for everyone writing here:
+   - Every rule is scoped under :root[data-design='classic'] (that prefix also lifts it above the light rule it restyles, including
+     component CSS a lazily loaded chunk injects later). The light design must stay pixel-identical: never edit light rules.
+   - LOOK ONLY: colours, fills, gradients, borders, radii, shadows, glow/gloss, font family and weights, letter-spacing, hover/active/
+     focus visuals, transitions. Never display, grid/flex structure, position, box sizes or order (except a small fix so bolder text
+     never overflows or gets cut).
+   - Tokens first (tokens.css); shared building blocks in base.css; each area in its own file. */
+@import './tokens.css';
+@import './base.css';
+@import './shell.css';
+@import './dashboard.css';
+@import './game.css';
+@import './live.css';
+@import './settings.css';
+@import './addgame.css';
+
+/* Reduced motion: the classic colour, shadow and filter transitions of the shared blocks, the game page and the settings are switched
+   off (shell.css, dashboard.css and live.css carry their own blocks). Listed here because the rules live in several files. */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-design='classic']
+    :is(
+      .pv-btn,
+      .pv-btn-text,
+      .pv-input,
+      .pv-select,
+      .pv-segmented > .pv-seg-tip > button,
+      .pv-ai-run--quiet button,
+      .pv-btn-text.pv-btn-text--danger,
+      .pv-game-play .pv-play-button,
+      .pv-gbar-track,
+      .pv-toc-link,
+      .pv-set-pos button,
+      .pv-doc-actions .pv-btn-text,
+      .pv-cab-hbtn
+    ) {
+    transition: none;
+  }
+}

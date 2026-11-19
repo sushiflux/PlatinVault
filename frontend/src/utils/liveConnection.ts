@@ -1,5 +1,6 @@
 import * as signalR from '@microsoft/signalr'
 import type { LiveAchievementItemDto, LiveEventDto, LiveEventMeta, LiveEventsResponseDto } from '../api/types'
+import type { AchievementEventInfo } from './animationQueue'
 
 // Delays between connection attempts: quick at first (a backend restart takes seconds), then every 10 s - never giving up.
 // SignalR's default reconnect stops after 0/2/10/30 s and its first start() is not retried at all; a tab that loaded while the
@@ -113,11 +114,12 @@ export interface LiveHubConnection {
 }
 
 export interface LiveHubHandlers {
-  onAchievement(achievement: LiveAchievementItemDto): void
-  onPlatinum(gameName: string, total: number): void
+  /** `info` = what the event says about its game: the name (a game that is not running: ticked by hand) and where it came from. */
+  onAchievement(achievement: LiveAchievementItemDto, info?: AchievementEventInfo): void
+  onPlatinum(gameName: string, total: number, source?: 'manual' | null): void
   onGameChanged(): void
-  /** The pinned achievements ("Im Blick") of a game changed: in another window, or removed by the server after an unlock. */
-  onPinsChanged?(appId: number): void
+  /** The pinned achievements ("Im Blick") of a game changed: in another window, or removed by the server after an unlock. A game added by hand has appId 0 and a gameId. */
+  onPinsChanged?(appId: number, gameId?: string | null): void
   /** After every successful (re)connect: refresh whatever may have changed meanwhile. */
   onConnected?(): void
 }
@@ -164,8 +166,8 @@ export function connectLiveHub(handlers: LiveHubHandlers, deps: LiveHubDeps): ()
   let cancelRetry: (() => void) | null = null
 
   const show = (event: LiveEventDto) => {
-    if (event.kind === 'achievement' && event.achievement) handlers.onAchievement(event.achievement)
-    else if (event.kind === 'platinum' && event.gameName) handlers.onPlatinum(event.gameName, event.total ?? 0)
+    if (event.kind === 'achievement' && event.achievement) handlers.onAchievement(event.achievement, { gameName: event.gameName, source: event.source ?? null })
+    else if (event.kind === 'platinum' && event.gameName) handlers.onPlatinum(event.gameName, event.total ?? 0, event.source ?? null)
   }
 
   const afterConnect = () => {
@@ -205,16 +207,18 @@ export function connectLiveHub(handlers: LiveHubHandlers, deps: LiveHubDeps): ()
   }
 
   connection.on('AchievementUnlocked', (achievement, meta) => {
-    if (gate.accept(meta as LiveEventMeta | undefined)) handlers.onAchievement(achievement as LiveAchievementItemDto)
+    const eventMeta = meta as LiveEventMeta | undefined
+    if (gate.accept(eventMeta)) handlers.onAchievement(achievement as LiveAchievementItemDto, { gameName: eventMeta?.gameName ?? null, source: eventMeta?.source ?? null })
   })
   connection.on('PlatinumUnlocked', (payload, meta) => {
     const { gameName, total } = payload as { gameName: string; total: number }
-    if (gate.accept(meta as LiveEventMeta | undefined)) handlers.onPlatinum(gameName, total)
+    const eventMeta = meta as LiveEventMeta | undefined
+    if (gate.accept(eventMeta)) handlers.onPlatinum(gameName, total, eventMeta?.source ?? null)
   })
   connection.on('GameChanged', () => handlers.onGameChanged())
   connection.on('PinsChanged', (payload) => {
-    const appId = (payload as { appId?: unknown } | null | undefined)?.appId
-    if (typeof appId === 'number') handlers.onPinsChanged?.(appId)
+    const { appId, gameId } = (payload ?? {}) as { appId?: unknown; gameId?: unknown }
+    if (typeof appId === 'number') handlers.onPinsChanged?.(appId, typeof gameId === 'string' && gameId ? gameId : null)
   })
   connection.onreconnected(afterConnect)
   // Only reached when the automatic reconnect gave up or the server closed the connection: start over

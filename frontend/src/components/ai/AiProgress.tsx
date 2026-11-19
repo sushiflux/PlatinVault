@@ -12,7 +12,8 @@ import type { AiProgressView } from './useAiProgress'
 const SAMPLE_TITLE = 'Fähigkeiten, Upgrade-Reihenfolge, Level-Empfehlungen & Farming-Routen'
 const SAMPLE_SWITCH = 'Gemini-Kontingent aufgebraucht – weiter mit Claude. OpenAI recherchiert hier ohne Websuche.'
 
-function stepText(t: TFunction<'ai'>, step: AiJobDto['step']): string {
+// kind: the research of a game added by hand ("trophies") names its own steps - there are no Steam facts to collect for it
+function stepText(t: TFunction<'ai'>, step: AiJobDto['step'], kind?: AiJobKind): string {
   const { done, total, title } = step
   switch (step.stage) {
     case 'chapters':
@@ -22,7 +23,9 @@ function stepText(t: TFunction<'ai'>, step: AiJobDto['step']): string {
     case 'chapter':
       return t('progress.step.chapter', { title: title ?? '' })
     case 'facts':
-      return t('progress.step.facts')
+      return kind === 'trophies' ? t('progress.step.factsGame') : t('progress.step.facts')
+    case 'trophies':
+      return t('progress.step.trophies')
     case 'blueprint':
       return t('progress.step.blueprint')
     case 'saving':
@@ -36,6 +39,8 @@ interface AiProgressLinesProps {
   // null = the action was just started and the server has not answered yet
   view: AiProgressView | null
   align?: 'start' | 'center'
+  // Only takes the room of the lines (an invisible copy next to something else that is shown in the same place): no test ids, nothing for tests to find
+  ghost?: boolean
 }
 
 /**
@@ -43,7 +48,7 @@ interface AiProgressLinesProps {
  * general line - which becomes a gentle "slow" hint when the step has not changed for five minutes. Every line has its room reserved for its
  * longest text in the active language, so nothing around it moves while the steps change.
  */
-export function AiProgressLines({ view, align = 'start' }: AiProgressLinesProps) {
+export function AiProgressLines({ view, align = 'start', ghost = false }: AiProgressLinesProps) {
   const { t } = useTranslation('ai')
   const job = view?.job
   const step = job?.step ?? { stage: 'starting' as const, done: 0, total: 0, title: null }
@@ -53,6 +58,8 @@ export function AiProgressLines({ view, align = 'start' }: AiProgressLinesProps)
   const stepCandidates = [
     t('progress.step.starting'),
     t('progress.step.facts'),
+    t('progress.step.factsGame'),
+    t('progress.step.trophies'),
     t('progress.step.blueprint'),
     t('progress.step.chapters', { done: 88, total: 88, title: SAMPLE_TITLE }),
     t('progress.step.chapter', { title: SAMPLE_TITLE }),
@@ -61,14 +68,14 @@ export function AiProgressLines({ view, align = 'start' }: AiProgressLinesProps)
   ]
 
   return (
-    <div className={`space-y-1.5 ${alignClass}`} data-testid="ai-progress">
+    <div className={`space-y-1.5 ${alignClass}`} data-testid={ghost ? undefined : 'ai-progress'}>
       <ReservedText className={`text-sm font-bold ${alignClass}`} style={{ color: 'var(--text-primary)' }} candidates={stepCandidates} aria-live="polite">
-        {stepText(t, step)}
+        {stepText(t, step, job?.kind)}
       </ReservedText>
       <ReservedText className={`text-sm font-semibold ${alignClass}`} style={{ color: 'var(--accent-crystal)' }} candidates={[SAMPLE_SWITCH]} aria-live="polite">
         {job?.switchNotice ?? ''}
       </ReservedText>
-      <p className="text-sm font-semibold tabular-nums" style={{ color: 'var(--text-secondary)' }} data-testid="ai-progress-elapsed">
+      <p className="text-sm font-semibold tabular-nums" style={{ color: 'var(--text-secondary)' }} data-testid={ghost ? undefined : 'ai-progress-elapsed'}>
         {t('progress.elapsed', { time: formatElapsed(view?.elapsedSeconds ?? 0) })}
       </p>
       <ReservedText className={`text-sm leading-snug ${alignClass}`} style={{ color: slow ? 'var(--accent-gold-text)' : 'var(--text-muted)' }} candidates={[t('progress.general'), t('progress.slow')]}>

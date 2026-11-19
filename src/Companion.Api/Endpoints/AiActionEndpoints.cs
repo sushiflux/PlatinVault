@@ -137,6 +137,41 @@ public static class AiActionEndpoints
             var job = jobs.Start("lore", "game:" + slug, slug, (sp, progress, token) => RunLoreAsync(sp, slug, req?.ProviderOverride, progress, token));
             return Accepted(job, "lore");
         });
+
+        // The trophy / achievement list of a game added by hand (and, D10, its facts when they do not come from IGDB): ONE research call, saved only when
+        // the answer passes the reader (TrophyList); a re-research keeps the ticks (TrophyMerge)
+        api.MapPost("/games/{slug}/ai-trophies", async (string slug, AiTrophiesRequest? req, CompanionDbContext db, AiJobService jobs, CancellationToken ct) =>
+        {
+            var game = await db.Games.AsNoTracking().FirstOrDefaultAsync(g => g.Slug == slug, ct);
+            if (game is null)
+            {
+                return Problems.GameNotFound(slug);
+            }
+            if (TrophyResearchRefusal(game, req?.Include) is { } refused)
+            {
+                return refused;
+            }
+            var job = jobs.Start("trophies", "game:" + slug, slug, (sp, progress, token) => RunTrophiesAsync(sp, slug, req, progress, token));
+            return Accepted(job, "trophies");
+        });
+    }
+
+    /// <summary>
+    /// Why a trophy research cannot start (null = it can): a Steam game (its list comes from Steam), or nothing to research - a platform without trophies
+    /// whose facts are complete or come from IGDB, or both parts switched off. Shared with the own-subscription prompt (<see cref="ManualTrophyEndpoints"/>).
+    /// </summary>
+    internal static IResult? TrophyResearchRefusal(GameEntity game, TrophyResearchIncludeDto? asked)
+    {
+        if (!GamePlatforms.IsManual(game))
+        {
+            return Problems.Create(StatusCodes.Status400BadRequest, ServerTexts.Trophies.NotManualTitle, ServerTexts.Trophies.NotManual);
+        }
+        if (!AiGuideGeneratorService.DefaultInclude(game, asked).Any)
+        {
+            return Problems.Create(StatusCodes.Status400BadRequest, ServerTexts.Trophies.NothingToResearchTitle,
+                ServerTexts.Trophies.NothingToResearch(GamePlatforms.DisplayName(game.Platform, game.PlatformVariant), GamePlatforms.HasTrophies(game.Platform), game.FactsSource == "igdb"));
+        }
+        return null;
     }
 
     /// <summary>
@@ -547,6 +582,46 @@ public static class AiActionEndpoints
             .Include(g => g.ProgressChecks)
             .FirstAsync(g => g.Slug == slug, ct);
         return new AiResultDto<GameDetailDto>(await ApiEndpoints.BuildDetailAsync(db, translations, fresh, null, ct), usage.ToDto());
+    }
+
+    private static async Task<object> RunTrophiesAsync(IServiceProvider sp, string slug, AiTrophiesRequest? req, AiJobProgress progress, CancellationToken ct)
+    {
+        var db = sp.GetRequiredService<CompanionDbContext>();
+        var ai = sp.GetRequiredService<AiGuideGeneratorService>();
+        var translations = sp.GetRequiredService<GuideTranslationService>();
+        var logger = sp.GetRequiredService<ILogger<AiGuideGeneratorService>>();
+
+        var game = await db.Games
+            .Include(g => g.Tabs)
+            .FirstOrDefaultAsync(g => g.Slug == slug, ct)
+            ?? throw new LocalizedException(ServerTexts.GameNotFound(slug));
+        if (!GamePlatforms.IsManual(game))
+        {
+            throw new LocalizedException(ServerTexts.Trophies.NotManual);
+        }
+        // A tile without chapters and without a list takes the language of the request before its first research (the list is in the guide language)
+        ApiEndpoints.AdoptRequestLanguageIfEmpty(game);
+
+        var include = AiGuideGeneratorService.DefaultInclude(game, req?.Include);
+        var (read, _, usage) = await ai.ResearchTrophyListAsync(game, req?.ProviderOverride, include, progress, ct);
+        if (!read.Ok)
+        {
+            // "No reliable list" is the whole message; everything else is listed as the reasons of the reader
+            var reliable = read.Errors.FirstOrDefault(e => e.Code == "noReliableList");
+            throw new LocalizedException(reliable is not null
+                ? Msg.Same(reliable.Message)
+                : ServerTexts.Trophies.NotUsable(string.Join(" ", read.Errors.Select(e => e.Message))));
+        }
+
+        progress.Step("saving");
+        var saved = await TrophyListStore.SaveAsync(db, game.Id, read, include, DateTimeOffset.UtcNow, ct);
+        logger.LogInformation("Trophäenliste für {Title} recherchiert: {Count} Einträge, {Kept} Häkchen übernommen, {Retained} abgehakte behalten, Fakten {Facts}.",
+            game.Title, saved.Count, saved.KeptTicks, saved.RetainedOldTicked, saved.FactsUpdated ? "aktualisiert" : "unverändert");
+
+        db.ChangeTracker.Clear();
+        var list = await ManualTrophyLists.BuildAsync(db, game.Id, null, translations, ct) ?? throw new LocalizedException(ServerTexts.GameNotFound(slug));
+        return new AiResultDto<ManualTrophyResearchResultDto>(
+            new ManualTrophyResearchResultDto(list, saved.FactsUpdated, saved.KeptTicks, saved.RetainedOldTicked), usage.ToDto());
     }
 }
 

@@ -72,7 +72,8 @@ public sealed partial class AiGuideGeneratorService
 
         var title = game.Title.Replace("\"", "'");
         var appId = game.SteamAppId is > 0 ? game.SteamAppId.Value.ToString() : "null";
-        var appIdLine = game.SteamAppId is > 0 ? T($"Steam-AppID {game.SteamAppId}", $"Steam AppID {game.SteamAppId}") : T("Steam-AppID unbekannt", "Steam AppID unknown");
+        // "Steam AppID 123 – the Steam version on PC" (unchanged for Steam games) or the platform version of a game added by hand
+        var identity = ManualIdentity(game, language);
         var first = chapters[0].Key;
         var last = chapters[^1].Key;
         var doneRange = chapters.Count == 1 ? first : $"{first}–{last}";
@@ -80,7 +81,7 @@ public sealed partial class AiGuideGeneratorService
         var structure = ChapterStructureText(context);
         var sectionsJson = ChapterSectionsJson(language);
         var puzzleRules = PuzzleRules(language);
-        var rules = WithLinkRules(ResearchRules(language, context.Blocks), context);
+        var rules = WithLinkRules(ResearchRules(language, context.Blocks, context.Platform), context);
         var answerFile = ManualBatchAnswerFileName(game, language);
         // Example for the "still open" line of the code-block fallback, made from the real keys of this list
         var openStart = chapters[Math.Min(4, chapters.Count - 1)].Key;
@@ -97,7 +98,7 @@ public sealed partial class AiGuideGeneratorService
             $"Du schreibst {chapters.Count} Kapitel einer 100%-Komplettlösung für „{game.Title}“ – alle in diesem einen Chat. Schreibe ALLE Texte auf Deutsch.",
             $"You are writing {chapters.Count} chapters of a 100% walkthrough for \"{game.Title}\" – all of them in this one chat. Write ALL texts in English."));
         text.AppendLine();
-        text.AppendLine(T("Bekannte Fakten aus Steam:", "Known facts from Steam:"));
+        text.AppendLine(FactsHeader(context.Platform, language));
         text.AppendLine(context.FactsBlock);
         if (sharedSource is not null)
         {
@@ -144,7 +145,7 @@ public sealed partial class AiGuideGeneratorService
             text.AppendLine(T(
                 $"Sonderfall Komplettlösung ({keys}): Sie steht wie jedes andere Kapitel im selben Array, an ihrer Stelle der Liste. Sie ist lang; baue sie wie die anderen Kapitel Schritt für Schritt auf. Der Pflicht-Aufbau oben gilt dafür NICHT; es gilt stattdessen:",
                 $"Special case walkthrough ({keys}): it goes into the same array like every other chapter, at its place in the list. It is long; build it step by step like the other chapters. The mandatory structure above does NOT apply to it; this applies instead:"));
-            text.AppendLine(WalkthroughSingleInstructions(language));
+            text.AppendLine(WalkthroughSingleInstructions(language, context.Platform));
             text.AppendLine(AchievementReference(context));
             text.AppendLine(T(
                 "Sein JSON-Objekt hat dieselben Felder wie die anderen („game“, „steamAppId“, „chapter“, „title“, „icon“, „sections“).",
@@ -157,8 +158,8 @@ public sealed partial class AiGuideGeneratorService
             "Ausgabe in diesem Chat (das gilt zusätzlich und hat bei der Ausgabe Vorrang vor dem Satz „ohne Markdown-Codeblock“ oben):",
             "Output in this chat (this applies in addition and wins over the sentence \"without a Markdown code block\" above):"));
         text.AppendLine(T(
-            $"- Gemeint ist genau dieses Spiel: „{game.Title}“, {appIdLine} – die Steam-Version auf dem PC. Prüfe vor dem Schreiben, dass du dieses Spiel meinst – nicht ein gleichnamiges Spiel, einen Vorgänger, Nachfolger, ein Remake oder eine Demo.",
-            $"- The game is exactly this one: \"{game.Title}\", {appIdLine} – the Steam version on PC. Before writing, make sure you mean this game – not a game with the same name, a predecessor, a successor, a remake or a demo."));
+            $"- Gemeint ist genau dieses Spiel: „{game.Title}“, {identity}. Prüfe vor dem Schreiben, dass du dieses Spiel meinst – nicht ein gleichnamiges Spiel, einen Vorgänger, Nachfolger, ein Remake oder eine Demo.",
+            $"- The game is exactly this one: \"{game.Title}\", {identity}. Before writing, make sure you mean this game – not a game with the same name, a predecessor, a successor, a remake or a demo."));
         text.AppendLine(T(
             $"- Die Ausgabe ist EIN JSON-Array mit ALLEN {chapters.Count} Kapiteln in der Reihenfolge der Liste: [ <Objekt {first}>, … <Objekt {last}> ]. Pro Kapitel genau ein Objekt, im Array sonst nichts – kein Text, keine Kommentare, keine Platzhalter. Beginne jedes Objekt in einer neuen Zeile. Die Felder stehen in genau dieser Reihenfolge: „game“, „steamAppId“, „chapter“ (der Schlüssel aus der Liste, exakt, z. B. „{first}“), „title“, „icon“, „sections“, so (verkürzt, schreibe die echten Inhalte): {skeleton}",
             $"- The output is ONE JSON array with ALL {chapters.Count} chapters in the order of the list: [ <object {first}>, … <object {last}> ]. Exactly one object per chapter, nothing else in the array – no text, no comments, no placeholders. Start every object on a new line. The fields are in exactly this order: \"game\", \"steamAppId\", \"chapter\" (the key from the list, exactly, e.g. \"{first}\"), \"title\", \"icon\", \"sections\", like this (shortened, write the real content): {skeleton}"));

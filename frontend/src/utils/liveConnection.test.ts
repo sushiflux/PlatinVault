@@ -207,7 +207,61 @@ describe('connectLiveHub', () => {
     connection.emit('PinsChanged', {})
     connection.emit('PinsChanged', null)
     expect(onPinsChanged).toHaveBeenCalledTimes(1)
-    expect(onPinsChanged).toHaveBeenCalledWith(440)
+    expect(onPinsChanged).toHaveBeenCalledWith(440, null)
+  })
+
+  it('catches up a trophy ticked by hand with its game name and source', async () => {
+    const connection = new FakeConnection()
+    connection.up = true
+    const onAchievement = vi.fn()
+    const storage = new MemoryStorage()
+    storage.setItem(LIVE_SEEN_KEY, JSON.stringify({ instanceId: 'a', lastId: 4 }))
+    const manual: LiveEventDto = { ...event(5, 'first-blood'), gameName: 'Stellar Blade', appId: 0, source: 'manual' }
+    connectLiveHub(
+      { onAchievement, onPlatinum: vi.fn(), onGameChanged: vi.fn() },
+      { createConnection: () => connection, fetchEvents: async () => response('a', [manual]), storage, schedule: manualScheduler().schedule }
+    )
+    await flush()
+
+    expect(onAchievement).toHaveBeenCalledTimes(1)
+    expect(onAchievement).toHaveBeenCalledWith(expect.objectContaining({ apiName: 'first-blood' }), { gameName: 'Stellar Blade', source: 'manual' })
+  })
+
+  it('reports the game id of a PinsChanged event of a game added by hand (appId 0)', async () => {
+    const connection = new FakeConnection()
+    connection.up = true
+    const onPinsChanged = vi.fn()
+    connectLiveHub(
+      { onAchievement: vi.fn(), onPlatinum: vi.fn(), onGameChanged: vi.fn(), onPinsChanged },
+      { createConnection: () => connection, fetchEvents: async () => response('a', []), storage: null, schedule: manualScheduler().schedule }
+    )
+    await flush()
+
+    connection.emit('PinsChanged', { appId: 0, gameId: 'f3a1c2d4-0000-4000-8000-000000000001' })
+    expect(onPinsChanged).toHaveBeenCalledWith(0, 'f3a1c2d4-0000-4000-8000-000000000001')
+  })
+
+  it('hands the game name and the source of a trophy ticked by hand to the window, live and through the catch-up', async () => {
+    const connection = new FakeConnection()
+    connection.up = true
+    const onAchievement = vi.fn()
+    const onPlatinum = vi.fn()
+    const manual: LiveEventDto = { ...event(5, 'first-blood'), gameName: 'Stellar Blade', appId: 0, source: 'manual' }
+    connectLiveHub(
+      { onAchievement, onPlatinum, onGameChanged: vi.fn() },
+      { createConnection: () => connection, fetchEvents: async () => response('a', [manual]), storage: new MemoryStorage(), schedule: manualScheduler().schedule }
+    )
+    await flush()
+
+    // A window that connects for the first time only takes the current state; the live events after that carry the meta
+    connection.emit('AchievementUnlocked', achievement('first-blood'), { eventId: 6, instanceId: 'a', gameName: 'Stellar Blade', source: 'manual' })
+    expect(onAchievement).toHaveBeenLastCalledWith(expect.objectContaining({ apiName: 'first-blood' }), { gameName: 'Stellar Blade', source: 'manual' })
+    connection.emit('PlatinumUnlocked', { gameName: 'Stellar Blade', total: 48 }, { eventId: 7, instanceId: 'a', gameName: 'Stellar Blade', source: 'manual' })
+    expect(onPlatinum).toHaveBeenLastCalledWith('Stellar Blade', 48, 'manual')
+
+    // A Steam unlock names no source
+    connection.emit('AchievementUnlocked', achievement('steam-one'), { eventId: 8, instanceId: 'a' })
+    expect(onAchievement).toHaveBeenLastCalledWith(expect.objectContaining({ apiName: 'steam-one' }), { gameName: null, source: null })
   })
 
   it('never stops retrying (delays settle at 10 s)', () => {

@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import { useSearchParams } from 'react-router'
 
 /** The app windows that live in the address (?dialog=...), so a reload (F5) keeps the window open and Back closes it. */
-export type DialogParam = 'handbook' | 'licenses' | 'whatsnew'
+export type DialogParam = 'handbook' | 'licenses' | 'whatsnew' | 'addgame'
 
 /**
  * Open state of one window kept in the URL query. Opening adds `dialog=<name>` as a new history entry (Back closes the window), closing

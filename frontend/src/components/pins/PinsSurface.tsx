@@ -8,6 +8,7 @@ import { useAchievementNotes } from '../../utils/useAchievementNotes'
 import { usePopupMs } from '../../utils/usePopupMs'
 import { AchievementNoteDialog } from '../AchievementNoteDialog'
 import { TrophyDetailDialog, type TrophyItemProps } from '../TrophyViews'
+import { useTrophyCheckFor } from '../trophies/trophyCheckContext'
 import { Tooltip } from '../ui/Tooltip'
 import { PinCard } from './PinCard'
 import { usePins, type PinsApi } from './pinsContext'
@@ -33,13 +34,15 @@ export function PinsSurface({ placement, achievements, tips }: PinsSurfaceProps)
   const pins = usePins()
   const actual = usePinsPlacement()
   if (!pins || actual !== placement) return null
-  return <PinsView key={pins.appId} placement={placement} pins={pins} achievements={achievements} tips={tips} />
+  return <PinsView key={pins.scopeKey} placement={placement} pins={pins} achievements={achievements} tips={tips} />
 }
 
 function PinsView({ placement, pins, achievements, tips }: PinsSurfaceProps & { pins: PinsApi }) {
   const { enabled: notesEnabled } = useAchievementNotes()
+  // A game added by hand: the detail dialog of a card ticks the trophy like the list does
+  const checkFor = useTrophyCheckFor()
   // A done card stays as long as a trophy popup does (setting "Anzeigedauer der Trophäen-Popups")
-  const entries = usePinList(pins.appId, pins.names, achievements, pins.wasRemovedHere, usePopupMs())
+  const entries = usePinList(pins.scopeKey, pins.names, achievements, pins.wasRemovedHere, usePopupMs())
   const [collapsed, toggleCollapsed] = usePinsCollapsed(placement)
 
   // The detail dialog of a card (guide tip, note), also the note editor opened from it
@@ -62,6 +65,7 @@ function PinsView({ placement, pins, achievements, tips }: PinsSurfaceProps & { 
     onNote: () => setNoteName(ach.apiName),
     onOpen: () => undefined,
     pin: { pinned: pins.isPinned(ach.apiName), canPin: !pins.full, max: pins.max, onToggle: () => pins.toggle(ach.apiName) },
+    check: checkFor?.(ach),
   })
 
   // "Geschaffte entfernen": the pinned achievements that are unlocked (a card that is leaving is not pinned any more)
@@ -82,7 +86,7 @@ function PinsView({ placement, pins, achievements, tips }: PinsSurfaceProps & { 
       </AnimatePresence>
 
       {detailAch && <TrophyDetailDialog item={itemFor(detailAch)} onClose={() => setDetailName(null)} />}
-      {notesEnabled && noteAch && <AchievementNoteDialog key={noteAch.apiName} ach={noteAch} appId={pins.appId} onClose={() => setNoteName(null)} />}
+      {notesEnabled && noteAch && <AchievementNoteDialog key={noteAch.apiName} ach={noteAch} scope={pins.scope} onClose={() => setNoteName(null)} />}
     </>
   )
 

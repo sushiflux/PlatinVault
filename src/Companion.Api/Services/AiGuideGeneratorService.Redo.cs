@@ -43,7 +43,7 @@ public sealed partial class AiGuideGeneratorService
         progress?.Step("facts");
         // The chapter may point at the rows of the OTHER chapters ("ref"); its own rows are researched anew
         // ... and keeps the item ids of the rows it has today for the same entries (the ticks hang on them)
-        var context = WithKeepItems(WithLinkCandidates(await BuildGameContextAsync(game.Title, game.SteamAppId, language, ct), game.Tabs, new HashSet<Guid> { tab.Id }), tab);
+        var context = WithKeepItems(WithLinkCandidates(await BuildGameContextAsync(game, language, ct), game.Tabs, new HashSet<Guid> { tab.Id }), tab);
         var plan = RedoPlan(tab, language);
         progress?.Step("chapter", 0, 1, plan.Title);
 

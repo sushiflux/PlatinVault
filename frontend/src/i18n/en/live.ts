@@ -12,6 +12,8 @@ const live = {
   tierTrophy: '{{tier}} trophy',
   tierPills: {
     unlocked: '{{achieved}} of {{total}} unlocked',
+    trophies: 'Trophies',
+    achievements: 'Achievements',
   },
   celebration: {
     earned: 'Platinum trophy earned',
@@ -80,6 +82,18 @@ const live = {
     large: 'Large',
   },
   trophy: {
+    missable: {
+      badge: 'Missable',
+      tooltip: 'Can be missed for good during the game. Check the guide first.',
+    },
+    check: {
+      mark: 'Tick “{{name}}” as done',
+      unmark: 'Remove the tick from “{{name}}”',
+      auto: 'Is reached automatically once every other trophy of the game is ticked.',
+      failedMark: 'Couldn’t tick the trophy',
+      failedUnmark: 'Couldn’t remove the tick',
+      failedFallback: 'The server did not save the change.',
+    },
     noDescription: 'No description available.',
     hiddenAchievement: 'Hidden story/secret achievement',
     hiddenAchievementOpen: 'Hidden story/secret achievement – click to open',

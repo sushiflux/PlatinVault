@@ -73,6 +73,10 @@ const onboarding = {
         account: { lead: 'Steam account', text: 'connect it with “Sign in with Steam”.' },
         key: { lead: 'Web API key', text: 'get it from Steam for free and enter it in the settings.' },
         star: { lead: 'Star', text: 'tap it in “All games” – you create the guide afterwards on the game page.' },
+        manual: {
+          lead: 'By hand',
+          text: 'Games from PlayStation, Xbox, Epic, GOG, Switch & Co. you create with “Add game” – with the IGDB search or just a title and a platform. You tick the trophies yourself.',
+        },
       },
       visual: {
         favorites: 'Favourites',
@@ -276,7 +280,11 @@ const onboarding = {
     handbook: 'Open handbook (PDF)',
     dashboardAdd: {
       title: 'Bring games onto the dashboard',
-      text: 'Your games come from your Steam library: under “All games” you see all of them, the star puts a game on the dashboard.',
+      text: 'You find your Steam games under “All games” and put them on the dashboard with the star. Games of other platforms you create by hand with “Add game” – they are listed there too.',
+    },
+    dashboardAddGame: {
+      title: 'Add a game by hand',
+      text: 'For PlayStation, Xbox, Epic, GOG, Switch & Co.: with the IGDB search or just a title, a platform and a cover of your own. The AI researches the trophy list afterwards and you tick it yourself.',
     },
     dashboardStar: {
       title: 'Your favourites',

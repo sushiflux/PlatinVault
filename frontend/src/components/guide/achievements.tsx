@@ -4,7 +4,7 @@ import { IconTrophy } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import type { LiveAchievementItemDto } from '../../api/types'
 
-/** What the guide shows for a Steam achievement it refers to by API name. */
+/** What the guide shows for an achievement or trophy it refers to by API name. */
 export interface AchievementInfo {
   apiName: string
   title: string

@@ -58,6 +58,7 @@ public static partial class ManualGuideEndpoints
             {
                 return Problems.GameNotFound(slug);
             }
+            await LoadTrophiesAsync(db, game, ct);
             await AdoptLanguageAsync(db, game, ct);
             chapters = AiGuideGeneratorService.ResolveStoredChapters(game, chapters);
 

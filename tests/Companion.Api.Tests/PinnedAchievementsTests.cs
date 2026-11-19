@@ -271,7 +271,9 @@ public sealed class PinnedAchievementsTests
         using (var doc = JsonDocument.Parse(empty.Body))
         {
             Assert.Equal(App, doc.RootElement.GetProperty("appId").GetUInt32());
-            Assert.Equal(["appId", "apiNames", "max"], doc.RootElement.EnumerateObject().Select(p => p.Name));
+            // gameId (manual games, null for a Steam game) is part of the contract since manual games
+            Assert.Equal(["appId", "apiNames", "max", "gameId"], doc.RootElement.EnumerateObject().Select(p => p.Name));
+            Assert.Equal(JsonValueKind.Null, doc.RootElement.GetProperty("gameId").ValueKind);
         }
 
         await Answer(await client.SendAsync(Json(HttpMethod.Post, "/api/live/pins", new { appId = App, apiName = "ACH_B" })));

@@ -59,6 +59,14 @@ import type {
   GameHistoryDto,
   GuideTranslationDto,
   AiJobDto,
+  CreateManualGameRequest,
+  IgdbSearchResponseDto,
+  ManualTrophyCheckDto,
+  ManualTrophyListDto,
+  ManualTrophyPromptDto,
+  ManualTrophyResearchResultDto,
+  TrophyResearchIncludeDto,
+  TrophyScope,
 } from './types'
 import i18n, { currentLanguage } from '../i18n'
 import { runAiJob, type AiJobProgressHandler } from './aiJobs'
@@ -99,8 +107,18 @@ export class ApiError extends Error {
   readonly aiFailure?: string
   // A problem answer with a list of single findings (`errors`), e.g. what is wrong with a pasted answer; the message is all of them in one sentence
   readonly issues?: { code: string; message: string }[]
+  // 409 when a manual game already exists: the slug of the existing game (problem extension "existingSlug")
+  readonly existingSlug?: string
 
-  constructor(message: string, status: number, providerMessage?: string, aiProvider?: string, aiFailure?: string, issues?: { code: string; message: string }[]) {
+  constructor(
+    message: string,
+    status: number,
+    providerMessage?: string,
+    aiProvider?: string,
+    aiFailure?: string,
+    issues?: { code: string; message: string }[],
+    existingSlug?: string
+  ) {
     super(message)
     this.name = 'ApiError'
     this.status = status
@@ -108,6 +126,7 @@ export class ApiError extends Error {
     this.aiProvider = aiProvider
     this.aiFailure = aiFailure
     this.issues = issues
+    this.existingSlug = existingSlug
   }
 }
 
@@ -127,8 +146,9 @@ async function handleResponse<T>(res: Response): Promise<T> {
     let aiProvider: string | undefined
     let aiFailure: string | undefined
     let issues: { code: string; message: string }[] | undefined
+    let existingSlug: string | undefined
     try {
-      const problem = (await res.json()) as { detail?: string; title?: string; providerMessage?: string; aiProvider?: string; aiFailure?: string; errors?: unknown }
+      const problem = (await res.json()) as { detail?: string; title?: string; providerMessage?: string; aiProvider?: string; aiFailure?: string; errors?: unknown; existingSlug?: unknown }
       message = problem.detail || problem.title || message
       providerMessage = problem.providerMessage || undefined
       aiProvider = problem.aiProvider || undefined
@@ -137,10 +157,11 @@ async function handleResponse<T>(res: Response): Promise<T> {
         const list = problem.errors.filter((entry): entry is { code: string; message: string } => typeof (entry as { message?: unknown } | null)?.message === 'string')
         if (list.length > 0) issues = list
       }
+      if (typeof problem.existingSlug === 'string' && problem.existingSlug) existingSlug = problem.existingSlug
     } catch {
       // Fallback to status text
     }
-    throw new ApiError(message, res.status, providerMessage, aiProvider, aiFailure, issues)
+    throw new ApiError(message, res.status, providerMessage, aiProvider, aiFailure, issues, existingSlug)
   }
   if (res.status === 204) {
     return undefined as T
@@ -674,11 +695,12 @@ export async function fetchCabinetPresented(): Promise<CabinetPresentedDto> {
   return handleResponse<CabinetPresentedDto>(res)
 }
 
-export async function addCabinetPresented(appIds: number[]): Promise<CabinetPresentedDto> {
+// gameIds = manual games (no AppID) that were presented; left out for Steam-only calls
+export async function addCabinetPresented(appIds: number[], gameIds?: string[]): Promise<CabinetPresentedDto> {
   const res = await fetch('/api/showcase/presented', {
     method: 'PUT',
     headers: MUTATION_HEADERS,
-    body: JSON.stringify({ appIds }),
+    body: JSON.stringify(gameIds && gameIds.length > 0 ? { appIds, gameIds } : { appIds }),
   })
   return handleResponse<CabinetPresentedDto>(res)
 }
@@ -791,4 +813,121 @@ export async function fetchLaunchCommand(commandId: string): Promise<LaunchComma
 export async function fetchLaunchStatus(): Promise<LaunchStatusDto> {
   const res = await fetch('/api/launch/status')
   return handleResponse<LaunchStatusDto>(res)
+}
+
+// ---- Manual games (added by hand, with or without IGDB), their cover and the trophy list researched by the AI and ticked by hand ----
+// Server contract: src/Companion.Api/Endpoints/ManualGameDtos.cs
+
+// IGDB search of the add dialog: a name, an IGDB number or an igdb.com/games/<slug> address. null = no Twitch credentials (204).
+export async function searchIgdbGames(query: string, signal?: AbortSignal): Promise<IgdbSearchResponseDto | null> {
+  const res = await fetch(`/api/igdb/search?q=${encodeURIComponent(query)}`, { signal })
+  return (await handleResponse<IgdbSearchResponseDto | undefined>(res)) ?? null
+}
+
+// The facts of one IGDB game (platforms with our mapping, companies, cover); null = no Twitch credentials (204)
+export async function fetchIgdbGame(igdbId: number): Promise<IgdbGameDto | null> {
+  const res = await fetch(`/api/igdb/games/${encodeURIComponent(String(igdbId))}`)
+  return (await handleResponse<IgdbGameDto | undefined>(res)) ?? null
+}
+
+// Adds a game by hand. A 409 ApiError carries existingSlug when the game is already in the vault on that platform.
+export async function createManualGame(request: CreateManualGameRequest): Promise<GameSummaryDto> {
+  const res = await fetch('/api/games/manual', {
+    method: 'POST',
+    headers: MUTATION_HEADERS,
+    body: JSON.stringify(request),
+  })
+  return handleResponse<GameSummaryDto>(res)
+}
+
+// Uploads a cover image (PNG, JPEG, WebP or GIF, at most 5 MB, never SVG) as the raw body; answers with the updated tile
+export async function uploadGameCover(slug: string, image: Blob): Promise<GameSummaryDto> {
+  const res = await fetch(`/api/games/${encodeURIComponent(slug)}/cover`, {
+    method: 'PUT',
+    headers: { 'Content-Type': image.type || 'application/octet-stream', 'X-Requested-With': 'PlatinVault' },
+    body: image,
+  })
+  return handleResponse<GameSummaryDto>(res)
+}
+
+export async function deleteGameCover(slug: string): Promise<GameSummaryDto> {
+  const res = await fetch(`/api/games/${encodeURIComponent(slug)}/cover`, { method: 'DELETE', headers: MUTATION_HEADERS })
+  return handleResponse<GameSummaryDto>(res)
+}
+
+// The trophy list of a manual game, in the UI language when its translation is complete
+export async function fetchGameTrophies(slug: string): Promise<ManualTrophyListDto> {
+  const res = await fetch(`/api/games/${encodeURIComponent(slug)}/trophies`)
+  return handleResponse<ManualTrophyListDto>(res)
+}
+
+// Ticks (popup + sound once, like a live unlock; platinum moment when reached) or un-ticks (silent) one trophy; answers with the list + `announced`
+export async function setTrophyUnlocked(slug: string, trophyKey: string, unlocked: boolean): Promise<ManualTrophyListDto> {
+  const res = await fetch(`/api/games/${encodeURIComponent(slug)}/trophies/${encodeURIComponent(trophyKey)}/unlock`, {
+    method: 'POST',
+    headers: MUTATION_HEADERS,
+    body: JSON.stringify({ unlocked }),
+  })
+  return handleResponse<ManualTrophyListDto>(res)
+}
+
+// "Trophäenliste recherchieren" (and the facts of a game without IGDB): a background AI job of kind "trophies"
+export function researchTrophies(
+  slug: string,
+  providerOverride?: string,
+  include?: TrophyResearchIncludeDto,
+  onProgress?: AiJobProgressHandler
+): Promise<AiResultDto<ManualTrophyResearchResultDto>> {
+  return runAiJob(() => startAiJob(`/api/games/${encodeURIComponent(slug)}/ai-trophies`, { providerOverride, include }), fetchAiJob, onProgress)
+}
+
+// The same with the player's own AI subscription: prompt to copy, pasted answer checked, then saved (nothing goes to an AI provider)
+export const manualTrophiesPrompt = (slug: string, include?: TrophyResearchIncludeDto) =>
+  postManual<ManualTrophyPromptDto>(slug, 'trophies-prompt', { include })
+
+export const checkManualTrophies = (slug: string, text: string) => postManual<ManualTrophyCheckDto>(slug, 'trophies-check', { text })
+
+export const saveManualTrophies = (slug: string, text: string) => postManual<ManualTrophyResearchResultDto>(slug, 'trophies-answer', { text })
+
+// "Im Blick" and notes for either kind of game: a Steam game by its AppID, a manual game by its game id (see TrophyScope)
+const scopeQuery = (scope: TrophyScope) =>
+  'gameId' in scope ? `gameId=${encodeURIComponent(scope.gameId)}` : `appId=${encodeURIComponent(String(scope.appId))}`
+
+const scopeBody = (scope: TrophyScope) => ('gameId' in scope ? { appId: 0, gameId: scope.gameId } : { appId: scope.appId })
+
+export async function fetchScopedPins(scope: TrophyScope): Promise<LivePinsDto> {
+  const res = await fetch(`/api/live/pins?${scopeQuery(scope)}`)
+  return handleResponse<LivePinsDto>(res)
+}
+
+export async function pinScopedAchievement(scope: TrophyScope, apiName: string): Promise<LivePinsDto> {
+  const res = await fetch('/api/live/pins', {
+    method: 'POST',
+    headers: MUTATION_HEADERS,
+    body: JSON.stringify({ ...scopeBody(scope), apiName }),
+  })
+  return handleResponse<LivePinsDto>(res)
+}
+
+export async function unpinScopedAchievement(scope: TrophyScope, apiName: string): Promise<LivePinsDto> {
+  const res = await fetch(`/api/live/pins?${scopeQuery(scope)}&apiName=${encodeURIComponent(apiName)}`, { method: 'DELETE', headers: MUTATION_HEADERS })
+  return handleResponse<LivePinsDto>(res)
+}
+
+export async function removeScopedPins(scope: TrophyScope, apiNames: string[]): Promise<LivePinsDto> {
+  const res = await fetch('/api/live/pins/remove', {
+    method: 'POST',
+    headers: MUTATION_HEADERS,
+    body: JSON.stringify({ ...scopeBody(scope), apiNames }),
+  })
+  return handleResponse<LivePinsDto>(res)
+}
+
+export async function saveScopedAchievementNote(scope: TrophyScope, apiName: string, note: string): Promise<{ success: boolean }> {
+  const res = await fetch('/api/live/note', {
+    method: 'POST',
+    headers: MUTATION_HEADERS,
+    body: JSON.stringify({ ...scopeBody(scope), apiName, note }),
+  })
+  return handleResponse<{ success: boolean }>(res)
 }

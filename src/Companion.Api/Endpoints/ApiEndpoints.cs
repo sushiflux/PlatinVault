@@ -376,6 +376,10 @@ public static class ApiEndpoints
         api.MapWhatsNew();
         api.MapDesktop();
         api.MapPins();
+        // Manual games (by hand / IGDB), their trophy list and the own-subscription way of researching it
+        api.MapManualGames();
+        api.MapTrophies();
+        api.MapManualTrophies();
 
         // Live Steam Achievement & Trophy Tracker endpoints
         api.MapGet("/live/status", async (SteamLiveTrackerService liveTracker, CancellationToken ct) =>
@@ -405,13 +409,40 @@ public static class ApiEndpoints
         api.MapGet("/live/events", (LiveEventLog eventLog) =>
         {
             var events = eventLog.Recent()
-                .Select(e => new LiveEventDto(e.Id, e.At, e.Kind, e.Achievement, e.GameName, e.AppId, e.Total))
+                .Select(e => new LiveEventDto(e.Id, e.At, e.Kind, e.Achievement, e.GameName, e.AppId, e.Total, e.Source))
                 .ToList();
             return Results.Ok(new LiveEventsResponseDto(eventLog.InstanceId, eventLog.LatestId, events));
         });
 
-        api.MapPost("/live/note", async (SaveAchievementNoteRequest req, SettingsStore settingsStore, CancellationToken ct) =>
+        // A note on a trophy: of a Steam game by AppID, of a game added by hand (no AppID) by its game id (GameId, AppId 0)
+        api.MapPost("/live/note", async (SaveAchievementNoteRequest req, SettingsStore settingsStore, CompanionDbContext db, CancellationToken ct) =>
         {
+            if (req.GameId is { } gameId && gameId != Guid.Empty)
+            {
+                if (req.AppId != 0)
+                {
+                    return Problems.Create(StatusCodes.Status400BadRequest, ServerTexts.InvalidRequestTitle, ServerTexts.ManualGames.ScopeInvalidDetail);
+                }
+                if (string.IsNullOrWhiteSpace(req.ApiName) || req.ApiName.Trim().Length > ManualTrophyLists.MaxKeyLength)
+                {
+                    return Problems.Create(StatusCodes.Status400BadRequest, ServerTexts.InvalidRequestTitle, ServerTexts.Games.NoteInvalidDetail);
+                }
+                if (await PinEndpoints.CheckManualGameAsync(gameId, db, ct) is { } refused)
+                {
+                    return refused;
+                }
+                // The note is stored under the spelling of the trophy's key (the list shows notes by key, and two spellings of one key must never exist);
+                // a name that is no trophy of the list is refused
+                var keys = await db.GameTrophies.AsNoTracking().Where(t => t.GameId == gameId).Select(t => t.TrophyKey).ToListAsync(ct);
+                var key = keys.FirstOrDefault(k => string.Equals(k, req.ApiName.Trim(), StringComparison.OrdinalIgnoreCase));
+                if (key is null)
+                {
+                    return Problems.Create(StatusCodes.Status400BadRequest, ServerTexts.ManualGames.NoteKeyUnknownTitle, ServerTexts.ManualGames.NoteKeyUnknown(req.ApiName.Trim()));
+                }
+                await settingsStore.SaveGameNoteAsync(gameId, key, req.Note, ct);
+                return Results.Ok(new { success = true });
+            }
+
             if (req.AppId == 0 || string.IsNullOrWhiteSpace(req.ApiName))
             {
                 return Problems.Create(StatusCodes.Status400BadRequest, ServerTexts.InvalidRequestTitle, ServerTexts.Games.NoteInvalidDetail);
@@ -477,7 +508,7 @@ public static class ApiEndpoints
             return Results.Ok(new { success = true, type = tier, achievement = sample });
         });
 
-        api.MapGet("/games", async (CompanionDbContext db, SteamClient steamClient, SteamLiveTrackerService liveTracker, LibraryStatsService libraryStats, LibraryMetaService libraryMeta, CancellationToken ct) =>
+        api.MapGet("/games", async (CompanionDbContext db, SteamClient steamClient, SteamLiveTrackerService liveTracker, LibraryStatsService libraryStats, LibraryMetaService libraryMeta, ManualFactsRefresh manualFacts, CancellationToken ct) =>
         {
             var games = await db.Games
                 .AsNoTracking()
@@ -506,6 +537,10 @@ public static class ApiEndpoints
                              g.FactsUpdatedAt is null || DateTimeOffset.UtcNow - g.FactsUpdatedAt > TimeSpan.FromMinutes(30)))
                 .Select(g => (uint)g.SteamAppId!.Value));
 
+            // The facts of games added by hand (from IGDB) are refreshed once a week in the background; the next list shows them
+            var factsNow = DateTimeOffset.UtcNow;
+            manualFacts.Trigger(games.Where(g => ManualFactsRefresh.IsDue(g, factsNow)).Select(g => g.Id), Lang.Current);
+
             // Card texts the AI wrote (subtitle, hours, ...) come in the language of the request once they are translated
             var translatedTexts = await GuideTranslations.CurrentGameTextsAsync(db, games, Lang.Current, ct);
             // The values of the dashboard's sort orders (release date, size on disk, ...) come from the library data of the whole Steam library
@@ -532,6 +567,11 @@ public static class ApiEndpoints
             if (game is null)
             {
                 return Problems.Create(StatusCodes.Status404NotFound, ServerTexts.GameNotFoundTitle, ServerTexts.GameNotFound(slug));
+            }
+            // A game added by hand never gets a Steam AppID (its trophies are ticked by hand, its platform is fixed)
+            if (GamePlatforms.IsManual(game))
+            {
+                return Problems.Create(StatusCodes.Status409Conflict, ServerTexts.ManualGames.NoSteamLinkTitle, ServerTexts.ManualGames.NoSteamLink(GamePlatforms.DisplayName(game.Platform, game.PlatformVariant)));
             }
             if (req.SteamAppId <= 0)
             {
@@ -750,8 +790,18 @@ public static class ApiEndpoints
                 return Results.NotFound();
             }
 
+            var wasManual = GamePlatforms.IsManual(game);
             db.Games.Remove(game);
             await db.SaveChangesAsync(ct);
+
+            // The database removes guide, ticks, trophies, translations and the uploaded cover with the game (cascade); the pins and notes of a game
+            // added by hand live in app_settings under its id and go with it. (A Steam game's rows are keyed by AppID and stay, as before.)
+            if (wasManual)
+            {
+                var pinsKey = PinnedAchievements.KeyForGame(id);
+                var notePrefix = ManualTrophyLists.NotePrefix(id);
+                await db.AppSettings.Where(x => x.Key == pinsKey || x.Key.StartsWith(notePrefix)).ExecuteDeleteAsync(ct);
+            }
             return Results.NoContent();
         });
 
@@ -913,6 +963,7 @@ public static class ApiEndpoints
 
         // Library-wide figures for the dashboard (trophies unlocked, games at 100 %); starts the background evaluation
         api.MapGet("/steam/library/summary", async (
+            CompanionDbContext db,
             SteamClient steamClient,
             LibraryStatsService libraryStats,
             LibraryMetaService libraryMeta,
@@ -920,9 +971,19 @@ public static class ApiEndpoints
             SecretStore secrets,
             CancellationToken ct) =>
         {
+            // The games added by hand: "All games" lists them next to the Steam library, and works without Steam when there are any
+            var manual = await ManualLibraryFiguresAsync(db, ct);
             if (string.IsNullOrWhiteSpace(secrets.GetSecret(SettingsStore.SecretSteam)))
             {
-                return Results.NoContent();
+                return manual.Games > 0
+                    ? Results.Ok(new LibrarySummaryDto(0, 0, 0, 0, 0, false, 0, 0) with
+                    {
+                        ManualGameCount = manual.Games,
+                        ManualTrophiesTotal = manual.Total,
+                        ManualTrophiesUnlocked = manual.Unlocked,
+                        ManualPerfectGames = manual.Perfect,
+                    })
+                    : Results.NoContent();
             }
 
             try
@@ -937,7 +998,16 @@ public static class ApiEndpoints
                 // Release date / reviews of the apps no local Steam client can tell about: slowly, in the background
                 _ = libraryMeta.StartScan(library.Games);
                 var (metaScanning, metaDone, metaTotal) = libraryMeta.ScanState;
-                return Results.Ok(libraryStats.Summarize(library.TotalGames) with { MetaScanning = metaScanning, MetaDone = metaDone, MetaTotal = metaTotal });
+                return Results.Ok(libraryStats.Summarize(library.TotalGames) with
+                {
+                    MetaScanning = metaScanning,
+                    MetaDone = metaDone,
+                    MetaTotal = metaTotal,
+                    ManualGameCount = manual.Games,
+                    ManualTrophiesTotal = manual.Total,
+                    ManualTrophiesUnlocked = manual.Unlocked,
+                    ManualPerfectGames = manual.Perfect,
+                });
             }
             catch (InvalidOperationException ex)
             {
@@ -951,8 +1021,15 @@ public static class ApiEndpoints
             SteamClient steamClient,
             LibraryStatsService libraryStats,
             LibraryMetaService libraryMeta,
+            SecretStore secrets,
             CancellationToken ct) =>
         {
+            // No Steam key but games added by hand: the Steam part of "All games" is simply empty (they come from GET /api/games)
+            if (string.IsNullOrWhiteSpace(secrets.GetSecret(SettingsStore.SecretSteam)) && (await ManualLibraryFiguresAsync(db, ct)).Games > 0)
+            {
+                return Results.Ok(new SteamLibraryResponseDto(string.Empty, 0, []));
+            }
+
             try
             {
                 var existingGames = await db.Games
@@ -1234,6 +1311,16 @@ public static class ApiEndpoints
         }
     }
 
+    /// <summary>Counts of the games added by hand for the library summary: games, trophies in total, ticked, and games at platinum.</summary>
+    internal static async Task<(int Games, int Total, int Unlocked, int Perfect)> ManualLibraryFiguresAsync(CompanionDbContext db, CancellationToken ct)
+    {
+        var rows = await db.Games.AsNoTracking()
+            .Where(g => g.Platform != GamePlatforms.Steam)
+            .Select(g => new { g.TrophiesTotal, g.TrophiesUnlocked, g.PlatinumAt })
+            .ToListAsync(ct);
+        return (rows.Count, rows.Sum(r => r.TrophiesTotal), rows.Sum(r => r.TrophiesUnlocked), rows.Count(r => r.PlatinumAt != null));
+    }
+
     /// <summary>Position behind the last game, for a game that is added or starred again (keeps a custom order intact).</summary>
     internal static async Task<int> NextGameSortOrderAsync(CompanionDbContext db, CancellationToken ct) =>
         (await db.Games.MaxAsync(g => (int?)g.SortOrder, ct) ?? 0) + 1;
@@ -1247,7 +1334,8 @@ public static class ApiEndpoints
     {
         var requested = Lang.Current;
         var current = AiGuideGeneratorService.GuideLanguage(game);
-        if (current == requested || game.Tabs.Any(t => t.Slug != "overview"))
+        // A researched trophy list is text in the guide language too: the guide of a game with a list stays in that language
+        if (current == requested || game.Tabs.Any(t => t.Slug != "overview") || game.TrophyListResearchedAt is not null)
         {
             return false;
         }
@@ -1297,7 +1385,8 @@ public static class ApiEndpoints
         var meta = dto.SteamAppId is > 0 ? view.Get(dto.SteamAppId.Value) : null;
         return dto with
         {
-            ReleaseAt = meta?.ReleaseAt,
+            // A manual game has no library data: its own first release sorts it
+            ReleaseAt = meta?.ReleaseAt ?? dto.FirstReleaseAt,
             SizeOnDiskBytes = meta?.SizeBytes,
             InstallSizeBytes = meta?.InstallSizeBytes,
             SortMetacritic = dto.MetacriticScore ?? meta?.Metacritic,
@@ -1364,7 +1453,15 @@ public static class ApiEndpoints
             IgdbRating: game.IgdbRating,
             IgdbUserRating: game.IgdbUserRating,
             UpdatedAt: game.UpdatedAt
-        );
+        )
+        {
+            Platform = game.Platform,
+            PlatformVariant = game.PlatformVariant,
+            IgdbId = game.IgdbId,
+            TrophyListResearchedAt = game.TrophyListResearchedAt,
+            HasTrophyList = HasTrophyList(game),
+            FirstReleaseAt = game.FirstReleaseAt,
+        };
     }
 
     /// <summary>The detail of a game in the requested language: translated chapters when the translation is complete, else the original (+ the translation state).</summary>
@@ -1468,8 +1565,22 @@ public static class ApiEndpoints
             Translation: view.ToDto(),
             ItemLinks: itemLinks,
             RefTargets: refTargets
-        );
+        )
+        {
+            Platform = game.Platform,
+            PlatformVariant = game.PlatformVariant,
+            IgdbId = game.IgdbId,
+            TrophyListResearchedAt = game.TrophyListResearchedAt,
+            HasTrophyList = HasTrophyList(game),
+            Developer = game.Developer,
+            Publisher = game.Publisher,
+            Summary = game.Summary,
+            FactsSource = game.FactsSource,
+        };
     }
+
+    /// <summary>A manual game whose trophy list has been researched (a Steam game's list comes from Steam and never counts here).</summary>
+    private static bool HasTrophyList(GameEntity game) => GamePlatforms.IsManual(game) && game.TrophyListResearchedAt is not null;
 
     /// <summary>
     /// Stored chapter JSON -> sections. Valid data reads exactly as before; a section with a wrongly typed field is repaired or skipped on its own

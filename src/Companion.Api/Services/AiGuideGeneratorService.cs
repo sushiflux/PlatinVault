@@ -40,7 +40,9 @@ public sealed partial class AiGuideGeneratorService(
     IgdbService igdbService,
     IOptions<CompanionOptions> companionOptions,
     AiRouter router,
-    ILogger<AiGuideGeneratorService> logger)
+    ILogger<AiGuideGeneratorService> logger,
+    // The trophy lists of games added by hand (game_trophies); optional so tests that only drive the prompts or the providers can leave it out
+    CompanionDbContext? db = null)
 {
     private const int MaxParallelChapters = 3;
 
@@ -111,7 +113,9 @@ public sealed partial class AiGuideGeneratorService(
         string LinkCandidates = "",
         IReadOnlyList<GuideLinker.CandidateGroup>? LinkGroups = null,
         // The items the chapter that is being researched again has today ("keep these itemIds for the same entries"); null = a new chapter
-        IReadOnlyList<GuideLinker.CandidateGroup>? KeepGroups = null);
+        IReadOnlyList<GuideLinker.CandidateGroup>? KeepGroups = null,
+        // The platform of a game added by hand (owner decision 2026-11-19); null = a Steam game, whose prompts stay exactly as they are. Must stay LAST.
+        GamePlatformContext? Platform = null);
 
     internal sealed record ChapterPlan(string Title, string Icon, string Focus, string TopicId = "extra");
 
@@ -197,7 +201,7 @@ public sealed partial class AiGuideGeneratorService(
         }
 
         // Stage 2: every chapter in its own call; the achievement chapter comes from Steam's official list
-        Task<GuideTabEntity?> achievementsTask = context.Achievements.Count > 0
+        Task<GuideTabEntity?> achievementsTask = BuildsSteamAchievementTab(context)
             ? BuildAchievementsTabAsync(gameId, blueprint.Chapters.Count + 1, context, run, settings, ct)
             : Task.FromResult<GuideTabEntity?>(null);
         var tabs = (await ResearchChaptersAsync(gameId, blueprint.Chapters, 1, context, blueprint.SourceSituation, run, settings, progress, ChapterFinishedAsync, ct))
@@ -233,7 +237,7 @@ public sealed partial class AiGuideGeneratorService(
         var settings = await settingsStore.GetAsync(ct);
         var run = await router.BeginAsync(research: true, providerOverride, background: false, ct);
         progress?.Step("facts");
-        var context = await BuildGameContextAsync(game.Title, game.SteamAppId, language, ct);
+        var context = await BuildGameContextAsync(game, language, ct);
         var (tabs, dropped) = await CompleteGuideWithContextAsync(game, context, run, settings, firstSortOrder, selection, progress, sink, ct);
         return (tabs, dropped, run.Usage());
     }
@@ -317,7 +321,7 @@ public sealed partial class AiGuideGeneratorService(
         var settings = await settingsStore.GetAsync(ct);
         var run = await router.BeginAsync(research: true, providerOverride, background: false, ct);
         progress?.Step("facts");
-        var context = WithLinkCandidates(await BuildGameContextAsync(game.Title, game.SteamAppId, language, ct), game.Tabs, chapters.Select(c => c.TabId).ToHashSet());
+        var context = WithLinkCandidates(await BuildGameContextAsync(game, language, ct), game.Tabs, chapters.Select(c => c.TabId).ToHashSet());
 
         var plans = chapters.Select(c => new ChapterPlan(c.Title, c.Icon, c.Failure.Focus, c.Failure.TopicId ?? "extra")).ToList();
         var failures = new ConcurrentBag<Exception>();
@@ -361,7 +365,7 @@ public sealed partial class AiGuideGeneratorService(
         var settings = await settingsStore.GetAsync(ct);
         var run = await router.BeginAsync(research: true, providerOverride, background: false, ct);
         progress?.Step("facts");
-        var context = await BuildGameContextAsync(game.Title, game.SteamAppId, language, ct);
+        var context = await BuildGameContextAsync(game, language, ct);
         var existing = game.Tabs
             .Where(t => t.Slug != LoreTab.Slug)
             .OrderBy(t => t.SortOrder)
@@ -616,7 +620,7 @@ public sealed partial class AiGuideGeneratorService(
         var settings = await settingsStore.GetAsync(ct);
         var run = await router.BeginAsync(research: true, request.ProviderOverride, background: false, ct);
         progress?.Step("facts");
-        var context = WithLinkCandidates(await BuildGameContextAsync(game.Title, game.SteamAppId, language, ct), game.Tabs);
+        var context = WithLinkCandidates(await BuildGameContextAsync(game, language, ct), game.Tabs);
         var plan = new ChapterPlan(request.TabTitle.Trim(), "mdi:sparkles", request.TopicPrompt.Trim());
         progress?.Step("chapter", 0, 1, plan.Title);
         var answer = await CallContentAnswerAsync(run, run.Primary, BuildChapterPrompt(context, plan.Title, plan.Focus, UnknownSource(language), plan.TopicId), settings, language, plan.Title, ct);
@@ -644,7 +648,7 @@ public sealed partial class AiGuideGeneratorService(
         var settings = await settingsStore.GetAsync(ct);
         var run = await router.BeginAsync(research: true, providerOverride, background: false, ct);
         progress?.Step("facts");
-        var context = await BuildGameContextAsync(game.Title, game.SteamAppId, language, ct);
+        var context = await BuildGameContextAsync(game, language, ct);
 
         using var gate = new SemaphoreSlim(MaxParallelChapters);
         var loreParts = LoreParts(language);
@@ -909,6 +913,27 @@ public sealed partial class AiGuideGeneratorService(
         "openai" => new AiAnswer(await CallOpenAiAsync(prompt, settings.OpenAiModel, ct), AiSourceMeta.Empty),
         _ => new AiAnswer(await CallGeminiWithSearchGroundingAsync(prompt, settings.GeminiModel, ct, research), AiSourceMeta.Empty)
     };
+
+    /// <summary>
+    /// The context of an existing game: a Steam game exactly as before (title + AppID), a game added by hand from what the app stored about it (platform,
+    /// facts, the researched trophy list - <see cref="BuildManualContext"/>).
+    /// </summary>
+    internal async Task<GameContext> BuildGameContextAsync(GameEntity game, string language, CancellationToken ct)
+    {
+        if (!GamePlatforms.IsManual(game))
+        {
+            return await BuildGameContextAsync(game.Title, game.SteamAppId, language, ct);
+        }
+        var trophies = await TrophiesOfAsync(game, ct);
+        var blocks = await settingsStore.GetResearchBlocksAsync(ct);
+        return BuildManualContext(game, trophies, blocks, language, DateTime.Now);
+    }
+
+    /// <summary>
+    /// Whether a new guide gets the hidden Steam achievement chapter: only with Steam's official list, and never for a game added by hand (its trophies live in
+    /// game_trophies and are shown in their own area; a hidden tab would duplicate them and its rows would tick nothing).
+    /// </summary>
+    internal static bool BuildsSteamAchievementTab(GameContext context) => context.Platform is null && context.Achievements.Count > 0;
 
     /// <summary>Steam facts that steer the research: genres, release date (new releases are researched differently), achievements.</summary>
     private async Task<GameContext> BuildGameContextAsync(string title, int? steamAppId, string language, CancellationToken ct)

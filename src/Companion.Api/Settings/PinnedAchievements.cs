@@ -28,6 +28,9 @@ public static class PinnedAchievements
 
     public static string KeyFor(uint appId) => $"pins.{appId}";
 
+    /// <summary>The row of a game added by hand (no Steam AppID): <c>pins.g.{gameId:N}</c>. Cannot collide with <see cref="KeyFor"/> (that one ends in digits only).</summary>
+    public static string KeyForGame(Guid gameId) => $"pins.g.{gameId:N}";
+
     /// <summary>Parses a stored value: distinct (case-insensitive), non-blank names in stored order, at most the limit. Anything unreadable gives an empty list.</summary>
     public static List<string> Parse(string? json)
     {
@@ -55,18 +58,31 @@ public static class PinnedAchievements
     public static string Serialize(IReadOnlyList<string> names) => JsonSerializer.Serialize(names);
 
     /// <summary>The pinned API names of a game, in display order.</summary>
-    public static async Task<IReadOnlyList<string>> GetAsync(CompanionDbContext db, uint appId, CancellationToken ct = default)
+    public static Task<IReadOnlyList<string>> GetAsync(CompanionDbContext db, uint appId, CancellationToken ct = default) =>
+        GetByKeyAsync(db, KeyFor(appId), ct);
+
+    /// <summary>The pinned API names (trophy keys) of a game added by hand.</summary>
+    public static Task<IReadOnlyList<string>> GetForGameAsync(CompanionDbContext db, Guid gameId, CancellationToken ct = default) =>
+        GetByKeyAsync(db, KeyForGame(gameId), ct);
+
+    private static async Task<IReadOnlyList<string>> GetByKeyAsync(CompanionDbContext db, string key, CancellationToken ct)
     {
-        var key = KeyFor(appId);
         var stored = await db.AppSettings.AsNoTracking().Where(x => x.Key == key).Select(x => x.Value).FirstOrDefaultAsync(ct);
         return Parse(stored);
     }
 
     /// <summary>Appends an achievement at the end. Pinning an already pinned one changes nothing; with the maximum reached it is refused.</summary>
-    public static Task<PinChange> AddAsync(CompanionDbContext db, uint appId, string apiName, CancellationToken ct = default)
+    public static Task<PinChange> AddAsync(CompanionDbContext db, uint appId, string apiName, CancellationToken ct = default) =>
+        AddByKeyAsync(db, KeyFor(appId), apiName, ct);
+
+    /// <summary>Pins a trophy of a game added by hand (same rules as <see cref="AddAsync"/>).</summary>
+    public static Task<PinChange> AddForGameAsync(CompanionDbContext db, Guid gameId, string apiName, CancellationToken ct = default) =>
+        AddByKeyAsync(db, KeyForGame(gameId), apiName, ct);
+
+    private static Task<PinChange> AddByKeyAsync(CompanionDbContext db, string key, string apiName, CancellationToken ct)
     {
         var name = apiName.Trim();
-        return MutateAsync(db, appId, current =>
+        return MutateAsync(db, key, current =>
         {
             if (current.Contains(name, StringComparer.OrdinalIgnoreCase)) return (null, false);
             if (current.Count >= SettingsStore.MaxPinnedAchievements) return (null, true);
@@ -75,10 +91,17 @@ public static class PinnedAchievements
     }
 
     /// <summary>Removes the given achievements; names that are not pinned are ignored.</summary>
-    public static Task<PinChange> RemoveAsync(CompanionDbContext db, uint appId, IEnumerable<string> apiNames, CancellationToken ct = default)
+    public static Task<PinChange> RemoveAsync(CompanionDbContext db, uint appId, IEnumerable<string> apiNames, CancellationToken ct = default) =>
+        RemoveByKeyAsync(db, KeyFor(appId), apiNames, ct);
+
+    /// <summary>Unpins trophies of a game added by hand (same rules as <see cref="RemoveAsync(CompanionDbContext, uint, IEnumerable{string}, CancellationToken)"/>).</summary>
+    public static Task<PinChange> RemoveForGameAsync(CompanionDbContext db, Guid gameId, IEnumerable<string> apiNames, CancellationToken ct = default) =>
+        RemoveByKeyAsync(db, KeyForGame(gameId), apiNames, ct);
+
+    private static Task<PinChange> RemoveByKeyAsync(CompanionDbContext db, string key, IEnumerable<string> apiNames, CancellationToken ct)
     {
         var names = apiNames.Select(n => n.Trim()).Where(n => n.Length > 0).ToList();
-        return MutateAsync(db, appId, current =>
+        return MutateAsync(db, key, current =>
         {
             var next = current.Where(c => !names.Contains(c, StringComparer.OrdinalIgnoreCase)).ToList();
             return (next.Count == current.Count ? null : next, false);
@@ -87,11 +110,10 @@ public static class PinnedAchievements
 
     private static async Task<PinChange> MutateAsync(
         CompanionDbContext db,
-        uint appId,
+        string key,
         Func<List<string>, (List<string>? Next, bool LimitReached)> mutate,
         CancellationToken ct)
     {
-        var key = KeyFor(appId);
         Exception? lastConflict = null;
         for (var attempt = 0; attempt < MaxAttempts; attempt++)
         {

@@ -26,6 +26,20 @@
   document.documentElement.dataset.theme = saved
 })()
 
+// Design ("Leicht" / "Klassisch", Settings > System > Design): <html data-design> is set before the first paint from the copy this
+// browser keeps (same key as src/utils/uiDesign.ts), so a reload never flashes the other look. Runs for every page, the in-game
+// overlay (/overlay) included, so the popups over the game follow the design. Only 'classic' switches; anything else is 'light'.
+// The server's value wins once the settings are loaded (uiDesign.ts copies it back into this key).
+;(function () {
+  var design = 'light'
+  try {
+    if (localStorage.getItem('pv_ui_design_v1') === 'classic') design = 'classic'
+  } catch (e) {
+    // Ignore storage errors in restricted contexts (the light design stays)
+  }
+  document.documentElement.dataset.design = design
+})()
+
 // UI size ("Kleiner" / "Größer" in the header): applied before the first paint like the theme, so the page never loads at
 // 100 % and then jumps. The root font size is calc(100% * var(--pv-ui-scale)) in index.css; the valid steps and the
 // snapping live in src/utils/uiScale.ts (same storage key), this only accepts a sane percentage.

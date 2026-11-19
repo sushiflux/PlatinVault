@@ -3,7 +3,7 @@ title: PlatinVault
 subtitle: Handbuch
 tagline: Live-Trophäen für deine Steam-Spiele und 100-%-Guides an einem Ort – so richtest du PlatinVault ein und nutzt es im Alltag.
 version: v2026.11.22
-date: 2026-11-17
+date: 2026-11-19
 status: Release
 copyright: © 2026 SushiFlux
 lang: de
@@ -18,6 +18,8 @@ PlatinVault ist dein Begleiter auf dem Weg zu 100 % in Steam-Spielen:
 - **100-%-Guides:** Für jedes Spiel recherchiert eine KI einen Komplett-Guide mit Kapiteln wie Roadmap, Sammelobjekten,
   Waffen, Bossen oder Bestiarium – mit abhakbaren Checklisten.
 - **Überblick über deine Bibliothek:** Trophäen, Spielzeit, Bewertungen und deine Fortschritte auf einen Blick.
+- **Spiele von anderen Plattformen:** Auch Spiele von PlayStation, Xbox, Epic Games, GOG, Nintendo Switch, Ubisoft Connect, EA app
+  und Battle.net legst du von Hand an. Die KI recherchiert die Trophäen- bzw. Erfolgsliste, du hakst sie selbst ab (Abschnitt 6.6).
 
 Erfolge heißen bei Steam „Achievements“; PlatinVault nennt sie **Trophäen** und zeigt sie in den Stufen Bronze, Silber, Gold
 – je nachdem, wie selten sie unter allen Spielern sind.
@@ -232,7 +234,7 @@ Links das PlatinVault-Logo mit dem Namen; ein Klick führt zur Übersicht. Recht
 | Pokal | **Trophäenschrank** – öffnet den Schrank mit allen Spielen auf 100 % (5.5). |
 | Aa | **Darstellungsgröße** – öffnet ein kleines Fenster: mit − und + oder direkt über die Stufen 80 / 90 / 100 / 110 / 125 % werden Schriften und Kästen kleiner oder größer; „Auf 100 % zurücksetzen“ stellt die Standardgröße wieder her. Das Fenster bleibt beim Umschalten an seinem Platz, du kannst also mehrfach hintereinander klicken. Weicht die Größe von 100 % ab, zeigt ein kleines Etikett am Symbol den Wert. Praktisch bei 4K-Monitoren mit hoher Windows-Skalierung. |
 | Weltkugel mit Kürzel (DE / EN) | **Sprache** – öffnet eine kleine Liste mit allen Sprachen, jede mit Flagge und ihrem Namen („Deutsch“, „English“); die gerade benutzte ist hervorgehoben und mit einem Häkchen markiert. Ein Klick schaltet die ganze App **sofort** um, ohne Neuladen, und merkt sich die Wahl. Die Sprache gilt für die Oberfläche, Datums- und Zahlenformate, die Steam-Erfolgstexte (Steams eigene Texte in dieser Sprache) und das Handbuch, das sich in der gewählten Sprache öffnet. Mit der Tastatur: Pfeiltasten wählen, Enter übernimmt, Esc schließt. Klappt das Speichern nicht, nennt eine Meldung den Grund und die bisherige Sprache bleibt. |
-| Sonne/Mond | **Farbschema:** wechselt zwischen hell und dunkel (die erste Wahl triffst du auf dem Willkommensbildschirm) |
+| Sonne/Mond | **Farbschema:** wechselt zwischen hell und dunkel (die erste Wahl triffst du auf dem Willkommensbildschirm). Das Aussehen selbst wählst du unter Einstellungen → System → Design. |
 | Zahnrad | **Einstellungen** – öffnet die Einstellungen (Kapitel 4) auf dem Reiter, den du zuletzt benutzt hast. |
 | ? | **Hilfe:** zeigt die Hinweise für die aktuelle Seite noch einmal |
 | Buch | **Handbuch** – dieses Handbuch direkt in der App |
@@ -244,6 +246,24 @@ Fährst du mit der Maus über ein Symbol, erklärt ein kurzer Hinweis, was es tu
 
 - **Unter 880 Pixel Breite:** Darstellungsgröße, Handbuch und Über PlatinVault. Der Steam-Benutzer zeigt dann nur noch das Profilbild; Name und Zahl der Spiele stehen im Hinweis.
 - **Unter 640 Pixel Breite (Handy):** zusätzlich Farbschema, Hilfe und der Steam-Benutzer.
+
+### Das Design wählen: Leicht oder Klassisch
+
+Das **Design** bestimmt, wie PlatinVault aussieht. Es gibt zwei Möglichkeiten:
+
+- **Leicht** (Standard): ruhige Flächen, dünne Linien und die Schrift Inter.
+- **Klassisch**: der frühere Look von PlatinVault mit runderen Ecken, kräftigerer Schrift, Verläufen und Glanz.
+
+Nur das Aussehen ändert sich. Seiten, Navigation und Funktionen bleiben in beiden Designs genau gleich.
+
+So wechselst du das Design:
+
+1. Öffne die **Einstellungen** (Zahnrad in der Kopfzeile) und wechsle zu **System**.
+2. Wähle ganz oben im Abschnitt **Design** die Option **Leicht** oder **Klassisch**.
+
+Die Wahl gilt **sofort**, du musst nichts neu laden und nichts speichern. Sie gilt für diese ganze PlatinVault-Installation, also auf jedem Gerät: im Browser, auf Handy und Tablet und im Windows-Programm, auch für die Trophäen-Popups über dem Spiel. Klappt das Speichern nicht, kehrt das bisherige Design zurück. Eine Meldung nennt dann den vollständigen Grund; mit **Kopieren** übernimmst du den Text.
+
+Das **Farbschema** (hell oder dunkel) bleibt eine eigene Wahl: Du schaltest es mit dem Sonne/Mond-Symbol in der Kopfzeile um, und es funktioniert in beiden Designs.
 
 ### Die Navigation auf der Spielseite
 
@@ -263,10 +283,10 @@ Die Seite, auf der du bist, ist hervorgehoben.
 
 ## 5.2 Favoriten und alle Spiele
 
-Die Seite **Übersicht** und die Seite **Alle Spiele** sehen gleich aus und haben dieselben Werkzeuge. Oben steht der Seitentitel, rechts daneben der Knopf **Guide importieren** (eine Guide-Datei aus einer anderen PlatinVault-Installation laden; das legt das Spiel samt Guide an). Darunter folgen die Kennzahlen als kleine Abzeichen, dann in einer Reihe die Suche, der Umschalter zwischen Favoriten und allen Spielen und der Regler für die Kachelgröße.
+Die Seite **Übersicht** und die Seite **Alle Spiele** sehen gleich aus und haben dieselben Werkzeuge. Oben steht der Seitentitel, rechts daneben die Knöpfe **Spiel hinzufügen** (ein Spiel von Hand anlegen, siehe 5.3) und **Guide importieren** (eine Guide-Datei aus einer anderen PlatinVault-Installation laden; das legt das Spiel samt Guide an). Darunter folgen die Kennzahlen als kleine Abzeichen, dann in einer Reihe die Suche, der Umschalter zwischen Favoriten und allen Spielen und der Regler für die Kachelgröße.
 
 - **Übersicht** zeigt deine **Favoriten**: die Spiele, die du mit einem **Stern** markiert hast, als Kacheln.
-- **Alle Spiele** zeigt deine komplette Steam-Bibliothek (nur mit Steam-Key). Du erreichst sie über den Umschalter im Werkzeugfeld.
+- **Alle Spiele** zeigt deine komplette Steam-Bibliothek (nur mit Steam-Key) und dazu alle Spiele, die du von Hand hinzugefügt hast. Auch diese Spiele haben einen Stern: Mit ihm legst du sie auf die Übersicht oder nimmst sie wieder herunter. Hast du keine Steam-Bibliothek, aber Spiele von Hand angelegt, funktioniert die Seite trotzdem. Du erreichst sie über den Umschalter im Werkzeugfeld.
 - Die Zahlen (Spiele, Trophäen, Spiele auf Platin) beziehen sich immer auf die gewählte Seite. Für
   „Alle Spiele“ wertet PlatinVault deine Bibliothek im Hintergrund aus; solange das läuft, steht dort „Bibliothek wird
   ausgewertet“.
@@ -289,7 +309,10 @@ Die Seite **Übersicht** und die Seite **Alle Spiele** sehen gleich aus und habe
 
 ## 5.3 Spiele aufs Dashboard holen
 
-Deine Spiele kommen **ausschließlich aus deiner Steam-Bibliothek** – es gibt keine Suche im Steam Store und kein Anlegen von Hand.
+Es gibt zwei Wege: Steam-Spiele holst du mit dem **Stern** aus deiner Steam-Bibliothek. Spiele von allen anderen Plattformen legst du mit **Spiel hinzufügen** von Hand an. Eine Suche im Steam Store gibt es nicht.
+
+### Steam-Spiele mit dem Stern
+
 Solange noch kein Spiel auf der Startseite liegt, zeigt PlatinVault statt der Kacheln drei Schritte; sie zeigen den echten Stand
 (Haken = erledigt) und ihre Schaltflächen öffnen direkt das Richtige:
 
@@ -300,14 +323,53 @@ Solange noch kein Spiel auf der Startseite liegt, zeigt PlatinVault statt der Ka
    und bei einem Spiel auf den **Stern** tippen. Das Spiel erscheint sofort als Kachel – ohne KI-Kosten. Den Guide erstellst du
    danach auf der Spielseite (6.2), wann immer du willst.
 
-Dieselben drei Schritte erklärt die Tour; ihre Checkliste zeigt Konto und Key mit dem echten Stand.
+Unter den drei Schritten steht der andere Weg: **Oder ein Spiel von Hand hinzufügen**. Die Tour erklärt beide Wege; ihre Checkliste zeigt Konto und Key mit dem echten Stand.
 
 - **Stern entfernen** nimmt das Spiel von der Startseite; Guide und Häkchen bleiben gespeichert und sind wieder da, sobald
   du den Stern erneut setzt.
-- Einen **Löschen-Knopf** gibt es auf den Kacheln nicht (mehr): Der Stern reicht, um ein Spiel von der Startseite zu nehmen. Ein ganzes Spiel samt Guide und
-  Häkchen zu löschen, kann die Oberfläche derzeit nicht.
+- Steam-Spiele haben keinen **Löschen-Knopf**: Der Stern reicht, um sie von der Startseite zu nehmen. Nur ein von Hand hinzugefügtes Spiel lässt sich ganz entfernen (siehe unten).
+
+### Ein Spiel von Hand hinzufügen
+
+Damit holst du Spiele auf die Übersicht, die nicht in deiner Steam-Bibliothek liegen. Sie bekommen einen Guide und eine Trophäenliste wie Steam-Spiele. Steam-Spiele kannst du hier **nicht** hinzufügen: Sie kommen nur aus deiner Bibliothek, mit dem Stern.
+
+**So fügst du ein Spiel hinzu:**
+
+1. Klicke auf der Übersicht oder bei **Alle Spiele** oben auf **Spiel hinzufügen**. Das Fenster **Spiel hinzufügen** öffnet sich.
+2. Suche das Spiel oder lege es ohne Suche an (zwei Wege, siehe unten).
+3. Wähle die **Plattform**. Bei PlayStation wählst du danach **PS5** oder **PS4**.
+4. Klicke auf **Hinzufügen**. Das Spiel erscheint als Kachel auf der Übersicht. Mit **Zum Spiel** öffnest du seine Seite.
+
+**Weg 1: Suche über IGDB.** IGDB ist eine große Online-Spieledatenbank. Du kannst sie nur nutzen, wenn du in den Einstellungen im Reiter **Twitch & IGDB** die Zugangsdaten einer eigenen Twitch-Anwendung eingetragen hast (siehe 6.4). Ohne diese Zugangsdaten sagt das Fenster, dass IGDB nicht antwortet, und zeigt dir den zweiten Weg.
+
+1. Gib ins Feld **Spiel suchen** den **Namen**, die **IGDB-Nummer** oder den **IGDB-Link** ein, zum Beispiel `Astro Bot`, `90001` oder `https://www.igdb.com/games/astro-bot`.
+2. Klicke in der Trefferliste das richtige Spiel an. Zu jedem Treffer stehen Erscheinungsjahr und Plattformen. Gibt es das Spiel schon in deiner Sammlung, steht dort **Schon hinzugefügt** mit der Plattform.
+3. Das Fenster zeigt die Spielfakten aus IGDB: Erscheinungsdatum, Entwickler, Genres, die geschätzte Dauer für 100 % und die Wertungen. Titelbild und Fakten kommen von IGDB.
+4. Mit **Anderes Spiel wählen** gehst du zurück zur Trefferliste.
+
+IGDB nennt zu jedem Spiel seine Plattformen; sie sind im Fenster mit **IGDB** markiert. Nennt IGDB nur „PC“, markiert PlatinVault keinen PC-Shop – du wählst selbst den Shop, in dem du das Spiel besitzt.
+
+**Weg 2: Von Hand, ohne IGDB.** Diesen Weg nimmst du, wenn du keine Twitch-Zugangsdaten hast, IGDB das Spiel nicht kennt oder du es lieber selbst eingibst (Knopf **Nicht dabei? Ohne IGDB hinzufügen**).
+
+1. Gib den **Titel** ein.
+2. Lade ein **Titelbild** (Cover) hoch: Ziehe eine Bilddatei in das Feld oder wähle **Datei wählen**. Erlaubt sind PNG, JPEG, WebP und GIF bis höchstens 5 MB, kein SVG. Hochkant (2:3) passt am besten. Das Bild kannst du mit **Ersetzen** tauschen oder mit **Entfernen** weglassen.
+3. Erscheinungsdatum, Entwickler, Genres und Dauer fehlen zunächst. Die KI recherchiert sie später (siehe 6.6).
+
+**Die Plattform.** Du wählst sie in einem Raster mit neun Feldern (auf dem Handy als Liste): **Steam**, **PlayStation**, **Xbox**, **Epic Games**, **GOG**, **Nintendo Switch**, **Ubisoft Connect**, **EA app** und **Battle.net**. Wählst du **Steam**, weist das Fenster dich auf den Stern unter „Alle Spiele“ hin; ein Steam-Spiel lässt sich hier nicht hinzufügen.
+
+- **PlayStation:** Wähle darunter **PS5** oder **PS4**. Beide haben **getrennte Trophäenlisten**. Wähle die Fassung, die du spielst. Ein PS4-Spiel, das du auf der PS5 spielst, bekommt die PS4-Liste.
+- **Nintendo Switch:** Auf der Switch gibt es keine Trophäen. Das Spiel bekommt nur einen Guide.
+- **Die Plattform steht nach dem Hinzufügen fest.** Du kannst sie nicht ändern. Hast du dich vertan, entfernst du das Spiel (siehe unten) und fügst es neu hinzu.
+- **Dasselbe Spiel auf zwei Plattformen** ist möglich: Du legst es zweimal an, jede Plattform ist ein eigener Eintrag mit eigener Liste und eigenen Häkchen. Dasselbe Spiel auf derselben Plattform (und derselben PlayStation-Fassung) gibt es nur einmal; PlatinVault bietet dir dann an, das vorhandene Spiel zu öffnen.
+
+**Cover ändern und Spiel entfernen.** Auf der Seite eines von Hand hinzugefügten Spiels stehen in der Reihe der Werkzeuge zwei zusätzliche Knöpfe:
+
+- **Cover ändern:** Lädt ein eigenes Titelbild hoch und ersetzt das jetzige. **Eigenes Cover entfernen** nimmt das Bild wieder weg. Das Titelbild liegt in der PlatinVault-Datenbank und ist deshalb in den automatischen Sicherungen enthalten.
+- **Spiel entfernen:** Löscht das Spiel samt Guide, Trophäenliste mit allen Häkchen und Titelbild, nach einer Rückfrage. Das lässt sich nicht rückgängig machen; du kannst das Spiel danach neu hinzufügen.
 
 ## 5.4 Was eine Kachel zeigt
+
+Oben links auf dem Cover steht ein kleines Feld mit der **Plattform** in Kurzform: **Steam**, **PS5**, **PS4**, **Xbox**, **Epic**, **GOG**, **Switch**, **Ubisoft**, **EA** oder **Battle.net**. Spiele aus deiner Steam-Bibliothek zeigen **Steam**. Ein Hinweis beim Darüberfahren nennt den vollen Namen; in der Listenansicht steht das Feld unter dem Titel. Bei Spielen, die du von Hand hinzugefügt hast, fehlen Werte, die nur Steam kennt (Spielzeit, zuletzt gespielt, Größe): Dort steht der graue Strich, und der Hinweis sagt, dass du das Spiel von Hand hinzugefügt hast.
 
 Von oben nach unten besteht eine Kachel aus: **Cover**, **Bewertungsleiste**, **Leiste mit Spielen, Favorit und Twitch**, **Name** (bis zu zwei
 Zeilen) mit den Genres von Steam und – in den Größen Groß und Kompakt – festen Zeilen: gespielte Zeit, zuletzt gespielt, Erscheinungsdatum, **Größe**
@@ -340,7 +402,7 @@ streamt. Das Symbol steht mittig im Feld, genau wie die Symbole der anderen Feld
 
 ## 5.5 Trophäenschrank
 
-Der Trophäenschrank zeigt alle Spiele, die du auf **100 %** gebracht hast, wie in einer Vitrine: Hinter Glastüren stehen die Spiele mit ihrem Cover auf Regalbrettern. Unter jedem Cover stehen der Name und das Datum der Platin-Trophäe, davor ein kleiner goldener Pokal; ein kurzer goldener Strich markiert den Platz auf dem Regalbrett.
+Der Trophäenschrank zeigt alle Spiele, die du auf **100 %** gebracht hast, wie in einer Vitrine – auch Spiele, die du von Hand hinzugefügt hast, sobald sie ihr Platin erreicht haben (6.6): Hinter Glastüren stehen die Spiele mit ihrem Cover auf Regalbrettern. Unter jedem Cover stehen der Name und das Datum der Platin-Trophäe, davor ein kleiner goldener Pokal; ein kurzer goldener Strich markiert den Platz auf dem Regalbrett.
 
 - **Öffnen:** Klicke in der Kopfzeile auf den **Pokal** (**Trophäenschrank**). Der Schrank legt sich als Vollbild über die aktuelle Seite; die Seite darunter bleibt, wie sie war. Er steht in der Adresse der Seite, ein Neuladen lässt ihn also offen, und der Zurück-Pfeil des Browsers schließt ihn. Erst lädt der Schrank (eine dünne blaue Linie), dann gleiten die Glastüren zur Seite und das Licht geht an.
 - **Werkzeugleiste:** Oben im Schrank stehen die drei Zahlen (Spiele auf Platin, Trophäen, Spielzeit), der Größenregler, der Knopf **Ansicht**, der Tür-Knopf und der Knopf zum Schließen. PlatinVault merkt sich deine Wahl in diesem Browser bzw. Programm.
@@ -359,7 +421,7 @@ Der Trophäenschrank zeigt alle Spiele, die du auf **100 %** gebracht hast, wie 
 
 Ganz oben im Spielkopf steht der Knopf **Zurück**. Er bringt dich auf die Seite, von der du gekommen bist – oder zur Übersicht, wenn du das Spiel direkt geöffnet hast. Darunter stehen Cover, Titel, der Knopf **Spielen** und eine ruhige Reihe mit den Werkzeugen des Spiels (Symbole mit Hinweis beim Darüberfahren: Guide vervollständigen, Kapitel ergänzen, Exportieren, Twitch, Drucken/PDF, Fortschritt zurücksetzen). Darunter zeigt eine Zeile deinen Trophäen-Fortschritt mit den Stufen. Danach folgt der Inhalt der gewählten Seite.
 
-Unten im Spielkopf wechselst du mit der **Bereichsleiste** zwischen den Bereichen des Spiels. Sie erscheint nur bei Spielen, die mit Steam verbunden sind:
+Unten im Spielkopf wechselst du mit der **Bereichsleiste** zwischen den Bereichen des Spiels. Sie erscheint nur bei Spielen, die mit Steam verbunden sind (bei Spielen, die du von Hand hinzugefügt hast, siehe 6.6):
 
 - **Guide** – die Kapitel des Guides (6.2). Ein Klick bringt dich zu dem Kapitel zurück, das du in diesem Spiel zuletzt gelesen hast.
 - **Live-Trophäen** – die Steam-Erfolge des Spiels (6.3).
@@ -381,7 +443,7 @@ und ist das Spiel noch nicht installiert, beginnt Steam die Installation. Ohne B
 selbst – das klappt nur, wenn du PlatinVault auf dem Rechner mit Steam im Browser geöffnet hast; dein Browser fragt dann
 einmal nach, ob er Steam öffnen darf. Klappt der Start nicht, nennt PlatinVault den Grund, zum Beispiel „Steam wurde auf dem
 Gaming-PC nicht gefunden“ oder „Der Gaming-PC hat den Startbefehl nicht abgeholt“ (dann läuft die Bridge nicht oder hat keine
-Verbindung). Starten kannst du nur Spiele aus deiner Sammlung und deiner Steam-Bibliothek.
+Verbindung). Starten kannst du nur Spiele aus deiner Sammlung und deiner Steam-Bibliothek. Spiele, die du von Hand hinzugefügt hast, haben keinen Spielen-Knopf.
 
 ## 6.2 Der Guide
 
@@ -669,6 +731,46 @@ Fehlen Teile, weil die Antwort zu lang für eine Nachricht war, steht dort eine 
 denselben Chat und füge die neue Antwort ebenfalls ein. Du kannst auch mit den vorhandenen Teilen speichern. Hat das Spiel schon Story & Lore, ersetzt das
 Speichern den Reiter vollständig; ein Hinweis und eine Rückfrage zeigen dir das vorher. Das lässt sich nicht rückgängig machen.
 
+## 6.6 Spiele von Hand: Trophäen- und Erfolgsliste
+
+Diese Seite gilt für Spiele, die du mit **Spiel hinzufügen** angelegt hast (5.3). Sie sieht anders aus als die Seite eines Steam-Spiels, weil PlatinVault bei anderen Plattformen nichts automatisch erfährt.
+
+**Warum hakst du selbst ab?** PlatinVault liest bei Steam deine freigeschalteten Erfolge selbst. Für PlayStation und die anderen Plattformen gibt es das nicht. Sony bietet keine öffentliche Schnittstelle für Trophäen an. Inoffizielle Wege widersprechen nach unserer Lesart den Nutzungsbedingungen des PlayStation Network (Abschnitt 10.7); PlatinVault ruft deshalb nirgends das PlayStation Network auf. Das ist keine Rechtsberatung – nutze den Weg, mit dem du dich wohlfühlst. Die Liste kommt stattdessen aus der KI-Recherche, und du hakst erledigte Trophäen selbst ab.
+
+**Der Aufbau der Seite.** Die Bereichsleiste im Spielkopf zeigt **Guide** und daneben **Trophäen** (bei PlayStation) bzw. **Erfolge** (bei Xbox, Epic Games, GOG, Ubisoft Connect, EA app und Battle.net). **Statistiken** und der Knopf **Spielen** gibt es bei diesen Spielen nicht. Unter dem Titel steht die Plattform, zum Beispiel „PS5: Trophäen“, und ob du Platin erreicht hast. Bei der Nintendo Switch gibt es nur den Guide, denn dort gibt es keine Trophäen oder Erfolge.
+
+### Die Liste recherchieren
+
+Bevor du etwas abhaken kannst, braucht das Spiel eine Liste. Das sind zwei getrennte Schritte; wir empfehlen diese Reihenfolge:
+
+1. **Trophäenliste recherchieren** (bei den anderen Plattformen **Erfolgsliste recherchieren**): Öffne den Bereich **Trophäen** bzw. **Erfolge**. Klicke auf den Knopf. Die KI sucht die Liste der richtigen Fassung heraus (bei PlayStation die der PS5 oder PS4, nie gemischt): Namen, Beschreibungen, Stufen, verpassbare und versteckte Trophäen, DLC-Trophäen und kurze Tipps.
+2. **Guide erstellen:** Das ist ein eigener, späterer Schritt im Bereich **Guide**. Er nutzt die Liste, wenn es sie schon gibt. Er funktioniert aber auch ohne Liste.
+
+Für die Recherche nutzt du eine **KI mit API-Key** (siehe 4.3) oder **Mein KI-Abo**. Beim zweiten Weg kopierst du einen Prompt in den Chat deines Abos und fügst die Antwort wieder ein – genau wie beim Guide (6.2). Der Dialog heißt dort **Trophäenliste mit deinem KI-Abo (ohne API-Key)**; er prüft die Antwort, zeigt eine Vorschau mit der Zahl der Trophäen, den versteckten und den DLC-Trophäen und speichert erst, wenn du **Trophäenliste speichern** klickst. Beim API-Weg läuft die Recherche im Hintergrund, du kannst die Seite währenddessen verlassen.
+
+> [!WARNUNG] Die Liste stammt aus Webquellen und kann Fehler enthalten. PlatinVault nennt unter der Liste, wann sie recherchiert wurde und welche **Quellen** die KI angegeben hat. Prüfe Stufen, verpassbare und versteckte Trophäen am besten gegen den Guide oder die Quellen. Kann die KI keine verlässliche Liste finden, speichert PlatinVault nichts und erfindet nichts.
+
+Kennt IGDB das Spiel nicht und hast du es ohne IGDB angelegt, recherchiert die KI im selben Schritt auch die **Spielfakten** (Erscheinungsdatum, Entwickler, Publisher, Beschreibung, Dauer). Bei der Nintendo Switch gibt es dafür den eigenen Knopf **Spiel-Fakten recherchieren**.
+
+**Neu recherchieren.** Mit **Trophäenliste neu recherchieren** holst du eine frische Liste, zum Beispiel nach einem neuen DLC. **Deine Häkchen bleiben erhalten.** Gleiche Einträge behalten ihr Häkchen; ein Eintrag, den du schon abgehakt hast und der in der neuen Liste fehlt, bleibt trotzdem stehen. Nicht abgehakte Einträge, die die neue Liste nicht mehr nennt, entfallen. Vor dem Ersetzen fragt PlatinVault im KI-Abo-Weg zurück.
+
+**Andere Sprache.** Die Liste ist in der Sprache des Spiels geschrieben. Wechselst du die Oberfläche in die andere Sprache, übersetzt die KI die Liste zusammen mit dem Guide (Namen, Beschreibungen, Tipps). Bis die Übersetzung fertig ist, siehst du das Original. Stufen, Punkte und Häkchen ändern sich dadurch nicht.
+
+### Abhaken
+
+Die Liste sieht aus wie die Live-Trophäen eines Steam-Spiels (6.3): dieselben vier Ansichten, Filter, Suche, Notizen und **Im Blick**. Neu ist ein **Haken-Knopf** an jeder Trophäe.
+
+1. Öffne den Bereich **Trophäen** bzw. **Erfolge** des Spiels.
+2. Klicke an der erledigten Trophäe auf den Haken-Knopf („… als erledigt abhaken“).
+3. PlatinVault zeigt das **Trophäen-Popup** mit demselben Aussehen und Ton wie bei einer Freischaltung in Steam.
+4. Ein zweiter Klick nimmt den Haken wieder weg. Das geschieht **ohne Popup und ohne Ton**.
+
+- **Nur in der App:** Das Popup erscheint in den PlatinVault-Fenstern (Browser oder Programmfenster), **nie** im Overlay über dem Spiel – auch nicht bei der Einstellung „Nur im Spiel“ oder „Beides“ (siehe Kapitel 7).
+- **Stufen:** Bei PlayStation gelten die Stufen von Sony (Bronze, Silber, Gold, Platin). Bei den anderen Plattformen richten sie sich nach der Seltenheit, wenn die Liste sie nennt (Skala wie in 6.3). Sonst gilt bei Xbox: ab 50 Gamerscore-Punkten Gold, 20 bis 49 Silber, darunter Bronze; ohne Angaben Bronze. Das ist eine Einteilung von PlatinVault, keine der Plattform.
+- **Platin bei PlayStation:** Hast du alle anderen Trophäen des Hauptspiels abgehakt (DLC-Trophäen zählen nicht), hakt sich die **Platin-Trophäe selbst ab**; es folgt der Platin-Moment. Entfernst du danach einen Haken, verschwindet das Platin still wieder. Der Haken an der Platin-Trophäe selbst lässt sich nicht von Hand setzen. Bei Plattformen ohne Platin-Stufe gilt das Spiel bei 100 % aller Einträge als abgeschlossen.
+- **Fortschritt:** Die Zahl der Trophäen, der Fortschrittsbalken, der Platin-Moment, die Kachel auf der Übersicht und der Trophäenschrank (5.5) zählen deine Haken mit.
+- **Fortschritt zurücksetzen** im Spielkopf betrifft nur die Guide-Häkchen, **nicht** deine Trophäen-Haken.
+
 # 7 Trophäen-Popups und Sounds
 
 Im Reiter **Live & Sound** der Einstellungen:
@@ -698,6 +800,8 @@ dem Gaming-PC läuft. Gewechselt wird nur bei einem echten Start – nicht beim 
 und nicht beim Beenden. Ist gerade ein Fenster offen, steht der Cursor in einem Eingabefeld oder arbeitet eine KI-Aufgabe,
 bleibst du, wo du bist: Ein Hinweis meldet den Start und bietet **Zum Spiel wechseln** an. Läuft ein Spiel, das du noch nicht
 angelegt hast, nennt ein Hinweis nur den Namen – „noch kein Guide vorhanden“.
+
+**Trophäen von Hand abgehakt** (Spiele, die du hinzugefügt hast, 6.6) zeigen dasselbe Popup und spielen denselben Ton wie eine Steam-Freischaltung – aber immer nur in den PlatinVault-Fenstern, **nie** im Overlay über dem Spiel, welche Wahl bei **Trophäen-Popup anzeigen** auch steht. Ein Haken wieder wegnehmen bleibt still.
 
 Popups erscheinen für alle Spiele, die in PlatinVault angelegt sind. Ein Popup nennt den Anteil der Spieler, die die Trophäe
 haben; seine Farbe (Bronze, Silber, Gold) und seine Bezeichnung folgen der Seltenheit (siehe 6.3).
@@ -787,7 +891,9 @@ der Linux-Bridge. Hilft `status` nicht weiter, melde uns bitte, was es und das P
   (`api.steampowered.com`, `store.steampowered.com`, `steamcommunity.com`, Steam-Bilderserver).
 - **KI-Anbieter** bekommen für die Recherche den Spielnamen und öffentliche Spielinformationen – keine persönlichen Daten. Es wird nur der
   Anbieter angesprochen, dessen Schlüssel du eingetragen hast, und nur bei einer KI-Aktion (Google, Anthropic, OpenAI).
-- **Twitch und IGDB** werden nur mit deinen eigenen Zugangsdaten befragt. Die **Bridge** (Windows und Linux) spricht nur mit dem PlatinVault-Server, den du eingetragen hast.
+- **Twitch und IGDB** werden nur mit deinen eigenen Zugangsdaten befragt. Beim Suchen im Fenster **Spiel hinzufügen** geht dein Suchtext (Name, Nummer oder Link) an IGDB.
+- **Eigene Titelbilder und Trophäenlisten** liegen in deiner Datenbank und damit in deinen Sicherungen. Für die Recherche einer Trophäenliste bekommt der KI-Anbieter den Spielnamen, die Plattform und öffentliche Spielinformationen; deine Haken bekommt er nicht. PlatinVault ruft nie das PlayStation Network auf und liest keine Konten anderer Plattformen.
+- Die **Bridge** (Windows und Linux) spricht nur mit dem PlatinVault-Server, den du eingetragen hast.
 - Das **Linux-Paket** baut keine anderen Verbindungen auf als jeder PlatinVault-Server.
 - PlatinVault hat bewusst **keine Anmeldung** und ist für einen Nutzer gedacht. Betreibe es im Heimnetz, nicht offen im
   Internet.
@@ -818,6 +924,11 @@ der Linux-Bridge. Hilft `status` nicht weiter, melde uns bitte, was es und das P
 | Ein Kapitel ist zu dünn oder veraltet | **Kapitel neu recherchieren** bzw. **Mit meinem KI-Abo neu recherchieren** über dem Kapitelinhalt (Abschnitt 6.2). |
 | Ein Kapitel zeigt „konnte nicht recherchiert werden“ | Auf **Kapitel erneut recherchieren** klicken (Details siehe 6.2). Der Grund steht im Hinweis; bei einem Quoten- oder Key-Problem zuerst unter Einstellungen → **KI-Recherche** nachsehen oder über den Pfeil am Knopf eine andere KI wählen. |
 | „Der Server wurde neu gestartet, die Recherche wurde unterbrochen“ | Der Server war während der Recherche kurz weg (Update, Neustart). Fertige Kapitel sind gespeichert; starte dieselbe Aktion noch einmal, sie macht dort weiter. |
+| Beim Hinzufügen steht „IGDB antwortet nicht ohne Zugangsdaten“ | Die IGDB-Suche braucht die Zugangsdaten einer eigenen Twitch-Anwendung (Einstellungen → **Twitch & IGDB**, 6.4). Ohne sie klickst du auf **Nicht dabei? Ohne IGDB hinzufügen** und gibst Titel, Plattform und Titelbild selbst an (5.3). |
+| Das Titelbild wird nicht angenommen | Erlaubt sind PNG, JPEG, WebP und GIF bis 5 MB, kein SVG. Verkleinere das Bild oder wähle ein anderes (5.3). |
+| Bei einem Spiel von Hand fehlen Spielzeit, Größe und Statistiken | Das sind Werte, die nur Steam kennt. Erscheinungsdatum, Entwickler und Genres kommen aus IGDB oder aus der KI-Recherche (6.6). |
+| Die recherchierte Trophäenliste ist falsch oder unvollständig | Die KI liest Webseiten und kann irren. Prüfe die unter der Liste genannten Quellen und klicke auf **Trophäenliste neu recherchieren**; deine Haken bleiben (6.6). Eine andere KI kannst du über den Pfeil am Knopf wählen. |
+| Ein PS4-Spiel zeigt die falschen Trophäen | Die Fassung (PS5 oder PS4) steht nach dem Hinzufügen fest. Ein PS4-Spiel auf der PS5 hat die PS4-Liste. Entferne das Spiel (**Spiel entfernen**) und füge es mit der richtigen Fassung neu hinzu (5.3). |
 | Erfolge auf Englisch | Das Spiel hat bei Steam keine deutschen Texte; mit KI-Key übersetzt PlatinVault sie automatisch. |
 | Über der Trophäenliste steht „Seltenheitswerte sind nicht aktuell“ bzw. „nicht verfügbar“ | PlatinVault erreicht Steam gerade nicht, um die weltweiten Anteile zu holen. Es zeigt den letzten gespeicherten Stand (mit Datum) und versucht es von selbst wieder. Prüfe die Internetverbindung und ob ein Virenschutz oder eine Firewall PlatinVault den Zugriff ins Netz verbietet; **Kopieren** im Hinweis gibt dir den vollständigen Text für den Support. |
 | Kein Zähler bei einer Trophäe | Das Spiel hat bei Steam keinen Zähler hinterlegt. |

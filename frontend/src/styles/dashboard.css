@@ -22,6 +22,19 @@
   min-inline-size: 0;
 }
 
+/* The actions (guide import, "+ Spiel hinzufügen") drop under a long title on a narrow window instead of squeezing it into a column of words */
+.pv-dash-head {
+  flex-wrap: wrap;
+}
+
+.pv-dash-head > .pv-page-title {
+  flex: 1 1 18rem;
+}
+
+.pv-dash-head > .pv-dash-head-act {
+  margin-inline-start: auto;
+}
+
 /* The game that is running right now: a calm note with its thin line on the left */
 .pv-dash-running {
   display: flex;
@@ -1529,4 +1542,85 @@
   .pv-dash-cbar {
     display: none;
   }
+}
+
+/* ---------------------------------------------------------------- platform chip (games added by hand and Steam) */
+/* The cover is the container of the chips on it: the "Platin" plaque shrinks to its icon on a narrow tile (components/platinum/platinum.css) */
+.pv-tile-cover {
+  container-type: inline-size;
+  container-name: pv-cover;
+}
+
+/* On the cover, top left (the "Platin" plaque sits top right). Fixed dark so it reads on any cover in both themes; never changes the tile's height. */
+.pv-platform-badge-pos {
+  position: absolute;
+  inset-block-start: 0.75rem;
+  inset-inline-start: 0.625rem;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.pv-platform-badge {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  block-size: 1.25rem;
+  padding-inline: 0.4375rem;
+  border-radius: var(--radius-sm);
+  background: rgba(15, 23, 42, 0.86);
+  color: #f8fafc;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+/* In a list row and in a head the chip is a quiet outlined mark on the surface */
+.pv-platform-badge[data-size='md'] {
+  block-size: 1.375rem;
+  padding-inline: 0.5rem;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.75rem;
+}
+
+/* Under the title of a list row: the chip and the genres in one line (the line is always there, like the genre line before it) */
+.pv-dl-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-inline-size: 0;
+}
+
+.pv-dl-sub > .pv-platform-badge {
+  flex: none;
+}
+
+/* Text-only list: the chip stands before the title */
+.pv-dl-c-title > .pv-platform-badge {
+  flex: none;
+}
+
+.pv-dl-sub > .pv-dl-gen {
+  flex: 1 1 0;
+}
+
+/* The actions at the right end of the page head: the guide import (an icon) and "+ Spiel hinzufügen" (a text button, the same button family) */
+.pv-dash-head-act {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pv-dash-add {
+  white-space: nowrap;
+}
+
+/* Text-only list: the chips have one width, so the titles line up (a longer name such as Battle.net just grows its chip) */
+.pv-dl-c-title > .pv-platform-badge {
+  min-inline-size: 4.875rem;
+  justify-content: center;
 }

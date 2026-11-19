@@ -376,6 +376,20 @@ const settings = {
     restartTour: 'Restart the introduction',
     hintsReset: 'The hints will appear again the next time you visit each page.',
   },
+  // Settings > System > Design (components/settings/DesignSection.tsx): the look of the whole app, saved on the server
+  design: {
+    title: 'Design',
+    label: 'Look',
+    options: { light: 'Minimal', classic: 'Classic' },
+    // One line under the choice for the selected option (room is reserved for the longer one)
+    hints: {
+      light: 'Calm surfaces, thin lines, the Inter typeface.',
+      classic: 'The earlier look with rounder corners, bolder type, gradients and gloss.',
+    },
+    scope: 'Applies to this PlatinVault on every device, in the browser and in the Windows program.',
+    saveFailedTitle: 'The design was not saved',
+    saveFailed: 'The previous design is active again. Reason: {{reason}}',
+  },
   // Settings > System > Folders (Windows program only, components/settings/FoldersSection.tsx)
   folders: {
     title: 'Folders',

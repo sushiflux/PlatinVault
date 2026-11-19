@@ -12,6 +12,9 @@ const live = {
   tierTrophy: '{{tier}}-Trophäe',
   tierPills: {
     unlocked: '{{achieved}} von {{total}} freigeschaltet',
+    // The one figure of a game added by hand without grades
+    trophies: 'Trophäen',
+    achievements: 'Erfolge',
   },
   celebration: {
     earned: 'Platin-Trophäe erhalten',
@@ -85,6 +88,20 @@ const live = {
     large: 'Groß',
   },
   trophy: {
+    // A trophy of a researched list that can be missed for good
+    missable: {
+      badge: 'Verpassbar',
+      tooltip: 'Kann im Spielverlauf unwiederbringlich verpasst werden. Prüfe vorher den Guide.',
+    },
+    // The check of a game added by hand: the player ticks the trophy himself
+    check: {
+      mark: '„{{name}}“ als erledigt abhaken',
+      unmark: 'Haken bei „{{name}}“ entfernen',
+      auto: 'Wird automatisch erreicht, sobald alle anderen Trophäen des Spiels abgehakt sind.',
+      failedMark: 'Die Trophäe konnte nicht abgehakt werden',
+      failedUnmark: 'Der Haken konnte nicht entfernt werden',
+      failedFallback: 'Der Server hat die Änderung nicht gespeichert.',
+    },
     noDescription: 'Keine Beschreibung verfügbar.',
     hiddenAchievement: 'Verstecktes Story-/Geheim-Achievement',
     hiddenAchievementOpen: 'Verstecktes Story-/Geheim-Achievement – anklicken zum Öffnen',

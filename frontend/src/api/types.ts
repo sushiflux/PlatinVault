@@ -100,7 +100,12 @@ export interface LivePinsDto {
   appId: number
   apiNames: string[]
   max: number
+  // Manual games (appId 0): the pins belong to this game id; null/missing for a Steam game
+  gameId?: string | null
 }
+
+// Whose pins / notes: a Steam game by its AppID, a manual game (no AppID) by its game id
+export type TrophyScope = { appId: number } | { gameId: string }
 
 // What happens to a pin when its achievement is unlocked: it stays (shown as done) or the server removes it
 export type PinsAfterUnlock = 'keep' | 'remove'
@@ -138,6 +143,10 @@ export interface LiveStatusDto {
 export interface LiveEventMeta {
   eventId: number
   instanceId: string
+  // Name of the game for a trophy ticked by hand (that game is not running, so the window cannot take the running game's name)
+  gameName?: string | null
+  // 'manual' = ticked by hand in a game added by hand; such events never go to the Windows game overlay
+  source?: 'manual' | null
 }
 
 // One announced live event (GET /api/live/events)
@@ -149,6 +158,8 @@ export interface LiveEventDto {
   gameName: string | null
   appId: number
   total: number | null
+  // 'manual' = ticked by hand in a game added by hand (appId 0); null = detected by Steam
+  source?: 'manual' | null
 }
 
 // The live events of the last minutes; instanceId changes with every server start
@@ -208,6 +219,15 @@ export interface GameSummaryDto {
   sortMetacritic?: number | null
   sortReviewPercent?: number | null
   updatedAt: string
+  // Platform of the game (utils/platforms.ts): "steam" for every Steam library game, else a game added by hand. Optional: an older server sends none (= steam).
+  platform?: PlatformId
+  platformVariant?: PlatformVariant | null
+  igdbId?: number | null
+  // When the trophy list of a manual game was last researched; hasTrophyList = there is one (always false for Steam games)
+  trophyListResearchedAt?: string | null
+  hasTrophyList?: boolean
+  // First release (UTC) of a manual game; releaseAt falls back to it
+  firstReleaseAt?: string | null
 }
 
 export interface RefTargetDto {
@@ -256,6 +276,16 @@ export interface GameDetailDto {
   // Language of the texts in this answer: the requested one once its translation is complete, else the guide's own (contentLanguage)
   language: string
   translation: GuideTranslationDto
+  // Platform and the facts of a manual game (see GameSummaryDto); factsSource "igdb" | "ai" | null. Optional: an older server sends none.
+  platform?: PlatformId
+  platformVariant?: PlatformVariant | null
+  igdbId?: number | null
+  trophyListResearchedAt?: string | null
+  hasTrophyList?: boolean
+  developer?: string | null
+  publisher?: string | null
+  summary?: string | null
+  factsSource?: 'igdb' | 'ai' | null
 }
 
 // Translation of a guide into one language. state: "original" = that is the guide's own language; "complete" = every chapter and the card
@@ -499,6 +529,11 @@ export interface LibrarySummaryDto {
   metaScanning?: boolean
   metaDone?: number
   metaTotal?: number
+  // Games added by hand (any platform but Steam): count, their trophies in total / ticked, games at platinum. Never in the Steam figures above
+  manualGameCount?: number
+  manualTrophiesTotal?: number
+  manualTrophiesUnlocked?: number
+  manualPerfectGames?: number
 }
 
 export interface SteamLibraryResponseDto {
@@ -524,6 +559,8 @@ export interface SettingsResponseDto {
   language: string
   // The language of the whole app ("de" / "en"); null until the user has chosen one (first start: language screen)
   uiLanguage: UiLanguage | null
+  // The design (setting ui.design, 'light' when nothing is stored); missing on an older server = keep this browser's copy
+  uiDesign?: UiDesign
   autoTranslate: boolean
   hasGeminiKey: boolean
   geminiKeyHint: string
@@ -691,10 +728,10 @@ export interface AiResultDto<T> {
 
 // A background AI action (POST ai-generate / ai-plan / ai-complete / ai-expand-tab / ai-lore start one, GET /api/ai/jobs/{id} reads it).
 // The long-running requests are jobs: the answer comes back through polling, so no single HTTP request has to survive minutes.
-export type AiJobKind = 'generate' | 'plan' | 'complete' | 'expand' | 'lore' | 'retry' | 'redo'
+export type AiJobKind = 'generate' | 'plan' | 'complete' | 'expand' | 'lore' | 'retry' | 'redo' | 'trophies'
 
 // "chapters" = Done of Total chapters finished, Title = the latest one started; "loreParts" the same for Story & Lore; "chapter" = one chapter (Title)
-export type AiJobStage = 'starting' | 'facts' | 'blueprint' | 'chapters' | 'chapter' | 'loreParts' | 'saving'
+export type AiJobStage = 'starting' | 'facts' | 'blueprint' | 'chapters' | 'chapter' | 'loreParts' | 'trophies' | 'saving'
 
 export interface AiJobDto {
   id: string
@@ -734,6 +771,8 @@ export interface UpdateSettingsRequest {
   popupSeconds?: number
   // "de" or "en"; the server also sets the Steam achievement language from it
   uiLanguage?: UiLanguage
+  // 'light' or 'classic'; omitted = keep, anything else is refused with 400
+  uiDesign?: UiDesign
   autoTranslate?: boolean
   geminiApiKey?: string
   clearGeminiKey?: boolean
@@ -1134,6 +1173,10 @@ export type DockerAdvice =
 // The one update choice: none = full releases only (default), beta = betas + releases, nightly = nightlies + releases
 export type UpdateChannel = 'none' | 'beta' | 'nightly'
 
+// The look of the app (Settings > System > Design, setting ui.design): 'light' = the calm default, 'classic' = the earlier look with
+// rounder corners, bolder type, gradients and gloss. Only the look changes, never the structure (src/utils/uiDesign.ts).
+export type UiDesign = 'light' | 'classic'
+
 export interface UpdateStatusDto {
   currentVersion: string
   currentTag: string
@@ -1193,12 +1236,20 @@ export interface ShowcaseGameDto {
   rarestIconUrl: string | null
   rarestPercent: number | null
   averageRarityPercent: number | null
+  // Manual games in the cabinet (appId 0): key = "steam:<appId>" | "game:<guid>" identifies every entry; gameId / platform for manual games.
+  // Optional: an older server sends none.
+  key?: string
+  gameId?: string | null
+  platform?: PlatformId
+  platformVariant?: PlatformVariant | null
 }
 
-// Which completed games the cabinet has already presented (animated into their slot); initialized = the state exists on the server
+// Which completed games the cabinet has already presented (animated into their slot); initialized = the state exists on the server.
+// gameIds = the manual games presented (guids); an older server sends none.
 export interface CabinetPresentedDto {
   initialized: boolean
   appIds: number[]
+  gameIds?: string[]
 }
 
 export interface ShowcaseDto {
@@ -1238,6 +1289,11 @@ export interface IgdbGameDto {
   languages: IgdbLanguageDto[]
   timeToBeat: IgdbTimeToBeatDto | null
   fetchedAt: string
+  // For manual games (missing in older cache entries): first release (UTC), the platforms with our mapping, the companies
+  firstReleaseAt?: string | null
+  platforms?: IgdbPlatformDto[] | null
+  developers?: string[] | null
+  publishers?: string[] | null
 }
 
 export interface IgdbSimilarGameDto {
@@ -1424,4 +1480,172 @@ export interface WhatsNewDto {
   show: boolean
   // The entry of this version in the language of the request (Markdown, heading line included); null when there is none
   notes: string | null
+}
+
+// ---- Manual games (added by hand, with or without IGDB), their platform and the trophy list researched by the AI and ticked by hand ----
+// Server contract: src/Companion.Api/Endpoints/ManualGameDtos.cs. Platform ids, variants and helpers: utils/platforms.ts.
+
+// Stable platform ids (games.Platform); "steam" = a game of the Steam library, every other one = a game added by hand
+export type PlatformId = 'steam' | 'playstation' | 'xbox' | 'epic' | 'gog' | 'nintendo' | 'ubisoft' | 'ea' | 'battlenet'
+
+// PlayStation only: the PS5 and PS4 trophy lists are separate
+export type PlatformVariant = 'ps5' | 'ps4'
+
+// PlayStation calls them trophies, every other platform achievements
+export type TrophyKind = 'trophies' | 'achievements'
+
+// A platform choice; variant only for "playstation"
+export interface PlatformChoiceDto {
+  platform: PlatformId
+  variant: PlatformVariant | null
+}
+
+// A vault game that already has this IGDB game on a platform ("already added")
+export interface ManualGameRefDto {
+  slug: string
+  platform: PlatformId
+  variant: PlatformVariant | null
+}
+
+// A platform as IGDB names it; maps = our platform (+ variant), null = none of ours
+export interface IgdbPlatformDto {
+  name: string
+  abbreviation: string | null
+  maps: PlatformChoiceDto | null
+}
+
+// One hit of GET /api/igdb/search?q= (null = 204, no Twitch credentials)
+export interface IgdbSearchHitDto {
+  igdbId: number
+  name: string
+  releaseYear: number | null
+  firstReleaseAt: string | null
+  coverUrl: string | null
+  platforms: IgdbPlatformDto[]
+  existing: ManualGameRefDto[]
+}
+
+export interface IgdbSearchResponseDto {
+  results: IgdbSearchHitDto[]
+}
+
+// POST /api/games/manual: without igdbId the title is required; platformVariant exactly for "playstation"
+export interface CreateManualGameRequest {
+  title?: string | null
+  platform: PlatformId
+  platformVariant?: PlatformVariant | null
+  igdbId?: number | null
+}
+
+// One source of a researched trophy list
+export interface TrophySourceDto {
+  title: string
+  url: string
+}
+
+// Translation of the trophy list into the requested language (same states as GuideTranslationDto)
+export interface TrophyTranslationDto {
+  language: string
+  sourceLanguage: string
+  state: 'original' | 'complete' | 'missing'
+  running: boolean
+  error: string | null
+  providerMessage: string | null
+  aiNotice?: string | null
+}
+
+// Which popup a tick caused: trophy = the normal popup, platinum = the platinum moment
+export interface TrophyAnnouncedDto {
+  trophy: boolean
+  platinum: boolean
+}
+
+// One trophy of a manual game: every field of a live achievement (apiName = the trophy key, iconUrl/iconGrayUrl = "" - draw a glyph,
+// achieved = ticked, unlockTime = when it was ticked) plus the fields of the researched list. grade only on PlayStation; group null = base
+// game, else the DLC; category / tip "" = none.
+export interface ManualTrophyItemDto extends LiveAchievementItemDto {
+  hasGlobalPercent: boolean
+  rarityBand: string
+  grade: 'platinum' | 'gold' | 'silver' | 'bronze' | null
+  points: number | null
+  missable: boolean
+  group: string | null
+  category: string
+  tip: string
+  sortOrder: number
+  originalName: string | null
+}
+
+// GET /api/games/{slug}/trophies (also the answer of a tick, then with `announced`). supported = false for Nintendo (no trophies).
+// researchedAt null = no list yet. language = language of the texts in this answer; translation = its state (null = not applicable).
+export interface ManualTrophyListDto {
+  gameId: string
+  slug: string
+  platform: PlatformId
+  platformVariant: PlatformVariant | null
+  supported: boolean
+  kind: TrophyKind
+  researchedAt: string | null
+  sources: TrophySourceDto[]
+  language: string
+  translation: TrophyTranslationDto | null
+  achievements: ManualTrophyItemDto[]
+  totalCount: number
+  achievedCount: number
+  remainingCount: number
+  progressPercentage: number
+  is100Percent: boolean
+  platinum: LiveTrophyTierSummaryDto
+  gold: LiveTrophyTierSummaryDto
+  silver: LiveTrophyTierSummaryDto
+  bronze: LiveTrophyTierSummaryDto
+  platinumAt: string | null
+  latestAchievement: ManualTrophyItemDto | null
+  // Only on the answer of POST .../trophies/{trophyKey}/unlock
+  announced?: TrophyAnnouncedDto | null
+}
+
+// What one research should produce; missing = the server's default (trophies when the platform has them, facts when missing and not from IGDB)
+export interface TrophyResearchIncludeDto {
+  trophies?: boolean | null
+  facts?: boolean | null
+}
+
+// The saved result of a research (AI job or own subscription): the list as stored now, whether facts were written, ticks carried over,
+// and ticked trophies the new list did not contain but were kept
+export interface ManualTrophyResearchResultDto {
+  list: ManualTrophyListDto
+  factsUpdated: boolean
+  keptTicks: number
+  retainedOldTicked: number
+}
+
+// The trophies prompt of the own-subscription way
+export interface ManualTrophyPromptDto extends Omit<ManualPromptDto, 'kind'> {
+  kind: 'trophies'
+}
+
+// One trophy of a pasted answer as it would be saved
+export interface ManualTrophyPreviewDto {
+  key: string
+  name: string
+  grade: string | null
+  points: number | null
+  hidden: boolean
+  group: string | null
+}
+
+// What a pasted trophy answer contains (see ManualTrophyCheckDto in ManualGameDtos.cs)
+export interface ManualTrophyCheckDto {
+  ok: boolean
+  errors: ManualIssueDto[]
+  warnings: ManualIssueDto[]
+  count: number
+  byGrade: Record<string, number>
+  hidden: number
+  dlc: number
+  preview: ManualTrophyPreviewDto[]
+  keepsTicks: number
+  dropsTicks: number
+  hasFacts?: boolean
 }

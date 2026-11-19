@@ -86,7 +86,7 @@ export function FloatingNotice({ tone, title, message, details, actions, onClose
       ref={rootRef}
       role={role}
       aria-live={role === 'alert' ? 'assertive' : 'polite'}
-      className="pointer-events-auto relative w-full max-w-[40rem] overflow-hidden"
+      className="pv-fnotice pointer-events-auto relative w-full max-w-[40rem] overflow-hidden"
       style={{
         // Solid surface first, the tone's tint on top: opaque in both themes
         backgroundColor: 'var(--bg-surface)',
@@ -102,7 +102,7 @@ export function FloatingNotice({ tone, title, message, details, actions, onClose
       transition={reduce ? { duration: 0.12 } : { type: 'spring', stiffness: 460, damping: 36, mass: 0.8 }}
     >
       {/* The tone as a thin straight line at the left edge (inset from the rounded corners), never a thick border */}
-      <span aria-hidden="true" className="absolute start-0 inset-y-3 w-[3px]" style={{ background: `var(--accent-${accent})` }} />
+      <span aria-hidden="true" className="pv-fnotice__tone absolute start-0 inset-y-3 w-[3px]" style={{ background: `var(--accent-${accent})` }} />
       <div className="flex items-start gap-3 py-3 ps-4" style={{ paddingInlineEnd: onClose ? '3.25rem' : '0.875rem' }}>
         <Icon
           size={20}
@@ -115,7 +115,7 @@ export function FloatingNotice({ tone, title, message, details, actions, onClose
           tabIndex={0}
           className="max-h-[min(45vh,20rem)] min-w-0 flex-1 overflow-y-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-crystal)]"
         >
-          <p className="font-semibold leading-snug" style={{ color: 'var(--text-primary)' }}>
+          <p className="pv-fnotice__title font-semibold leading-snug" style={{ color: 'var(--text-primary)' }}>
             {title}
           </p>
           {message && (
@@ -134,7 +134,7 @@ export function FloatingNotice({ tone, title, message, details, actions, onClose
                     aria-expanded={showDetails}
                     aria-controls={detailsId}
                     onClick={() => setShowDetails((open) => !open)}
-                    className="inline-flex cursor-pointer items-center gap-1 text-sm font-medium underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-crystal)]"
+                    className="pv-fnotice__details inline-flex cursor-pointer items-center gap-1 text-sm font-medium underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-crystal)]"
                     style={{ color: 'var(--text-secondary)' }}
                   >
                     <IconChevronDown size={14} aria-hidden="true" className={`transition-transform ${showDetails ? 'rotate-180' : ''}`} />

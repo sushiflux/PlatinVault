@@ -21,13 +21,14 @@ import { GameGuidePage } from './pages/GameGuidePage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { ACHIEVEMENT_VISIBLE_MS, animationQueue } from './utils/animationQueue'
-import type { PlatinumData } from './utils/animationQueue'
+import type { AchievementEventInfo, PlatinumData } from './utils/animationQueue'
 import { DEFAULT_SOUND_THEME, soundEngine } from './utils/audio'
 import { connectLiveHub } from './utils/liveConnection'
 import { showsPopupInWindow } from './utils/popupTarget'
 import { connectProgramWindow, useProgramWindow } from './utils/programWindow'
 import { useGameStartSwitch } from './utils/useGameStartSwitch'
 import { useSoundBlockedNotice } from './utils/useSoundBlockedNotice'
+import { UiDesignSync } from './utils/uiDesign'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,9 +39,12 @@ const queryClient = new QueryClient({
   },
 })
 
-function GlobalLiveOverlayBridge() {
+// Exported for its test: the popups of this window (card, full screen, platinum moment) fed by the live hub
+export function GlobalLiveOverlayBridge() {
   const [activeNotification, setActiveNotification] =
     useState<LiveAchievementItemDto | null>(null)
+  // The game and source the event named (a trophy ticked by hand: that game is not running, and it always shows in this window)
+  const [activeEvent, setActiveEvent] = useState<AchievementEventInfo>({})
   const [activePlatinum, setActivePlatinum] = useState<PlatinumData | null>(null)
   // How long the popup that is showing stays (the chosen duration); the card slides out shortly before the queue removes it
   const [visibleMs, setVisibleMs] = useState(ACHIEVEMENT_VISIBLE_MS)
@@ -59,16 +63,17 @@ function GlobalLiveOverlayBridge() {
   // The queue keeps running either way, because this window plays the sound (exactly once per unlock, the overlay is silent).
   // A settings preview always shows here.
   const program = useProgramWindow()
-  const showHere = previewPosition !== null || showsPopupInWindow(settings?.popupTarget, program.overlay)
+  const showHere = previewPosition !== null || showsPopupInWindow(settings?.popupTarget, program.overlay, activeEvent.source)
+  const showPlatinumHere = previewPosition !== null || showsPopupInWindow(settings?.popupTarget, program.overlay, activePlatinum?.source)
 
   // Full-screen popup names the game: the running game from the live status (only asked for while that popup is up), or the
   // example game during a preview
   const { data: liveStatus } = useQuery({
     queryKey: ['live-status'],
     queryFn: fetchLiveStatus,
-    enabled: fullscreen && activeNotification !== null && previewPosition === null,
+    enabled: fullscreen && activeNotification !== null && previewPosition === null && !activeEvent.gameName,
   })
-  const fullscreenGameName = previewPosition !== null ? t('live.exampleGame') : liveStatus?.runningGameName
+  const fullscreenGameName = previewPosition !== null ? t('live.exampleGame') : (activeEvent.gameName ?? liveStatus?.runningGameName)
 
   useEffect(() => {
     if (settings) {
@@ -82,8 +87,13 @@ function GlobalLiveOverlayBridge() {
 
   useEffect(() => {
     const unsub = animationQueue.subscribe(
-      ({ currentAchievement, currentPosition, currentPlatinum, visibleMs: ms }) => {
+      ({ currentAchievement, currentPosition, currentPlatinum, currentGameName, currentSource, visibleMs: ms }) => {
         setActiveNotification(currentAchievement)
+        setActiveEvent((previous) =>
+          previous.gameName === (currentGameName ?? null) && previous.source === (currentSource ?? null)
+            ? previous
+            : { gameName: currentGameName ?? null, source: currentSource ?? null }
+        )
         setVisibleMs(ms)
         setPreviewPosition(currentPosition)
         setActivePlatinum(currentPlatinum)
@@ -99,20 +109,21 @@ function GlobalLiveOverlayBridge() {
     // Stays connected across backend restarts and catches up on unlocks sent while this window was not connected
     const disconnect = connectLiveHub(
       {
-        onAchievement: (ach) => {
-          animationQueue.enqueueAchievement(ach)
+        onAchievement: (ach, info) => {
+          animationQueue.enqueueAchievement(ach, info)
           refreshTrophies()
         },
-        onPlatinum: (gameName, total) => {
-          animationQueue.enqueuePlatinum(gameName, total)
+        onPlatinum: (gameName, total, source) => {
+          animationQueue.enqueuePlatinum(gameName, total, 'achievements', source)
           refreshTrophies()
         },
         onGameChanged: () => {
           void queryClient.invalidateQueries({ queryKey: ['live-status'] })
           void queryClient.invalidateQueries({ queryKey: ['live-achievements'] })
         },
-        onPinsChanged: (appId) => {
-          void queryClient.invalidateQueries({ queryKey: ['live-pins', appId] })
+        onPinsChanged: (appId, gameId) => {
+          // A game added by hand has no AppID: its pins are named by the game id
+          void queryClient.invalidateQueries({ queryKey: gameId ? ['live-pins', `g:${gameId}`] : ['live-pins', appId] })
         },
         onConnected: () => {
           void queryClient.invalidateQueries({ queryKey: ['live-status'] })
@@ -151,7 +162,7 @@ function GlobalLiveOverlayBridge() {
         visibleMs={visibleMs}
       />
       <PlatinumCelebration
-        data={showHere ? activePlatinum : null}
+        data={showPlatinumHere ? activePlatinum : null}
         onDismiss={() => animationQueue.dismissPlatinum()}
       />
     </>
@@ -218,6 +229,8 @@ export function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
+        {/* The design (Leicht / Klassisch) follows the server's setting once it is loaded, on every page and the first-run screen */}
+        <UiDesignSync />
         <GlobalLiveOverlayBridge />
         <ConfirmProvider>
           <AiChoiceProvider>

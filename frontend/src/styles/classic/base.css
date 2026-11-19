@@ -1,0 +1,378 @@
+/* Design "Klassisch" - the shared building blocks every area uses, as they looked at commit 9fabf8e: buttons and icon buttons,
+   form fields, the on/off switch, the segmented choice, tooltip, floating notice, error block / details / copy button, the dialog
+   shell, the overlay scrollbar thumb and the focus ring. LOOK ONLY: colours, fills, borders, radii, shadows, weights, transitions.
+   Sizes, paddings and positions of the current structure stay as they are (rigid layout, 48 px targets). Every rule is scoped under
+   :root[data-design='classic'], so the light design never sees it, and the extra :root keeps it above the light rules it restyles
+   (also above component CSS that a lazily loaded chunk injects later). */
+
+/* ---------- text ---------- */
+:root[data-design='classic'] body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:root[data-design='classic'] :is(strong, b) {
+  font-weight: 700;
+}
+
+/* The page title and the small-caps headings had the heavy weights of the old system */
+:root[data-design='classic'] .pv-page-title {
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+
+:root[data-design='classic'] .pv-eyebrow {
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+/* ---------- buttons ---------- */
+/* Secondary: a light box with a hairline frame that turns crystal on hover; the accent variants are tinted boxes (tint + accent text
+   + accent border), never a solid fill */
+:root[data-design='classic'] .pv-btn {
+  border-color: var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-weight: 700;
+  transition: all 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-btn:hover {
+  background: var(--bg-elevated);
+  border-color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-btn:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+}
+
+:root[data-design='classic'] .pv-btn.pv-btn-primary {
+  background: var(--accent-crystal-bg);
+  color: var(--accent-crystal);
+  border-color: var(--accent-crystal-border);
+}
+
+:root[data-design='classic'] .pv-btn.pv-btn-emerald {
+  background: var(--accent-emerald-bg);
+  color: var(--accent-emerald);
+  border-color: var(--accent-emerald-border);
+}
+
+:root[data-design='classic'] .pv-btn.pv-btn-gold {
+  background: var(--accent-gold-bg);
+  color: var(--accent-gold-text);
+  border-color: var(--accent-gold-border);
+}
+
+:root[data-design='classic'] .pv-btn.pv-btn-danger {
+  background: var(--accent-crimson-bg);
+  color: var(--accent-crimson);
+  border-color: var(--accent-crimson-border);
+}
+
+:root[data-design='classic'] .pv-btn.pv-btn-purple {
+  background: var(--accent-purple-bg);
+  color: var(--accent-purple);
+  border-color: var(--accent-purple-border);
+}
+
+:root[data-design='classic'] .pv-btn:is(.pv-btn-primary, .pv-btn-emerald, .pv-btn-danger):hover {
+  filter: brightness(0.97);
+}
+
+:root[data-design='classic'] .pv-btn.pv-btn-primary:hover {
+  border-color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-btn.pv-btn-emerald:hover {
+  border-color: var(--accent-emerald);
+}
+
+:root[data-design='classic'] .pv-btn.pv-btn-danger:hover {
+  border-color: var(--accent-crimson);
+}
+
+/* Frameless text action: the old bold link look */
+:root[data-design='classic'] .pv-btn-text {
+  font-weight: 700;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* ---------- icon buttons ---------- */
+/* Plain icon button: the same light box as .pv-btn. Toolbar (ghost) variant: no box until hovered, then the surface with a hairline.
+   The accent tones keep their tinted box. */
+:root[data-design='classic'] .pv-icon-btn {
+  background: var(--bg-surface);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+:root[data-design='classic'] .pv-icon-btn:is(:hover, [aria-expanded='true']) {
+  background: var(--bg-elevated);
+  border-color: var(--accent-crystal);
+  color: var(--text-primary);
+}
+
+:root[data-design='classic'] .pv-icon-btn.pv-icon-btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-secondary);
+}
+
+:root[data-design='classic'] .pv-icon-btn.pv-icon-btn--ghost:is(:hover, [aria-expanded='true']) {
+  background: var(--bg-surface);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+:root[data-design='classic'] .pv-icon-btn.pv-btn-primary {
+  background: var(--accent-crystal-bg);
+  border-color: var(--accent-crystal-border);
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-icon-btn.pv-btn-emerald {
+  background: var(--accent-emerald-bg);
+  border-color: var(--accent-emerald-border);
+  color: var(--accent-emerald);
+}
+
+:root[data-design='classic'] .pv-icon-btn.pv-btn-gold {
+  background: var(--accent-gold-bg);
+  border-color: var(--accent-gold-border);
+  color: var(--accent-gold-text);
+}
+
+:root[data-design='classic'] .pv-icon-btn.pv-btn-danger {
+  background: var(--accent-crimson-bg);
+  border-color: var(--accent-crimson-border);
+  color: var(--accent-crimson);
+}
+
+:root[data-design='classic'] .pv-icon-btn:is(.pv-btn-primary, .pv-btn-emerald, .pv-btn-gold, .pv-btn-danger):hover {
+  filter: brightness(0.97);
+  border-color: currentColor;
+}
+
+/* ---------- form fields ---------- */
+/* Input fill = the page ground, a strong frame; focus = crystal frame with the soft crystal halo of the old look. The extra 1 px crystal
+   ring keeps the focus visible (>= 3:1) where the pale halo alone would not be. */
+:root[data-design='classic'] :is(.pv-input, .pv-select) {
+  background-color: var(--bg-input);
+  border-color: var(--border-strong);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+:root[data-design='classic'] :is(.pv-input:focus, .pv-select:focus-visible) {
+  outline: none;
+  border-color: var(--accent-crystal);
+  box-shadow:
+    0 0 0 1px var(--accent-crystal),
+    0 0 0 4px var(--accent-crystal-bg);
+}
+
+:root[data-design='classic'] .pv-field > label,
+:root[data-design='classic'] .pv-field-label {
+  font-weight: 700;
+}
+
+/* ---------- on/off switch ---------- */
+/* Same box as the light switch (rigid layout), but the round pill with an inner edge and a round, lifted knob */
+:root[data-design='classic'] .pv-switch-track {
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.22);
+}
+
+:root[data-design='classic'] .pv-switch-knob {
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+}
+
+/* ---------- segmented choice ---------- */
+/* One framed group on the card surface; the selected segment is the crystal tint with crystal text (no thin line under it) */
+:root[data-design='classic'] .pv-segmented {
+  border-color: var(--border-subtle);
+  background: var(--bg-surface);
+}
+
+:root[data-design='classic'] .pv-segmented > :is(button, a),
+:root[data-design='classic'] .pv-segmented > .pv-seg-tip > button {
+  color: var(--text-secondary);
+  font-weight: 700;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-segmented > :is(button, a) + :is(button, a),
+:root[data-design='classic'] .pv-segmented > .pv-seg-tip + .pv-seg-tip > button {
+  border-inline-start-color: var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-segmented.pv-segmented--stack > :is(button, a) + :is(button, a),
+:root[data-design='classic'] .pv-segmented.pv-segmented--stack > .pv-seg-tip + .pv-seg-tip > button {
+  border-block-start-color: var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-segmented > :is(button, a):hover,
+:root[data-design='classic'] .pv-segmented > .pv-seg-tip > button:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+:root[data-design='classic']
+  .pv-segmented
+  > :is(button, a):is([aria-pressed='true'], [aria-checked='true'], [aria-current='page'], [aria-current='true'], [aria-selected='true']),
+:root[data-design='classic'] .pv-segmented > .pv-seg-tip > button:is([aria-pressed='true'], [aria-checked='true'], [aria-selected='true']) {
+  background: var(--accent-crystal-bg);
+  color: var(--accent-crystal);
+  font-weight: 700;
+}
+
+:root[data-design='classic']
+  .pv-segmented
+  > :is(button, a):is([aria-pressed='true'], [aria-checked='true'], [aria-current='page'], [aria-current='true'], [aria-selected='true'])::after,
+:root[data-design='classic'] .pv-segmented > .pv-seg-tip > button:is([aria-pressed='true'], [aria-checked='true'], [aria-selected='true'])::after {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-segmented > :is(button, a):focus-visible,
+:root[data-design='classic'] .pv-segmented > .pv-seg-tip > button:focus-visible {
+  outline-color: var(--accent-crystal);
+}
+
+/* ---------- cards, notes, badges ---------- */
+/* A card is framed by a hairline (the transparent 1 px border of the light design gets its colour: no size change) */
+:root[data-design='classic'] :is(.pv-surface, .pv-card) {
+  border-color: var(--border-subtle);
+  box-shadow: var(--shadow-card);
+}
+
+/* A note is a tinted box in its meaning colour (like the old alerts) instead of a thin line */
+:root[data-design='classic'] .pv-note {
+  background: var(--accent-crystal-bg);
+  border-color: var(--accent-crystal-border);
+}
+
+:root[data-design='classic'] .pv-note--ok {
+  background: var(--accent-emerald-bg);
+  border-color: var(--accent-emerald-border);
+}
+
+:root[data-design='classic'] .pv-note--warn {
+  background: var(--accent-gold-bg);
+  border-color: var(--accent-gold-border);
+}
+
+:root[data-design='classic'] .pv-note--danger {
+  background: var(--accent-crimson-bg);
+  border-color: var(--accent-crimson-border);
+}
+
+:root[data-design='classic'] .pv-note::before {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-badge {
+  font-weight: 700;
+}
+
+/* The thin accent lines of the light design become the old 3 px rounded crystal bars */
+:root[data-design='classic'] .pv-accent-left::before {
+  inline-size: 3px;
+  border-radius: 999px;
+}
+
+:root[data-design='classic'] .pv-accent-bottom::after {
+  inset-inline: 0;
+  block-size: 3px;
+  border-radius: 3px 3px 0 0;
+}
+
+/* ---------- tooltip ---------- */
+/* Inverted colours with the old slightly softened values, a lifted shadow and a faint inner edge (inset: no size change). The old arrow
+   is not part of the current tooltip markup. */
+:root[data-design='classic'] .pv-tooltip {
+  --tt-bg: light-dark(#1e293b, #f1f5f9);
+  --tt-fg: light-dark(#f8fafc, #1e293b);
+  --tt-muted: light-dark(#cbd5e1, #475569);
+  box-shadow:
+    0 10px 28px rgba(15, 23, 42, 0.3),
+    inset 0 0 0 1px light-dark(rgba(255, 255, 255, 0.12), rgba(15, 23, 42, 0.14));
+}
+
+:root[data-design='classic'] .pv-tooltip-label {
+  font-weight: 700;
+}
+
+/* ---------- floating notice (components/ui/FloatingNotice.tsx) ---------- */
+/* The heavier floating shadow of the old notice, its tone as a 4 px bar along the whole left edge, the extra-bold title */
+:root[data-design='classic'] .pv-fnotice {
+  --shadow-pop: 0 18px 44px -10px rgba(8, 13, 23, 0.45), 0 4px 14px rgba(8, 13, 23, 0.22);
+}
+
+:root[data-design='classic'] .pv-fnotice__tone {
+  inset-block: 0;
+  inline-size: 4px;
+}
+
+:root[data-design='classic'] .pv-fnotice__title {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-fnotice__details {
+  font-weight: 700;
+}
+
+/* ---------- errors (ErrorBlock, ErrorDetails, CopyErrorButton) ---------- */
+:root[data-design='classic'] .pv-err::before {
+  inset-block: 0.25rem;
+  inline-size: 4px;
+  border-radius: 999px;
+}
+
+:root[data-design='classic'] .pv-err__toggle {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-errdetails__toggle,
+:root[data-design='classic'] [data-copy-error] > button:not(.pv-btn-text) {
+  font-weight: 700;
+}
+
+/* ---------- dialog shell (styles/dialogs.css, .pv-modal of index.css) ---------- */
+/* A blurred, darker backdrop; the card with a hairline frame, the large radius and the real old dialog shadow */
+:root[data-design='classic'] .pv-modal-backdrop {
+  background: var(--overlay);
+  backdrop-filter: blur(6px);
+}
+
+:root[data-design='classic'] .pv-modal {
+  border-color: var(--border-subtle);
+  box-shadow: var(--shadow-pop);
+}
+
+:root[data-design='classic'] .pv-dialog-title {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-dialog-text {
+  color: var(--text-secondary);
+}
+
+:root[data-design='classic'] .pv-dialog-notes > li::before {
+  inline-size: 6px;
+  block-size: 6px;
+  inset-block-start: calc(0.7em - 2px);
+  border-radius: 50%;
+  background: var(--accent-crystal);
+}
+
+/* ---------- overlay scrollbar thumb (components/shell/OverlayScrollbars.tsx) ---------- */
+:root[data-design='classic'] .pv-osb {
+  border-radius: 999px;
+}
+
+/* ---------- focus ring ---------- */
+:root[data-design='classic'] :is(.pv-btn-text, .pv-icon-btn, .pv-select, .pv-err__toggle):focus-visible {
+  outline-color: var(--accent-crystal);
+}

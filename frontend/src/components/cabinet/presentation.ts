@@ -4,6 +4,41 @@ import type { CabinetPresentedDto, ShowcaseGameDto } from '../../api/types'
 // Pure functions - the component only wires them to the server state and to timers.
 
 /**
+ * The identity of a game in the cabinet: the server's `key` ("steam:<appId>" for a Steam game, "game:<guid>" for a game added by hand, which has no AppID);
+ * an older server sends none, and every entry is a Steam game then.
+ */
+export function cabinetKey(game: Pick<ShowcaseGameDto, 'appId' | 'key'>): string {
+  return game.key ?? `steam:${game.appId}`
+}
+
+// A guid compared without dashes and case ("D" and "N" forms are the same game)
+const normalizeGuid = (id: string) => id.replace(/-/g, '').toLowerCase()
+
+/** Whether the stored state says this game was presented: a Steam game by its AppID, a game added by hand by its game id. */
+export function isPresented(game: Pick<ShowcaseGameDto, 'appId' | 'key' | 'gameId'>, state: CabinetPresentedDto): boolean {
+  const key = cabinetKey(game)
+  if (key.startsWith('game:')) {
+    const id = normalizeGuid(game.gameId ?? key.slice('game:'.length))
+    return (state.gameIds ?? []).some((stored) => normalizeGuid(stored) === id)
+  }
+  return state.appIds.includes(game.appId)
+}
+
+/** The keys of games as the two lists the server stores: Steam AppIDs and the ids of games added by hand. */
+export function presentedPayload(keys: readonly string[]): { appIds: number[]; gameIds: string[] } {
+  const appIds: number[] = []
+  const gameIds: string[] = []
+  for (const key of keys) {
+    if (key.startsWith('game:')) gameIds.push(key.slice('game:'.length))
+    else if (key.startsWith('steam:')) {
+      const appId = Number(key.slice('steam:'.length))
+      if (Number.isInteger(appId)) appIds.push(appId)
+    }
+  }
+  return { appIds, gameIds }
+}
+
+/**
  * The games that were never presented, in shelf order (newest platinum first, the order of `games`).
  *
  * The rule for the very first use: without a stored state on the server (`initialized` false) NOTHING is pending - the
@@ -14,8 +49,7 @@ import type { CabinetPresentedDto, ShowcaseGameDto } from '../../api/types'
  */
 export function pendingGames(games: readonly ShowcaseGameDto[], state: CabinetPresentedDto | undefined): ShowcaseGameDto[] {
   if (!state?.initialized) return []
-  const presented = new Set(state.appIds)
-  return games.filter((game) => !presented.has(game.appId))
+  return games.filter((game) => !isPresented(game, state))
 }
 
 /** True when the cabinet has no stored state yet but a state could be read: the current collection becomes the baseline. */

@@ -128,6 +128,49 @@ describe('animationQueue: trophy popups', () => {
   })
 })
 
+describe('animationQueue: the game and source of an event named by the hub', () => {
+  let states: { gameName: string | null | undefined; source: string | null | undefined; achievement: string | null; platinumSource: string | null | undefined }[]
+  let unsubscribe: () => void
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    states = []
+    unsubscribe = animationQueue.subscribe((state) =>
+      states.push({ gameName: state.currentGameName, source: state.currentSource, achievement: state.currentAchievement?.apiName ?? null, platinumSource: state.currentPlatinum?.source })
+    )
+  })
+
+  afterEach(() => {
+    animationQueue.clearQueue()
+    unsubscribe()
+    vi.useRealTimers()
+  })
+
+  const last = () => states[states.length - 1]!
+
+  it('carries the game name and the source of a trophy ticked by hand while its popup shows, and drops them with it', async () => {
+    animationQueue.enqueueAchievement(achievement('A'), { gameName: 'Stellar Blade', source: 'manual' })
+    expect(last()).toMatchObject({ achievement: 'A', gameName: 'Stellar Blade', source: 'manual' })
+
+    await vi.advanceTimersByTimeAsync(ACHIEVEMENT_VISIBLE_MS)
+    expect(last()).toMatchObject({ achievement: null, gameName: null, source: null })
+  })
+
+  it('knows no game and no source for a Steam unlock, and keeps the values of each item in a row', async () => {
+    animationQueue.enqueueAchievement(achievement('A'), { gameName: 'Stellar Blade', source: 'manual' })
+    animationQueue.enqueueAchievement(achievement('B'))
+    await vi.advanceTimersByTimeAsync(ACHIEVEMENT_VISIBLE_MS + 1000)
+    expect(last()).toMatchObject({ achievement: 'B', gameName: null, source: null })
+  })
+
+  it('marks the platinum moment of a game added by hand with its source', async () => {
+    animationQueue.enqueuePlatinum('Stellar Blade', 48, 'achievements', 'manual')
+    await vi.advanceTimersByTimeAsync(500)
+    expect(last().platinumSource).toBe('manual')
+    animationQueue.dismissPlatinum()
+  })
+})
+
 describe('animationQueue: duration of the trophy popups (setting live.popup_seconds)', () => {
   let shown: (string | null)[]
   let visible: number[]

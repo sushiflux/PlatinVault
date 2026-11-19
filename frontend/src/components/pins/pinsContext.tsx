@@ -1,13 +1,13 @@
 import { createContext, useCallback, useContext, useMemo, useRef, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { fetchPins, pinAchievement, removePins, unpinAchievement } from '../../api/client'
-import type { LivePinsDto } from '../../api/types'
+import { fetchPins, fetchScopedPins, pinAchievement, pinScopedAchievement, removePins, removeScopedPins, unpinAchievement, unpinScopedAchievement } from '../../api/client'
+import type { LivePinsDto, TrophyScope } from '../../api/types'
 import { describeError } from '../../utils/apiErrorText'
 import { errorCodeOf } from '../../utils/errorReport'
 
 // "Im Blick": the achievements a player keeps in view while playing. This file is the one place that knows the server state
-// (query key ['live-pins', appId]); the trophy lists, the dock / column and the detail dialog only read it through usePins().
+// (query key ['live-pins', appId], or ['live-pins', 'g:<game id>'] for a game added by hand); the trophy lists, the dock / column and the detail dialog only read it through usePins().
 
 // What the server allows if it does not say (it always sends `max`)
 const FALLBACK_MAX = 10
@@ -21,7 +21,12 @@ export interface PinsFailure {
 }
 
 export interface PinsApi {
+  // The game the pins belong to: a Steam game by its AppID, a game added by hand (appId 0) by its game id
+  scope: TrophyScope
   appId: number
+  gameId: string | null
+  // One string that names the game (for keys: a switch of game starts the cards over)
+  scopeKey: string
   /** The pinned achievements in the order of the cards. */
   names: string[]
   max: number
@@ -39,19 +44,35 @@ export interface PinsApi {
 
 const PinsContext = createContext<PinsApi | null>(null)
 
-export const pinsKey = (appId: number) => ['live-pins', appId] as const
+// A Steam game is named by its AppID (a bare number is fine), a game added by hand by its game id
+type ScopeLike = TrophyScope | number
+const asScope = (scope: ScopeLike): TrophyScope => (typeof scope === 'number' ? { appId: scope } : scope)
 
-const pinsQueryOptions = (appId: number) => ({
-  queryKey: pinsKey(appId),
-  queryFn: () => fetchPins(appId),
+export const pinsKey = (scope: ScopeLike) => {
+  const named = asScope(scope)
+  return ('gameId' in named ? ['live-pins', `g:${named.gameId}`] : ['live-pins', named.appId]) as readonly [string, string | number]
+}
+
+// Steam games keep their original calls, a game added by hand names its game id
+const fetchFor = (scope: TrophyScope) => ('gameId' in scope ? fetchScopedPins(scope) : fetchPins(scope.appId))
+const pinFor = (scope: TrophyScope, apiName: string) => ('gameId' in scope ? pinScopedAchievement(scope, apiName) : pinAchievement(scope.appId, apiName))
+const unpinFor = (scope: TrophyScope, apiName: string) => ('gameId' in scope ? unpinScopedAchievement(scope, apiName) : unpinAchievement(scope.appId, apiName))
+const removeFor = (scope: TrophyScope, apiNames: string[]) => ('gameId' in scope ? removeScopedPins(scope, apiNames) : removePins(scope.appId, apiNames))
+
+const scopeId = (scope: TrophyScope) => ('gameId' in scope ? scope.gameId : String(scope.appId))
+
+const pinsQueryOptions = (scope: TrophyScope) => ({
+  queryKey: pinsKey(scope),
+  queryFn: () => fetchFor(scope),
   // The app turns the refetch on focus off globally; a second window may have changed the pins meanwhile
   refetchOnWindowFocus: 'always' as const,
   staleTime: 10_000,
 })
 
 /** How many achievements of this game are pinned (0 while unknown or without a game): the same query as the provider's, so it costs no request. */
-export function usePinCount(appId: number | null | undefined): number {
-  const { data } = useQuery({ ...pinsQueryOptions(appId ?? 0), enabled: Boolean(appId) })
+export function usePinCount(scope: ScopeLike | null | undefined): number {
+  const named = scope === null || scope === undefined ? { appId: 0 } : asScope(scope)
+  const { data } = useQuery({ ...pinsQueryOptions(named), enabled: scopeId(named) !== '' && scopeId(named) !== '0' })
   return data?.apiNames.length ?? 0
 }
 
@@ -61,22 +82,26 @@ export function usePins(): PinsApi | null {
 }
 
 interface PinsProviderProps {
-  appId: number
+  // One of the two: a Steam game by its AppID, a game added by hand by its game id
+  appId?: number
+  gameId?: string
   /** A failed action: the page shows it in its notice (complete, with the copy button). */
   onError: (failure: PinsFailure) => void
   children: ReactNode
 }
 
-export function PinsProvider({ appId, onError, children }: PinsProviderProps) {
+export function PinsProvider({ appId, gameId, onError, children }: PinsProviderProps) {
   const { t } = useTranslation('live')
   const queryClient = useQueryClient()
-  const key = useMemo(() => pinsKey(appId), [appId])
+  // The scope object stays the same while the ids do (it is the identity of the query and of the callbacks)
+  const scope = useMemo<TrophyScope>(() => (gameId ? { gameId } : { appId: appId ?? 0 }), [appId, gameId])
+  const key = useMemo(() => pinsKey(scope), [scope])
   // Several actions can be on their way at once: only the last answer may replace the state, an earlier one would flicker it back
   const inFlight = useRef(0)
   // Names unpinned by this window (remembered briefly): the answer of the server does not make them "leaving" cards
   const removedHere = useRef(new Map<string, number>())
 
-  const { data, isPending } = useQuery(pinsQueryOptions(appId))
+  const { data, isPending } = useQuery(pinsQueryOptions(scope))
 
   const names = useMemo(() => data?.apiNames ?? [], [data])
   const max = data?.max ?? FALLBACK_MAX
@@ -85,7 +110,7 @@ export function PinsProvider({ appId, onError, children }: PinsProviderProps) {
     async (title: string, optimistic: (previous: LivePinsDto) => LivePinsDto, call: () => Promise<LivePinsDto>) => {
       // Answer at once (before any await): stop a refetch that is on its way - it would overwrite the new state with the old one
       void queryClient.cancelQueries({ queryKey: key })
-      const previous = queryClient.getQueryData<LivePinsDto>(key) ?? { appId, apiNames: [], max: FALLBACK_MAX }
+      const previous = queryClient.getQueryData<LivePinsDto>(key) ?? { appId: 'appId' in scope ? scope.appId : 0, apiNames: [], max: FALLBACK_MAX }
       queryClient.setQueryData<LivePinsDto>(key, optimistic(previous))
       inFlight.current++
       try {
@@ -101,7 +126,7 @@ export function PinsProvider({ appId, onError, children }: PinsProviderProps) {
         onError({ title, message, details, code: errorCodeOf(error) })
       }
     },
-    [queryClient, key, appId, onError, t]
+    [queryClient, key, scope, onError, t]
   )
 
   const toggle = useCallback(
@@ -113,7 +138,7 @@ export function PinsProvider({ appId, onError, children }: PinsProviderProps) {
         void run(
           t('pins.failed.unpin'),
           (previous) => ({ ...previous, apiNames: previous.apiNames.filter((name) => name !== apiName) }),
-          () => unpinAchievement(appId, apiName)
+          () => unpinFor(scope, apiName)
         )
         return
       }
@@ -121,10 +146,10 @@ export function PinsProvider({ appId, onError, children }: PinsProviderProps) {
       void run(
         t('pins.failed.pin'),
         (previous) => ({ ...previous, apiNames: [...previous.apiNames, apiName] }),
-        () => pinAchievement(appId, apiName)
+        () => pinFor(scope, apiName)
       )
     },
-    [queryClient, key, appId, run, t]
+    [queryClient, key, scope, run, t]
   )
 
   const removeMany = useCallback(
@@ -135,15 +160,18 @@ export function PinsProvider({ appId, onError, children }: PinsProviderProps) {
       void run(
         t('pins.failed.remove'),
         (previous) => ({ ...previous, apiNames: previous.apiNames.filter((name) => !gone.has(name)) }),
-        () => removePins(appId, apiNames)
+        () => removeFor(scope, apiNames)
       )
     },
-    [appId, run, t]
+    [scope, run, t]
   )
 
   const api = useMemo<PinsApi>(
     () => ({
-      appId,
+      scope,
+      appId: 'appId' in scope ? scope.appId : 0,
+      gameId: 'gameId' in scope ? scope.gameId : null,
+      scopeKey: scopeId(scope),
       names,
       max,
       full: names.length >= max,
@@ -156,17 +184,20 @@ export function PinsProvider({ appId, onError, children }: PinsProviderProps) {
         return at !== undefined && Date.now() - at < 10_000
       },
     }),
-    [appId, names, max, isPending, toggle, removeMany]
+    [scope, names, max, isPending, toggle, removeMany]
   )
 
   return <PinsContext.Provider value={api}>{children}</PinsContext.Provider>
 }
 
-/** The provider for a game that has a Steam link; a game without one has no achievements to pin, so its page gets no pins at all. */
-export function PinsScope({ appId, onError, children }: { appId: number | null | undefined; onError: (failure: PinsFailure) => void; children: ReactNode }) {
-  if (!appId) return <>{children}</>
+/**
+ * The provider for a game that has trophies to pin: a game with a Steam link (by its AppID) or a game added by hand (by its game id). A game
+ * without either has no achievements to pin, so its page gets no pins at all.
+ */
+export function PinsScope({ appId, gameId, onError, children }: { appId?: number | null; gameId?: string | null; onError: (failure: PinsFailure) => void; children: ReactNode }) {
+  if (!appId && !gameId) return <>{children}</>
   return (
-    <PinsProvider appId={appId} onError={onError}>
+    <PinsProvider appId={appId ?? undefined} gameId={gameId ?? undefined} onError={onError}>
       {children}
     </PinsProvider>
   )

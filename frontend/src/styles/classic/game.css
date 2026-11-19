@@ -1,0 +1,1153 @@
+/* Design "Klassisch" - area file, see index.css for the rules (scope every rule under :root[data-design='classic'], look only). */
+/* Owner: game - game page head (back button, actions), area bar, trophy bar, guide chapters and blocks, walkthrough, Story & Lore,
+   AI progress, failed chapter and "Mein KI-Abo" dialogs, statistics.
+   Sources of the old look: gameframe/guide/walkthrough/stats/ai/lore CSS of the light design for the structure, commit 9fabf8e (index.css,
+   guide.css, walkthrough.css, stats.css and the Tailwind classes of the old TSX) for the look. Where the light structure draws a thin line
+   (pseudo-element), classic draws the old frame/bar instead; padding is only given where a frame needs room for its content. */
+
+/* ============================== game head ============================== */
+
+/* The cover: the old framed thumbnail with a soft lift */
+:root[data-design='classic'] .pv-game-cover {
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 6px 16px -8px rgba(15, 23, 42, 0.45);
+}
+
+:root[data-design='classic'] .pv-game-cover--logo {
+  background: var(--bg-elevated);
+}
+
+/* The way back: a boxed secondary button like the old "back to the overview" button */
+:root[data-design='classic'] .pv-game-back {
+  margin-inline-start: 0;
+}
+
+/* Boxed text buttons: the old .pv-btn look for the frameless text actions of this area (back, chapter actions, failed chapter).
+   The remove action stays frameless and only turns into the crimson box on hover/focus, like the old "Kapitel entfernen". */
+:root[data-design='classic'] :is(.pv-game-back, .pv-chapter-actions, .pv-failed__actions, .pv-ai-run--quiet) .pv-btn-text:not(.pv-btn-text--danger),
+:root[data-design='classic'] .pv-ai-run--quiet button:not(.pv-ai-run__item) {
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-weight: 700;
+  transition: all 0.15s ease;
+}
+
+:root[data-design='classic'] :is(.pv-game-back, .pv-chapter-actions, .pv-failed__actions, .pv-ai-run--quiet) .pv-btn-text:not(.pv-btn-text--danger):hover:not(:disabled),
+:root[data-design='classic'] .pv-ai-run--quiet button:not(.pv-ai-run__item):hover:not(:disabled) {
+  background: var(--bg-elevated);
+  border-color: var(--accent-crystal);
+  color: var(--text-primary);
+}
+
+:root[data-design='classic'] :is(.pv-game-back, .pv-chapter-actions, .pv-failed__actions, .pv-ai-run--quiet) .pv-btn-text:focus-visible,
+:root[data-design='classic'] .pv-ai-run--quiet button:not(.pv-ai-run__item):focus-visible {
+  outline: 2px solid var(--accent-crystal);
+  outline-offset: 2px;
+}
+
+/* "Kapitel neu recherchieren | Gemini v": one connected pair, no hairline divider */
+:root[data-design='classic'] .pv-ai-run--quiet > button:first-child:not(:last-child) {
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+}
+
+:root[data-design='classic'] .pv-ai-run--quiet .pv-ai-run__seg {
+  border-inline-start-width: 0;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+}
+
+:root[data-design='classic'] .pv-ai-run--quiet .pv-ai-run__seg::before {
+  content: none;
+}
+
+/* Boxed buttons need an even gap, and no longer hang out of their row to line up their text */
+:root[data-design='classic'] .pv-failed__actions {
+  gap: 0.5rem;
+  margin-inline: 0;
+}
+
+:root[data-design='classic'] .pv-chapter-actions {
+  gap: 0.5rem;
+  margin-inline-end: 0;
+}
+
+:root[data-design='classic'] .pv-chapter-redo {
+  gap: 0.5rem;
+}
+
+/* The remove action: calm text, the tinted crimson box on hover and focus (old .pv-chapter-remove) */
+:root[data-design='classic'] .pv-btn-text.pv-btn-text--danger {
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-weight: 700;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-btn-text.pv-btn-text--danger:is(:hover, :focus-visible):not(:disabled) {
+  background: var(--accent-crimson-bg);
+  border-color: var(--accent-crimson-border);
+  color: var(--accent-crimson);
+}
+
+/* Play: the old solid emerald button with a dark edge (the label colour keeps >= 4.5:1 on the fill in both themes) */
+:root[data-design='classic'] .pv-game-play .pv-play-button {
+  border-color: color-mix(in srgb, var(--accent-emerald) 70%, #000);
+  background: var(--accent-emerald);
+  color: var(--play-text);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  box-shadow: 0 1px 2px rgba(2, 6, 23, 0.25);
+  transition: filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-game-play .pv-play-button:hover {
+  background: var(--accent-emerald);
+  filter: brightness(1.08);
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--accent-emerald) 45%, transparent);
+}
+
+:root[data-design='classic'] .pv-game-play .pv-play-button:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+}
+
+/* "Game running": tinted, not filled (as before) */
+:root[data-design='classic'] .pv-game-play .pv-play-button--running,
+:root[data-design='classic'] .pv-game-play .pv-play-button--running:hover {
+  background: color-mix(in srgb, var(--accent-emerald) 14%, var(--bg-surface));
+  border-color: var(--accent-emerald);
+  color: var(--text-primary);
+  box-shadow: none;
+  filter: none;
+}
+
+/* Status under the name */
+:root[data-design='classic'] .pv-gstatus-live,
+:root[data-design='classic'] .pv-gstatus-plat {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-page-sub {
+  color: var(--text-secondary);
+}
+
+/* Small counters: the old pill */
+:root[data-design='classic'] .pv-tab-count {
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+/* ============================== trophy part (progress + four tiers) ============================== */
+
+/* The progress bar of the old look: a pill whose empty part still shows the gradient through a veil, the fill is the gradient with a soft
+   top light; 100 % = polished gold. The gradient is spread over the whole track (container units), so a short fill shows the start colours. */
+:root[data-design='classic'] .pv-gbar-track {
+  container-type: inline-size;
+  block-size: 0.625rem;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background:
+    linear-gradient(var(--pv-pbar-veil), var(--pv-pbar-veil)),
+    var(--pv-pbar-grad);
+  transition: box-shadow 0.4s ease, border-color 0.4s ease;
+}
+
+:root[data-design='classic'] .pv-gbar-track > i {
+  position: relative;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--pv-pbar-grad) no-repeat 0 0 / 100cqw 100%;
+  box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.1);
+}
+
+:root[data-design='classic'] .pv-gbar-track > i::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 45% 0;
+  background: linear-gradient(rgba(255, 255, 255, var(--pv-gloss)), rgba(255, 255, 255, 0));
+}
+
+:root[data-design='classic'] .pv-gbar-track[data-complete] {
+  border-color: var(--accent-gold-border);
+  box-shadow: 0 0 10px -2px rgba(217, 140, 6, 0.5);
+}
+
+:root[data-design='classic'] .pv-gbar-track[data-complete] > i {
+  --pv-gloss: 0.5;
+  background: linear-gradient(90deg, #f5be3b 0%, #ffd766 24%, #f2a91e 58%, #ffd24f 82%, #f7b52c 100%);
+}
+
+:root[data-design='classic'][data-theme='dark'] .pv-gbar-track[data-complete] {
+  box-shadow: 0 0 10px -2px rgba(252, 200, 60, 0.45);
+}
+
+:root[data-design='classic'] .pv-gbar-sum {
+  font-weight: 700;
+}
+
+/* The four tiers: the old tinted pills (tier tint, tier edge). The separating hairlines of the light design make room for an even gap. */
+:root[data-design='classic'] .pv-tiers {
+  column-gap: 0.625rem;
+}
+
+:root[data-design='classic'] .pv-fig-wrap,
+:root[data-design='classic'] .pv-fig-wrap:first-child,
+:root[data-design='classic'] .pv-fig-wrap:nth-child(odd) {
+  padding: 0;
+  border-inline-start: 0;
+}
+
+:root[data-design='classic'] .pv-tiers .pv-fig {
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+}
+
+:root[data-design='classic'] .pv-tiers .pv-fig[data-tier='Platinum'] {
+  border-color: var(--accent-crystal-border);
+  background: var(--tier-platinum-bg);
+}
+
+:root[data-design='classic'] .pv-tiers .pv-fig[data-tier='Gold'] {
+  border-color: var(--accent-gold-border);
+  background: var(--tier-gold-bg);
+}
+
+:root[data-design='classic'] .pv-tiers .pv-fig[data-tier='Silver'] {
+  background: var(--tier-silver-bg);
+}
+
+:root[data-design='classic'] .pv-tiers .pv-fig[data-tier='Bronze'] {
+  border-color: var(--accent-gold-border);
+  background: var(--tier-bronze-bg);
+}
+
+:root[data-design='classic'] .pv-tiers .pv-fig-value {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-tiers .pv-fig-name {
+  font-weight: 700;
+}
+
+/* ============================== chapter head and the "hero card" of the first chapter ============================== */
+
+/* The first chapter carries the guide's facts: the old hero card (two soft radial tints on the card surface) with the facts as pills.
+   Chapters without facts keep the plain head. */
+:root[data-design='classic'] .pv-chapter-intro:has(.pv-chapter-facts) {
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at top right, var(--accent-crystal-bg), transparent 55%),
+    radial-gradient(circle at bottom left, var(--accent-emerald-bg), transparent 60%),
+    var(--bg-surface);
+}
+
+:root[data-design='classic'] .pv-chapter-intro:has(.pv-chapter-facts) .pv-eyebrow {
+  color: var(--accent-emerald);
+}
+
+:root[data-design='classic'] .pv-chapter-facts {
+  gap: 0.5rem 0.625rem;
+  margin-block-start: 0.75rem;
+}
+
+:root[data-design='classic'] .pv-chapter-facts li {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-chapter-facts li.pv-chapter-fact {
+  padding: 0.375rem 0.8rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  font-size: 0.875rem;
+}
+
+:root[data-design='classic'] .pv-chapter-facts li.pv-chapter-fact--safe {
+  border-color: var(--accent-emerald-border);
+  background: var(--accent-emerald-bg);
+  color: var(--accent-emerald);
+}
+
+:root[data-design='classic'] .pv-chapter-facts li.pv-chapter-fact--crystal {
+  border-color: var(--accent-crystal-border);
+  background: var(--accent-crystal-bg);
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-chapter-facts li.pv-chapter-fact--gold {
+  border-color: var(--accent-gold-border);
+  background: var(--accent-gold-bg);
+  color: var(--accent-gold-text);
+}
+
+:root[data-design='classic'] .pv-chapter-facts li.pv-chapter-fact svg {
+  color: currentColor;
+}
+
+/* ============================== steps, headings, hints ============================== */
+
+/* Numbered steps: the number sits in a small crystal box again */
+:root[data-design='classic'] .pv-steps > li {
+  color: var(--text-secondary);
+}
+
+:root[data-design='classic'] .pv-steps > li::before {
+  display: grid;
+  place-items: center;
+  block-size: 1.75rem;
+  border: 1px solid var(--accent-crystal-border);
+  border-radius: var(--radius-sm);
+  background: var(--accent-crystal-bg);
+  color: var(--accent-crystal);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+:root[data-design='classic'] .pv-steps-title {
+  font-weight: 800;
+}
+
+/* Sub-heading of a walkthrough without levels: the 4 px crystal bar on the left */
+:root[data-design='classic'] .pv-wt-heading {
+  padding: 0.3rem 0 0.3rem 1rem;
+  border-inline-start: 4px solid var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-wt-heading h3 {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-wt-heading p {
+  color: var(--text-muted);
+}
+
+/* Hint blocks (typed hints and plain alerts) are tinted boxes again. --pv-hint-bg / --pv-hint-bd follow the variant like the line colour did;
+   the label keeps the meaning colour (and the kind's name), the text the secondary colour as before. */
+:root[data-design='classic'] .pv-hint {
+  --pv-hint-bg: var(--accent-crystal-bg);
+  --pv-hint-bd: var(--accent-crystal-border);
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--pv-hint-bd);
+  border-radius: var(--radius-md);
+  background: var(--pv-hint-bg);
+}
+
+:root[data-design='classic'] .pv-hint--gold,
+:root[data-design='classic'] .pv-alert-gold.pv-hint {
+  --pv-hint-bg: var(--accent-gold-bg);
+  --pv-hint-bd: var(--accent-gold-border);
+}
+
+:root[data-design='classic'] .pv-hint--danger {
+  --pv-hint-bg: var(--accent-crimson-bg);
+  --pv-hint-bd: var(--accent-crimson-border);
+}
+
+:root[data-design='classic'] .pv-hint--emerald {
+  --pv-hint-bg: var(--accent-emerald-bg);
+  --pv-hint-bd: var(--accent-emerald-border);
+}
+
+:root[data-design='classic'] .pv-hint--purple {
+  --pv-hint-bg: var(--accent-purple-bg);
+  --pv-hint-bd: var(--accent-purple-border);
+}
+
+:root[data-design='classic'] .pv-hint--crystal {
+  --pv-hint-bg: var(--accent-crystal-bg);
+  --pv-hint-bd: var(--accent-crystal-border);
+}
+
+:root[data-design='classic'] .pv-hint::before {
+  content: none;
+}
+
+/* The point of no return: the heavier crimson frame */
+:root[data-design='classic'] .pv-hint.pv-hint-point_of_no_return {
+  border-width: 2px;
+  border-color: var(--accent-crimson);
+}
+
+:root[data-design='classic'] .pv-hint-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* A plain alert (no kind) uses the label for its title: the bold title of the old alert, not the small-caps kind name */
+:root[data-design='classic'] .pv-hint:not([data-hint-kind]) > .pv-hint-label {
+  font-size: 1rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-primary);
+}
+
+:root[data-design='classic'] .pv-hint:not([data-hint-kind]) > .pv-hint-label .pv-hint-icon {
+  color: var(--pv-hint-ink);
+}
+
+:root[data-design='classic'] .pv-hint-title {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-hint-text {
+  color: var(--text-secondary);
+}
+
+:root[data-design='classic'] .pv-hint-todo {
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--accent-crimson-border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg-surface) 70%, transparent);
+}
+
+:root[data-design='classic'] .pv-hint-todo-label {
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--accent-crimson);
+}
+
+:root[data-design='classic'] .pv-hint-todo li > svg {
+  color: var(--accent-crimson);
+}
+
+/* ============================== puzzle ============================== */
+
+/* A card with the 4 px purple bar (emerald once done) instead of the thin line */
+:root[data-design='classic'] .pv-puzzle {
+  border: 1px solid var(--border-subtle);
+  border-inline-start: 4px solid var(--accent-purple);
+}
+
+:root[data-design='classic'] .pv-puzzle.pv-puzzle-done {
+  border-inline-start-color: var(--accent-emerald);
+}
+
+:root[data-design='classic'] .pv-puzzle::before {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-puzzle-kicker {
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+:root[data-design='classic'] .pv-puzzle-title {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-puzzle-missable {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--accent-crimson-border);
+  border-radius: var(--radius-sm);
+  background: var(--accent-crimson-bg);
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-puzzle-facts dt {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+:root[data-design='classic'] .pv-puzzle-done-label {
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+:root[data-design='classic'] .pv-puzzle-btn:focus-visible {
+  outline-color: var(--accent-crystal);
+}
+
+/* The revealed hints (gold) and solution (crystal) are tinted panels */
+:root[data-design='classic'] .pv-puzzle-panel,
+:root[data-design='classic'] .pv-puzzle-undocumented {
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+:root[data-design='classic'] .pv-puzzle-panel::before,
+:root[data-design='classic'] .pv-puzzle-undocumented::before {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-puzzle-panel-hints {
+  border-color: var(--accent-gold-border);
+  background: var(--accent-gold-bg);
+}
+
+:root[data-design='classic'] .pv-puzzle-panel-solution {
+  border-color: var(--accent-crystal-border);
+  background: var(--accent-crystal-bg);
+}
+
+:root[data-design='classic'] .pv-puzzle-panel-title {
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-puzzle-hint-no {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent-gold-text);
+}
+
+:root[data-design='classic'] .pv-puzzle-undocumented {
+  border-style: dashed;
+  border-color: var(--border-strong);
+  background: var(--bg-elevated);
+}
+
+:root[data-design='classic'] .pv-puzzle-undocumented strong {
+  font-weight: 700;
+}
+
+/* ============================== checklist tables ============================== */
+
+:root[data-design='classic'] .pv-table-title {
+  font-weight: 800;
+}
+
+/* Search and filters sit in a card again */
+:root[data-design='classic'] .pv-table-filters {
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+}
+
+:root[data-design='classic'] .vault-table-wrapper {
+  border: 1px solid var(--border-subtle);
+}
+
+:root[data-design='classic'] .vault-table th,
+:root[data-design='classic'] .vault-table td {
+  color: var(--text-secondary);
+}
+
+:root[data-design='classic'] .vault-table thead th {
+  border-block-end: 2px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+:root[data-design='classic'] .vault-table tbody th {
+  border-inline-end: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .vault-table tbody tr:hover > * {
+  background: var(--bg-elevated);
+}
+
+/* A done row: the emerald tint, the name struck through */
+:root[data-design='classic'] .vault-table tbody tr.row-checked > * {
+  background: var(--accent-emerald-bg);
+}
+
+:root[data-design='classic'] .vault-table tbody tr.row-checked > :not(.pv-check-cell) {
+  color: var(--text-secondary);
+}
+
+@container (width < 40.625rem) {
+  :root[data-design='classic'] .vault-table tr,
+  :root[data-design='classic'] .vault-table tbody tr:last-child {
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+  }
+
+  :root[data-design='classic'] .vault-table tbody th {
+    border-inline-end: 0;
+    background: var(--bg-elevated);
+  }
+
+  :root[data-design='classic'] .vault-table tbody tr.row-checked > * {
+    background: transparent;
+  }
+
+  :root[data-design='classic'] .vault-table tbody tr.row-checked {
+    background: var(--accent-emerald-bg);
+  }
+
+  :root[data-design='classic'] .vault-table tbody tr:hover > * {
+    background: transparent;
+  }
+
+  :root[data-design='classic'] .vault-table td::before {
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+}
+
+/* The spoiler row and the "chapter facts" items are cards; the card hairline comes from base.css */
+:root[data-design='classic'] .pv-spoiler:focus-visible {
+  outline-color: var(--accent-crystal);
+}
+
+/* ============================== failed chapter, retry-all note ============================== */
+
+:root[data-design='classic'] .pv-failed__title {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-failed__message {
+  font-weight: 600;
+}
+
+:root[data-design='classic'] .pv-failed__hint {
+  color: var(--text-secondary);
+}
+
+/* ============================== walkthrough: achievements, boss card, overview, sources ============================== */
+
+:root[data-design='classic'] .pv-ach-list .pv-ach-ref {
+  border: 1px solid var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-ach-title {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-ach-done {
+  font-weight: 800;
+}
+
+/* Boss card: the crimson bar across the top edge, the elevated head band with the boxed glyph, boxed HP values */
+:root[data-design='classic'] .pv-card.pv-boss,
+:root[data-design='classic'] .pv-card.pv-overview {
+  overflow: hidden;
+}
+
+:root[data-design='classic'] .pv-boss::before {
+  inset-block: 0 auto;
+  inset-inline: 0;
+  inline-size: auto;
+  block-size: 3px;
+}
+
+:root[data-design='classic'] .pv-overview::before {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-boss-head {
+  padding-block: 0.9rem;
+  border-block-end: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+}
+
+/* The body starts below the head band with the old breathing room */
+:root[data-design='classic'] .pv-boss-body {
+  padding-block-start: 1.1rem;
+}
+
+:root[data-design='classic'] .pv-boss-glyph {
+  display: grid;
+  place-items: center;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  border: 1px solid var(--accent-crimson-border);
+  border-radius: var(--radius-md);
+  background: var(--accent-crimson-bg);
+}
+
+:root[data-design='classic'] .pv-boss-kicker,
+:root[data-design='classic'] .pv-boss-meta-key,
+:root[data-design='classic'] .pv-boss-label {
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+:root[data-design='classic'] .pv-boss-label {
+  color: var(--text-secondary);
+}
+
+:root[data-design='classic'] .pv-boss-name,
+:root[data-design='classic'] .pv-boss-hp-value {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-boss-meta-item strong,
+:root[data-design='classic'] .pv-boss-attacks strong {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-boss-missable {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--accent-crimson);
+  border-radius: var(--radius-sm);
+  background: var(--accent-crimson-bg);
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-boss-hp-item {
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+}
+
+:root[data-design='classic'] .pv-boss-hp-for {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-boss-hp-missing {
+  padding: 0.55rem 0.8rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-boss-chip {
+  border: 1px solid currentColor;
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-boss-chip-reward {
+  border-color: var(--border-strong);
+}
+
+:root[data-design='classic'] .pv-boss-attacks li::before {
+  border-radius: 50%;
+}
+
+:root[data-design='classic'] .pv-boss-tactics > li {
+  color: var(--text-primary);
+}
+
+/* "At a glance": boxed glyph and boxed count tiles */
+:root[data-design='classic'] .pv-overview-glyph {
+  display: grid;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border: 1px solid var(--accent-crystal-border);
+  border-radius: var(--radius-md);
+  background: var(--accent-crystal-bg);
+}
+
+:root[data-design='classic'] .pv-overview-title {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-overview-tile {
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+}
+
+:root[data-design='classic'] .pv-overview-tile dt {
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+:root[data-design='classic'] .pv-overview-tile dd {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-overview-ponr {
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--accent-crimson);
+  border-radius: var(--radius-md);
+  background: var(--accent-crimson-bg);
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-sources-title {
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+:root[data-design='classic'] .pv-sources-link {
+  font-weight: 700;
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-sources-link:focus-visible {
+  outline-color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-sources-plain {
+  font-weight: 700;
+}
+
+/* ============================== walkthrough: parts, areas, table of contents ============================== */
+
+/* A part: the old banner card (crystal wash, crystal edge) with the big number set off by a rule */
+:root[data-design='classic'] .pv-part-head {
+  align-items: center;
+  gap: 0 1.1rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--accent-crystal-border);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(100deg, var(--accent-crystal-bg), transparent 75%),
+    var(--bg-surface);
+}
+
+:root[data-design='classic'] .pv-part-head::after {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-part-no {
+  min-inline-size: 3rem;
+  padding-inline-end: 1.1rem;
+  border-inline-end: 1px solid var(--accent-crystal-border);
+  font-size: 2.1rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-part-kicker {
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-part-title {
+  font-weight: 800;
+}
+
+/* An area: a 2 px rule on the side, the number in a small crystal box */
+:root[data-design='classic'] .pv-area {
+  border-inline-start-width: 2px;
+}
+
+:root[data-design='classic'] .pv-area-head {
+  padding-block-end: 0.6rem;
+  border-block-end: 1px solid var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-area-no {
+  display: inline-grid;
+  place-items: center;
+  min-inline-size: 2.4rem;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--accent-crystal-border);
+  border-radius: var(--radius-sm);
+  background: var(--accent-crystal-bg);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-area-title {
+  font-weight: 800;
+}
+
+/* Table of contents: the old framed card with the crystal-tinted current entry */
+:root[data-design='classic'] .pv-toc {
+  padding: 0.5rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+}
+
+:root[data-design='classic'] .pv-toc-title {
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+:root[data-design='classic'] .pv-toc-toggle {
+  color: var(--text-primary);
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-toc-toggle:focus-visible {
+  outline-color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-toc-toggle-count {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-toc-link {
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-weight: 400;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-toc-link:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+:root[data-design='classic'] .pv-toc-link:focus-visible {
+  outline-color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-toc-l1 > .pv-toc-link {
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+:root[data-design='classic'] .pv-toc-link[aria-current='location'],
+:root[data-design='classic'] .pv-toc-l1 > .pv-toc-link[aria-current='location'],
+:root[data-design='classic'] .pv-toc-l2 > .pv-toc-link[aria-current='location'] {
+  background: var(--accent-crystal-bg);
+  color: var(--accent-crystal);
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-toc-link[aria-current='location']::before {
+  inset-block: 0;
+  background: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-toc-no {
+  font-weight: 800;
+}
+
+/* ============================== side quests, item links ============================== */
+
+/* The small quiet box with the grey bar on the left */
+:root[data-design='classic'] .pv-quests {
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--border-subtle);
+  border-inline-start: 3px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+}
+
+:root[data-design='classic'] .pv-quests::before {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-quests-title {
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+:root[data-design='classic'] .pv-quests-all,
+:root[data-design='classic'] .pv-quest-title {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-quest-meta > .pv-quest-missable {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-rowlinks {
+  font-weight: 600;
+}
+
+:root[data-design='classic'] :is(.pv-quests-all, .pv-quest-link, .pv-rowlink):focus-visible {
+  outline-color: var(--accent-crystal);
+}
+
+/* ============================== AI parts ============================== */
+
+/* The chooser dialog: the chosen choice is the emerald tint, the radio dot emerald (as the old separate cards) */
+:root[data-design='classic'] .pv-ai-choice {
+  border-radius: var(--radius-xl);
+}
+
+:root[data-design='classic'] .pv-ai-choice__row {
+  background: var(--bg-elevated);
+}
+
+:root[data-design='classic'] .pv-ai-choice__row + .pv-ai-choice__row {
+  border-block-start-color: var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-ai-choice__row:hover {
+  background: var(--control-bg-hover);
+}
+
+:root[data-design='classic'] .pv-ai-choice__row[data-selected] {
+  background: var(--accent-emerald-bg);
+  color: var(--text-primary);
+}
+
+:root[data-design='classic'] .pv-ai-choice__row[data-selected]::before {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-ai-choice__row:focus-within {
+  outline-color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-ai-choice__dot {
+  border-color: var(--text-muted);
+}
+
+:root[data-design='classic'] .pv-ai-choice__row[data-selected] .pv-ai-choice__dot {
+  border-color: var(--accent-emerald);
+}
+
+:root[data-design='classic'] .pv-ai-choice__row[data-selected] .pv-ai-choice__dot::after {
+  background: var(--accent-emerald);
+}
+
+/* The menu rows of the one-off choice */
+:root[data-design='classic'] .pv-ai-run__item:focus-visible {
+  outline-color: var(--accent-crystal);
+}
+
+/* One topic of the plan: elevated card, the chosen one the emerald tint */
+:root[data-design='classic'] .pv-topic {
+  border-radius: var(--radius-xl);
+  background: var(--bg-elevated);
+}
+
+:root[data-design='classic'] .pv-topic:hover {
+  background: var(--control-bg-hover);
+}
+
+:root[data-design='classic'] .pv-topic[data-selected] {
+  border-color: var(--accent-emerald-border);
+  background: var(--accent-emerald-bg);
+}
+
+:root[data-design='classic'] .pv-topic[data-selected]::before {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-topic:focus-within {
+  outline-color: var(--accent-crystal);
+}
+
+/* ============================== Story & Lore ============================== */
+
+/* The spoiler gate and the story blocks are cards again; the gate carries its tone as a tinted frame instead of the thin line */
+:root[data-design='classic'] .pv-lore-gate {
+  padding: 1.5rem 1.5rem 1.5rem 1.75rem;
+  border: 1px solid var(--accent-gold-border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+}
+
+:root[data-design='classic'] .pv-lore-gate[data-tone='none'] {
+  border-color: var(--accent-crystal-border);
+}
+
+:root[data-design='classic'] .pv-lore-gate::before {
+  inset-block: 0;
+  inline-size: 4px;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+}
+
+:root[data-design='classic'] .pv-lore-gate h2,
+:root[data-design='classic'] .pv-lore__story h2 {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-lore__story {
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+}
+
+:root[data-design='classic'] .pv-lore__story p {
+  color: var(--text-secondary);
+}
+
+/* ============================== statistics ============================== */
+
+/* The chart palette of the old look: blue and orange for the two categorical slots (validated for contrast and colour-blindness there) */
+:root[data-design='classic'] .pv-stats,
+:root[data-design='classic'] .pv-viz-tip {
+  --viz-1: light-dark(#2a78d6, #3987e5);
+  --viz-2: light-dark(#eb6834, #d95926);
+}
+
+:root[data-design='classic'] .pv-viz-tip {
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.3);
+}
+
+:root[data-design='classic'] .pv-viz-title,
+:root[data-design='classic'] .pv-viz-tip-title,
+:root[data-design='classic'] .pv-viz-tip-row b,
+:root[data-design='classic'] .pv-viz-sub strong,
+:root[data-design='classic'] .pv-viz-section,
+:root[data-design='classic'] .pv-viz-table thead th {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-viz-title svg {
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-viz-axis-text {
+  fill: var(--viz-ink-3);
+}
+
+:root[data-design='classic'] .pv-viz-value-text,
+:root[data-design='classic'] .pv-viz-table tbody th {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-viz-key {
+  border-radius: 2px;
+}
+
+:root[data-design='classic'] .pv-viz-bar {
+  border-radius: 0 4px 4px 0;
+}
+
+/* The key figures are framed tiles with the old soft crystal wash again (no hairline dividers) */
+:root[data-design='classic'] .pv-figs {
+  gap: 0.75rem;
+}
+
+:root[data-design='classic'] .pv-figs .pv-fig,
+:root[data-design='classic'] .pv-figs .pv-fig:first-child {
+  block-size: 100%;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at top right, var(--accent-crystal-bg), transparent 58%),
+    var(--bg-surface);
+}
+
+:root[data-design='classic'] .pv-figs > :nth-child(even) .pv-fig {
+  background:
+    radial-gradient(circle at top right, var(--accent-gold-bg), transparent 58%),
+    var(--bg-surface);
+}
+
+:root[data-design='classic'] .pv-figs .pv-fig-value {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-figs .pv-fig-value small {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-figs .pv-fig-label {
+  font-weight: 700;
+}
+
+/* The one total figure of a game added by hand without grades: the neutral pill of the tier figures, its cup in the crystal accent */
+:root[data-design='classic'] .pv-fig-total-icon {
+  color: var(--accent-crystal);
+}

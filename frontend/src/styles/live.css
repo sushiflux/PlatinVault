@@ -74,6 +74,8 @@
 .pv-lf {
   container: pv-lf / inline-size;
   display: grid;
+  /* One column that may be narrower than its widest row (auto would grow to the min-content of the tier bar and push the page sideways) */
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
 }
 
@@ -407,4 +409,300 @@
   font-size: 0.9375rem;
   background: transparent;
   border: 0;
+}
+
+/* ---------- trophies of a game added by hand: the glyph that stands in for a missing icon, and the check ---------- */
+
+/* The picture of a trophy that has no icon file (components/trophies/TrophyGlyph.tsx): a calm panel with the tier cup in the middle. Size and
+   frame follow the icon it replaces (the caller's size, or the class that sizes it, e.g. .pv-popup-icon). */
+.pv-trophy-glyph {
+  display: grid;
+  place-items: center;
+  flex: none;
+  box-sizing: border-box;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.pv-trophy-glyph > .pv-tier-icon {
+  inline-size: 56%;
+  block-size: 56%;
+}
+
+.pv-trophy-glyph > .pv-tier-icon > svg:first-child {
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+/* On a surface that is dark in both themes (the full-screen popup) */
+.pv-trophy-glyph[data-surface='dark'] {
+  background: rgb(15 23 42 / 0.6);
+  border-color: rgb(255 255 255 / 0.18);
+}
+
+.pv-trophy-glyph[data-locked] {
+  filter: grayscale(85%) opacity(75%);
+}
+
+/* "Groß": fills the hero column like the picture does (the hero frame is the border, the glyph needs none of its own) */
+.pv-trophy-glyph--fill {
+  inline-size: 100%;
+  border: 0;
+  border-radius: 0;
+}
+
+/* The check of a manual trophy (components/trophies/TrophyCheck.tsx): the box is 1.5 rem, the target 3 rem (48 px). The state is the
+   fill AND the check mark (never colour alone). Check on emerald: white on #047857 5.5:1 (light), #052e1f on #6ee7b7 9.8:1 (dark); the
+   open box edge --border-strong is >= 3:1 on the surface in both themes. */
+.pv-tcheck {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  inline-size: 3rem;
+  block-size: 3rem;
+  padding: 0;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.pv-tcheck-box {
+  display: grid;
+  place-items: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  box-sizing: border-box;
+  color: transparent;
+  background: var(--bg-surface);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.pv-tcheck:hover .pv-tcheck-box {
+  border-color: var(--accent-emerald);
+}
+
+.pv-tcheck[data-busy] .pv-tcheck-box {
+  color: var(--text-muted);
+}
+
+.pv-tcheck[aria-pressed='true'] .pv-tcheck-box {
+  color: light-dark(#ffffff, #052e1f);
+  background: var(--accent-emerald);
+  border-color: var(--accent-emerald);
+}
+
+.pv-tcheck:focus-visible {
+  outline: none;
+}
+
+.pv-tcheck:focus-visible .pv-tcheck-box {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.pv-tcheck[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+
+.pv-tcheck[aria-disabled='true'] .pv-tcheck-box {
+  opacity: 0.6;
+}
+
+/* A locked check does not invite a click: no hover colour */
+.pv-tcheck[aria-disabled='true']:hover .pv-tcheck-box {
+  border-color: var(--border-strong);
+}
+
+.pv-tcheck[aria-disabled='true'][aria-pressed='true']:hover .pv-tcheck-box {
+  border-color: var(--accent-emerald);
+}
+
+.pv-tcheck[data-busy] {
+  cursor: progress;
+}
+
+/* In the list the check is a column of its own in front of the row button */
+.pv-arow-check {
+  align-self: center;
+  padding-inline-start: 0.25rem;
+}
+
+.pv-arow-main--check {
+  padding-inline-start: 0.25rem;
+}
+
+/* ---------- the trophy tab of a game added by hand (components/trophies/ManualTrophyArea.tsx) ---------- */
+
+/* No list yet / the research runs: one calm card at the top (nothing below it moves while the AI works - the progress lines reserve their room) */
+.pv-tstate {
+  display: grid;
+  justify-items: start;
+  gap: 1rem;
+  max-inline-size: 46rem;
+  padding: 1.5rem;
+}
+
+/* Heading and body each lay both of their texts (the empty one and the running one) in one cell: the card has the same height in both states */
+.pv-tstate-swap {
+  min-inline-size: 0;
+}
+
+.pv-tstate-body {
+  inline-size: 100%;
+  max-inline-size: 38rem;
+}
+
+.pv-tstate h2,
+.pv-tstate-h {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.pv-tstate p,
+.pv-tstate-p {
+  max-inline-size: 38rem;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.pv-tstate .pv-tstate-small {
+  font-size: 0.875rem;
+}
+
+.pv-tstate-ic {
+  display: grid;
+  place-items: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  color: var(--link);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+}
+
+.pv-tstate-progress {
+  inline-size: 100%;
+  max-inline-size: 38rem;
+}
+
+/* The recommended order: list first, guide second */
+.pv-tsteps {
+  display: grid;
+  inline-size: 100%;
+  max-inline-size: 38rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-block-start: 1px solid var(--border-subtle);
+}
+
+.pv-tsteps > li {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  min-block-size: 3.5rem;
+  padding-block: 0.5rem;
+  border-block-end: 1px solid var(--border-subtle);
+}
+
+.pv-tsteps-n {
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.pv-tsteps > li[data-now] .pv-tsteps-n {
+  color: var(--link);
+  background: var(--bg-elevated);
+  border-color: var(--link);
+}
+
+.pv-tsteps-t {
+  display: grid;
+  flex: 1;
+  min-inline-size: 0;
+  gap: 0.0625rem;
+  font-size: 0.9375rem;
+}
+
+.pv-tsteps-t > b {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.pv-tsteps-t > span {
+  color: var(--text-muted);
+}
+
+/* Where the researched list comes from: date, sources, the hint that it may contain mistakes - and the quiet "research again" at its end */
+.pv-tsrc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  padding-block: 0.25rem;
+  padding-inline-start: 1.25rem;
+  --pv-accent: var(--accent-crystal);
+}
+
+.pv-tsrc-t {
+  flex: 1 1 22rem;
+  min-inline-size: 0;
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  overflow-wrap: anywhere;
+}
+
+.pv-tsrc-t small {
+  display: block;
+  margin-block-start: 0.125rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.pv-tsrc-t a {
+  color: var(--link);
+  font-weight: 500;
+}
+
+.pv-tsrc-t a:hover {
+  text-decoration: underline;
+}
+
+.pv-tsrc-t a:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* A phone: the number and the text first, the badge or button of a step on its own line below (nothing is cut) */
+@media (max-width: 479px) {
+  .pv-tsteps > li {
+    flex-wrap: wrap;
+  }
+
+  .pv-tsteps-t {
+    flex-basis: calc(100% - 3rem);
+  }
+
+  .pv-tsteps > li > :last-child:not(.pv-tsteps-t) {
+    margin-inline-start: 2.625rem;
+  }
 }

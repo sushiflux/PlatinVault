@@ -15,7 +15,7 @@ public static class StatisticsEndpoints
 {
     public static void MapStatistics(this RouteGroupBuilder api)
     {
-        // The series of a game: 204 = no IGDB credentials, no Steam AppID, game unknown to IGDB or in no series; 404 = unknown slug;
+        // The series of a game (Steam AppID, or the IGDB id of a game added by hand): 204 = no IGDB credentials, neither of them, game unknown to IGDB or in no series; 404 = unknown slug;
         // 502 = IGDB cannot be reached (detail in the language of the request)
         api.MapGet("/games/{slug}/series", async (
             string slug,
@@ -30,13 +30,13 @@ public static class StatisticsEndpoints
         {
             var game = await db.Games.AsNoTracking()
                 .Where(g => g.Slug == slug)
-                .Select(g => new { g.SteamAppId })
+                .Select(g => new { g.SteamAppId, g.IgdbId })
                 .FirstOrDefaultAsync(ct);
             if (game is null)
             {
                 return Problems.Create(StatusCodes.Status404NotFound, ServerTexts.GameNotFoundTitle, ServerTexts.GameNotFound(slug));
             }
-            if (game.SteamAppId is not > 0 || !igdb.IsConfigured)
+            if ((game.SteamAppId is not > 0 && game.IgdbId is not > 0) || !igdb.IsConfigured)
             {
                 return Results.NoContent();
             }
@@ -45,8 +45,16 @@ public static class StatisticsEndpoints
             int? currentIgdbId;
             try
             {
-                series = await igdb.GetSeriesAsync(game.SteamAppId.Value, ct);
-                currentIgdbId = await igdb.GetIgdbIdAsync(game.SteamAppId.Value, ct);
+                if (game.SteamAppId is > 0)
+                {
+                    series = await igdb.GetSeriesAsync(game.SteamAppId.Value, ct);
+                    currentIgdbId = await igdb.GetIgdbIdAsync(game.SteamAppId.Value, ct);
+                }
+                else
+                {
+                    currentIgdbId = game.IgdbId;
+                    series = await igdb.GetSeriesByIgdbIdAsync(game.IgdbId!.Value, ct);
+                }
             }
             catch (TwitchApiException ex)
             {
@@ -63,6 +71,12 @@ public static class StatisticsEndpoints
                 .Select(g => new { AppId = g.SteamAppId!.Value, g.Slug, g.TrophiesUnlocked, g.TrophiesTotal })
                 .ToListAsync(ct);
             var vaultByApp = vault.GroupBy(g => g.AppId).ToDictionary(g => g.Key, g => g.First());
+            // A game added by hand is recognised in the series by its IGDB id (several platforms of one game: the first)
+            var manualByIgdb = (await db.Games.AsNoTracking()
+                    .Where(g => g.SteamAppId == null && g.IgdbId != null)
+                    .Select(g => new { IgdbId = g.IgdbId!.Value, g.Slug, g.TrophiesUnlocked, g.TrophiesTotal })
+                    .ToListAsync(ct))
+                .GroupBy(g => g.IgdbId).ToDictionary(g => g.Key, g => g.First());
 
             // Owned = in the Steam library; needs the Steam key (without it nothing is claimed to be owned)
             var owned = new HashSet<int>();
@@ -86,8 +100,11 @@ public static class StatisticsEndpoints
             var games = series.Games.Select(g =>
             {
                 var appId = g.SteamAppId;
-                var inVault = appId is { } a && vaultByApp.ContainsKey(a);
-                var vaultGame = inVault ? vaultByApp[appId!.Value] : null;
+                var manualGame = manualByIgdb.GetValueOrDefault(g.IgdbId);
+                var inVault = appId is { } a && vaultByApp.ContainsKey(a) || manualGame is not null;
+                var vaultGame = appId is { } known && vaultByApp.TryGetValue(known, out var byApp)
+                    ? new { byApp.Slug, byApp.TrophiesUnlocked, byApp.TrophiesTotal }
+                    : manualGame is null ? null : new { manualGame.Slug, manualGame.TrophiesUnlocked, manualGame.TrophiesTotal };
 
                 int? unlocked = null;
                 int? total = null;

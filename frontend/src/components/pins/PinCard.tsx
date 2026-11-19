@@ -4,6 +4,7 @@ import { IconCheck, IconX } from '@tabler/icons-react'
 import type { LiveAchievementItemDto } from '../../api/types'
 import { useFormat } from '../../i18n/format'
 import { RowIconButton } from './RowIconButton'
+import { TrophyGlyph, trophyIconSrc } from '../trophies/TrophyGlyph'
 import { TierIcon } from '../ui/TierIcon'
 import { Tooltip } from '../ui/Tooltip'
 import type { PinEntry } from './usePinList'
@@ -16,8 +17,6 @@ function counterOf(ach: LiveAchievementItemDto): { current: number; max: number;
   const max = ach.progressMax
   return { current, max, percent: Math.min(100, Math.floor((current / max) * 100)) }
 }
-
-const iconSrc = (ach: LiveAchievementItemDto) => (ach.achieved ? ach.iconUrl : ach.iconGrayUrl || ach.iconUrl)
 
 interface PinCardProps {
   entry: PinEntry
@@ -72,7 +71,16 @@ export function PinCard({ entry, placement, onOpen, onRemove }: PinCardProps) {
       <Tooltip label={name} description={description} className="block h-full w-full">
         <button type="button" className="pv-pin-main" aria-label={label} onClick={() => onOpen(apiName)}>
           <span className="pv-pin-icon">
-            {ach ? <img src={iconSrc(ach)} alt="" style={{ filter: done ? 'none' : 'grayscale(85%) opacity(75%)' }} /> : <span className="pv-pin-skeleton block animate-pulse" aria-hidden="true" />}
+            {ach ? (
+              trophyIconSrc(ach) ? (
+                <img src={trophyIconSrc(ach)} alt="" style={{ filter: done ? 'none' : 'grayscale(85%) opacity(75%)' }} />
+              ) : (
+                // A trophy of a game added by hand has no icon file: the tier glyph stands in for it
+                <TrophyGlyph tier={ach.rarityTier} achieved={done} />
+              )
+            ) : (
+              <span className="pv-pin-skeleton block animate-pulse" aria-hidden="true" />
+            )}
             {done && (
               <span className="pv-pin-check" aria-hidden="true">
                 <IconCheck size={11} stroke={3.4} />

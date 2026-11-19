@@ -71,6 +71,7 @@ import { emptyResearchBlocks, ResearchBlocksSection, sameResearchBlocks } from '
 import { SystemStatusSection } from './SystemStatusSection'
 import { FoldersSection } from './settings/FoldersSection'
 import { UpdatesSection } from './settings/UpdatesSection'
+import { DesignSection } from './settings/DesignSection'
 import { SteamFolderSection } from './settings/SteamFolderSection'
 import { useReadsSteamLocally } from '../utils/useReadsSteamLocally'
 import { useIsDesktopHost } from './FooterParts'
@@ -1050,9 +1051,10 @@ export function SettingsModal({ open, notice = null, initialTab, onClose, onSave
               </SettingsCard>
             )}
 
-            {/* Tab "System": updates first (channel, check, install or image tag), then the folders and the health check */}
+            {/* Tab "System": the design first, then updates (channel, check, install or image tag), the folders and the health check */}
             {activeTab === 'system' && (
               <SettingsCard>
+                <DesignSection />
                 <UpdatesSection />
                 <FoldersSection />
                 <SystemStatusSection />

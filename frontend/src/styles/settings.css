@@ -484,3 +484,9 @@
 .pv-set--dialog .pv-set-head {
   position: static;
 }
+
+/* Settings > System > Design (components/settings/DesignSection.tsx): the calm scope line under the hint */
+.pv-set-design-scope {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+}

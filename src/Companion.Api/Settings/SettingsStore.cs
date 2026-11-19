@@ -208,6 +208,20 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
         return v is not null && PinsAfterUnlockModes.Contains(v) ? v : null;
     }
 
+    /// <summary>Visual design of the UI: "light" (default, the light redesign) or "classic" (the earlier look). Only the look switches, never the structure.</summary>
+    public const string KeyUiDesign = "ui.design";
+
+    public static readonly string[] UiDesigns = ["light", "classic"];
+
+    public const string DefaultUiDesign = "light";
+
+    /// <summary>The known design for a submitted or stored value (trimmed, case-insensitive), or null when it is not one of <see cref="UiDesigns"/>.</summary>
+    public static string? NormalizeUiDesign(string? value)
+    {
+        var v = value?.Trim().ToLowerInvariant();
+        return v is not null && UiDesigns.Contains(v) ? v : null;
+    }
+
     /// <summary>The stored mode ("keep" when nothing or an unknown value is stored).</summary>
     public static async Task<string> ReadPinsAfterUnlockAsync(CompanionDbContext db, CancellationToken ct = default)
     {
@@ -266,6 +280,7 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
         var popupTarget = NormalizePopupTarget(all.GetValueOrDefault(KeyPopupTarget)) ?? DefaultPopupTarget;
         var popupSeconds = ParsePopupSeconds(all.GetValueOrDefault(KeyPopupSeconds));
         var pinsAfterUnlock = NormalizePinsAfterUnlock(all.GetValueOrDefault(KeyPinsAfterUnlock)) ?? DefaultPinsAfterUnlock;
+        var uiDesign = NormalizeUiDesign(all.GetValueOrDefault(KeyUiDesign)) ?? DefaultUiDesign;
         var uiLanguage = NormalizeUiLanguage(all.GetValueOrDefault(KeyUiLanguage));
         var language = all.GetValueOrDefault(KeyLanguage, "german");
         var autoTranslate = !all.TryGetValue(KeyAutoTranslate, out var at) || !bool.TryParse(at, out var atb) || atb;
@@ -325,7 +340,8 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
             SteamRoot: steamRoot,
             SteamLocal: steamLocal is null ? null : SteamLocalInfo.Settings(steamLocal),
             PinsAfterUnlock: pinsAfterUnlock,
-            PopupSeconds: popupSeconds
+            PopupSeconds: popupSeconds,
+            UiDesign: uiDesign
         );
     }
 
@@ -521,6 +537,14 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
                               ?? throw new SettingsValidationException(ServerTexts.Settings.PinsAfterUnlockInvalid(request.PinsAfterUnlock));
         }
 
+        // UI design: "light" or "classic" (null = keep what is stored)
+        string? uiDesign = null;
+        if (request.UiDesign is not null)
+        {
+            uiDesign = NormalizeUiDesign(request.UiDesign)
+                       ?? throw new SettingsValidationException(ServerTexts.Settings.UiDesignInvalid(request.UiDesign));
+        }
+
         // The update channel must be one of the three ids (null = keep what is stored)
         string? updateChannel = null;
         if (request.UpdateChannel is not null)
@@ -619,6 +643,8 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
             await UpsertSettingAsync(KeyPopupSeconds, seconds.ToString(CultureInfo.InvariantCulture), ct);
         if (pinsAfterUnlock is not null)
             await UpsertSettingAsync(KeyPinsAfterUnlock, pinsAfterUnlock, ct);
+        if (uiDesign is not null)
+            await UpsertSettingAsync(KeyUiDesign, uiDesign, ct);
         var languageChanged = false;
         if (uiLanguage is not null)
         {
@@ -745,9 +771,15 @@ public sealed class SettingsStore(CompanionDbContext db, SecretStore secrets, St
         return result;
     }
 
-    public async Task SaveNoteAsync(uint appId, string apiName, string note, CancellationToken ct = default)
+    public Task SaveNoteAsync(uint appId, string apiName, string note, CancellationToken ct = default) =>
+        SaveNoteByKeyAsync($"note.{appId}.{apiName.Trim()}", note, ct);
+
+    /// <summary>The note on a trophy of a game added by hand (no Steam AppID): stored as <c>note.g.{gameId:N}.{trophyKey}</c>.</summary>
+    public Task SaveGameNoteAsync(Guid gameId, string apiName, string note, CancellationToken ct = default) =>
+        SaveNoteByKeyAsync(ManualTrophyLists.NotePrefix(gameId) + apiName.Trim(), note, ct);
+
+    private async Task SaveNoteByKeyAsync(string key, string note, CancellationToken ct)
     {
-        var key = $"note.{appId}.{apiName.Trim()}";
         var existing = await db.AppSettings.FirstOrDefaultAsync(x => x.Key == key, ct);
         if (string.IsNullOrWhiteSpace(note))
         {

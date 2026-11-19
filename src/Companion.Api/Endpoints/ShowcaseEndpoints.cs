@@ -6,7 +6,10 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace Companion.Api.Endpoints;
 
-/// <summary>One game in the trophy cabinet: every Steam achievement unlocked. Missing figures stay null (the UI hides them).</summary>
+/// <summary>
+/// One game in the trophy cabinet: every achievement unlocked (a Steam game, or a game added by hand at its platinum moment). Missing figures stay
+/// null (the UI hides them). Key identifies the entry ("steam:{appId}" | "game:{guid}"); a game added by hand has AppId 0, a GameId and its platform.
+/// </summary>
 public sealed record ShowcaseGameDto(
     int AppId,
     string Name,
@@ -21,14 +24,18 @@ public sealed record ShowcaseGameDto(
     string? RarestName,
     string? RarestIconUrl,
     double? RarestPercent,
-    double? AverageRarityPercent
+    double? AverageRarityPercent,
+    string? Key = null,
+    Guid? GameId = null,
+    string? Platform = null,
+    string? PlatformVariant = null
 );
 
 public sealed record ShowcaseDto(List<ShowcaseGameDto> Games, int TotalTrophies, double? TotalPlaytimeHours);
 
 /// <summary>
 /// The trophy cabinet: all games of the whole Steam library at 100 % (library evaluation) plus vault games with a
-/// platinum date, newest platinum first. Per game the achievement list (localized names, unlock times, global rarity)
+/// platinum date (Steam games and games added by hand), newest platinum first. Per game the achievement list (localized names, unlock times, global rarity)
 /// comes from the same source as the live trophies tab; the result is cached for ten minutes.
 /// </summary>
 public static class ShowcaseEndpoints
@@ -46,7 +53,8 @@ public static class ShowcaseEndpoints
         {
             // A game that just reached 100 % must be in the cabinet right away (it is presented there): the cache key carries the state of the
             // vault's platinum dates, so a new platinum starts a fresh evaluation instead of waiting for the ten minutes to pass
-            var platinumGames = db.Games.AsNoTracking().Where(g => g.SteamAppId != null && g.PlatinumAt != null);
+            // (every game counts, Steam or added by hand: both have a platinum date)
+            var platinumGames = db.Games.AsNoTracking().Where(g => g.PlatinumAt != null);
             var platinumCount = await platinumGames.CountAsync(ct);
             var latestPlatinum = platinumCount > 0 ? await platinumGames.MaxAsync(g => g.PlatinumAt, ct) : null;
             var result = await cache.GetOrCreateAsync($"showcase:{platinumCount}:{latestPlatinum?.UtcTicks}", async entry =>
@@ -119,8 +127,12 @@ public static class ShowcaseEndpoints
                         RarestPercent: rarest?.GlobalPercent,
                         AverageRarityPercent: withShare.Count > 0
                             ? Math.Round(withShare.Average(a => a.GlobalPercent), 1)
-                            : null));
+                            : null,
+                        Key: $"steam:{appId}",
+                        Platform: GamePlatforms.Steam));
                 }
+
+                games.AddRange(await ManualPlatinumGamesAsync(db, ct));
 
                 var ordered = games.OrderByDescending(g => g.PlatinumAt ?? DateTimeOffset.MinValue).ToList();
                 var playtimes = ordered.Where(g => g.PlaytimeHours.HasValue).Select(g => g.PlaytimeHours!.Value).ToList();
@@ -135,6 +147,59 @@ public static class ShowcaseEndpoints
 
         // Adds games to the presented set (never removes). Without a stored state the same call creates the baseline.
         api.MapPut("/showcase/presented", async (CabinetPresentedRequest request, CompanionDbContext db, CancellationToken ct) =>
-            Results.Ok(await CabinetPresented.AddAsync(db, request.AppIds, ct)));
+            Results.Ok(await CabinetPresented.AddAsync(db, request.AppIds, ct, request.GameIds)));
+    }
+
+    /// <summary>
+    /// The games added by hand that reached their platinum moment (platinum trophy ticked, or 100 % where the platform has no platinum), with the
+    /// figures of their own trophy list: ticks give first/last unlock and days to platinum, a stated share gives the rarest and the average;
+    /// there is no playtime. Empty when there are none.
+    /// </summary>
+    internal static async Task<List<ShowcaseGameDto>> ManualPlatinumGamesAsync(CompanionDbContext db, CancellationToken ct)
+    {
+        var manual = await db.Games.AsNoTracking()
+            .Where(g => g.Platform != GamePlatforms.Steam && g.PlatinumAt != null)
+            .Select(g => new { g.Id, g.Slug, g.Title, g.CoverUrl, g.HeroBannerUrl, g.Platform, g.PlatformVariant, g.PlatinumAt })
+            .ToListAsync(ct);
+        if (manual.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = manual.Select(g => g.Id).ToList();
+        var trophies = (await db.GameTrophies.AsNoTracking()
+                .Where(t => ids.Contains(t.GameId))
+                .Select(t => new { t.GameId, t.Name, t.UnlockedAt, t.RarityPercent })
+                .ToListAsync(ct))
+            .ToLookup(t => t.GameId);
+
+        return manual.Select(g =>
+        {
+            var list = trophies[g.Id].ToList();
+            var ticked = list.Where(t => t.UnlockedAt != null).ToList();
+            DateTimeOffset? first = ticked.Count > 0 ? ticked.Min(t => t.UnlockedAt) : null;
+            // A share of 0 or none is no data (the AI states one only with a source)
+            var withShare = ticked.Where(t => t.RarityPercent is > 0 and <= 100).ToList();
+            var rarest = withShare.OrderBy(t => t.RarityPercent).FirstOrDefault();
+            return new ShowcaseGameDto(
+                AppId: 0,
+                Name: g.Title,
+                CoverUrl: string.IsNullOrWhiteSpace(g.CoverUrl) ? null : g.CoverUrl,
+                HeroBannerUrl: string.IsNullOrWhiteSpace(g.HeroBannerUrl) ? null : g.HeroBannerUrl,
+                ExistingSlug: g.Slug,
+                TrophiesTotal: list.Count,
+                PlatinumAt: g.PlatinumAt,
+                FirstUnlockAt: first,
+                DaysToPlatinum: first is { } f && g.PlatinumAt is { } p ? Math.Max(1, (int)Math.Ceiling((p - f).TotalDays)) : null,
+                PlaytimeHours: null,
+                RarestName: rarest?.Name,
+                RarestIconUrl: null,
+                RarestPercent: rarest?.RarityPercent,
+                AverageRarityPercent: withShare.Count > 0 ? Math.Round(withShare.Average(t => t.RarityPercent!.Value), 1) : null,
+                Key: $"game:{g.Id:D}",
+                GameId: g.Id,
+                Platform: g.Platform,
+                PlatformVariant: g.PlatformVariant);
+        }).ToList();
     }
 }

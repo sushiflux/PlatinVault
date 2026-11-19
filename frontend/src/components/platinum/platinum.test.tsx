@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { PlatinumCoverFx, PlatinumLineFx } from './platinum'
+import { isPlatinumGame, PlatinumCoverFx, PlatinumLineFx } from './platinum'
 
 const reducedMotion = vi.hoisted(() => ({ value: false }))
 vi.mock('motion/react', async (importOriginal) => ({
@@ -85,5 +85,23 @@ describe('PlatinumLineFx', () => {
     expect(container.querySelector('.pv-plat-line-gold')).not.toBeNull()
     expect(container.querySelectorAll('.pv-plat-anim').length).toBe(0)
     expect(container.querySelector('.pv-plat-line')?.getAttribute('data-pv-fx')).toBe('static')
+  })
+})
+
+describe('isPlatinumGame', () => {
+  it('counts a Steam game by its trophies: every one unlocked', () => {
+    expect(isPlatinumGame({ trophiesUnlocked: 10, trophiesTotal: 10 })).toBe(true)
+    expect(isPlatinumGame({ trophiesUnlocked: 9, trophiesTotal: 10 })).toBe(false)
+    expect(isPlatinumGame({ trophiesUnlocked: 0, trophiesTotal: 0 })).toBe(false)
+    expect(isPlatinumGame({ trophiesUnlocked: 9, trophiesTotal: 10, platinumAt: null })).toBe(false)
+  })
+
+  it('trusts platinumAt of a game added by hand (PlayStation: the platinum trophy, not every trophy)', () => {
+    expect(isPlatinumGame({ trophiesUnlocked: 39, trophiesTotal: 40, platinumAt: '2026-11-18T20:00:00Z' })).toBe(true)
+    expect(isPlatinumGame({ trophiesUnlocked: 0, trophiesTotal: 0, platinumAt: '2026-11-18T20:00:00Z' })).toBe(true)
+  })
+
+  it('still counts all trophies for a game without platinumAt (100 % on platforms without a platinum grade)', () => {
+    expect(isPlatinumGame({ trophiesUnlocked: 25, trophiesTotal: 25, platinumAt: null })).toBe(true)
   })
 })

@@ -55,8 +55,139 @@ public sealed class GameEntity
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 
+    // ---- Platform and manual games (added by hand, with or without IGDB); rules in Services/GamePlatforms.cs ----
+
+    /// <summary>
+    /// Where the game is played: one of <c>GamePlatforms.Ids</c> ("steam", "playstation", "xbox", ...). Every game from the Steam library (and every
+    /// row from before the column existed) is "steam". A manual game is never "steam" and never gets a <see cref="SteamAppId"/>.
+    /// </summary>
+    public string Platform { get; set; } = "steam";
+
+    /// <summary>"ps5" / "ps4" for "playstation" (their trophy lists are separate), null for every other platform. Fixed after adding.</summary>
+    public string? PlatformVariant { get; set; }
+
+    /// <summary>The IGDB game id the facts and cover came from (manual games added through the IGDB search); null = none.</summary>
+    public int? IgdbId { get; set; }
+
+    /// <summary>Where the facts of a manual game come from: "igdb" or "ai"; null = none yet (Steam games get their facts from Steam).</summary>
+    public string? FactsSource { get; set; }
+
+    public string? Developer { get; set; }
+    public string? Publisher { get; set; }
+    public string? Summary { get; set; }
+
+    /// <summary>First release (UTC) for the release sort of manual games; <see cref="ReleaseDate"/> stays the readable text.</summary>
+    public DateTimeOffset? FirstReleaseAt { get; set; }
+
+    /// <summary>When the trophy list of a manual game was last researched; null = no list yet.</summary>
+    public DateTimeOffset? TrophyListResearchedAt { get; set; }
+
+    /// <summary>The sources of the researched trophy list as JSON <c>[{"title":"...","url":"..."}]</c>; null = none.</summary>
+    public string? TrophyListSourcesJson { get; set; }
+
     public List<GuideTabEntity> Tabs { get; set; } = [];
     public List<ProgressCheckEntity> ProgressChecks { get; set; } = [];
+
+    /// <summary>The trophy/achievement list of a manual game (empty for Steam games, whose list comes from Steam).</summary>
+    public List<GameTrophyEntity> Trophies { get; set; } = [];
+}
+
+/// <summary>
+/// One trophy / achievement of a manual game (researched by the AI, ticked by hand). A table of its own and not a hidden guide tab: the
+/// ticks are real progress and must survive "reset progress", chapter removal and the guide linker (which all work on progress_checks),
+/// and a conditional UPDATE on <see cref="UnlockedAt"/> gives an exactly-once popup even with two servers on one database file
+/// (see <c>TrophyProgress</c>). Texts are in the guide language of the game (<see cref="GameEntity.ContentLanguage"/>).
+/// </summary>
+public sealed class GameTrophyEntity
+{
+    public Guid Id { get; set; }
+    public Guid GameId { get; set; }
+
+    /// <summary>Stable id of the trophy within the game ("kebab-id"); used as <c>apiName</c> everywhere (guide alerts, pins, notes).</summary>
+    public string TrophyKey { get; set; } = string.Empty;
+
+    public int SortOrder { get; set; }
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>The official English name (null = unknown or the same as <see cref="Name"/>).</summary>
+    public string? OriginalName { get; set; }
+
+    public string Description { get; set; } = string.Empty;
+
+    /// <summary>"platinum" / "gold" / "silver" / "bronze" (<c>TrophyTiers.Grades</c>) - PlayStation only, null elsewhere.</summary>
+    public string? Grade { get; set; }
+
+    /// <summary>Xbox gamerscore or a store's XP; null = none.</summary>
+    public int? Points { get; set; }
+
+    /// <summary>Share of players who have it (0-100), only when a source states it; null = unknown.</summary>
+    public double? RarityPercent { get; set; }
+
+    public bool IsHidden { get; set; }
+    public bool IsMissable { get; set; }
+
+    /// <summary>Null = base game; else the DLC / add-on the trophy belongs to. The PlayStation platinum counts only base-game trophies.</summary>
+    public string? GroupName { get; set; }
+
+    /// <summary>Short category ("Story", "Collectibles", ...); empty = none.</summary>
+    public string Category { get; set; } = string.Empty;
+
+    /// <summary>A short how-to tip; empty = none.</summary>
+    public string Tip { get; set; } = string.Empty;
+
+    /// <summary>The tick: when the player marked it as unlocked (UTC); null = not unlocked. Written only by <c>TrophyProgress</c>.</summary>
+    public DateTimeOffset? UnlockedAt { get; set; }
+
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    [JsonIgnore]
+    public GameEntity? Game { get; set; }
+}
+
+/// <summary>
+/// An uploaded cover of a game, stored in the database (not as a file) so the SQLite backups contain it. At most one row per game;
+/// served at <c>GET /api/covers/{gameId:N}?v=&lt;ticks of UpdatedAt&gt;</c> (see <c>CoverStore</c>).
+/// </summary>
+public sealed class GameCoverEntity
+{
+    public Guid GameId { get; set; }
+
+    /// <summary>"image/png", "image/jpeg", "image/webp", ... (never SVG).</summary>
+    public string ContentType { get; set; } = string.Empty;
+
+    /// <summary>The image bytes, at most <c>CoverStore.MaxBytes</c>.</summary>
+    public byte[] Data { get; set; } = [];
+
+    /// <summary>SHA-256 of <see cref="Data"/>, lower-case hex.</summary>
+    public string Sha256 { get; set; } = string.Empty;
+
+    public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    [JsonIgnore]
+    public GameEntity? Game { get; set; }
+}
+
+/// <summary>
+/// The trophy list of a manual game translated into one language (the original stays in <see cref="GameTrophyEntity"/>). Same rule as the guide
+/// translation: only readable texts (name, description, tip, group, category) are translated, never keys, grades, points or flags.
+/// <see cref="SourceHash"/> = hash of the original texts at the time of translation (a different hash now = stale).
+/// </summary>
+public sealed class GameTrophyTranslationEntity
+{
+    public Guid GameId { get; set; }
+
+    /// <summary>"de" / "en".</summary>
+    public string Language { get; set; } = string.Empty;
+
+    /// <summary>JSON with the translated texts per trophy key (shape owned by the translation service).</summary>
+    public string ItemsJson { get; set; } = "[]";
+
+    public string SourceHash { get; set; } = string.Empty;
+    public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    [JsonIgnore]
+    public GameEntity? Game { get; set; }
 }
 
 /// <summary>

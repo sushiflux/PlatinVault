@@ -2,21 +2,22 @@ import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { IconX } from '@tabler/icons-react'
-import { saveLiveAchievementNote } from '../api/client'
-import type { LiveAchievementItemDto } from '../api/types'
+import { saveLiveAchievementNote, saveScopedAchievementNote } from '../api/client'
+import type { LiveAchievementItemDto, TrophyScope } from '../api/types'
 import { ErrorBlock } from './ui/ErrorBlock'
 import { IconButton } from './ui/IconButton'
 import '../styles/dialogs.css'
 
 interface AchievementNoteDialogProps {
   ach: LiveAchievementItemDto
-  appId: number
+  // Whose note it is: a Steam game by its AppID, a game added by hand by its game id
+  scope: TrophyScope
   onClose: () => void
 }
 
 // The personal note of one achievement: shared by the live trophies tab and the "Im Blick" dock, which both open it from the detail dialog.
 // A failed save keeps the dialog open with the draft and says what went wrong (the server's own text, or that it could not be reached).
-export function AchievementNoteDialog({ ach, appId, onClose }: AchievementNoteDialogProps) {
+export function AchievementNoteDialog({ ach, scope, onClose }: AchievementNoteDialogProps) {
   const { t } = useTranslation(['live', 'common'])
   const queryClient = useQueryClient()
   const [draft, setDraft] = useState(ach.userNote)
@@ -29,7 +30,7 @@ export function AchievementNoteDialog({ ach, appId, onClose }: AchievementNoteDi
     setSaving(true)
     setError(null)
     try {
-      await saveLiveAchievementNote(appId, ach.apiName, draft)
+      await ('gameId' in scope ? saveScopedAchievementNote(scope, ach.apiName, draft) : saveLiveAchievementNote(scope.appId, ach.apiName, draft))
     } catch (err: unknown) {
       const reason =
         err instanceof TypeError

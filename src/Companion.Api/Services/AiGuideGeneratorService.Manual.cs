@@ -23,12 +23,17 @@ public sealed partial class AiGuideGeneratorService
     {
         // The key includes the research blocks: changing them in the settings applies to the very next prompt
         var blocks = await settingsStore.GetResearchBlocksAsync(ct);
+        // A game added by hand: its id and the time of its trophy list are part of the key (a list researched a moment ago applies to the next prompt)
         var key = $"{game.SteamAppId}|{game.Title}|{language}|{ResearchBlocks.Serialize(blocks)}";
+        if (GamePlatforms.IsManual(game))
+        {
+            key += $"|{game.Id:N}|{game.Platform}|{game.PlatformVariant}|{game.TrophyListResearchedAt?.UtcTicks}";
+        }
         if (ManualContexts.TryGetValue(key, out var cached) && DateTimeOffset.UtcNow - cached.At < ManualContextLifetime)
         {
             return cached.Context;
         }
-        var context = await BuildGameContextAsync(game.Title, game.SteamAppId, language, ct);
+        var context = await BuildGameContextAsync(game, language, ct);
         ManualContexts[key] = (DateTimeOffset.UtcNow, context);
         foreach (var stale in ManualContexts.Where(p => DateTimeOffset.UtcNow - p.Value.At > ManualContextLifetime).Select(p => p.Key).ToList())
         {
@@ -118,14 +123,13 @@ public sealed partial class AiGuideGeneratorService
                 ? $" – or, if the topic does not exist in this game: {{ \"game\": \"{title}\", \"steamAppId\": {appId}, \"notApplicable\": true, \"reason\": \"...\" }}"
                 : $" – oder, wenn es das Thema in diesem Spiel nicht gibt: {{ \"game\": \"{title}\", \"steamAppId\": {appId}, \"notApplicable\": true, \"reason\": \"...\" }}";
         }
-        var appIdLine = game.SteamAppId is > 0
-            ? language == Lang.English ? $"Steam AppID {game.SteamAppId}" : $"Steam-AppID {game.SteamAppId}"
-            : language == Lang.English ? "Steam AppID unknown" : "Steam-AppID unbekannt";
+        // "Steam AppID 123 – the Steam version on PC" (unchanged for Steam games) or the platform version of a game added by hand
+        var identity = ManualIdentity(game, language);
 
         return language == Lang.English
             ? $"""
               Output in this chat (this applies in addition and wins over the sentence "without a Markdown code block" above):
-              - The game is exactly this one: "{game.Title}", {appIdLine} – the Steam version on PC. Before writing, make sure you mean this game – not a game with the same name, a predecessor, a successor, a remake or a demo.
+              - The game is exactly this one: "{game.Title}", {identity}. Before writing, make sure you mean this game – not a game with the same name, a predecessor, a successor, a remake or a demo.
               - Output the result as ONE JSON object in exactly one code block (```json … ```), without any text before or after it.
               - The JSON object starts with the two identifying fields "game" and "steamAppId", like this (shortened, write the real content): {skeleton}
               - Write real content, no placeholders like "..." – the structure description above is only the pattern. What you cannot back up: "Not documented yet (as of <today's date>)" – invent nothing.
@@ -133,7 +137,7 @@ public sealed partial class AiGuideGeneratorService
               """
             : $"""
               Ausgabe in diesem Chat (das gilt zusätzlich und hat bei der Ausgabe Vorrang vor dem Satz „ohne Markdown-Codeblock“ oben):
-              - Gemeint ist genau dieses Spiel: „{game.Title}“, {appIdLine} – die Steam-Version auf dem PC. Prüfe vor dem Schreiben, dass du dieses Spiel meinst – nicht ein gleichnamiges Spiel, einen Vorgänger, Nachfolger, ein Remake oder eine Demo.
+              - Gemeint ist genau dieses Spiel: „{game.Title}“, {identity}. Prüfe vor dem Schreiben, dass du dieses Spiel meinst – nicht ein gleichnamiges Spiel, einen Vorgänger, Nachfolger, ein Remake oder eine Demo.
               - Gib das Ergebnis als EIN JSON-Objekt aus, in genau einem Codeblock (```json … ```), ohne Text davor oder danach.
               - Das JSON-Objekt beginnt mit den zwei Feldern „game“ und „steamAppId“, so (verkürzt, schreibe die echten Inhalte): {skeleton}
               - Schreibe echte Inhalte, keine Platzhalter wie "..." – die Strukturbeschreibung oben ist nur das Muster. Was du nicht belegen kannst: „Noch nicht dokumentiert (Stand <heutiges Datum>)“ – erfinde nichts.
@@ -341,6 +345,12 @@ public sealed partial class AiGuideGeneratorService
     internal static IReadOnlySet<string>? AchievementApiNames(GameEntity game)
     {
         var names = new HashSet<string>(StringComparer.Ordinal);
+        // A game added by hand: the keys of its researched trophy list (game.Trophies must be loaded); it never has a hidden Steam achievement tab
+        if (GamePlatforms.IsManual(game))
+        {
+            names.UnionWith(game.Trophies.Select(t => t.TrophyKey));
+            return names.Count > 0 ? names : null;
+        }
         foreach (var tab in game.Tabs)
         {
             var sections = ApiEndpoints.DeserializeSections(tab.SectionsJson);

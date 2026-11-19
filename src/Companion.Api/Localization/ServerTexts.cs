@@ -220,6 +220,9 @@ public static partial class ServerTexts
 
         public static Msg PinsAfterUnlockInvalid(string value) => Msg.Same(
             $"Verhalten angehefteter Erfolge nach dem Freischalten \"{value}\" ist unbekannt – erlaubt sind \"keep\" und \"remove\". / Behaviour of pinned achievements after unlocking \"{value}\" is unknown – allowed: \"keep\" and \"remove\".");
+
+        public static Msg UiDesignInvalid(string value) => Msg.Same(
+            $"Design \"{value}\" ist unbekannt – erlaubt sind \"light\" und \"classic\". / Design \"{value}\" is unknown – allowed: \"light\" and \"classic\".");
     }
 
     // ---- Pinned achievements ("Im Blick") -------------------------------------------------------------------------------
@@ -996,6 +999,7 @@ public static partial class ServerTexts
                 "retry" => ("„Kapitel erneut recherchieren“", "“Research chapter again”"),
                 "redo" => ("„Kapitel neu recherchieren“", "“Redo chapter”"),
                 "lore" => ("die Recherche für „Story & Lore“", "the research for “Story & Lore”"),
+                "trophies" => ("die Recherche der Trophäenliste", "the research of the trophy list"),
                 _ => ("eine andere KI-Aktion", "another AI action")
             };
             return M(

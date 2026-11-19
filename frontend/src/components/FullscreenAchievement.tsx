@@ -9,6 +9,7 @@ import { useMediaQuery } from '../utils/useMediaQuery'
 import { useUnlockStamp } from '../utils/unlockStamp'
 import { PopupCountdown } from './PopupCountdown'
 import { TierTrophy, tierGlow } from './platinum/TierTrophy'
+import { TrophyGlyph } from './trophies/TrophyGlyph'
 
 // The "Vollbild" popup position: for a few seconds the whole window belongs to the achievement that was just unlocked.
 //
@@ -266,10 +267,14 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
                   style={{ gap: 'clamp(0.7rem, 1.6vh, 1.5rem)', flexDirection: portrait ? 'column' : 'row' }}
                   {...rise(TEXT_AT)}
                 >
-                  {achievement.iconUrl && <AchievementIcon url={achievement.iconUrl} size={size.icon} edge={edge} />}
+                  {achievement.iconUrl ? (
+                    <AchievementIcon url={achievement.iconUrl} size={size.icon} edge={edge} />
+                  ) : (
+                    <TrophyGlyph tier={tier} surface="dark" size={size.icon} className="pv-fsa-icon rounded-md" style={{ border: `2px solid ${edge}` }} />
+                  )}
                   <div className="min-w-0" style={{ textAlign: portrait ? 'center' : 'left' }}>
                     <div
-                      className="font-semibold uppercase"
+                      className="pv-fsa-eyebrow font-semibold uppercase"
                       style={{ color: tone, fontSize: size.eyebrow, letterSpacing: '0.24em' }}
                     >
                       {t('live:fullscreen.unlocked', { tier: tierName })}
@@ -283,7 +288,7 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
                 </motion.div>
 
                 <motion.h1
-                  className="font-semibold text-white"
+                  className="pv-fsa-name font-semibold text-white"
                   style={{
                     marginTop: 'clamp(0.7rem, 2.4vh, 2.5rem)',
                     fontSize: size.name,
@@ -300,7 +305,7 @@ export function FullscreenAchievement({ achievement, gameName, onDismiss, dismis
 
                 {/* The accent rule under the name: grows out of the left (the middle in portrait) */}
                 <motion.span
-                  className="block h-[3px]"
+                  className="pv-fsa-rule block h-[3px]"
                   style={{
                     marginTop: 'clamp(0.6rem, 1.6vh, 1.5rem)',
                     width: 'clamp(3rem, 9vh, 9rem)',
@@ -400,7 +405,7 @@ function AchievementIcon({ url, size, edge }: { url: string; size: string; edge:
       src={url}
       alt=""
       onError={() => setFailedUrl(url)}
-      className="shrink-0 rounded-md object-cover"
+      className="pv-fsa-icon shrink-0 rounded-md object-cover"
       style={{ width: size, height: size, border: `2px solid ${edge}` }}
     />
   )

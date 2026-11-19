@@ -20,11 +20,17 @@ export function effectivePopupTarget(target: string | null | undefined, overlayA
   return overlayAvailable ? normalizePopupTarget(target) : 'app'
 }
 
+/** Where an event comes from: 'manual' = a trophy the player ticked by hand in a game added by hand; anything else = detected by Steam. */
+export type PopupSource = 'manual' | null | undefined
+
 /**
- * Whether this window draws the popup itself. Only "only in the game" hands it over to the overlay completely.
+ * Whether this window draws the popup itself. Only "only in the game" hands it over to the overlay completely - except for an event the player
+ * caused by ticking a trophy by hand (source 'manual'): the server never sends those to the Windows overlay (there is no game running to show
+ * them over), so this window always shows them, whatever "Trophäen-Popup anzeigen" says.
  * The SOUND is not decided here: the window always plays it (once per unlock, also with "overlay" and "both"), the overlay of the
  * Windows program is silent - so the sound is never doubled, and it plays even when the overlay is not shown.
  */
-export function showsPopupInWindow(target: string | null | undefined, overlayAvailable: boolean): boolean {
+export function showsPopupInWindow(target: string | null | undefined, overlayAvailable: boolean, source?: PopupSource): boolean {
+  if (source === 'manual') return true
   return effectivePopupTarget(target, overlayAvailable) !== 'overlay'
 }

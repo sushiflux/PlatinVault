@@ -3,7 +3,7 @@ title: PlatinVault
 subtitle: Handbook
 tagline: Live trophies for your Steam games and 100 % guides in one place – how to set up PlatinVault and use it every day.
 version: v2026.11.22
-date: 2026-11-17
+date: 2026-11-19
 status: Release
 copyright: © 2026 SushiFlux
 lang: en
@@ -18,6 +18,8 @@ PlatinVault is your companion on the way to 100 % in Steam games:
 - **100 % guides:** for every game an AI researches a complete guide with chapters such as roadmap, collectibles,
   weapons, bosses or bestiary – with checklists you can tick off.
 - **Your library at a glance:** trophies, playtime, ratings and your progress in one place.
+- **Games from other platforms:** you also add games from PlayStation, Xbox, Epic Games, GOG, Nintendo Switch, Ubisoft Connect,
+  EA app and Battle.net by hand. The AI researches the trophy or achievement list and you tick it off yourself (section 6.6).
 
 Steam calls them "achievements"; PlatinVault calls them **trophies** and shows them as bronze, silver or gold – depending
 on how rare they are among all players.
@@ -224,7 +226,7 @@ On the left the PlatinVault logo with the name; a click leads to the overview. O
 | Trophy | **Trophy cabinet** - opens the cabinet with all your games at 100 % (5.5). |
 | Aa | **Display size** – opens a small window: with − and + or directly through the steps 80 / 90 / 100 / 110 / 125 % fonts and boxes become smaller or larger while the page width stays the same; "Reset to 100 %" restores the standard size. The window stays where it is while the page changes, so you can click several times in a row. When the size is not 100 %, a small badge on the icon shows the value. Handy on 4K monitors with high Windows scaling. |
 | Globe with code (DE / EN) | **Language** – opens a small list of all languages, each with its flag and its own name ("Deutsch", "English"); the one in use is highlighted and marked with a check. A click switches the whole app **at once**, without reloading, and remembers your choice. The language applies to the interface, date and number formats, the Steam achievement texts (Steam's own texts in that language) and the handbook, which opens in the chosen language. With the keyboard: arrow keys choose, Enter confirms, Esc closes. If saving fails, a message below the header names the reason and the previous language stays. |
-| Sun/moon | **Colour scheme:** switches between light and dark (you make the first choice on the welcome screen) |
+| Sun/moon | **Colour scheme:** switches between light and dark (you make the first choice on the welcome screen). You choose the look itself under Settings → System → Design. |
 | Gear | **Settings** - opens the settings (chapter 4) on the tab you used last. |
 | ? | **Help:** shows the hints for the current page again |
 | Book | **Handbook** - this handbook right inside the app |
@@ -236,6 +238,24 @@ Hover over an icon and a short hint explains what it does. The tools of a single
 
 - **Below 880 pixels of width:** display size, handbook and About PlatinVault. The Steam user then shows only the profile picture; name and number of games are in the hint.
 - **Below 640 pixels of width (phone):** additionally colour scheme, help and the Steam user.
+
+### Choosing the design: Minimal or Classic
+
+The **design** decides how PlatinVault looks. There are two options:
+
+- **Minimal** (default): calm surfaces, thin lines and the Inter typeface.
+- **Classic**: the earlier look of PlatinVault, with rounder corners, bolder type, gradients and gloss.
+
+Only the look changes. Pages, navigation and functions stay exactly the same in both designs.
+
+To change the design:
+
+1. Open the **Settings** (gear in the header) and switch to **System**.
+2. At the top, in the **Design** section, choose **Minimal** or **Classic**.
+
+The choice applies **at once**. You do not have to reload or save anything. It applies to this whole PlatinVault installation, so on every device: in the browser, on phone and tablet, and in the Windows program, including the trophy popups over the game. If saving fails, the previous design comes back. A notice then gives the full reason; use **Copy** to take the text with you.
+
+The **colour scheme** (light or dark) stays a separate choice: you switch it with the sun/moon icon in the header, and it works in both designs.
 
 ### The navigation on the game page
 
@@ -255,10 +275,10 @@ The page you are on is highlighted.
 
 ## 5.2 Favourites and all games
 
-The page **Overview** and the page **All games** look the same and have the same tools. At the top is the page title, with the button **Import guide** next to it (load a guide file from another PlatinVault installation; it creates the game together with its guide). Below come the figures as small badges, then in one row the search, the switch between favourites and all games, and the slider for the tile size.
+The page **Overview** and the page **All games** look the same and have the same tools. At the top is the page title, with the buttons **Add game** (create a game by hand, see 5.3) and **Import guide** next to it (load a guide file from another PlatinVault installation; it creates the game together with its guide). Below come the figures as small badges, then in one row the search, the switch between favourites and all games, and the slider for the tile size.
 
 - **Overview** shows your **favourites**: the games you marked with a **star**, as tiles.
-- **All games** shows your complete Steam library (needs the Steam key). You reach it through the switch in the tool panel.
+- **All games** shows your complete Steam library (needs the Steam key) and all games you added by hand. These games have a star too: with it you put them on the overview or take them off again. If you have no Steam library but added games by hand, the page works anyway. You reach it through the switch in the tool panel.
 - The figures (games, trophies, platinum games) always refer to the chosen page. For "All games" PlatinVault evaluates your library in the background; while that runs it says
   "Library is being evaluated".
 - With the **Tile size** slider you choose between Large, Compact, Very compact, List and Text only.
@@ -278,9 +298,12 @@ The page **Overview** and the page **All games** look the same and have the same
 
 ## 5.3 Bringing games onto the dashboard
 
-Your games come **only from your Steam library** – there is no Steam Store search and no adding by hand. As long as no game is
-on the start page, PlatinVault shows three steps instead of the tiles; they show the real state (tick = done) and their buttons
-open the right place directly:
+There are two ways: you bring Steam games over from your Steam library with the **star**. You add games of every other platform by hand with **Add game**. There is no search in the Steam Store.
+
+### Steam games with the star
+
+As long as no game is on the start page yet, PlatinVault shows three steps instead of the tiles; they show the real state
+(tick = done) and their buttons open the right place directly:
 
 1. **Connect your Steam account:** "Sign in with Steam" (or in the settings, Steam tab). Afterwards you land on the Steam tab of the settings again.
 2. **Enter your Steam Web API key:** you get the key from Steam for free (the link is right there), and you enter it in the
@@ -289,13 +312,52 @@ open the right place directly:
    the **star** on a game. The game appears as a tile right away – without AI costs. You create its guide afterwards on the game
    page (6.2) whenever you like.
 
-The tour explains the same three steps; its checklist shows account and key with their real state.
+Below the three steps is the other way: **Or add a game by hand**. The tour explains both ways; its checklist shows account and key with their real state.
 
 - **Removing the star** takes the game off the start page; guide and ticks stay saved and come back when you star it again.
-- There is no **delete button** on the tiles (any more): the star is enough to take a game off the start page. The interface cannot delete a whole game with its
-  guide and ticks at the moment.
+- Steam games have no **delete button**: the star is enough to take them off the start page. Only a game you added by hand can be removed completely (see below).
+
+### Adding a game by hand
+
+This brings games onto the overview that are not in your Steam library. They get a guide and a trophy list like Steam games. You cannot add Steam games here: they only come from your library, with the star.
+
+**How to add a game:**
+
+1. On the overview or on **All games**, click **Add game** at the top. The window **Add game** opens.
+2. Search for the game or create it without a search (two ways, see below).
+3. Choose the **platform**. For PlayStation you then choose **PS5** or **PS4**.
+4. Click **Add**. The game appears as a tile on the overview. **To the game** opens its page.
+
+**Way 1: search with IGDB.** IGDB is a large online game database. You can only use it if you entered the credentials of your own Twitch application in the settings under **Twitch & IGDB** (see 6.4). Without these credentials the window says that IGDB does not answer and shows you the second way.
+
+1. In the field **Search for a game**, enter the **name**, the **IGDB number** or the **IGDB link**, for example `Astro Bot`, `90001` or `https://www.igdb.com/games/astro-bot`.
+2. Click the right game in the result list. Each result shows the release year and the platforms. If the game is already in your collection, it says **Already added** with the platform.
+3. The window shows the game facts from IGDB: release date, developer, genres, the estimated time for 100 % and the ratings. The cover and the facts come from IGDB.
+4. **Choose another game** takes you back to the result list.
+
+IGDB names the platforms of each game; they are marked **IGDB** in the window. If IGDB only says "PC", PlatinVault marks no PC shop – you choose the shop where you own the game.
+
+**Way 2: by hand, without IGDB.** Take this way if you have no Twitch credentials, IGDB does not know the game or you prefer to type it yourself (button **Not listed? Add without IGDB**).
+
+1. Enter the **title**.
+2. Upload a **cover**: drag an image file into the field or choose **Choose file**. PNG, JPEG, WebP and GIF are allowed, up to 5 MB, no SVG. Portrait (2:3) fits best. You can swap the image with **Replace** or leave it out with **Remove**.
+3. Release date, developer, genres and time are missing at first. The AI researches them later (see 6.6).
+
+**The platform.** You choose it in a grid of nine fields (a list on the phone): **Steam**, **PlayStation**, **Xbox**, **Epic Games**, **GOG**, **Nintendo Switch**, **Ubisoft Connect**, **EA app** and **Battle.net**. If you choose **Steam**, the window points you to the star under "All games"; a Steam game cannot be added here.
+
+- **PlayStation:** below it choose **PS5** or **PS4**. They have **separate trophy lists**. Choose the version you play. A PS4 game you play on the PS5 gets the PS4 list.
+- **Nintendo Switch:** the Switch has no trophies. The game only gets a guide.
+- **The platform is fixed after adding.** You cannot change it. If you made a mistake, remove the game (see below) and add it again.
+- **The same game on two platforms** is possible: you add it twice, each platform is its own entry with its own list and ticks. The same game on the same platform (and the same PlayStation version) exists only once; PlatinVault then offers to open the existing game.
+
+**Changing the cover and removing the game.** On the page of a game you added by hand, the row of tools has two extra buttons:
+
+- **Change cover:** uploads a cover of your own and replaces the current one. **Remove own cover** takes the image away again. The cover is stored in the PlatinVault database and is therefore part of the automatic backups.
+- **Remove game:** deletes the game with its guide, its trophy list with all ticks and its cover, after a confirmation. This cannot be undone; you can add the game again afterwards.
 
 ## 5.4 What a tile shows
+
+At the top left of the cover is a small field with the **platform** in short form: **Steam**, **PS5**, **PS4**, **Xbox**, **Epic**, **GOG**, **Switch**, **Ubisoft**, **EA** or **Battle.net**. Games from your Steam library show **Steam**. A hint on hover gives the full name; in list view the field sits under the title. For games you added by hand, values that only Steam knows (playtime, last played, size) are missing: a grey dash stands there, and the hint says that you added the game by hand.
 
 From top to bottom a tile consists of: **cover**, **rating strip**, **bar with Play, Favourite and Twitch**, **name** (up to two lines) with the genres from Steam and – in the
 sizes large and compact – fixed lines: playtime, last played, release date, **size** and, for the favourites, the estimated time for 100 %. At the very bottom is your **trophy line** with a progress bar.
@@ -325,7 +387,7 @@ credentials the field stays as it was.
 
 ## 5.5 Trophy cabinet
 
-The trophy cabinet shows every game you brought to **100 %**, like a display case: behind glass doors the games stand on shelves with their covers. Under each cover are the name and the date of the platinum trophy, preceded by a small golden trophy; a short golden line marks the place on the shelf.
+The trophy cabinet shows every game you brought to **100 %**, like a display case – including games you added by hand once they have reached their platinum (6.6): behind glass doors the games stand on shelves with their covers. Under each cover are the name and the date of the platinum trophy, preceded by a small golden trophy; a short golden line marks the place on the shelf.
 
 - **Opening:** click the **trophy** in the header (**Trophy cabinet**). The cabinet lies over the current page as a full-screen view; the page below stays as it was. It is part of the page address, so a reload keeps it open and the browser's Back button closes it. The cabinet loads first (a thin blue line), then the glass doors slide aside and the lights come on.
 - **Tool row:** at the top of the cabinet are the three figures (games at platinum, trophies, playtime), the size slider, the **View** button, the door button and the button that closes the cabinet. PlatinVault remembers your choices in this browser or program.
@@ -344,7 +406,7 @@ The trophy cabinet shows every game you brought to **100 %**, like a display cas
 
 At the very top of the game head is the **Back** button. It takes you to the page you came from – or to the overview if you opened the game directly. Below it are the cover, the title, the **Play** button and a calm row with the game's tools (icons with a hint on hover: complete guide, add chapter, export, Twitch, print/PDF, reset progress). Below it a line shows your trophy progress with the tiers. The content of the chosen page follows.
 
-At the bottom of the game head you switch between the areas of the game with the **area bar**. It only appears for games linked to Steam:
+At the bottom of the game head you switch between the areas of the game with the **area bar**. It only appears for games linked to Steam (for games you added by hand see 6.6):
 
 - **Guide** – the guide's chapters (6.2). A click takes you back to the chapter you read last in this game.
 - **Live trophies** – the game's Steam achievements (6.3).
@@ -366,7 +428,7 @@ the game is not installed yet, Steam begins the installation. Without a bridge y
 only works if you opened PlatinVault in the browser of the machine that has Steam, and your browser then asks once whether it may
 open Steam. If the start does not work, PlatinVault names the reason, for example "Steam was not found on the gaming PC" or "The
 gaming PC did not pick up the launch command" (then the bridge is not running or has no connection). You can only start games
-from your collection and your Steam library.
+from your collection and your Steam library. Games you added by hand have no Play button.
 
 ## 6.2 The guide
 
@@ -640,6 +702,46 @@ If parts are missing because the answer was too long for one message, a warning 
 the same chat and paste the new answer as well. You can also save with the parts you have. If the game already has Story & Lore, saving replaces the tab completely;
 a note and a confirmation show you that beforehand. This cannot be undone.
 
+## 6.6 Games added by hand: trophy and achievement list
+
+This section applies to games you created with **Add game** (5.3). Their page looks different from the page of a Steam game, because PlatinVault learns nothing automatically on other platforms.
+
+**Why do you tick by hand?** On Steam, PlatinVault reads your unlocked achievements itself. For PlayStation and the other platforms that is not possible. Sony offers no public interface for trophies. In our reading, unofficial ways conflict with the terms of the PlayStation Network (section 10.7); PlatinVault therefore never calls the PlayStation Network. This is not legal advice – use the way you are comfortable with. The list comes from the AI research instead, and you tick finished trophies yourself.
+
+**The layout of the page.** The area bar in the game head shows **Guide** and next to it **Trophies** (PlayStation) or **Achievements** (Xbox, Epic Games, GOG, Ubisoft Connect, EA app and Battle.net). These games have no **Statistics** and no **Play** button. Under the title stands the platform, for example "PS5: trophies", and whether you have reached platinum. The Nintendo Switch only has the guide, because it has no trophies or achievements.
+
+### Researching the list
+
+Before you can tick anything, the game needs a list. These are two separate steps; we recommend this order:
+
+1. **Research trophy list** (on the other platforms **Research achievement list**): open the area **Trophies** or **Achievements** and click the button. The AI looks up the list of the right version (for PlayStation that of the PS5 or the PS4, never mixed): names, descriptions, grades, missable and hidden trophies, DLC trophies and short tips.
+2. **Create the guide:** this is its own, later step in the area **Guide**. It uses the list if there is one. It also works without a list.
+
+For the research you use an **AI with an API key** (see 4.3) or **My AI subscription**. The second way works like the guide (6.2): you copy a prompt into the chat of your subscription and paste the answer back. The window is called **Trophy list with your AI subscription (no API key)**; it checks the answer, shows a preview with the number of trophies, the hidden ones and the DLC ones, and only saves when you click **Save trophy list**. With the API way the research runs in the background; you can leave the page meanwhile.
+
+> [!WARNING] The list comes from web sources and may contain mistakes. Under the list PlatinVault shows when it was researched and which **sources** the AI named. Check grades, missable and hidden trophies against the guide or the sources. If the AI cannot find a reliable list, PlatinVault saves nothing and invents nothing.
+
+If IGDB does not know the game and you added it without IGDB, the AI researches the **game facts** in the same step (release date, developer, publisher, description, time). For the Nintendo Switch there is a button of its own, **Research game facts**.
+
+**Researching again.** **Research trophy list again** fetches a fresh list, for example after new DLC. **Your ticks are kept.** Matching entries keep their tick; an entry you had already ticked that is missing in the new list stays anyway. Unticked entries the new list no longer names are dropped. On the AI-subscription way PlatinVault asks for confirmation before replacing.
+
+**Other language.** The list is written in the language of the game. If you switch the interface to the other language, the AI translates the list together with the guide (names, descriptions, tips). Until the translation is ready you see the original. Grades, points and ticks do not change.
+
+### Ticking
+
+The list looks like the live trophies of a Steam game (6.3): the same four views, filters, search, notes and **In View**. New is a **tick button** on every trophy.
+
+1. Open the area **Trophies** or **Achievements** of the game.
+2. Click the tick button on the finished trophy ("Tick … as done").
+3. PlatinVault shows the **trophy popup** with the same look and sound as an unlock in Steam.
+4. A second click removes the tick again. This happens **without popup and without sound**.
+
+- **In the app only:** the popup appears in the PlatinVault windows (browser or program window), **never** in the overlay over the game – not even with the setting "Only in the game" or "Both" (see chapter 7).
+- **Grades:** on PlayStation the grades are Sony's (bronze, silver, gold, platinum). On the other platforms they follow the rarity if the list states it (same scale as in 6.3). Otherwise on Xbox: from 50 gamerscore points gold, 20 to 49 silver, below that bronze; without any details bronze. That is a division by PlatinVault, not by the platform.
+- **PlayStation platinum:** once you have ticked every other trophy of the base game (DLC trophies do not count), the **platinum trophy ticks itself**; the platinum moment follows. If you remove a tick afterwards, the platinum disappears again silently. The tick on the platinum trophy itself cannot be set by hand. On platforms without a platinum grade, the game counts as completed at 100 % of all entries.
+- **Progress:** the number of trophies, the progress bar, the platinum moment, the tile on the overview and the trophy cabinet (5.5) all count your ticks.
+- **Reset progress** in the game head only affects the guide ticks, **not** your trophy ticks.
+
 # 7 Trophy popups and sounds
 
 In the **Live & Sound** tab of the settings:
@@ -668,6 +770,8 @@ runs on the gaming PC. It only switches on a real start – not when you reload 
 not when the game ends. If a dialog is open, your cursor is in an input field or an AI task is running, you stay where you
 are: a notice reports the start and offers **Switch to the game**. If the running game is one you have not added yet, a
 notice only names it – "no guide yet".
+
+**Trophies ticked by hand** (games you added, 6.6) show the same popup and play the same sound as a Steam unlock – but only in the PlatinVault windows, **never** in the overlay over the game, whatever **Show trophy popup** is set to. Removing a tick stays silent.
 
 Popups appear for every game that exists in PlatinVault. A popup names the share of players who have the trophy; its colour
 (bronze, silver, gold) and its name follow the rarity (see 6.3).
@@ -753,7 +857,9 @@ bridge. If `status` does not help, please tell us what it and the log show.
   enter yourself (`api.steampowered.com`, `store.steampowered.com`, `steamcommunity.com`, Steam's image servers).
 - **AI providers** receive the game name and public game information for the research – no personal data. Only the provider whose
   key you entered is contacted, and only on an AI action (Google, Anthropic, OpenAI).
-- **Twitch and IGDB** are only asked with your own credentials. The **bridge** (Windows and Linux) only talks to the PlatinVault server you entered.
+- **Twitch and IGDB** are only asked with your own credentials. When you search in the **Add game** window, your search text (name, number or link) goes to IGDB.
+- **Your own covers and trophy lists** are stored in your database and therefore in your backups. For the research of a trophy list the AI provider gets the game name, the platform and public game information; it does not get your ticks. PlatinVault never calls the PlayStation Network and reads no accounts of other platforms.
+- The **bridge** (Windows and Linux) only talks to the PlatinVault server you entered.
 - The **Linux package** makes no other connections than any PlatinVault server.
 - PlatinVault deliberately has **no login** and is meant for one person. Run it in your home network, not openly on the
   internet.
@@ -784,6 +890,11 @@ bridge. If `status` does not help, please tell us what it and the log show.
 | A chapter is too thin or outdated | **Research chapter again** or **Research again with my AI subscription** above the chapter content (section 6.2). |
 | A chapter says "could not be researched" | Click **Research this chapter again** (details in 6.2). The reason is in the note; for a quota or key problem first look in Settings → **AI research** or pick another AI with the arrow on the button. |
 | "The server was restarted and the research was interrupted" | The server was briefly gone during the research (update, restart). Finished chapters are saved; start the same action again, it carries on from there. |
+| When adding, it says "IGDB does not answer without credentials" | The IGDB search needs the credentials of your own Twitch application (Settings → **Twitch & IGDB**, 6.4). Without them, click **Not listed? Add without IGDB** and enter title, platform and cover yourself (5.3). |
+| The cover is not accepted | PNG, JPEG, WebP and GIF are allowed, up to 5 MB, no SVG. Make the image smaller or choose another one (5.3). |
+| A game added by hand lacks playtime, size and statistics | These are values only Steam knows. Release date, developer and genres come from IGDB or from the AI research (6.6). |
+| The researched trophy list is wrong or incomplete | The AI reads web pages and can be wrong. Check the sources named under the list and click **Research trophy list again**; your ticks are kept (6.6). You can choose another AI with the arrow on the button. |
+| A PS4 game shows the wrong trophies | The version (PS5 or PS4) is fixed after adding. A PS4 game on the PS5 has the PS4 list. Remove the game (**Remove game**) and add it again with the right version (5.3). |
 | Achievements in English | The game has no texts in your language on Steam; with an AI key PlatinVault translates them automatically. |
 | A notice above the trophy list says "Rarity values are not up to date" or "not available" | PlatinVault cannot reach Steam right now to fetch the worldwide shares. It shows the last saved values (with their date) and tries again by itself. Check your internet connection and whether an antivirus or firewall blocks PlatinVault from the network; **Copy** in the notice gives you the full text for support. |
 | No counter on a trophy | The game has no counter on Steam. |

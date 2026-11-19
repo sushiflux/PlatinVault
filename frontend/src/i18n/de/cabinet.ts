@@ -65,6 +65,7 @@ const cabinet = {
     panel: 'Details zu {{name}}',
     close: 'Details schließen',
     platinumOn: 'Platin am {{date}}',
+    platform: 'Plattform',
     trophies: 'Trophäen',
     unlocked: '{{n}} freigeschaltet',
     duration: 'Dauer',

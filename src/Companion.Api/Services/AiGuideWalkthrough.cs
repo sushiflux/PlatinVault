@@ -49,14 +49,15 @@ public sealed partial class AiGuideGeneratorService
     /// <summary>Step 1 of the walkthrough: only the outline (and the check that a reliable source exists at all).</summary>
     internal static string BuildWalkthroughOutlinePrompt(GameContext context, string focus, string sourceSituation, int maxParts)
     {
-        var rules = ResearchRules(context.Language, context.Blocks);
+        var rules = ResearchRules(context.Language, context.Blocks, context.Platform);
+        var factsHeader = FactsHeader(context.Platform, context.Language);
         var wishes = ResearchBlocks.BuildWishesBlock(context.Blocks, context.ResearchBase, ResearchBlocks.Scope.Chapter, context.Language);
         if (context.Language == Lang.English)
         {
             return $$"""
                 You are planning the WALKTHROUGH of a 100% guide for "{{context.Title}}". Write ALL texts in English. Your task is ONLY the outline of the walkthrough.
 
-                Known facts from Steam:
+                {{factsHeader}}
                 {{context.FactsBlock}}
                 Source situation according to the preliminary analysis: {{sourceSituation}}
                 Assignment: {{focus}}
@@ -87,7 +88,7 @@ public sealed partial class AiGuideGeneratorService
         return $$"""
             Du planst die KOMPLETTLÖSUNG eines 100%-Guides für „{{context.Title}}“. Schreibe ALLE Texte auf Deutsch. Deine Aufgabe ist NUR die Gliederung der Komplettlösung.
 
-            Bekannte Fakten aus Steam:
+            {{factsHeader}}
             {{context.FactsBlock}}
             Quellenlage laut Vorab-Analyse: {{sourceSituation}}
             Auftrag: {{focus}}
@@ -131,7 +132,7 @@ public sealed partial class AiGuideGeneratorService
     /// The shared part of the walkthrough prompts: the print-guide structure of a part, the reading-flow rule, the building blocks (incl. overview, boss card,
     /// the typed hints), the boss and acquisition rules and the own-words rule.
     /// </summary>
-    private static string WalkthroughBlocks(string language) => language == Lang.English
+    private static string WalkthroughBlocks(string language, GamePlatformContext? platform = null) => language == Lang.English
         ? $$"""
             {{WalkthroughStructure(language)}}
             {{WalkthroughReadingRules(language)}}
@@ -148,7 +149,7 @@ public sealed partial class AiGuideGeneratorService
               • "optional" (Optional content available here): optional boss, extra area, collectible that becomes available at this spot – and how to start it.
               • "side_quests" (Side quests here) with "quests": the side quests that become available here, compact (name, from when, missable window, short reward).
               • "tip" (Tip): practical advice for this spot (shortcut, save point, what to prepare).
-              • "achievement" (Achievement here) with "apiName": the exact Steam API name – what you have to do here to unlock it.
+              • "achievement" (Achievement here) with "apiName": {{ApiNameSingular(platform, language)}} – what you have to do here to unlock it.
               • "point_of_no_return" (Point of no return) with "items": ["..."] – everything you have to do before you continue.
             {{BossBlock(language)}}
             {{PuzzleBlock(language)}}
@@ -156,7 +157,7 @@ public sealed partial class AiGuideGeneratorService
             An item that has its own row in another chapter of this guide (weapons, collectibles, ...): name it in the hint and refer to the chapter ("see chapter ...") instead of repeating the table.
             Copyright: write in YOUR OWN WORDS. Never copy longer passages of a source word for word; facts (places, names, orders, codes) are fine.
 
-            {{BossRules(language)}}
+            {{BossRules(language, platform)}}
 
             {{AcquisitionRules(language)}}
             """
@@ -176,7 +177,7 @@ public sealed partial class AiGuideGeneratorService
               • "optional" (Optional hier verfügbar): optionaler Boss, Zusatzgebiet, Sammelobjekt, das an dieser Stelle verfügbar wird – und wie man es startet.
               • "side_quests" (Nebenquests hier) mit "quests": die Nebenquests, die hier verfügbar werden, kompakt (Name, ab wann, Zeitfenster, kurze Belohnung).
               • "tip" (Tipp): praktischer Rat für diese Stelle (Abkürzung, Speicherpunkt, was man vorbereiten sollte).
-              • "achievement" (Erfolg hier) mit "apiName": der exakte Steam-API-Name – was du hier tun musst, um ihn freizuschalten.
+              • "achievement" (Erfolg hier) mit "apiName": {{ApiNameSingular(platform, language)}} – was du hier tun musst, um ihn freizuschalten.
               • "point_of_no_return" (Point of no Return) mit "items": ["..."] – alles, was du vorher erledigen musst.
             {{BossBlock(language)}}
             {{PuzzleBlock(language)}}
@@ -184,7 +185,7 @@ public sealed partial class AiGuideGeneratorService
             Ein Item, das in einem anderen Kapitel dieses Guides eine eigene Zeile hat (Waffen, Sammelobjekte, ...): nenne es im Hinweis und verweise auf das Kapitel („siehe Kapitel ...“), statt die Tabelle zu wiederholen.
             Urheberrecht: Schreibe in EIGENEN WORTEN. Übernimm nie längere Passagen einer Quelle wörtlich; Fakten (Orte, Namen, Reihenfolgen, Codes) sind in Ordnung.
 
-            {{BossRules(language)}}
+            {{BossRules(language, platform)}}
 
             {{AcquisitionRules(language)}}
             """;
@@ -194,13 +195,14 @@ public sealed partial class AiGuideGeneratorService
     {
         var part = outline.Parts[index];
         var english = context.Language == Lang.English;
-        var rules = WithLinkRules(ResearchRules(context.Language, context.Blocks), context, part.Title + " " + part.Focus, GuideLinker.PartPromptCap);
+        var rules = WithLinkRules(ResearchRules(context.Language, context.Blocks, context.Platform), context, part.Title + " " + part.Focus, GuideLinker.PartPromptCap);
+        var factsHeader = FactsHeader(context.Platform, context.Language);
         var wishes = ResearchBlocks.BuildWishesBlock(context.Blocks, context.ResearchBase, ResearchBlocks.Scope.Chapter, context.Language);
         var detail = WalkthroughDetailLine(context.Blocks.Scope, context.Language);
         var list = string.Join("\n", outline.Parts.Select((p, i) => $"{(i == index ? "-> " : "   ")}{i + 1}. {p.Title}"));
         var sources = outline.Sources.Count > 0 ? string.Join("; ", outline.Sources) : english ? "(none named)" : "(keine genannt)";
         var others = otherChapters.Count > 0 ? string.Join("; ", otherChapters) : english ? "(none)" : "(keine)";
-        var blocks = WalkthroughBlocks(context.Language);
+        var blocks = WalkthroughBlocks(context.Language, context.Platform);
         var puzzleRules = PuzzleRules(context.Language);
         var achievements = AchievementReference(context);
 
@@ -209,7 +211,7 @@ public sealed partial class AiGuideGeneratorService
             return $$"""
                 You are writing ONE PART of the walkthrough of a 100% guide for "{{context.Title}}". Write ALL texts in English.
 
-                Known facts from Steam:
+                {{factsHeader}}
                 {{context.FactsBlock}}
 
                 Part {{index + 1}} of {{outline.Parts.Count}}: "{{part.Title}}"
@@ -243,7 +245,7 @@ public sealed partial class AiGuideGeneratorService
         return $$"""
             Du schreibst EINEN TEIL der Komplettlösung eines 100%-Guides für „{{context.Title}}“. Schreibe ALLE Texte auf Deutsch.
 
-            Bekannte Fakten aus Steam:
+            {{factsHeader}}
             {{context.FactsBlock}}
 
             Teil {{index + 1}} von {{outline.Parts.Count}}: „{{part.Title}}“
@@ -281,9 +283,10 @@ public sealed partial class AiGuideGeneratorService
     internal static string BuildWalkthroughSinglePrompt(GameContext context, string chapterTitle, string focus, string sourceSituation)
     {
         var english = context.Language == Lang.English;
-        var rules = WithLinkRules(ResearchRules(context.Language, context.Blocks), context, chapterTitle + " " + focus, GuideLinker.ChapterPromptCap);
+        var rules = WithLinkRules(ResearchRules(context.Language, context.Blocks, context.Platform), context, chapterTitle + " " + focus, GuideLinker.ChapterPromptCap);
+        var factsHeader = FactsHeader(context.Platform, context.Language);
         var wishes = ResearchBlocks.BuildWishesBlock(context.Blocks, context.ResearchBase, ResearchBlocks.Scope.Chapter, context.Language);
-        var single = WalkthroughSingleInstructions(context.Language);
+        var single = WalkthroughSingleInstructions(context.Language, context.Platform);
         var puzzleRules = PuzzleRules(context.Language);
         var achievements = AchievementReference(context);
 
@@ -292,7 +295,7 @@ public sealed partial class AiGuideGeneratorService
             return $$"""
                 You are writing the WALKTHROUGH chapter of a 100% guide for "{{context.Title}}". Write ALL texts in English.
 
-                Known facts from Steam:
+                {{factsHeader}}
                 {{context.FactsBlock}}
                 Source situation according to the preliminary analysis: {{sourceSituation}}
 
@@ -320,7 +323,7 @@ public sealed partial class AiGuideGeneratorService
         return $$"""
             Du schreibst das Kapitel KOMPLETTLÖSUNG eines 100%-Guides für „{{context.Title}}“. Schreibe ALLE Texte auf Deutsch.
 
-            Bekannte Fakten aus Steam:
+            {{factsHeader}}
             {{context.FactsBlock}}
             Quellenlage laut Vorab-Analyse: {{sourceSituation}}
 
@@ -349,9 +352,9 @@ public sealed partial class AiGuideGeneratorService
     /// The instructions of the single-answer walkthrough (reliable-source check, whole game compact, then the building blocks); shared by the one-chapter
     /// prompt and the walkthrough block of the batch prompt.
     /// </summary>
-    internal static string WalkthroughSingleInstructions(string language)
+    internal static string WalkthroughSingleInstructions(string language, GamePlatformContext? platform = null)
     {
-        var blocks = WalkthroughBlocks(language);
+        var blocks = WalkthroughBlocks(language, platform);
         return language == Lang.English
             ? $$"""
                 First check whether there is a reliable, COMPLETE walkthrough source (large site, official guide, big wiki). If not: return "sections" with ONE

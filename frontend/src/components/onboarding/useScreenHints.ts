@@ -11,6 +11,7 @@ export type HintScreen = 'dashboard' | 'game'
 // text of gameNav on a phone (chosen in HintTour), where the chapters are a drawer opened by a button instead of a panel.
 export type HintId =
   | 'dashboardAdd'
+  | 'dashboardAddGame'
   | 'dashboardStar'
   | 'dashboardSize'
   | 'dashboardCabinet'
@@ -33,6 +34,7 @@ export interface HintDefinition {
 export const HINTS: Record<HintScreen, HintDefinition[]> = {
   dashboard: [
     { target: 'dashboard-add', id: 'dashboardAdd' },
+    { target: 'dashboard-add-game', id: 'dashboardAddGame' },
     { target: 'dashboard-star', id: 'dashboardStar' },
     { target: 'dashboard-size', id: 'dashboardSize' },
     { target: 'dashboard-cabinet', id: 'dashboardCabinet' },

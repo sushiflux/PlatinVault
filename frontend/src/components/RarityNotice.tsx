@@ -23,7 +23,7 @@ export function RarityNotice({ rarity }: { rarity: LiveRarityDto }) {
     <div className="pv-note pv-note--warn flex items-start gap-3" role="status" data-testid="rarity-notice" data-state={rarity.state}>
       <IconInfoCircle size={20} className="mt-0.5 shrink-0" style={{ color: 'var(--accent-gold-text)' }} aria-hidden="true" />
       <div className="min-w-0 flex-1 text-sm">
-        <p className="font-semibold">{title}</p>
+        <p className="pv-rarity-title font-semibold">{title}</p>
         <p className="break-words leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
           {message}
         </p>

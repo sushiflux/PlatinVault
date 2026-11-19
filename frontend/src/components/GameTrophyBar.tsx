@@ -1,16 +1,25 @@
 import { IconRefresh } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
-import type { LiveGameAchievementsDto } from '../api/types'
+import type { LiveGameAchievementsDto, TrophyKind } from '../api/types'
 import { useFormat } from '../i18n/format'
 import '../styles/gameframe.css'
 import { RowIconButton } from './pins/RowIconButton'
-import { TrophyTierPills } from './TrophyTierPills'
+import { TrophyTierPills, type TrophyFigures } from './TrophyTierPills'
+
+// What the bar needs of a game's trophies: the live list of a Steam game and the researched list of a game added by hand both fit
+export type TrophyBarData = Pick<LiveGameAchievementsDto, 'achievedCount' | 'totalCount' | 'progressPercentage' | 'platinum' | 'gold' | 'silver' | 'bronze'>
 
 interface GameTrophyBarProps {
-  // The live trophies of the game (the page's own query); undefined while they load
-  data: LiveGameAchievementsDto | undefined
-  // False without a Steam link: there are no trophies to show, the bar is left out
-  hasSteam: boolean
+  // The trophies of the game (the page's own query); undefined while they load
+  data: TrophyBarData | undefined
+  // False when the game has no trophy source (no Steam link, a platform without trophies): the bar is left out
+  hasTrophies: boolean
+  // The four figures under the line: the Steam tiers (default), the grades of a PlayStation list, or one total (every other platform)
+  figures?: TrophyFigures
+  // PlayStation calls them trophies, every other platform achievements (the words of the total figure)
+  kind?: TrophyKind
+  // False = a game added by hand without a researched list yet: the line says so instead of "0 of 0"
+  researched?: boolean
   // Fetches the trophies from Steam again; the button is left out when the page gives none
   onRefresh?: () => void
   // The trophies are being fetched right now (the icon turns)
@@ -22,11 +31,11 @@ interface GameTrophyBarProps {
  * Shown on every tab of the game. The areas (live trophies, statistics, story) and the chapters are entries of the shell's tree
  * navigation, so the bar carries nothing else than the refresh action of the Steam data.
  */
-export function GameTrophyBar({ data, hasSteam, onRefresh, refreshing = false }: GameTrophyBarProps) {
+export function GameTrophyBar({ data, hasTrophies, figures = 'steam', kind = 'trophies', researched = true, onRefresh, refreshing = false }: GameTrophyBarProps) {
   const { t } = useTranslation('game')
   const { t: tl } = useTranslation('live')
   const fmt = useFormat()
-  if (!hasSteam) return null
+  if (!hasTrophies) return null
   const percent = Math.max(0, Math.min(100, data?.progressPercentage ?? 0))
 
   return (
@@ -34,8 +43,10 @@ export function GameTrophyBar({ data, hasSteam, onRefresh, refreshing = false }:
       <div className="pv-gbar-top">
         {/* One text line high from the first frame, so the figures arriving (skeleton -> text) never change the line's height */}
         <span className="pv-gbar-sum progress-info">
-          {data ? (
-            t('trophyBar.summary', {
+          {data && !researched ? (
+            t('trophyBar.notResearched')
+          ) : data ? (
+            t(kind === 'achievements' ? 'trophyBar.summaryAchievements' : 'trophyBar.summary', {
               achieved: fmt.number(data.achievedCount),
               total: fmt.number(data.totalCount),
               percent: fmt.percent(data.progressPercentage, 1),
@@ -62,7 +73,7 @@ export function GameTrophyBar({ data, hasSteam, onRefresh, refreshing = false }:
         <i style={{ inlineSize: `${percent}%` }} />
       </div>
       <div className="pv-tiers">
-        <TrophyTierPills data={data} withTooltips />
+        <TrophyTierPills data={data} withTooltips variant={figures} kind={kind} empty={Boolean(data) && !researched} />
       </div>
     </div>
   )

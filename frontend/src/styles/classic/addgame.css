@@ -1,0 +1,155 @@
+/* Design "Klassisch" - area file, see index.css for the rules (scope every rule under :root[data-design='classic'], look only). */
+/* Owner: the "add a game" dialog, its platform choice, IGDB result list, picked-game card and cover field (components/addgame/), plus the
+   change-cover dialog of a game's head. The dialog shell, buttons, fields, notes and the error block come from base.css. Here: the old language of
+   these parts - framed groups with the 11 px radius, tinted selected cells (no thin line), crystal-tinted marks, a soft crystal glow on the drop zone. */
+
+/* ---------------------------------------------------------------- dialog parts */
+:root[data-design='classic'] .pv-addgame-head,
+:root[data-design='classic'] .pv-addgame-foot {
+  background: var(--bg-elevated);
+}
+
+:root[data-design='classic'] .pv-addgame-sub {
+  color: var(--text-secondary);
+}
+
+:root[data-design='classic'] .pv-field-msg-in,
+:root[data-design='classic'] .pv-field-msg > .pv-reserve-copy {
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------- platform choice: one framed group, the selected cell the crystal tint */
+:root[data-design='classic'] .pv-pf-grid {
+  border-color: var(--border-subtle);
+  background: var(--bg-surface);
+}
+
+:root[data-design='classic'] .pv-pf-cell {
+  color: var(--text-secondary);
+  font-weight: 700;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-pf-cell:not(:nth-child(3n + 1)) {
+  border-inline-start-color: var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-pf-cell:nth-child(n + 4) {
+  border-block-start-color: var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-pf-cell:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+:root[data-design='classic'] .pv-pf-cell[aria-checked='true'] {
+  background: var(--accent-crystal-bg);
+  color: var(--accent-crystal);
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-pf-cell[aria-checked='true']::before {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-pf-cell:focus-visible {
+  outline-color: var(--accent-crystal);
+}
+
+@media (max-width: 639px) {
+  :root[data-design='classic'] .pv-pf-cell + .pv-pf-cell {
+    border-block-start-color: var(--border-subtle);
+  }
+}
+
+:root[data-design='classic'] .pv-igdb-mark {
+  font-weight: 800;
+  background: var(--accent-crystal-bg);
+  border-color: var(--accent-crystal-border);
+}
+
+/* ---------------------------------------------------------------- IGDB results and the picked game */
+:root[data-design='classic'] .pv-igdb-count {
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  border-color: var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-igdb-list {
+  border-color: var(--border-subtle);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+:root[data-design='classic'] .pv-igdb-list > li + li {
+  border-block-start-color: var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-igdb-hit {
+  transition: background-color 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-igdb-hit:hover {
+  background: var(--accent-crystal-bg);
+}
+
+:root[data-design='classic'] .pv-igdb-hit-name,
+:root[data-design='classic'] .pv-igdb-picked-name {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-igdb-hit-have {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-igdb-thumb,
+:root[data-design='classic'] .pv-igdb-cover {
+  box-shadow: 0 2px 8px -3px rgba(15, 23, 42, 0.5);
+}
+
+:root[data-design='classic'] .pv-igdb-note {
+  background: var(--bg-elevated);
+  border-color: var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-igdb-picked {
+  background: var(--bg-elevated);
+  border-color: var(--border-subtle);
+  box-shadow: var(--shadow-card);
+}
+
+:root[data-design='classic'] .pv-igdb-link {
+  font-weight: 700;
+}
+
+/* ---------------------------------------------------------------- cover field */
+:root[data-design='classic'] .pv-cover-zone {
+  border-color: var(--border-strong);
+  background: var(--bg-surface);
+}
+
+:root[data-design='classic'] .pv-cover-zone[data-dragging='true'] {
+  background: var(--accent-crystal-bg);
+  border-color: var(--accent-crystal);
+  box-shadow: 0 0 0 4px var(--accent-crystal-bg);
+}
+
+:root[data-design='classic'] .pv-cover-zone[data-invalid='true'] {
+  border-color: var(--accent-crimson);
+  background: var(--accent-crimson-bg);
+}
+
+:root[data-design='classic'] .pv-cover-name {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-cover-thumb {
+  box-shadow: 0 2px 8px -3px rgba(15, 23, 42, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-design='classic'] .pv-pf-cell,
+  :root[data-design='classic'] .pv-igdb-hit {
+    transition: none;
+  }
+}

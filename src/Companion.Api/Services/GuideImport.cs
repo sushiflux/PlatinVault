@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Companion.Api.Data;
+using Companion.Api.Endpoints;
 using Companion.Api.Localization;
 
 namespace Companion.Api.Services;
@@ -26,7 +27,23 @@ public sealed record ParsedGuide(
     string GenreTags,
     // "de" / "en": the language the guide text is written in (files without the field are German, as all files were before)
     string ContentLanguage,
-    List<ParsedGuideTab> Tabs);
+    List<ParsedGuideTab> Tabs)
+{
+    // A game of another platform than Steam (null = a Steam game or one without a platform, as before): platform (+ "ps5"/"ps4"), IGDB id,
+    // facts and the researched trophy list; never a Steam AppID
+    public string? Platform { get; init; }
+    public string? PlatformVariant { get; init; }
+    public int? IgdbId { get; init; }
+    public string? FactsSource { get; init; }
+    public string? Developer { get; init; }
+    public string? Publisher { get; init; }
+    public string? Summary { get; init; }
+    public DateTimeOffset? FirstReleaseAt { get; init; }
+    public string? ReleaseDate { get; init; }
+    public DateTimeOffset? TrophyListResearchedAt { get; init; }
+    public List<ParsedTrophy> Trophies { get; init; } = [];
+    public List<TrophySourceDto> TrophySources { get; init; } = [];
+}
 
 /// <summary>IsLore = the optional "story-lore" tab (the only slug an import keeps; every other tab slug is generated).</summary>
 public sealed record ParsedGuideTab(string Title, string Icon, string SectionsJson, bool IsLore = false, string? GroupKey = null, bool IsWalkthrough = false, string? TopicId = null);
@@ -86,10 +103,14 @@ public static class GuideImport
             tabs = ParseTabs(root);
         }
 
+        var steamAppId = ParseSteamAppId(game);
+        var manual = ParseManual(game, steamAppId);
+        var trophies = GuideTrophyImport.Parse(root, manual?.Platform);
+
         return new ParsedGuide(
             Title: title,
             Subtitle: OrDefault(OptionalText(game, "subtitle", "game.subtitle", MaxSubtitle), defaults.Subtitle),
-            SteamAppId: ParseSteamAppId(game),
+            SteamAppId: steamAppId,
             CoverUrl: HttpUrlOrEmpty(OptionalText(game, "coverUrl", "game.coverUrl", int.MaxValue)),
             HeroBannerUrl: HttpUrlOrEmpty(OptionalText(game, "heroBannerUrl", "game.heroBannerUrl", int.MaxValue)),
             AccentColor: OrDefault(OptionalText(game, "accentColor", "game.accentColor", MaxAccentColor), "emerald"),
@@ -98,7 +119,85 @@ public static class GuideImport
             DifficultyInfo: OrDefault(OptionalText(game, "difficultyInfo", "game.difficultyInfo", MaxShort), defaults.DifficultyInfo),
             GenreTags: OrDefault(OptionalText(game, "genreTags", "game.genreTags", MaxShort), defaults.GenreTags),
             ContentLanguage: language,
-            Tabs: tabs);
+            Tabs: tabs)
+        {
+            Platform = manual?.Platform,
+            PlatformVariant = manual?.Variant,
+            IgdbId = manual?.IgdbId,
+            FactsSource = manual?.FactsSource,
+            Developer = manual?.Developer,
+            Publisher = manual?.Publisher,
+            Summary = manual?.Summary,
+            FirstReleaseAt = manual?.FirstReleaseAt,
+            ReleaseDate = manual?.ReleaseDate,
+            TrophyListResearchedAt = manual?.TrophyListResearchedAt,
+            Trophies = trophies.Trophies,
+            TrophySources = trophies.Sources,
+        };
+    }
+
+    private sealed record ManualFields(
+        string Platform, string? Variant, int? IgdbId, string? FactsSource, string? Developer, string? Publisher, string? Summary,
+        DateTimeOffset? FirstReleaseAt, string? ReleaseDate, DateTimeOffset? TrophyListResearchedAt);
+
+    /// <summary>
+    /// The optional fields of a game added by hand. No "game.platform" (or "steam") = an ordinary guide file: null. Another platform is checked
+    /// like the add dialog does (PlayStation needs ps5/ps4) and may not come with a Steam AppID.
+    /// </summary>
+    private static ManualFields? ParseManual(JsonElement game, int? steamAppId)
+    {
+        var platformText = OptionalText(game, "platform", "game.platform", 40);
+        if (platformText.Length == 0 || GamePlatforms.IsSteam(platformText))
+        {
+            return null;
+        }
+
+        var validation = GamePlatforms.Validate(platformText, OptionalText(game, "platformVariant", "game.platformVariant", 8));
+        if (validation.Choice is not { } choice)
+        {
+            throw new GuideImportException(ServerTexts.ManualGames.ImportPlatformInvalid(validation.Message!.Value));
+        }
+        if (steamAppId is not null)
+        {
+            throw new GuideImportException(ServerTexts.ManualGames.ImportSteamAppIdOnManual);
+        }
+
+        int? igdbId = null;
+        if (TryGet(game, "igdbId", out var igdbEl) && igdbEl.ValueKind != JsonValueKind.Null)
+        {
+            if (igdbEl.ValueKind != JsonValueKind.Number || !igdbEl.TryGetInt32(out var id) || id <= 0)
+            {
+                throw new GuideImportException(ServerTexts.ManualGames.ImportIgdbIdInvalid);
+            }
+            igdbId = id;
+        }
+
+        var factsSource = OptionalText(game, "factsSource", "game.factsSource", 8).ToLowerInvariant();
+        return new ManualFields(
+            Platform: choice.Platform,
+            Variant: choice.Variant,
+            IgdbId: igdbId,
+            FactsSource: factsSource is "igdb" or "ai" ? factsSource : null,
+            Developer: NullIfEmpty(OptionalText(game, "developer", "game.developer", 240)),
+            Publisher: NullIfEmpty(OptionalText(game, "publisher", "game.publisher", 240)),
+            Summary: NullIfEmpty(OptionalText(game, "summary", "game.summary", 3000)),
+            FirstReleaseAt: OptionalDate(game, "firstReleaseAt", "game.firstReleaseAt"),
+            ReleaseDate: NullIfEmpty(OptionalText(game, "releaseDate", "game.releaseDate", 60)),
+            TrophyListResearchedAt: OptionalDate(game, "trophyListResearchedAt", "game.trophyListResearchedAt"));
+    }
+
+    private static string? NullIfEmpty(string value) => value.Length == 0 ? null : value;
+
+    private static DateTimeOffset? OptionalDate(JsonElement obj, string name, string path)
+    {
+        var text = OptionalText(obj, name, path, 40);
+        if (text.Length == 0)
+        {
+            return null;
+        }
+        return DateTimeOffset.TryParse(text, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal, out var date)
+            ? date.ToUniversalTime()
+            : throw new GuideImportException(ServerTexts.ManualGames.ImportDateInvalid(path));
     }
 
     private static void ValidateHeader(JsonElement root)

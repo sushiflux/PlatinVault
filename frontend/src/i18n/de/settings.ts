@@ -386,6 +386,20 @@ const settings = {
     restartTour: 'Einführung erneut starten',
     hintsReset: 'Die Hinweise erscheinen beim nächsten Besuch jeder Seite wieder.',
   },
+  // Settings > System > Design (components/settings/DesignSection.tsx): the look of the whole app, saved on the server
+  design: {
+    title: 'Design',
+    label: 'Aussehen',
+    options: { light: 'Leicht', classic: 'Klassisch' },
+    // One line under the choice for the selected option (room is reserved for the longer one)
+    hints: {
+      light: 'Ruhige Flächen, dünne Linien, Schrift Inter.',
+      classic: 'Der frühere Look mit runderen Ecken, kräftigerer Schrift, Verläufen und Glanz.',
+    },
+    scope: 'Gilt für dieses PlatinVault auf allen Geräten, im Browser und im Windows-Programm.',
+    saveFailedTitle: 'Das Design wurde nicht gespeichert',
+    saveFailed: 'Das vorherige Design ist wieder aktiv. Grund: {{reason}}',
+  },
   // Settings > System > Folders (Windows program only, components/settings/FoldersSection.tsx)
   folders: {
     title: 'Ordner',

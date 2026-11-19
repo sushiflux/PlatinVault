@@ -1,0 +1,143 @@
+/* Design "Klassisch" - tokens. The look of PlatinVault before the "ganz leicht" redesign (state of commit 9fabf8e, index.css :root),
+   plus classic values for every token added since. Only active under <html data-design="classic"> (utils/uiDesign.ts); the light
+   design is untouched. :root[data-design="classic"] (0,2,0) beats the light :root (0,1,0) and Tailwind's @layer theme.
+
+   Contrast (computed with wip tooling, alpha tints composited over their real background), both themes:
+     text      --text-primary / -secondary / -muted on --bg-primary, --bg-surface, --bg-elevated, --bg-input       >= 4.5:1
+               (lowest: light muted #475569 on #edf1f9 6.7:1, dark muted #a3b3c9 on #28354e 5.8:1)
+     accents   crystal, emerald, crimson, gold-text, purple on the surface and on their own tint                    >= 4.5:1
+     UI parts  --border-strong, --pv-scroll-thumb, tier icons on the surfaces                                      >= 3:1
+     tooltip   --tt-fg / --tt-muted on --tt-bg                                                                    >= 4.5:1
+   Dark --border-strong is #7b8aa5 (4.2:1 on the dark surface; the old #64748b was 3.06:1, too close to the limit), the one deliberate
+   deviation. */
+
+:root[data-design='classic'] {
+  /* Tailwind theme tokens: the operating system's UI font (no bundled Inter), the full weight scale, the old radius scale */
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  --font-weight-black: 900;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+
+  /* Surfaces: page, card, panel inside a card */
+  --bg-primary: light-dark(#f4f6fb, #171f30);
+  --bg-surface: light-dark(#ffffff, #1f293d);
+  --bg-elevated: light-dark(#edf1f9, #28354e);
+  --bg-glass: light-dark(rgba(255, 255, 255, 0.9), rgba(31, 41, 61, 0.9));
+  /* New since 9fabf8e: frame of the shell (header, side navigation) = the card surface; form fields = the old input fill */
+  --bg-frame: light-dark(#ffffff, #1f293d);
+  --bg-input: light-dark(#f4f6fb, #171f30);
+
+  --text-primary: light-dark(#1e293b, #f8fafc);
+  --text-secondary: light-dark(#334155, #dbe4f0);
+  --text-muted: light-dark(#475569, #a3b3c9);
+
+  --border-subtle: light-dark(#cbd5e1, #384966);
+  --border-strong: light-dark(#64748b, #7b8aa5);
+  /* New since 9fabf8e: empty part of bars and sliders, the dimmed backdrop of dialogs */
+  --track: light-dark(#e2e8f0, #33425e);
+  --overlay: rgba(15, 23, 42, 0.55);
+
+  /* The action set of the light design, mapped to the old crystal accent: a selected segment / tab was the crystal tint with crystal
+     text, the active line the crystal colour */
+  --act: light-dark(#0369a1, #7dd3fc);
+  --act-on: light-dark(#ffffff, #04263a);
+  --act-hover: light-dark(#075985, #a5e0fd);
+  --sel-bg: light-dark(#e0f2fe, rgba(125, 211, 252, 0.16));
+  --sel-text: light-dark(#0369a1, #7dd3fc);
+  --ind: light-dark(#0369a1, #7dd3fc);
+  --link: light-dark(#0369a1, #7dd3fc);
+  --focus: light-dark(#0369a1, #7dd3fc);
+  --prog: light-dark(#0369a1, #7dd3fc);
+
+  /* Pastel accents with translucent tints in dark */
+  --accent-crystal: light-dark(#0369a1, #7dd3fc);
+  --accent-crystal-bg: light-dark(#e0f2fe, rgba(125, 211, 252, 0.16));
+  --accent-crystal-border: light-dark(#7dd3fc, rgba(125, 211, 252, 0.42));
+
+  --accent-emerald: light-dark(#047857, #6ee7b7);
+  --accent-emerald-bg: light-dark(#d1fae5, rgba(110, 231, 183, 0.16));
+  --accent-emerald-border: light-dark(#6ee7b7, rgba(110, 231, 183, 0.42));
+
+  --accent-gold: light-dark(#b45309, #fcd34d);
+  --accent-gold-bg: light-dark(#fef3c7, rgba(252, 211, 77, 0.16));
+  --accent-gold-border: light-dark(#fcd34d, rgba(252, 211, 77, 0.42));
+  --accent-gold-text: light-dark(#92400e, #fcd34d);
+
+  --accent-crimson: light-dark(#be123c, #fda4af);
+  --accent-crimson-bg: light-dark(#ffe4e6, rgba(253, 164, 175, 0.16));
+  --accent-crimson-border: light-dark(#fda4af, rgba(253, 164, 175, 0.42));
+  --brand-twitch: light-dark(#9146ff, #a970ff);
+
+  --accent-purple: light-dark(#6d28d9, #c4b5fd);
+  --accent-purple-bg: light-dark(#ede9fe, rgba(196, 181, 253, 0.16));
+  --accent-purple-border: light-dark(#c4b5fd, rgba(196, 181, 253, 0.42));
+
+  /* Trophy tiers: icon (>= 3:1), text (>= 4.5:1; the dark bronze text is lighter than the icon because the list pill tints it over the green unlocked row), and the tinted pill behind them (new since 9fabf8e, the old accent tints) */
+  --tier-platinum: light-dark(#0369a1, #7dd3fc);
+  --tier-gold: light-dark(#a36a05, #fcd34d);
+  --tier-silver: light-dark(#64748b, #cbd5e1);
+  --tier-bronze: light-dark(#9a3f17, #e8905a);
+  --tier-platinum-text: light-dark(#0369a1, #7dd3fc);
+  --tier-gold-text: light-dark(#92400e, #fcd34d);
+  --tier-silver-text: light-dark(#475569, #cbd5e1);
+  --tier-bronze-text: light-dark(#8a3412, #fdcaa0);
+  --tier-platinum-bg: light-dark(#e0f2fe, rgba(125, 211, 252, 0.16));
+  --tier-gold-bg: light-dark(#fef3c7, rgba(252, 211, 77, 0.16));
+  --tier-silver-bg: light-dark(#eef2f7, rgba(203, 213, 225, 0.14));
+  --tier-bronze-bg: light-dark(#fdeee4, rgba(232, 144, 90, 0.16));
+
+  /* On/off switches: unchanged meaning (green on, red off) and the same values as before the redesign */
+  --c-toggle-on: light-dark(#15803d, #4ade80);
+  --c-toggle-off: light-dark(#dc2626, #f87171);
+  --c-toggle-knob: light-dark(#ffffff, #0b1220);
+  --c-toggle-focus: light-dark(#0369a1, #7dd3fc);
+
+  --heart: light-dark(#15803d, #4ade80);
+
+  /* Shadows. The old --shadow-card was written as light-dark(<shadow>, <shadow>), which browsers drop (light-dark() takes colours
+     only), so classic cards never had a visible shadow: kept as none. --shadow-pop is the literal shadow the old dialogs and
+     popovers really drew; light-dark() cannot hold it either, so the dark value is set below. */
+  --shadow-card: none;
+  --shadow-pop: 0 20px 50px rgba(15, 23, 42, 0.28);
+
+  /* The old radius scale: 7 px small parts, 11 px buttons/inputs/segments, 16 px cards and panels */
+  --radius-lg: 16px;
+  --radius-md: 11px;
+  --radius-sm: 7px;
+
+  /* Overlay scrollbar thumb (the old thumb colours; >= 3:1 on every surface: light 4.8:1 on white, dark 4.2:1 on #1f293d) */
+  --pv-scroll-thumb: light-dark(#64748b, #7b8aa5);
+  --pv-scroll-thumb-hover: light-dark(#475569, #a3b3c9);
+  --pv-scroll-track: light-dark(#e8edf6, #1b2438);
+
+  /* Tokens of the old look that the light design no longer has; the area files of this folder use them */
+  --control-bg: light-dark(#ffffff, #2e3d59);
+  --control-bg-hover: light-dark(#e2e8f0, #3a4b6b);
+  --control-border: light-dark(#64748b, #8293ad);
+  --play-text: light-dark(#ffffff, #052e22);
+  --bar-twitch-icon: light-dark(#7c3aed, #c0a0ff);
+  --pv-pbar-grad: linear-gradient(90deg, #7da3dc 0%, #5bbad9 26%, #86d0c6 50%, #ecd98e 74%, #f3b72c 100%);
+  --pv-pbar-veil: color-mix(in srgb, var(--bg-surface) 90%, transparent);
+  /* The gloss of filled bars and buttons (white highlight on the upper half); raised per tier by the area files */
+  --pv-gloss: 0.24;
+}
+
+:root[data-design='classic'][data-theme='dark'] {
+  --shadow-pop: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+@supports (background: linear-gradient(in oklab 90deg, red, blue)) {
+  :root[data-design='classic'] {
+    --pv-pbar-grad: linear-gradient(in oklab 90deg, #7da3dc 0%, #5bbad9 26%, #86d0c6 50%, #ecd98e 74%, #f3b72c 100%);
+  }
+}
+
+@media (forced-colors: active) {
+  :root[data-design='classic'] {
+    --border-subtle: CanvasText;
+    --border-strong: Highlight;
+  }
+}

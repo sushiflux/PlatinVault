@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion, useReducedMotion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
-import { IconBrandSteam, IconCheck, IconDeviceGamepad2, IconExternalLink, IconKey, IconLoader2, IconStar } from '@tabler/icons-react'
+import { IconBrandSteam, IconCheck, IconDeviceGamepad2, IconExternalLink, IconKey, IconLoader2, IconPlus, IconStar } from '@tabler/icons-react'
 import type { Icon } from '@tabler/icons-react'
 import { fetchSettings, steamLoginUrl } from '../api/client'
 import type { SettingsTab } from './SettingsModal'
@@ -20,6 +20,8 @@ interface DashboardEmptyHelpProps {
   onOpenSettings: (tab: SettingsTab) => void
   // Switches the dashboard to "All games"
   onShowLibrary: () => void
+  // Opens the "add a game by hand" dialog (a game of another platform, no Steam needed); without it the line is not shown
+  onAddGame?: () => void
 }
 
 // The number of a step in a small square; a done step shows a check mark, a step that is being checked a spinner. The size is the same in
@@ -76,7 +78,7 @@ const ACTION = 'pv-btn pv-step-btn'
  * "All games" (its guide is created on the game page). The steps show the real state (settings) and the next open one is the
  * primary button. Everything is fixed in size: a step turning "done" changes a mark and a button label, nothing moves.
  */
-export function DashboardEmptyHelp({ hasLibrary, onOpenSettings, onShowLibrary }: DashboardEmptyHelpProps) {
+export function DashboardEmptyHelp({ hasLibrary, onOpenSettings, onShowLibrary, onAddGame }: DashboardEmptyHelpProps) {
   const { t } = useTranslation('dashboard')
   const reduceMotion = useReducedMotion() ?? false
   const settingsQuery = useQuery({ queryKey: ['settings'], queryFn: fetchSettings })
@@ -150,6 +152,27 @@ export function DashboardEmptyHelp({ hasLibrary, onOpenSettings, onShowLibrary }
           )}
         </StepRow>
       </ol>
+
+      {/* The other way in: a game of another platform (or one that is not in the Steam library) by hand - no Steam account needed */}
+      {onAddGame && (
+        <div className="pv-step" data-manual="">
+          <span className="pv-step-mark" aria-hidden="true">
+            <IconPlus size={18} />
+          </span>
+          <div className="min-w-0">
+            <div className="pv-step-title">
+              <IconDeviceGamepad2 size={18} aria-hidden="true" />
+              <span>{t('empty.manual.title')}</span>
+            </div>
+            <p className="pv-step-text">{t('empty.manual.text')}</p>
+          </div>
+          <div className="pv-step-act">
+            <button type="button" className={ACTION} onClick={onAddGame}>
+              {t('empty.manual.action')}
+            </button>
+          </div>
+        </div>
+      )}
     </motion.section>
   )
 }

@@ -15,7 +15,7 @@ partial class CompanionDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261116234222_AddIgdbUserRating";
+    public override string LastMigrationId => "20261119085912_AddManualGames";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -39,6 +39,34 @@ partial class CompanionDbContextModelSnapshot : ModelSnapshot
                 b.HasKey("Key");
 
                 b.ToTable("app_settings");
+            });
+
+        modelBuilder.Entity("Companion.Api.Data.GameCoverEntity", b =>
+            {
+                b.Property<Guid>("GameId")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("ContentType")
+                    .IsRequired()
+                    .HasMaxLength(40)
+                    .HasColumnType("TEXT");
+
+                b.Property<byte[]>("Data")
+                    .IsRequired()
+                    .HasColumnType("BLOB");
+
+                b.Property<string>("Sha256")
+                    .IsRequired()
+                    .HasMaxLength(64)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("UpdatedAt")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.HasKey("GameId");
+
+                b.ToTable("game_covers");
             });
 
         modelBuilder.Entity("Companion.Api.Data.GameEntity", b =>
@@ -68,6 +96,10 @@ partial class CompanionDbContextModelSnapshot : ModelSnapshot
                     .IsRequired()
                     .HasColumnType("TEXT");
 
+                b.Property<string>("Developer")
+                    .HasMaxLength(240)
+                    .HasColumnType("TEXT");
+
                 b.Property<string>("DifficultyInfo")
                     .IsRequired()
                     .HasMaxLength(240)
@@ -78,7 +110,14 @@ partial class CompanionDbContextModelSnapshot : ModelSnapshot
                     .HasMaxLength(160)
                     .HasColumnType("TEXT");
 
+                b.Property<string>("FactsSource")
+                    .HasMaxLength(8)
+                    .HasColumnType("TEXT");
+
                 b.Property<string>("FactsUpdatedAt")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("FirstReleaseAt")
                     .HasColumnType("TEXT");
 
                 b.Property<string>("GenreTags")
@@ -90,6 +129,9 @@ partial class CompanionDbContextModelSnapshot : ModelSnapshot
                     .IsRequired()
                     .HasMaxLength(1000)
                     .HasColumnType("TEXT");
+
+                b.Property<int?>("IgdbId")
+                    .HasColumnType("INTEGER");
 
                 b.Property<int?>("IgdbRating")
                     .HasColumnType("INTEGER");
@@ -111,11 +153,26 @@ partial class CompanionDbContextModelSnapshot : ModelSnapshot
                     .HasMaxLength(240)
                     .HasColumnType("TEXT");
 
+                b.Property<string>("Platform")
+                    .IsRequired()
+                    .ValueGeneratedOnAdd()
+                    .HasMaxLength(16)
+                    .HasColumnType("TEXT")
+                    .HasDefaultValue("steam");
+
+                b.Property<string>("PlatformVariant")
+                    .HasMaxLength(8)
+                    .HasColumnType("TEXT");
+
                 b.Property<string>("PlatinumAt")
                     .HasColumnType("TEXT");
 
                 b.Property<int?>("PlaytimeMinutes")
                     .HasColumnType("INTEGER");
+
+                b.Property<string>("Publisher")
+                    .HasMaxLength(240)
+                    .HasColumnType("TEXT");
 
                 b.Property<string>("ReleaseDate")
                     .HasMaxLength(60)
@@ -152,6 +209,10 @@ partial class CompanionDbContextModelSnapshot : ModelSnapshot
                     .HasMaxLength(500)
                     .HasColumnType("TEXT");
 
+                b.Property<string>("Summary")
+                    .HasMaxLength(3000)
+                    .HasColumnType("TEXT");
+
                 b.Property<string>("Title")
                     .IsRequired()
                     .HasMaxLength(240)
@@ -166,11 +227,19 @@ partial class CompanionDbContextModelSnapshot : ModelSnapshot
                 b.Property<string>("TrophiesUpdatedAt")
                     .HasColumnType("TEXT");
 
+                b.Property<string>("TrophyListResearchedAt")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("TrophyListSourcesJson")
+                    .HasColumnType("TEXT");
+
                 b.Property<string>("UpdatedAt")
                     .IsRequired()
                     .HasColumnType("TEXT");
 
                 b.HasKey("Id");
+
+                b.HasIndex("IgdbId");
 
                 b.HasIndex("Slug")
                     .IsUnique();
@@ -226,6 +295,113 @@ partial class CompanionDbContextModelSnapshot : ModelSnapshot
                 b.HasKey("GameId", "Language");
 
                 b.ToTable("game_translations");
+            });
+
+        modelBuilder.Entity("Companion.Api.Data.GameTrophyEntity", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Category")
+                    .IsRequired()
+                    .HasMaxLength(60)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("CreatedAt")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Description")
+                    .IsRequired()
+                    .HasMaxLength(1000)
+                    .HasColumnType("TEXT");
+
+                b.Property<Guid>("GameId")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Grade")
+                    .HasMaxLength(12)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("GroupName")
+                    .HasMaxLength(120)
+                    .HasColumnType("TEXT");
+
+                b.Property<bool>("IsHidden")
+                    .HasColumnType("INTEGER");
+
+                b.Property<bool>("IsMissable")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(240)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("OriginalName")
+                    .HasMaxLength(240)
+                    .HasColumnType("TEXT");
+
+                b.Property<int?>("Points")
+                    .HasColumnType("INTEGER");
+
+                b.Property<double?>("RarityPercent")
+                    .HasColumnType("REAL");
+
+                b.Property<int>("SortOrder")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Tip")
+                    .IsRequired()
+                    .HasMaxLength(1500)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("TrophyKey")
+                    .IsRequired()
+                    .HasMaxLength(80)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("UnlockedAt")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("UpdatedAt")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.HasKey("Id");
+
+                b.HasIndex("GameId", "TrophyKey")
+                    .IsUnique();
+
+                b.ToTable("game_trophies");
+            });
+
+        modelBuilder.Entity("Companion.Api.Data.GameTrophyTranslationEntity", b =>
+            {
+                b.Property<Guid>("GameId")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Language")
+                    .HasMaxLength(8)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("ItemsJson")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("SourceHash")
+                    .IsRequired()
+                    .HasMaxLength(64)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("UpdatedAt")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.HasKey("GameId", "Language");
+
+                b.ToTable("game_trophy_translations");
             });
 
         modelBuilder.Entity("Companion.Api.Data.GuideTabEntity", b =>
@@ -408,7 +584,40 @@ partial class CompanionDbContextModelSnapshot : ModelSnapshot
                 b.ToTable("progress_checks");
             });
 
+        modelBuilder.Entity("Companion.Api.Data.GameCoverEntity", b =>
+            {
+                b.HasOne("Companion.Api.Data.GameEntity", "Game")
+                    .WithOne()
+                    .HasForeignKey("Companion.Api.Data.GameCoverEntity", "GameId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                b.Navigation("Game");
+            });
+
         modelBuilder.Entity("Companion.Api.Data.GameTranslationEntity", b =>
+            {
+                b.HasOne("Companion.Api.Data.GameEntity", "Game")
+                    .WithMany()
+                    .HasForeignKey("GameId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                b.Navigation("Game");
+            });
+
+        modelBuilder.Entity("Companion.Api.Data.GameTrophyEntity", b =>
+            {
+                b.HasOne("Companion.Api.Data.GameEntity", "Game")
+                    .WithMany("Trophies")
+                    .HasForeignKey("GameId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                b.Navigation("Game");
+            });
+
+        modelBuilder.Entity("Companion.Api.Data.GameTrophyTranslationEntity", b =>
             {
                 b.HasOne("Companion.Api.Data.GameEntity", "Game")
                     .WithMany()
@@ -457,6 +666,8 @@ partial class CompanionDbContextModelSnapshot : ModelSnapshot
                 b.Navigation("ProgressChecks");
 
                 b.Navigation("Tabs");
+
+                b.Navigation("Trophies");
             });
 #pragma warning restore 612, 618
     }

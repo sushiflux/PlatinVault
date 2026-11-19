@@ -37,6 +37,19 @@ describe('formatElapsed', () => {
   })
 })
 
+describe('AiProgressLines: the research of a game added by hand', () => {
+  it('names the real steps of the trophy research - and the facts step is not about Steam', () => {
+    const { rerender } = render(<AiProgressLines view={view(job({ kind: 'trophies', step: { stage: 'trophies', done: 0, total: 0, title: null } }))} />)
+    expect(screen.getByTestId('ai-progress').textContent).toContain('Recherchiere die Liste und gleiche sie mit einer zweiten Quelle ab …')
+    rerender(<AiProgressLines view={view(job({ kind: 'trophies', step: { stage: 'facts', done: 0, total: 0, title: null } }))} />)
+    expect(screen.getByTestId('ai-progress').textContent).toContain('Recherchiere Erscheinungsdatum, Entwickler und Beschreibung …')
+    expect(screen.getByTestId('ai-progress').textContent).not.toContain('Steam')
+    // The guide's facts step keeps its text
+    rerender(<AiProgressLines view={view(job({ kind: 'generate', step: { stage: 'facts', done: 0, total: 0, title: null } }))} />)
+    expect(screen.getByTestId('ai-progress').textContent).toContain('Sammle Steam-Fakten')
+  })
+})
+
 describe('AiProgressLines', () => {
   it('names the step that really runs, with the chapter count and title', () => {
     const { rerender } = render(<AiProgressLines view={view(job({ step: { stage: 'chapters', done: 3, total: 8, title: 'Beste Waffen' } }))} />)
@@ -76,8 +89,8 @@ describe('AiProgressLines', () => {
   it('reserves the room of every possible text, so a step change moves nothing', () => {
     render(<AiProgressLines view={view(job())} />)
     const reserved = screen.getByTestId('ai-progress').querySelectorAll('.pv-reserve-copy')
-    // step line: 7 candidates, switch line: 1, general/slow line: 2
-    expect(reserved.length).toBe(10)
+    // step line: 9 candidates (the two steps of a game added by hand included), switch line: 1, general/slow line: 2
+    expect(reserved.length).toBe(12)
   })
 })
 

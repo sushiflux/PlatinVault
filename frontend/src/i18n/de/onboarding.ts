@@ -73,6 +73,10 @@ const onboarding = {
         account: { lead: 'Steam-Konto', text: 'mit „Mit Steam anmelden“ verbinden.' },
         key: { lead: 'Web-API-Key', text: 'kostenlos bei Steam holen und in den Einstellungen eintragen.' },
         star: { lead: 'Stern', text: 'in „Alle Spiele“ antippen – den Guide erstellst du danach auf der Spielseite.' },
+        manual: {
+          lead: 'Von Hand',
+          text: 'Spiele von PlayStation, Xbox, Epic, GOG, Switch & Co. legst du mit „Spiel hinzufügen“ an – mit IGDB-Suche oder nur mit Titel und Plattform. Die Trophäen hakst du selbst ab.',
+        },
       },
       visual: {
         favorites: 'Favoriten',
@@ -278,7 +282,11 @@ const onboarding = {
     handbook: 'Handbuch öffnen (PDF)',
     dashboardAdd: {
       title: 'Spiele aufs Dashboard holen',
-      text: 'Deine Spiele kommen aus deiner Steam-Bibliothek: unter „Alle Spiele“ siehst du sie alle, mit dem Stern holst du ein Spiel aufs Dashboard.',
+      text: 'Deine Steam-Spiele findest du unter „Alle Spiele“ und holst sie mit dem Stern aufs Dashboard. Spiele anderer Plattformen legst du mit „Spiel hinzufügen“ von Hand an – sie stehen dann ebenfalls dort.',
+    },
+    dashboardAddGame: {
+      title: 'Spiel von Hand hinzufügen',
+      text: 'Für PlayStation, Xbox, Epic, GOG, Switch & Co.: mit IGDB-Suche oder nur mit Titel, Plattform und eigenem Titelbild. Die Trophäenliste lässt du danach von der KI recherchieren und hakst sie selbst ab.',
     },
     dashboardStar: {
       title: 'Deine Favoriten',

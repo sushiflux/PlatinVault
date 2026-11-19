@@ -27,7 +27,8 @@ interface Ghost {
 }
 
 interface TrackerState {
-  appId: number
+  // The game the cards belong to (a Steam AppID or a game id as text): another game starts the tracking over
+  appId: number | string
   // The pinned names of the last render, to see which ones left
   names: string[]
   // Names that left the server's list without this window's doing and wait to be recognised as "unlocked"
@@ -61,7 +62,7 @@ function promote(state: TrackerState, byName: Map<string, LiveAchievementItemDto
  * The bookkeeping happens while rendering, so the card never flickers through a frame in which it already started to slide out.
  */
 export function usePinList(
-  appId: number,
+  appId: number | string,
   names: string[],
   achievements: LiveAchievementItemDto[] | undefined,
   removedHere: (apiName: string) => boolean,

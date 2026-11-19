@@ -31,13 +31,14 @@ import {
   fetchLiveAchievements,
   fetchLiveStatus,
   researchLore,
+  researchTrophies,
   resetGameProgress,
   redoChapter,
   retryChapters,
   toggleProgressItem,
 } from '../api/client'
 import { followAiJob } from '../api/aiJobs'
-import type { ManualChapterSeed, AiCompleteGuideResponse, AiJobDto, AiJobKind, AiRedoChapterResponse, AiResultDto, AiRetryChaptersResponse, GameDetailDto, GuideSectionDto, GuideTableDto, GuideTabDto } from '../api/types'
+import type { ManualChapterSeed, AiCompleteGuideResponse, AiJobDto, AiJobKind, AiRedoChapterResponse, AiResultDto, AiRetryChaptersResponse, AiUsageDto, GameDetailDto, GuideSectionDto, GuideTableDto, GuideTabDto, ManualTrophyResearchResultDto, TrophyResearchIncludeDto } from '../api/types'
 import { useFormat } from '../i18n/format'
 import { useGuideTranslation } from '../utils/useGuideTranslation'
 import type { UiLanguage } from '../i18n'
@@ -50,6 +51,7 @@ import { MANUAL_AI, rememberedHow, retryCandidates } from '../components/ai/aiPr
 import type { AiHow } from '../components/ai/aiProviders'
 import { ManualGuideDialog } from '../components/ai/manual/ManualGuideDialog'
 import { ManualLoreDialog } from '../components/ai/manual/ManualLoreDialog'
+import { ManualTrophiesDialog } from '../components/ai/manual/ManualTrophiesDialog'
 import { useAiSwitchNotice } from '../components/ai/useAiSwitchNotice'
 import { useAiProgress } from '../components/ai/useAiProgress'
 import { useAiStatus } from '../components/ai/useAiStatus'
@@ -60,8 +62,15 @@ import { GameBackButton } from '../components/GameBackButton'
 import { GameHeadStatus } from '../components/GameHeadStatus'
 import { GameTrophyBar } from '../components/GameTrophyBar'
 import { PinsScope, usePinCount, type PinsFailure } from '../components/pins/pinsContext'
+import { ManualFactsNote } from '../components/trophies/ManualFactsNote'
+import { ManualHeadStatus } from '../components/trophies/ManualHeadStatus'
+import { ManualTrophyArea } from '../components/trophies/ManualTrophyArea'
+import { TrophyCheckProvider } from '../components/trophies/trophyCheckContext'
+import { factsMissing, trophyTipsOf } from '../components/trophies/trophyList'
+import { manualTrophiesKey, useManualTrophies, type TickFailure } from '../components/trophies/useManualTrophies'
 import { PinsSurface } from '../components/pins/PinsSurface'
 import {
+  GUIDE_TAB_SLUG,
   LIVE_TROPHIES_TAB_SLUG,
   LORE_TAB_SLUG,
   STATS_TAB_SLUG,
@@ -84,6 +93,7 @@ import { ReservedText } from '../components/ui/ReservedText'
 import { iconButtonClass, IconButton } from '../components/ui/IconButton'
 import { Tooltip } from '../components/ui/Tooltip'
 import { PlayButton } from '../components/launch/PlayButton'
+import { ManualGameActions } from '../components/addgame/ManualGameActions'
 import { AchievementLookupProvider } from '../components/guide/achievements'
 import { BossCard } from '../components/guide/BossCard'
 import { ChapterBody } from '../components/guide/ChapterBody'
@@ -104,6 +114,7 @@ import { useRemoveChapter } from '../components/guide/useRemoveChapter'
 import { PuzzleScopeContext } from '../components/guide/puzzleState'
 import { describeError } from '../utils/apiErrorText'
 import { errorCodeOf } from '../utils/errorReport'
+import { hasTrophies, isManualGame, platformOf, trophyKind } from '../utils/platforms'
 
 // The active tab lives in the URL (?tab=...), so a link (the game navigation of the shell) or a reload lands on the same chapter /
 // area; the rule which tab a URL means is shared with the tree (components/shell/navModel.ts).
@@ -124,8 +135,8 @@ interface PageNotice {
   // Offers "try again with <another AI>" (only when another provider has a key)
   retry?: { label: string; run: () => void }
   // Offers the guide with the player's own AI subscription (copy the prompt, paste the answer; no API key)
-  // 'lore' = the Story & Lore dialog, true = the guide dialog
-  manual?: boolean | 'lore'
+  // 'lore' = the Story & Lore dialog, 'trophies' = the trophy list dialog, true = the guide dialog
+  manual?: boolean | 'lore' | 'trophies'
 }
 
 // Dedicated 100% Master Companion Page for a single selected game in the harmonious 100-Prozent Pastel design.
@@ -225,13 +236,17 @@ export function GameGuidePage() {
   const [manual, setManual] = useState<{ chapter?: ManualChapterSeed; chapters?: ManualChapterSeed[]; fresh?: boolean } | null>(null)
   // Story & Lore with the player's own AI subscription
   const [loreManual, setLoreManual] = useState(false)
+  // The trophy list (or the facts of a game without trophies) with the player's own AI subscription; include = what the prompt asks for
+  const [trophiesManual, setTrophiesManual] = useState<{ include?: TrophyResearchIncludeDto } | null>(null)
+  // What the last research asked for, so the notice's "Mit deinem KI-Abo" opens the same thing
+  const lastTrophyInclude = useRef<TrophyResearchIncludeDto | undefined>(undefined)
   // The AI chosen when the builder was opened (mode "ask"); undefined = the settings decide
   const [builderProvider, setBuilderProvider] = useState<string | undefined>(undefined)
   // The one onboarding tour lives in the shell; the settings are a page of the shell (/settings?tab=...)
   const shell = useShell()
   const openSettings = useOpenSettings()
   // Coach marks of this page: the first time it is seen (and while no intro / dialog is up), and on "?" any time
-  const hints = useScreenHints('game', shell.tourOpen || expandOpen || steamLinkOpen || builderOpen || manual !== null || loreManual)
+  const hints = useScreenHints('game', shell.tourOpen || expandOpen || steamLinkOpen || builderOpen || manual !== null || loreManual || trophiesManual !== null)
 
   const {
     data: game,
@@ -258,6 +273,7 @@ export function GameGuidePage() {
   // Opened in the other language than it was written in, the guide is translated by the user's AI in the background
   const translation = useGuideTranslation(slug, game, language)
   const [failureDismissed, setFailureDismissed] = useState(false)
+  const [trophyFailureDismissed, setTrophyFailureDismissed] = useState(false)
   useEffect(() => {
     if (translation.phase !== 'failed') setFailureDismissed(false)
   }, [translation.phase])
@@ -269,7 +285,11 @@ export function GameGuidePage() {
 
   const hasGuide = Boolean(game)
   const failedChapters = failedChapterTabs(game)
-  const showLiveTrophiesTab = Boolean(game?.steamAppId)
+  // A game added by hand (any platform but Steam) has no Steam link: its trophy list is researched by the AI and ticked by hand. Nintendo has none.
+  const platform = game ? platformOf(game) : 'steam'
+  const isManual = game ? isManualGame(game) : false
+  const hasManualTrophies = isManual && hasTrophies(platform)
+  const showLiveTrophiesTab = Boolean(game?.steamAppId) || hasManualTrophies
   const showStatsTab = Boolean(game?.steamAppId)
   // Story & Lore is offered on every game page; its spoiler gate asks per game whether to show it
   const loreTab = game?.tabs.find((t) => t.slug === LORE_TAB_SLUG)
@@ -282,7 +302,9 @@ export function GameGuidePage() {
   // Trophy progress for the header and the "Im Blick" cards, straight from Steam (same query as the live trophies tab, so no extra requests).
   // Faster (3 s) only while THIS game runs and has pinned achievements, so a pinned counter moves on every tab; otherwise the calm 15 s.
   // (The live tab brings its own faster pace while it is open.)
-  const pinCount = usePinCount(game?.steamAppId)
+  // Whose "Im Blick" pins this page has: a Steam game by its AppID, a game added by hand with trophies by its game id
+  const pinScope = useMemo(() => (game?.steamAppId ? { appId: game.steamAppId } : hasManualTrophies && game ? { gameId: game.id } : null), [game, hasManualTrophies])
+  const pinCount = usePinCount(pinScope)
   const { data: liveStatus } = useQuery({ queryKey: ['live-status'], queryFn: fetchLiveStatus, refetchInterval: 4000 })
   const { data: liveTrophies, refetch: refetchLiveTrophies, isFetching: liveTrophiesFetching } = useQuery({
     queryKey: ['live-achievements', game?.steamAppId ?? 'auto'],
@@ -290,6 +312,21 @@ export function GameGuidePage() {
     enabled: Boolean(game?.steamAppId),
     refetchInterval: pinCount > 0 && game?.steamAppId && liveStatus?.runningAppId === game.steamAppId ? 3000 : 15000,
   })
+
+  // A failed tick of a trophy: the same notice as every other failed action, with the server's complete text and the copy button
+  const showTickFailure = useCallback((failure: TickFailure) => setActionError({ title: failure.title, message: failure.message, details: failure.details }), [])
+  const manualTrophies = useManualTrophies({ slug, enabled: hasManualTrophies, language, onTickError: showTickFailure })
+  // The trophy list of the game, whichever kind: the live list of a Steam game or the researched list of a game added by hand
+  const trophyData = hasManualTrophies ? manualTrophies.list : liveTrophies
+  // The list's translation had to change AI provider: the same notice as for the guide
+  const trophyAiNotice = manualTrophies.translation.aiNotice
+  useEffect(() => {
+    if (trophyAiNotice) showAiNotice(trophyAiNotice)
+  }, [trophyAiNotice, showAiNotice])
+  const trophyTranslationPhase = manualTrophies.translation.phase
+  useEffect(() => {
+    if (trophyTranslationPhase !== 'failed') setTrophyFailureDismissed(false)
+  }, [trophyTranslationPhase])
 
   useEffect(() => {
     setFailedCovers([])
@@ -352,9 +389,61 @@ export function GameGuidePage() {
     }
   }
 
+  // "Trophäenliste recherchieren" (and "Spiel-Fakten recherchieren" of a game without trophies): the AI job of kind "trophies". The way with the player's
+  // own subscription opens the dialog instead. `chosen` = the AI was named by the player already (a retry button): no chooser dialog in the mode "ask"
+  const [trophiesBusy, setTrophiesBusy] = useState(false)
+  const handleResearchTrophies = async (oneOff?: string, include?: TrophyResearchIncludeDto, chosen = false) => {
+    if (!game) return
+    const provider = chosen ? oneOff : await pickAi(oneOff, { manual: true })
+    if (provider === null) return
+    lastTrophyInclude.current = include
+    if (provider === MANUAL_AI) {
+      setTrophiesManual({ include })
+      return
+    }
+    setTrophiesBusy(true)
+    setPageJobKind('trophies')
+    setActionError(null)
+    setActionInfo(null)
+    try {
+      const result = await researchTrophies(game.slug, provider, include, pageProgress.onProgress)
+      handleTrophiesResearched(result.game, include, result.ai)
+    } catch (err: unknown) {
+      showAiFailure(err, include?.trophies === false ? t('fail.facts') : t('fail.trophies'), provider, (next) => void handleResearchTrophies(next, include, true), 'trophies')
+    } finally {
+      setTrophiesBusy(false)
+      pageProgress.reset()
+      aiNotice.refresh()
+    }
+  }
+
+  // The list (and the facts) are saved: show the list, refresh the tile and the guide's facts, say what was kept
+  const handleTrophiesResearched = (result: ManualTrophyResearchResultDto, include?: TrophyResearchIncludeDto, ai?: AiUsageDto) => {
+    if (ai) aiNotice.report(ai)
+    queryClient.setQueryData(manualTrophiesKey(slug), result.list)
+    void queryClient.invalidateQueries({ queryKey: ['game', slug] })
+    void queryClient.invalidateQueries({ queryKey: ['games'] })
+    const factsOnly = include?.trophies === false
+    setActionInfo(
+      factsOnly
+        ? { title: t('manualTrophies.done.factsTitle'), message: t('manualTrophies.done.facts') }
+        : {
+            title: t(`manualTrophies.done.title.${trophyKind(platform)}`),
+            message: [
+              t(`manualTrophies.done.count.${trophyKind(platform)}`, { count: result.list.totalCount }),
+              result.keptTicks > 0 ? t('manualTrophies.done.kept', { count: result.keptTicks }) : null,
+              result.retainedOldTicked > 0 ? t('manualTrophies.done.retained', { count: result.retainedOldTicked }) : null,
+            ]
+              .filter(Boolean)
+              .join(' '),
+          }
+    )
+    if (!factsOnly) selectTab(LIVE_TROPHIES_TAB_SLUG)
+  }
+
   // A failed AI action: the reason in full (our sentence, the provider's text behind "technical details"), the note that another AI had been
   // tried first, the offers to try again with another AI or to look at the AI settings. What was finished before is saved: read the guide again.
-  const showAiFailure = (err: unknown, title: string, attempted: string | undefined, retry: (provider: string) => void, manual: boolean | 'lore' = false) => {
+  const showAiFailure = (err: unknown, title: string, attempted: string | undefined, retry: (provider: string) => void, manual: boolean | 'lore' | 'trophies' = false) => {
     const switched = (err as { switchNotice?: string } | null)?.switchNotice
     if (switched) aiNotice.show(switched)
     void queryClient.invalidateQueries({ queryKey: ['game', slug] })
@@ -374,7 +463,7 @@ export function GameGuidePage() {
     let cancelled = false
     void fetchAiJobsForGame(slug)
       .then((jobs) => {
-        const running = jobs.find((job) => job.running && (job.kind === 'complete' || job.kind === 'lore' || job.kind === 'expand' || job.kind === 'retry' || job.kind === 'redo'))
+        const running = jobs.find((job) => job.running && (job.kind === 'complete' || job.kind === 'lore' || job.kind === 'expand' || job.kind === 'retry' || job.kind === 'redo' || job.kind === 'trophies'))
         if (!running || cancelled || resumedJob.current === running.id) return
         resumedJob.current = running.id
         void resumeAiJob(running)
@@ -392,25 +481,30 @@ export function GameGuidePage() {
     setPageJobKind(job.kind)
     pageProgress.onProgress(job)
     if (job.kind === 'lore') setLoreBusy(true)
+    else if (job.kind === 'trophies') setTrophiesBusy(true)
     else if (job.kind === 'retry') setRetrying(true)
     else if (job.kind === 'redo') setRedoing(true)
     else setCompleting(true)
     try {
-      const result = await followAiJob<AiCompleteGuideResponse | AiRetryChaptersResponse | AiResultDto<GameDetailDto>>(job, fetchAiJob, pageProgress.onProgress)
-      if ('addedCount' in result) {
+      const result = await followAiJob<AiCompleteGuideResponse | AiRetryChaptersResponse | AiResultDto<GameDetailDto> | AiResultDto<ManualTrophyResearchResultDto>>(job, fetchAiJob, pageProgress.onProgress)
+      if (job.kind === 'trophies') {
+        handleTrophiesResearched((result as AiResultDto<ManualTrophyResearchResultDto>).game, undefined, (result as AiResultDto<ManualTrophyResearchResultDto>).ai)
+      } else if ('addedCount' in result) {
         handleGuideCompleted(result)
       } else if ('retried' in result) {
         handleChaptersRetried(result)
       } else {
-        queryClient.setQueryData(['game', slug], result.game)
-        aiNotice.report(result.ai)
+        const guide = result as AiResultDto<GameDetailDto>
+        queryClient.setQueryData(['game', slug], guide.game)
+        aiNotice.report(guide.ai)
         void queryClient.invalidateQueries({ queryKey: ['games'] })
         if (job.kind === 'lore') selectTab(LORE_TAB_SLUG)
       }
     } catch (err: unknown) {
-      showAiFailure(err, job.kind === 'lore' ? t('fail.lore') : job.kind === 'retry' ? t('ai:retryChapters.failTitle') : job.kind === 'redo' ? t('ai:redoChapter.failed') : t('fail.complete'), undefined, () => {}, job.kind === 'lore' ? 'lore' : true)
+      showAiFailure(err, job.kind === 'lore' ? t('fail.lore') : job.kind === 'trophies' ? t('fail.trophies') : job.kind === 'retry' ? t('ai:retryChapters.failTitle') : job.kind === 'redo' ? t('ai:redoChapter.failed') : t('fail.complete'), undefined, () => {}, job.kind === 'lore' ? 'lore' : job.kind === 'trophies' ? 'trophies' : true)
     } finally {
       setLoreBusy(false)
+      setTrophiesBusy(false)
       setCompleting(false)
       setRetrying(false)
       setRedoing(false)
@@ -736,6 +830,9 @@ export function GameGuidePage() {
   const isTranslatedView = guideContentLanguage !== null && game.language === language && game.language !== guideContentLanguage
   const onLiveOrStats =
     (activeTabSlug === LIVE_TROPHIES_TAB_SLUG && showLiveTrophiesTab) || (activeTabSlug === STATS_TAB_SLUG && showStatsTab)
+  // The trophy list of a game added by hand is running (the AI job): its progress is the area's own card while there is no list, else a notice
+  const trophyTabShowsProgress = activeTabSlug === LIVE_TROPHIES_TAB_SLUG && hasManualTrophies && !manualTrophies.list?.researchedAt
+  const manualTips = trophyTipsOf(manualTrophies.list)
 
   return (
     <div className="pv-game flex flex-col">
@@ -749,13 +846,15 @@ export function GameGuidePage() {
         )}
         <div className="pv-game-titles">
           <h1 className="pv-page-title">{game.title}</h1>
-          {game.steamAppId ? <GameHeadStatus data={liveTrophies} /> : null}
+          {game.steamAppId ? <GameHeadStatus data={liveTrophies} /> : isManual ? <ManualHeadStatus game={game} list={manualTrophies.list} /> : null}
           {game.subtitle && <p className="pv-page-sub">{game.subtitle}</p>}
         </div>
         {/* Play: exists only while the game can be started (bridge connected or Steam on this PC, and a Steam link); "running" in its place */}
-        <span className="pv-game-play">
-          <PlayButton variant="button" target={{ kind: 'game', slug: game.slug }} gameName={game.title} unavailable={!game.steamAppId} showRunning steamAppId={game.steamAppId} />
-        </span>
+        {!isManual && (
+          <span className="pv-game-play">
+            <PlayButton variant="button" target={{ kind: 'game', slug: game.slug }} gameName={game.title} unavailable={!game.steamAppId} showRunning steamAppId={game.steamAppId} />
+          </span>
+        )}
         <div className="pv-game-actions" role="toolbar" aria-label={t('header.viewGroup')}>
           {hasGuide && (
             <>
@@ -790,31 +889,51 @@ export function GameGuidePage() {
             <IconFileTypePdf size={20} />
           </IconButton>
           {hasGuide && (
-            <IconButton label={t('header.reset.label')} description={t('header.reset.description')} onClick={() => void handleResetProgress()}>
+            <IconButton label={t('header.reset.label')} description={isManual ? t('header.reset.descriptionManual') : t('header.reset.description')} onClick={() => void handleResetProgress()}>
               <IconRefresh size={20} />
             </IconButton>
           )}
+          {/* A game added by hand: change the cover, remove the game (P3's actions) */}
+          {isManual && <ManualGameActions game={game} />}
         </div>
-        {/* Guide | Live trophies | Statistics: the last two need a Steam link, without one the bar is not there at all */}
-        {game.steamAppId ? (
-          <GameAreaSwitch gameSlug={game.slug} activeTab={activeTabSlug} chapterSlugs={guideTabs.map((tab) => tab.slug)} onSelect={selectTab} />
+        {/* Guide | Live trophies | Statistics: the trophy area needs a Steam link or a platform with trophies, the statistics a Steam link; a game with
+            neither (a Switch game) has no bar at all */}
+        {showLiveTrophiesTab ? (
+          <GameAreaSwitch
+            gameSlug={game.slug}
+            activeTab={activeTabSlug}
+            chapterSlugs={guideTabs.map((tab) => tab.slug)}
+            onSelect={selectTab}
+            liveLabel={hasManualTrophies ? trophyKind(platform) : 'live'}
+            showStats={showStatsTab}
+            emptyGuideSlug={isManual ? GUIDE_TAB_SLUG : undefined}
+          />
         ) : null}
       </div>
 
-      <PinsScope appId={game.steamAppId} onError={showPinFailure}>
+      <PinsScope appId={game.steamAppId} gameId={hasManualTrophies ? game.id : null} onError={showPinFailure}>
+      <TrophyCheckProvider value={hasManualTrophies ? manualTrophies.checkFor : null}>
       <div className="app-shell">
         {/* Trophy progress and tiers of this game (the areas and chapters are entries of the game navigation) */}
-        <GameTrophyBar data={liveTrophies} hasSteam={Boolean(game.steamAppId)} onRefresh={() => void refetchLiveTrophies()} refreshing={liveTrophiesFetching} />
+        <GameTrophyBar
+          data={trophyData}
+          hasTrophies={showLiveTrophiesTab}
+          figures={hasManualTrophies ? (platform === 'playstation' ? 'grades' : 'total') : 'steam'}
+          kind={hasManualTrophies ? trophyKind(platform) : undefined}
+          researched={hasManualTrophies ? Boolean(manualTrophies.list?.researchedAt) : true}
+          onRefresh={hasManualTrophies ? undefined : () => void refetchLiveTrophies()}
+          refreshing={liveTrophiesFetching}
+        />
 
         <div className="pv-gbody">
         {/* Content */}
         <div className="content-column flex min-w-0 flex-1 flex-col self-stretch">
-        <AchievementLookupProvider achievements={liveTrophies?.achievements}>
+        <AchievementLookupProvider achievements={trophyData?.achievements}>
         <ItemLinkContext.Provider value={itemLinkApi}>
         <SideQuestTargetContext.Provider value={sideQuestTarget}>
         <PuzzleScopeContext.Provider value={game.slug}>
         <div id="pv-game-panel" className="flex-1 min-w-0 pt-6 space-y-6">
-          {!game.steamAppId && (
+          {!game.steamAppId && !isManual && (
             <div className="pv-alert pv-alert-crystal flex flex-wrap items-center justify-between gap-3 no-print">
               <span className="text-sm">
                 <strong>{t('notLinked.title')}</strong> {t('notLinked.text')}
@@ -837,11 +956,19 @@ export function GameGuidePage() {
             </p>
           )}
 
+          {/* A game added by hand without trophies (Switch): its facts can be researched here once */}
+          {isManual && !hasTrophies(platform) && factsMissing(game) && <ManualFactsNote busy={trophiesBusy} onResearch={(oneOff) => void handleResearchTrophies(oneOff, { trophies: false, facts: true })} />}
+
           {activeTabSlug === LIVE_TROPHIES_TAB_SLUG && showLiveTrophiesTab && game.steamAppId ? (
-            <LiveTrackerPanel
-              defaultExpanded={true}
-              fixedAppId={game.steamAppId}
-              tips={achievementTips}
+            <LiveTrackerPanel fixedAppId={game.steamAppId} tips={achievementTips} />
+          ) : activeTabSlug === LIVE_TROPHIES_TAB_SLUG && hasManualTrophies ? (
+            <ManualTrophyArea
+              game={game}
+              trophies={manualTrophies}
+              researching={trophiesBusy}
+              progress={pageProgress.view}
+              onResearch={(oneOff) => void handleResearchTrophies(oneOff)}
+              onOpenGuide={() => selectTab(guideTabs[0]?.slug ?? GUIDE_TAB_SLUG)}
             />
           ) : activeTabSlug === STATS_TAB_SLUG && showStatsTab ? (
             <GameStatsPanel slug={game.slug} steamAppId={game.steamAppId} />
@@ -950,11 +1077,12 @@ export function GameGuidePage() {
         </AchievementLookupProvider>
         </div>
         {/* "Im Blick" in a wide landscape window: the column on the right, the mirror image of the chapter navigation */}
-        <PinsSurface placement="column" achievements={liveTrophies?.achievements} tips={achievementTips} />
+        <PinsSurface placement="column" achievements={trophyData?.achievements} tips={hasManualTrophies ? manualTips : achievementTips} />
         </div>
         {/* ... and everywhere else the dock at the bottom of the window (it follows the content, it never covers it) */}
-        <PinsSurface placement="dock" achievements={liveTrophies?.achievements} tips={achievementTips} />
+        <PinsSurface placement="dock" achievements={trophyData?.achievements} tips={hasManualTrophies ? manualTips : achievementTips} />
       </div>
+      </TrophyCheckProvider>
       </PinsScope>
 
       <ScrollTopButton />
@@ -962,6 +1090,7 @@ export function GameGuidePage() {
       {/* Overlays over the page (never part of the layout): a running job, a result, a failure */}
       <FloatingNoticeStack>
         {(completing || loreBusy || retrying || redoing) && <AiProgressNotice key="ai-progress" kind={pageJobKind} view={pageProgress.view} />}
+        {trophiesBusy && !trophyTabShowsProgress && <AiProgressNotice key="ai-progress-trophies" kind="trophies" view={pageProgress.view} />}
         {translation.phase === 'running' && (
           <FloatingNotice
             key="translating"
@@ -989,6 +1118,23 @@ export function GameGuidePage() {
               { label: t('translate.retry'), onClick: translation.retry },
             ]}
             onClose={() => setFailureDismissed(true)}
+          />
+        )}
+        {manualTrophies.translation.phase === 'running' && translation.phase === 'idle' && (
+          <FloatingNotice key="translating-trophies" tone="progress" title={t('translate.runningTrophies.title', { language: t(`translate.into.${language}`) })} message={t('translate.runningTrophies.message')} />
+        )}
+        {manualTrophies.translation.phase === 'failed' && manualTrophies.translation.error && translation.phase === 'idle' && !trophyFailureDismissed && (
+          <FloatingNotice
+            key="translate-trophies-failed"
+            tone="error"
+            title={t('translate.failedTrophies.title', { language: t(`translate.into.${language}`) })}
+            message={manualTrophies.translation.error.message || t('common:unknownError')}
+            details={manualTrophies.translation.error.details}
+            actions={[
+              { label: t('notice.aiSettings'), onClick: () => openSettings('ki') },
+              { label: t('translate.retry'), onClick: manualTrophies.translation.retry },
+            ]}
+            onClose={() => setTrophyFailureDismissed(true)}
           />
         )}
         {actionInfo && !completing && !retrying && (
@@ -1022,6 +1168,7 @@ export function GameGuidePage() {
                       onClick: () => {
                         setActionError(null)
                         if (actionError.manual === 'lore') setLoreManual(true)
+                        else if (actionError.manual === 'trophies') setTrophiesManual({ include: lastTrophyInclude.current })
                         else setManual({})
                       },
                     },
@@ -1105,6 +1252,18 @@ export function GameGuidePage() {
             void queryClient.invalidateQueries({ queryKey: ['games'] })
             selectTab(LORE_TAB_SLUG)
           }}
+        />
+      )}
+
+      {trophiesManual !== null && (
+        <ManualTrophiesDialog
+          slug={game.slug}
+          gameTitle={game.title}
+          kind={trophyKind(platform)}
+          include={trophiesManual.include}
+          replacing={Boolean(manualTrophies.list?.researchedAt)}
+          onClose={() => setTrophiesManual(null)}
+          onSaved={(result) => handleTrophiesResearched(result, trophiesManual.include)}
         />
       )}
 

@@ -8,6 +8,7 @@ import { ACHIEVEMENT_VISIBLE_MS } from '../utils/animationQueue'
 import { useUnlockStamp } from '../utils/unlockStamp'
 import { PopupCountdown } from './PopupCountdown'
 import { TierTrophy } from './platinum/TierTrophy'
+import { TrophyGlyph } from './trophies/TrophyGlyph'
 import '../styles/popup.css'
 
 interface TrophyNotificationProps {
@@ -187,7 +188,7 @@ export function TrophyCard({ achievement, fluid = false, animated = true, countd
       }}
     >
       {/* The trophy builds itself up in its own slot */}
-      <div className="relative h-[3.6rem] w-[3.2rem] shrink-0">
+      <div className="pv-popup-trophy relative h-[3.6rem] w-[3.2rem] shrink-0">
         <TierTrophy
           tier={tier}
           reveal={animated}
@@ -200,17 +201,24 @@ export function TrophyCard({ achievement, fluid = false, animated = true, countd
         />
       </div>
 
-      <motion.img
-        src={achievement.iconUrl}
-        alt={achievement.displayName}
-        className="pv-popup-icon"
-        {...line(0.3)}
-      />
+      {achievement.iconUrl ? (
+        <motion.img
+          src={achievement.iconUrl}
+          alt={achievement.displayName}
+          className="pv-popup-icon"
+          {...line(0.3)}
+        />
+      ) : (
+        // A trophy of a game added by hand has no icon file: the tier glyph takes its place and its size
+        <motion.span className="inline-flex flex-none" {...line(0.3)}>
+          <TrophyGlyph tier={tier} className="pv-popup-icon" />
+        </motion.span>
+      )}
 
       <div className="relative min-w-0 flex-1">
         <motion.div className="mb-0.5 flex items-baseline justify-between gap-2" {...line(0.45)}>
           <span className="pv-popup-kicker">{t('tierTrophy', { tier: t(`tiers.${tier}`) })}</span>
-          {percent && <span className="shrink-0 text-sm text-[var(--text-muted)]">{percent}</span>}
+          {percent && <span className="pv-popup-percent shrink-0 text-sm text-[var(--text-muted)]">{percent}</span>}
         </motion.div>
         <motion.div className="pv-popup-name" {...line(0.55)}>
           {achievement.displayName}

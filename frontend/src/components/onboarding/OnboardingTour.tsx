@@ -120,7 +120,7 @@ export function OnboardingTour({ open, onClose, onOpenSettings }: OnboardingTour
           initial={{ opacity: 0, y: 18, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-          className="pv-modal flex w-full max-w-4xl flex-col overflow-hidden"
+          className="pv-modal pv-tour flex w-full max-w-4xl flex-col overflow-hidden"
           style={{ height: 'min(42rem, calc(100dvh - 2rem))' }}
         >
           <header
@@ -156,7 +156,7 @@ export function OnboardingTour({ open, onClose, onOpenSettings }: OnboardingTour
                 className="grid min-h-full grid-cols-1 gap-5 p-5 sm:p-6 md:h-full md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:gap-7"
               >
                 <div className="flex min-w-0 flex-col gap-3.5 md:justify-start md:pt-6">
-                  <span className="flex h-11 w-11 items-center justify-center" style={{ color: `var(--accent-${accent})` }}>
+                  <span className="pv-tour-icon flex h-11 w-11 items-center justify-center" style={{ color: `var(--accent-${accent})` }}>
                     <StepIcon size={28} aria-hidden="true" />
                   </span>
                   <h2 className="text-xl font-semibold tracking-tight sm:text-2xl" style={{ color: 'var(--text-primary)' }}>

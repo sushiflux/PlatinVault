@@ -7,18 +7,29 @@ export interface PlatinumData {
   gameName: string
   total: number
   kind?: 'achievements' | 'guide'
+  // 'manual' = the player ticked the last trophy of a game added by hand (that popup always shows in the app window, see utils/popupTarget.ts)
+  source?: 'manual' | null
+}
+
+/** What a window knows about the event besides the trophy itself (the hub's meta): the game it belongs to and where it came from. */
+export interface AchievementEventInfo {
+  gameName?: string | null
+  source?: 'manual' | null
 }
 
 type QueueItem =
   // position / seconds: for previews (settings), which must show at the clicked spot and for the chosen duration before it is saved,
   // and for the overlay page, which gets both from the program with every unlock; without them the global setting applies
-  | { type: 'achievement'; data: LiveAchievementItemDto; position?: NotificationPosition; seconds?: number }
+  | { type: 'achievement'; data: LiveAchievementItemDto; position?: NotificationPosition; seconds?: number; gameName?: string | null; source?: 'manual' | null }
   | { type: 'platinum'; data: PlatinumData }
 
 export interface QueueState {
   currentAchievement: LiveAchievementItemDto | null
   currentPosition: NotificationPosition | null
   currentPlatinum: PlatinumData | null
+  // The game of the current trophy popup when the event named it (a game that is not running: ticked by hand), and where it came from
+  currentGameName?: string | null
+  currentSource?: 'manual' | null
   // How long the current trophy popup stays (the card slides out a little before that); the chosen duration when none is showing
   visibleMs: number
   // True from the first item until the last one is gone, its pause included (the overlay window of the Windows program hides
@@ -45,6 +56,8 @@ class AnimationQueueManager {
   private currentAchievement: LiveAchievementItemDto | null = null
   private currentPosition: NotificationPosition | null = null
   private currentPlatinum: PlatinumData | null = null
+  private currentGameName: string | null = null
+  private currentSource: 'manual' | null = null
   // The chosen duration of a trophy popup; read when a popup starts, so a change applies to the next one (also to those already waiting)
   private popupMs = ACHIEVEMENT_VISIBLE_MS
   // The duration of the popup that is showing now (kept apart from popupMs: the card's exit timer must not restart mid-popup)
@@ -68,6 +81,8 @@ class AnimationQueueManager {
       currentAchievement: this.currentAchievement,
       currentPosition: this.currentPosition,
       currentPlatinum: this.currentPlatinum,
+      currentGameName: this.currentAchievement ? this.currentGameName : null,
+      currentSource: this.currentAchievement ? this.currentSource : null,
       visibleMs: this.currentAchievement ? this.currentVisibleMs : this.popupMs,
       busy: this.isProcessing || this.queue.length > 0,
     }
@@ -90,13 +105,20 @@ class AnimationQueueManager {
     this.popupMs = popupSecondsToMs(seconds)
   }
 
-  public enqueueAchievement(achievement: LiveAchievementItemDto, options?: { position?: NotificationPosition; seconds?: number }) {
-    this.queue.push({ type: 'achievement', data: achievement, position: options?.position, seconds: options?.seconds })
+  public enqueueAchievement(achievement: LiveAchievementItemDto, options?: { position?: NotificationPosition; seconds?: number } & AchievementEventInfo) {
+    this.queue.push({
+      type: 'achievement',
+      data: achievement,
+      position: options?.position,
+      seconds: options?.seconds,
+      gameName: options?.gameName ?? null,
+      source: options?.source ?? null,
+    })
     void this.processNext()
   }
 
-  public enqueuePlatinum(gameName: string, total: number, kind: PlatinumData['kind'] = 'achievements') {
-    this.queue.push({ type: 'platinum', data: { gameName, total, kind } })
+  public enqueuePlatinum(gameName: string, total: number, kind: PlatinumData['kind'] = 'achievements', source: PlatinumData['source'] = null) {
+    this.queue.push({ type: 'platinum', data: { gameName, total, kind, source } })
     void this.processNext()
   }
 
@@ -118,6 +140,8 @@ class AnimationQueueManager {
     this.currentAchievement = null
     this.currentPosition = null
     this.currentPlatinum = null
+    this.currentGameName = null
+    this.currentSource = null
     this.isProcessing = false
     this.notify()
   }
@@ -136,6 +160,8 @@ class AnimationQueueManager {
       this.currentVisibleMs = visibleMs
       this.currentAchievement = nextItem.data
       this.currentPosition = nextItem.position ?? null
+      this.currentGameName = nextItem.gameName ?? null
+      this.currentSource = nextItem.source ?? null
       this.notify()
 
       soundEngine.playTrophyUnlock(nextItem.data.rarityTier)

@@ -35,6 +35,7 @@ const game = {
     reset: {
       label: 'Fortschritt zurücksetzen',
       description: 'Entfernt alle Häkchen dieses Spiels',
+      descriptionManual: 'Entfernt alle Häkchen im Guide dieses Spiels. Deine abgehakten Trophäen bleiben erhalten.',
     },
   },
 
@@ -47,6 +48,9 @@ const game = {
     group: 'Bereich des Spiels',
     guide: 'Guide',
     live: 'Live-Trophäen',
+    // The trophy area of a game added by hand: PlayStation calls them trophies, every other platform achievements
+    trophies: 'Trophäen',
+    achievements: 'Erfolge',
     stats: 'Statistiken',
   },
 
@@ -103,6 +107,9 @@ const game = {
   trophyBar: {
     region: 'Trophäen-Überblick und Bereiche',
     summary: '{{achieved}} / {{total}} Trophäen ({{percent}})',
+    summaryAchievements: '{{achieved}} / {{total}} Erfolge ({{percent}})',
+    // A game added by hand whose list was not researched yet
+    notResearched: 'Noch keine Trophäenliste',
     progress: 'Trophäen-Fortschritt',
   },
   progressBar: {
@@ -142,7 +149,100 @@ const game = {
     failed: {
       title: 'Der Guide konnte nicht {{language}} übersetzt werden',
     },
+    // The trophy list of a game added by hand is translated by the same job
+    runningTrophies: {
+      title: 'Übersetze die Trophäenliste {{language}} …',
+      message: 'Die KI übersetzt Namen und Beschreibungen. Bis dahin siehst du das Original.',
+    },
+    failedTrophies: {
+      title: 'Die Trophäenliste konnte nicht {{language}} übersetzt werden',
+    },
     retry: 'Erneut versuchen',
+  },
+
+  // The status line under the name of a game added by hand (the platform chip comes from the platform badge)
+  manualHead: {
+    trophies: '{{platform}}: Trophäen',
+    achievements: '{{platform}}: Erfolge',
+    guideOnly: '{{platform}}: nur Guide, keine Trophäen',
+    byHand: 'von Hand abgehakt',
+    platinum: 'Platin erreicht',
+  },
+  // The trophy tab of a game added by hand: the list is researched by the AI and ticked by hand
+  manualTrophies: {
+    loadFailed: 'Die Trophäenliste konnte nicht geladen werden',
+    running: {
+      trophies: 'Trophäenliste wird recherchiert …',
+      achievements: 'Erfolgsliste wird recherchiert …',
+    },
+    empty: {
+      title: {
+        trophies: 'Noch keine Trophäenliste für {{title}}',
+        achievements: 'Noch keine Erfolgsliste für {{title}}',
+      },
+      text: {
+        trophies:
+          'Die KI recherchiert die Trophäenliste der Fassung für {{platform}}: Namen, Beschreibungen, Stufen sowie verpassbare und versteckte Trophäen. Danach hakst du erledigte Trophäen selbst ab. Die Liste stammt aus Webquellen und kann Fehler enthalten; die Quellen siehst du danach.',
+        achievements:
+          'Die KI recherchiert die Erfolgsliste für {{platform}}: Namen, Beschreibungen, Punkte sowie verpassbare und versteckte Erfolge. Danach hakst du erledigte Erfolge selbst ab. Die Liste stammt aus Webquellen und kann Fehler enthalten; die Quellen siehst du danach.',
+      },
+    },
+    research: {
+      trophies: 'Trophäenliste recherchieren',
+      achievements: 'Erfolgsliste recherchieren',
+    },
+    redo: {
+      trophies: 'Trophäenliste neu recherchieren',
+      achievements: 'Erfolgsliste neu recherchieren',
+    },
+    backgroundHint: 'Die Recherche läuft im Hintergrund. Du kannst die Seite währenddessen verlassen.',
+    // The recommended order: the list first, the guide second (both are separate steps)
+    steps: {
+      now: 'Jetzt',
+      listTitle: {
+        trophies: 'Trophäenliste recherchieren',
+        achievements: 'Erfolgsliste recherchieren',
+      },
+      listText: 'Dieser Schritt: die Liste für {{platform}} sammeln.',
+      guideTitle: 'Guide erstellen',
+      guideText: 'Ein eigener Schritt, unabhängig von der Liste. Du startest ihn im Bereich Guide.',
+      toGuide: 'Zum Guide',
+    },
+    source: {
+      by: 'Von der KI recherchiert',
+      on: 'am {{date}}.',
+      sources: 'Quellen:',
+      none: 'Keine Quellen angegeben.',
+      mayErr: {
+        trophies: 'Die Angaben können Fehler enthalten. Stufen, Verpassbares und versteckte Trophäen prüfst du am besten gegen den Guide.',
+        achievements: 'Die Angaben können Fehler enthalten. Punkte, Verpassbares und versteckte Erfolge prüfst du am besten gegen den Guide.',
+      },
+      language: 'Die Liste ist auf {{language}} geschrieben und wird in deine Sprache übersetzt. Bis dahin siehst du das Original.',
+    },
+    done: {
+      title: {
+        trophies: 'Trophäenliste gespeichert',
+        achievements: 'Erfolgsliste gespeichert',
+      },
+      count: {
+        trophies_one: '{{count, number}} Trophäe.',
+        trophies_other: '{{count, number}} Trophäen.',
+        achievements_one: '{{count, number}} Erfolg.',
+        achievements_other: '{{count, number}} Erfolge.',
+      },
+      kept_one: '{{count, number}} Haken wurde übernommen.',
+      kept_other: '{{count, number}} Haken wurden übernommen.',
+      retained_one: '{{count, number}} bereits abgehakter Eintrag fehlt in der neuen Liste und bleibt erhalten.',
+      retained_other: '{{count, number}} bereits abgehakte Einträge fehlen in der neuen Liste und bleiben erhalten.',
+      factsTitle: 'Spiel-Fakten gespeichert',
+      facts: 'Erscheinungsdatum, Entwickler, Publisher und Beschreibung sind eingetragen.',
+    },
+  },
+  // A game added by hand without trophies (Nintendo Switch): its facts can be researched on their own
+  manualFacts: {
+    title: 'Zu diesem Spiel fehlen noch Angaben.',
+    text: 'Erscheinungsdatum, Entwickler, Publisher und Beschreibung – die KI kann sie recherchieren.',
+    research: 'Spiel-Fakten recherchieren',
   },
 
   lore: {
@@ -235,7 +335,7 @@ const game = {
     pointOfNoReturn: 'Dieser Teil endet an einem Point of no Return',
   },
   achievementRef: {
-    unknown: 'Steam-Erfolg {{name}}',
+    unknown: 'Erfolg {{name}}',
     done: 'freigeschaltet',
   },
   pointOfNoReturn: { doFirst: 'Erledige das vorher' },
@@ -296,6 +396,8 @@ const game = {
     check: 'Häkchen konnte nicht gespeichert werden',
     reset: 'Fortschritt konnte nicht zurückgesetzt werden',
     complete: 'Guide konnte nicht vervollständigt werden',
+    trophies: 'Trophäenliste konnte nicht recherchiert werden',
+    facts: 'Spiel-Fakten konnten nicht recherchiert werden',
   },
   resetConfirm: {
     title: 'Häkchen zurücksetzen?',

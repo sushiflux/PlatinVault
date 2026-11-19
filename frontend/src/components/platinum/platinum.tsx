@@ -5,11 +5,11 @@ import { TierIcon } from '../ui/TierIcon'
 import { useTranslation } from 'react-i18next'
 import type { GameSummaryDto } from '../../api/types'
 
-// A game counts as platinum when its guide checklist is completely ticked.
-// (The list endpoint carries no live-achievement completion, so achievements-only games cannot show up here.)
-// Platinum = every Steam trophy of the game unlocked (the guide checklists do not count)
-export function isPlatinumGame(game: Pick<GameSummaryDto, 'trophiesUnlocked' | 'trophiesTotal'>): boolean {
-  return game.trophiesTotal > 0 && game.trophiesUnlocked >= game.trophiesTotal
+// Platinum = every trophy of the game unlocked (the guide checklists do not count). A game added by hand reaches it through the server's rule
+// (PlayStation: the platinum trophy, auto-ticked once every other base-game trophy is; other platforms: 100 % of all trophies) and says so with
+// platinumAt; Steam games are judged by their counts (the server clears platinumAt below 100 %).
+export function isPlatinumGame(game: Pick<GameSummaryDto, 'trophiesUnlocked' | 'trophiesTotal'> & { platinumAt?: string | null }): boolean {
+  return game.platinumAt != null || (game.trophiesTotal > 0 && game.trophiesUnlocked >= game.trophiesTotal)
 }
 
 // Platinum frame + glow for a finished game's card on the dashboard (replaces the plain border and shadow)
@@ -46,7 +46,9 @@ export function PlatinumChip({ compact = false, animated = false }: { compact?: 
       }}
     >
       <TierIcon tier="Platinum" size={compact ? 12 : 13} inherit />
-      {compact ? <span className="sr-only">{t('tiers.Platinum')}</span> : <> {t('tiers.Platinum')}</>}
+      {/* The name is plain text in its own span: the stylesheet turns it into screen-reader-only text on a narrow cover (container query) and
+          the prop `compact` does the same for a tile density that is always small */}
+      <span className={compact ? 'sr-only' : 'pv-plat-chip-label'}>{t('tiers.Platinum')}</span>
     </span>
   )
 }

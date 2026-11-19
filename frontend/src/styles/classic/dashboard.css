@@ -1,0 +1,694 @@
+/* Design "Klassisch" - area file, see index.css for the rules (scope every rule under :root[data-design='classic'], look only). */
+/* Owner: dashboard - overview and "Alle Spiele" pages, tiles, controls and panel, compact bar, sort menu, play / Twitch / progress
+   parts, platinum effects on the tiles. */
+
+/* The old look of these parts is the one of commit 9fabf8e (index.css: .pv-dhub, .pv-sort*, .pv-bar-*, .pv-play-button, .pv-pbar, .pv-subbar
+   and the Tailwind utility classes of GameTiles.tsx). What is new since then (rating strip, platinum line and medal, compact bar,
+   Twitch counts, list rows, empty help) gets the same language: the 16 / 11 / 7 px radii of the tokens, weights 700 / 800, gradients and
+   soft shadows used the way the old cards used them. Layout, sizes and positions stay exactly as in the light design. Shadows are never
+   written inside light-dark() (the browser drops them); the dark values sit in [data-theme='dark'] rules. */
+
+/* ---------------------------------------------------------------- library figures (the old chips: crystal / emerald / gold) */
+:root[data-design='classic'] .pv-dfig-v {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-dfig-l {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+:root[data-design='classic'] .pv-dfig:nth-child(1) .pv-dfig-v {
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-dfig:nth-child(2) .pv-dfig-v {
+  color: var(--accent-emerald);
+}
+
+:root[data-design='classic'] .pv-dfig:nth-child(3) .pv-dfig-v {
+  color: var(--accent-gold-text);
+}
+
+/* ---------------------------------------------------------------- search row: tile size, count line */
+:root[data-design='classic'] .pv-dash-search > svg {
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-size-label {
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+/* The chosen size in the crystal colour with the heavy weight, like the old caption */
+:root[data-design='classic'] .pv-size-value {
+  color: var(--accent-crystal);
+  font-weight: 800;
+}
+
+/* The old slider: a rounded crystal knob on a rounded track, a soft halo while it is held or focused */
+:root[data-design='classic'] .pv-size-range::-webkit-slider-runnable-track {
+  border-radius: 999px;
+  background: var(--track);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-size-range::-moz-range-track {
+  border-radius: 999px;
+  background: var(--track);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+}
+
+:root[data-design='classic'] .pv-size-range::-webkit-slider-thumb {
+  border-radius: 7px;
+  border: 2px solid var(--bg-surface);
+  background: var(--accent-crystal);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.45), 0 0 0 1px var(--accent-crystal);
+  transition: box-shadow 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-size-range::-moz-range-thumb {
+  border-radius: 7px;
+  border: 2px solid var(--bg-surface);
+  background: var(--accent-crystal);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.45), 0 0 0 1px var(--accent-crystal);
+  transition: box-shadow 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-size-range:is(:hover, :focus-visible, :active)::-webkit-slider-thumb {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.45), 0 0 0 1px var(--accent-crystal), 0 0 0 5px var(--accent-crystal-bg);
+}
+
+:root[data-design='classic'] .pv-size-range:is(:hover, :focus-visible, :active)::-moz-range-thumb {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.45), 0 0 0 1px var(--accent-crystal), 0 0 0 5px var(--accent-crystal-bg);
+}
+
+:root[data-design='classic'] .pv-size-range:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-dash-countline {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+:root[data-design='classic'] .pv-dash-sortnote {
+  font-weight: 500;
+}
+
+/* ---------------------------------------------------------------- sort control and its menu */
+:root[data-design='classic'] .pv-sort-select,
+:root[data-design='classic'] .pv-sort-dir {
+  border: 1px solid var(--border-strong);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-weight: 600;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-sort-dir {
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-sort-select:hover,
+:root[data-design='classic'] .pv-sort-dir:hover:not(:disabled) {
+  background: var(--bg-input);
+  border-color: var(--accent-crystal);
+  color: var(--text-primary);
+}
+
+:root[data-design='classic'] .pv-sort-dir:hover:not(:disabled) {
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-sort-select[aria-expanded='true'] {
+  background: var(--bg-input);
+  border-color: var(--accent-crystal);
+  box-shadow: 0 0 0 3px var(--accent-crystal-bg);
+}
+
+:root[data-design='classic'] .pv-sort-select:focus-visible,
+:root[data-design='classic'] .pv-sort-dir:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-sort-dir:disabled {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+:root[data-design='classic'] .pv-sort-icon {
+  color: var(--accent-crystal);
+}
+
+/* The menu of the orders and the popover of the compact bar: the old soft, deep shadow and the large radius */
+:root[data-design='classic'] .pv-sortmenu,
+:root[data-design='classic'] .pv-cbar-pop {
+  border-radius: var(--radius-lg);
+  box-shadow: 0 22px 44px -12px rgba(15, 23, 42, 0.38);
+}
+
+:root[data-design='classic'][data-theme='dark'] .pv-sortmenu,
+:root[data-design='classic'][data-theme='dark'] .pv-cbar-pop {
+  box-shadow: 0 22px 44px -12px rgba(0, 0, 0, 0.62);
+}
+
+:root[data-design='classic'] .pv-sortmenu-item {
+  transition: background-color 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-sortmenu-item:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+:root[data-design='classic'] .pv-sortmenu-item:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-sortmenu-name {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-sortmenu-hint {
+  font-weight: 500;
+}
+
+:root[data-design='classic'] .pv-sortmenu-item[aria-checked='true'] {
+  background: var(--accent-crystal-bg);
+}
+
+:root[data-design='classic'] .pv-sortmenu-item[aria-checked='true']::before {
+  content: none;
+}
+
+:root[data-design='classic'] .pv-sortmenu-item[aria-checked='true'] .pv-sortmenu-name,
+:root[data-design='classic'] .pv-sortmenu-item[aria-checked='true'] .pv-sortmenu-icon,
+:root[data-design='classic'] .pv-sortmenu-item[aria-checked='true'] .pv-sortmenu-check {
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-sortmenu-item[aria-checked='true'] .pv-sortmenu-name {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-sortmenu-item[aria-checked='true'] .pv-sortmenu-hint {
+  color: var(--text-secondary);
+}
+
+/* ---------------------------------------------------------------- compact bar: the old frosted bar with its soft shadow below */
+:root[data-design='classic'] .pv-dash-cbar {
+  background: var(--bg-glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-block-end-color: var(--border-subtle);
+  box-shadow: 0 14px 26px -18px rgba(30, 41, 59, 0.3);
+}
+
+:root[data-design='classic'][data-theme='dark'] .pv-dash-cbar {
+  box-shadow: 0 14px 26px -18px rgba(0, 0, 0, 0.65);
+}
+
+/* The folded search while a filter is active: the old crystal tint instead of a thin line */
+:root[data-design='classic'] .pv-cbar-search-btn[data-active='true'] {
+  background: var(--accent-crystal-bg);
+  border-color: var(--accent-crystal-border);
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-cbar-search-btn[data-active='true']::after {
+  content: none;
+}
+
+/* ---------------------------------------------------------------- tiles */
+:root[data-design='classic'] .pv-tile {
+  background: var(--bg-surface);
+  border-color: var(--border-subtle);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* The old hover lifted the card; nothing moves here: the frame turns crystal and a soft shadow settles below */
+@media (hover: hover) {
+  :root[data-design='classic'] .pv-tile:hover {
+    border-color: var(--accent-crystal-border);
+    box-shadow: 0 16px 30px -16px rgba(15, 23, 42, 0.4);
+  }
+
+  :root[data-design='classic'][data-theme='dark'] .pv-tile:hover {
+    box-shadow: 0 16px 30px -16px rgba(0, 0, 0, 0.7);
+  }
+}
+
+:root[data-design='classic'] .pv-tile:focus-within {
+  border-color: var(--accent-crystal);
+}
+
+/* A finished game: the platinum frame and glow of the old card (crystal ring, soft crystal light below) */
+:root[data-design='classic'] .pv-tile[data-platin='true'] {
+  border-color: var(--accent-crystal-border);
+  box-shadow: 0 0 0 1px var(--accent-crystal-border), 0 16px 36px -12px rgba(56, 189, 248, 0.55);
+}
+
+:root[data-design='classic'] .pv-tile[data-platin='true']:focus-within {
+  border-color: var(--accent-crystal);
+}
+
+/* The cover zooms a little under the pointer (the old group-hover zoom); the card itself stays where it is */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  :root[data-design='classic'] .pv-tile-cover img {
+    transition: scale 0.3s ease;
+  }
+
+  :root[data-design='classic'] .pv-tile:hover .pv-tile-cover img {
+    scale: 1.05;
+  }
+
+  /* After a drop the pointer still rests on the card, and the copy under the pointer must not react (see index.css) */
+  :root[data-design='classic'] .pv-sortable--still .pv-tile-cover img,
+  :root[data-design='classic'] .pv-drag-overlay .pv-tile-cover img {
+    scale: none;
+    transition: none;
+  }
+}
+
+/* The copy that follows the pointer keeps the resting look of the card: its lift is drawn by .pv-drag-lift */
+:root[data-design='classic'] .pv-drag-overlay .pv-tile {
+  border-color: var(--border-subtle);
+  box-shadow: none;
+  transition: none;
+}
+
+:root[data-design='classic'] .pv-drag-overlay .pv-tile[data-platin='true'] {
+  border-color: var(--accent-crystal-border);
+  box-shadow: 0 0 0 1px var(--accent-crystal-border), 0 16px 36px -12px rgba(56, 189, 248, 0.55);
+}
+
+:root[data-design='classic'] .pv-tile-title {
+  font-weight: 800;
+}
+
+/* The genre line was emerald and semibold */
+:root[data-design='classic'] :is(.pv-tile-gen, .pv-dl-gen) {
+  color: var(--accent-emerald);
+  font-weight: 600;
+}
+
+/* ---- the fact rows: semibold text, an icon colour per row (played emerald, last played crystal, released muted, size crystal,
+   duration purple), a missing value mutes its icon ---- */
+:root[data-design='classic'] .pv-fact-in {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+:root[data-design='classic'] .pv-fact:nth-child(1) .pv-fact-ic {
+  color: var(--accent-emerald);
+}
+
+:root[data-design='classic'] .pv-fact:nth-child(2) .pv-fact-ic,
+:root[data-design='classic'] .pv-fact:nth-child(4) .pv-fact-ic {
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-fact:nth-child(5) .pv-fact-ic {
+  color: var(--accent-purple);
+}
+
+:root[data-design='classic'] .pv-fact:has(.pv-fact-none) .pv-fact-ic {
+  color: var(--text-muted);
+}
+
+/* ---- the trophy line: heavy label, emerald figure ---- */
+:root[data-design='classic'] .pv-tile-prog-row {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-tile-prog-k {
+  color: var(--text-secondary);
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-tile-prog-k > svg {
+  color: var(--accent-gold);
+}
+
+:root[data-design='classic'] .pv-tile-prog-k[data-platin='true'] {
+  color: var(--accent-gold-text);
+}
+
+:root[data-design='classic'] .pv-tile-prog-k[data-platin='true'] > svg {
+  color: inherit;
+}
+
+:root[data-design='classic'] .pv-tile-prog-v {
+  color: var(--accent-emerald);
+  font-weight: 800;
+}
+
+/* ---- the rating strip (new since the old look): the strip surface of the action row, crystal marks, heavy figures ---- */
+:root[data-design='classic'] .pv-rate {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-rate-ic {
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-rate-pct {
+  font-weight: 600;
+}
+
+:root[data-design='classic'] .pv-rate-empty {
+  font-weight: 600;
+}
+
+/* ---- the action row: one quiet strip, a hair darker than the card (the old strip), heavy labels ---- */
+:root[data-design='classic'] .pv-tile-act {
+  background: color-mix(in srgb, var(--bg-elevated) 55%, var(--bg-surface));
+}
+
+:root[data-design='classic'] .pv-bar-seg {
+  color: var(--text-secondary);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: background-color 0.15s ease, color 0.15s ease, filter 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-bar-seg:hover {
+  background: var(--control-bg-hover);
+  color: var(--text-primary);
+}
+
+:root[data-design='classic'] .pv-bar-seg:active {
+  filter: brightness(0.94);
+}
+
+:root[data-design='classic'] .pv-bar-seg:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+}
+
+/* Play: the one accent of the row; the hover washes the cell in the soft emerald of the confirm buttons */
+:root[data-design='classic'] .pv-bar-seg.pv-bar-seg--play {
+  color: var(--accent-emerald);
+}
+
+:root[data-design='classic'] .pv-bar-seg.pv-bar-seg--play:hover {
+  background: var(--accent-emerald-bg);
+  color: var(--accent-emerald);
+}
+
+:root[data-design='classic'] .pv-bar-seg.pv-bar-seg--play.pv-bar-seg--running:hover {
+  background: transparent;
+}
+
+/* The star: gold only while the game is a favourite (the gold of the old card, not the darker text gold) */
+:root[data-design='classic'] .pv-bar-seg--star[aria-pressed='true'] svg {
+  color: var(--accent-gold);
+}
+
+/* Twitch: neutral until hovered, then the violet of its logo (old --bar-twitch-icon, >= 3:1 on the hover surface) */
+:root[data-design='classic'] .pv-bar-seg--twitch:is(:hover, :focus-visible) .pv-bar-seg-icon {
+  color: var(--bar-twitch-icon);
+}
+
+:root[data-design='classic'] .pv-bar-count {
+  color: var(--text-secondary);
+  font-weight: 800;
+}
+
+/* The label of a narrow cell: the heavier font needs a hair less size, so "Favourite" is never cut */
+@container pv-bar-seg (min-width: 5.125rem) and (max-width: 6.49rem) {
+  :root[data-design='classic'] .pv-bar-seg {
+    font-size: 0.75rem;
+    letter-spacing: 0;
+  }
+}
+
+/* The stand-alone Play of the game page: the filled emerald button of the old look with its small shadow */
+:root[data-design='classic'] .pv-play-button {
+  border-color: color-mix(in srgb, var(--accent-emerald) 70%, #000);
+  background: var(--accent-emerald);
+  color: var(--play-text);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  box-shadow: 0 1px 2px rgba(2, 6, 23, 0.25);
+  transition: filter 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-play-button:hover {
+  background: var(--accent-emerald);
+  filter: brightness(1.08);
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--accent-emerald) 45%, transparent);
+}
+
+:root[data-design='classic'] .pv-play-button:focus-visible {
+  outline: 2px solid var(--accent-crystal);
+}
+
+/* Running: the same box, tinted instead of filled, no hover change */
+:root[data-design='classic'] .pv-play-button.pv-play-button--running {
+  border-color: var(--accent-emerald);
+  background: color-mix(in srgb, var(--accent-emerald) 14%, var(--bg-surface));
+  color: var(--text-primary);
+  box-shadow: none;
+}
+
+:root[data-design='classic'] .pv-play-button.pv-play-button--running:hover {
+  background: color-mix(in srgb, var(--accent-emerald) 14%, var(--bg-surface));
+  filter: none;
+  box-shadow: none;
+}
+
+/* ---------------------------------------------------------------- hairline list: framed like the old row cards */
+:root[data-design='classic'] .pv-dl {
+  position: relative;
+}
+
+:root[data-design='classic'] .pv-dl::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border: 1px solid var(--border-subtle);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+:root[data-design='classic'] .pv-dl-head {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-dl-row {
+  transition: background-color 0.15s ease;
+}
+
+:root[data-design='classic'] .pv-dl-row:hover {
+  background: var(--bg-elevated);
+}
+
+/* A finished game: the crystal frame the old row had */
+:root[data-design='classic'] .pv-dl-row[data-platin='true'] {
+  box-shadow: inset 0 0 0 1px var(--accent-crystal-border);
+}
+
+:root[data-design='classic'] .pv-dl-link {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-dl-link:hover {
+  color: var(--text-primary);
+}
+
+:root[data-design='classic'] .pv-dl-c-trophy {
+  color: var(--accent-emerald);
+  font-weight: 800;
+}
+
+/* Heavier system type in the fixed trophy column: one step smaller, so "111 / 229 (48 %)" stays inside it */
+:root[data-design='classic'] .pv-dl-row .pv-dl-c-trophy {
+  font-size: 0.875rem;
+  letter-spacing: -0.01em;
+}
+
+/* "No achievements" (no share in brackets) is a plain muted note, not a figure */
+:root[data-design='classic'] .pv-dl-row .pv-dl-c-trophy:not(:has(.pv-dim)):not(:has(.pv-dl-plat)) {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+:root[data-design='classic'] .pv-dl-row :is(.pv-dl-c-play, .pv-dl-c-last, .pv-dl-c-size) {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* The system font is wider than Inter: the fixed 6 rem size column gets a hair less size so "Install size: approx. 159.3 GB" never spills */
+:root[data-design='classic'] .pv-dl-row .pv-dl-c-size {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+:root[data-design='classic'] .pv-dl-plat {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-dl-c-trophy .pv-dim {
+  font-weight: 600;
+}
+
+:root[data-design='classic'] .pv-dl-head :is(.pv-dl-c-play, .pv-dl-c-last, .pv-dl-c-size, .pv-dl-c-trophy) {
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-dl-star[aria-pressed='true'] {
+  color: var(--accent-gold);
+}
+
+/* ---------------------------------------------------------------- empty dashboard help (new since the old look) */
+:root[data-design='classic'] .pv-empty-ic {
+  border: 1px solid var(--accent-crystal-border);
+  background: linear-gradient(135deg, var(--accent-crystal-bg), var(--bg-elevated));
+  color: var(--accent-crystal);
+}
+
+:root[data-design='classic'] .pv-empty-title {
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-empty-intro {
+  color: var(--text-secondary);
+}
+
+:root[data-design='classic'] .pv-step-mark {
+  border-color: var(--border-strong);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-weight: 800;
+}
+
+:root[data-design='classic'] .pv-step-mark[data-state='done'] {
+  border-color: var(--accent-emerald-border);
+  background: var(--accent-emerald-bg);
+  color: var(--accent-emerald);
+}
+
+:root[data-design='classic'] .pv-step-title {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-step-text {
+  color: var(--text-secondary);
+}
+
+:root[data-design='classic'] .pv-step-link {
+  font-weight: 700;
+}
+
+:root[data-design='classic'] .pv-step-btn[aria-disabled='true'] {
+  border-color: var(--border-strong);
+}
+
+/* ---------------------------------------------------------------- trophy progress line (components/ui/ProgressBar.tsx)
+   The old bar: a rounded track with the whole gradient shining faintly through, a fill that is a window onto the same gradient (cool
+   at the start, warm near 100 %) with a soft top light, and a polished gold fill at 100 %. The height stays the 3 px of the light line
+   (rigid layout); a 1 px frame in the strong border colour keeps the line readable (>= 3:1) on the card in both themes. */
+:root[data-design='classic'] .pv-pbar .progress-bar-track {
+  border-radius: 999px;
+  background:
+    linear-gradient(var(--pv-pbar-veil), var(--pv-pbar-veil)),
+    var(--pv-pbar-grad);
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+
+:root[data-design='classic'] .pv-pbar .progress-bar-fill {
+  position: relative;
+  border-radius: 999px;
+  background-color: transparent;
+  background-image: var(--pv-pbar-grad);
+  background-repeat: no-repeat;
+  background-size: calc(10000% / max(var(--p), 1)) 100%;
+  /* a started line never vanishes into a hair */
+  min-inline-size: clamp(0px, calc(var(--p) * 100px), 3px);
+}
+
+:root[data-design='classic'] .pv-pbar .progress-bar-fill::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 45% 0;
+  background: linear-gradient(rgba(255, 255, 255, var(--pv-gloss)), rgba(255, 255, 255, 0));
+}
+
+/* 100 %: the polished gold fill and a gold frame with a soft glow */
+:root[data-design='classic'] .pv-pbar[data-complete] .progress-bar-track {
+  box-shadow: 0 0 0 1px var(--accent-gold), 0 0 10px -2px rgba(217, 140, 6, 0.5);
+}
+
+:root[data-design='classic'][data-theme='dark'] .pv-pbar[data-complete] .progress-bar-track {
+  box-shadow: 0 0 0 1px var(--accent-gold), 0 0 10px -2px rgba(252, 200, 60, 0.45);
+}
+
+:root[data-design='classic'] .pv-pbar[data-complete] .progress-bar-fill {
+  --pv-gloss: 0.5;
+  background-image: linear-gradient(90deg, #f5be3b 0%, #ffd766 24%, #f2a91e 58%, #ffd24f 82%, #f7b52c 100%);
+  background-size: 100% 100%;
+}
+
+/* ---------------------------------------------------------------- platinum effects on the tiles */
+/* The "Platin" plaque keeps its inline metal gradient; the soft edge of the old shadow-lg is added around it */
+:root[data-design='classic'] .pv-plat-chip {
+  font-weight: 800;
+}
+
+/* The gold line at 100 %: the old polished gold, rounded ends, a soft glow and a top light. The dark gold edge stops stay (>= 3:1) */
+:root[data-design='classic'] .pv-plat-line {
+  filter: drop-shadow(0 0 4px rgba(236, 170, 40, 0.5));
+}
+
+:root[data-design='classic'] .pv-plat-line-gold {
+  border-radius: 999px;
+}
+
+:root[data-design='classic'] .pv-plat-line-gold::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 45% 0;
+  background: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0));
+}
+
+/* The medal at its end: the old pin's glow */
+:root[data-design='classic'] .pv-plat-medal {
+  filter: drop-shadow(0 1px 1.5px rgba(120, 53, 15, 0.5)) drop-shadow(0 0 3px rgba(245, 180, 40, 0.4));
+}
+
+:root[data-design='classic'][data-theme='dark'] .pv-plat-medal {
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 3px rgba(252, 211, 77, 0.35));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-design='classic'] .pv-tile,
+  :root[data-design='classic'] .pv-bar-seg,
+  :root[data-design='classic'] .pv-sortmenu-item {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------- platform chip: the old tinted language (a deep slate chip with a hairline
+   and a soft shadow on the cover, a crystal-tinted chip in a list row) */
+:root[data-design='classic'] .pv-platform-badge {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.92));
+  border: 1px solid rgba(248, 250, 252, 0.22);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+:root[data-design='classic'] .pv-platform-badge[data-size='md'] {
+  background: var(--accent-crystal-bg);
+  color: var(--accent-crystal);
+  border-color: var(--accent-crystal-border);
+}
+
+:root[data-design='classic'] .pv-platform-badge-pos .pv-platform-badge {
+  box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.55);
+}

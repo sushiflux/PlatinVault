@@ -15,25 +15,28 @@ public static class TwitchIgdbEndpoints
 {
     public static void MapTwitchIgdb(this RouteGroupBuilder api)
     {
-        // IGDB facts of a vault game (found through its Steam AppID). 204 = no credentials, no AppID or IGDB does not know the game.
+        // IGDB facts of a vault game (found through its Steam AppID, or - a game added by hand - through its stored IGDB id).
+        // 204 = no credentials, no AppID / IGDB id or IGDB does not know the game.
         api.MapGet("/games/{slug}/igdb", async (string slug, CompanionDbContext db, IgdbService igdb, CancellationToken ct) =>
         {
             var game = await db.Games.AsNoTracking()
                 .Where(g => g.Slug == slug)
-                .Select(g => new { g.SteamAppId })
+                .Select(g => new { g.SteamAppId, g.IgdbId })
                 .FirstOrDefaultAsync(ct);
             if (game is null)
             {
                 return Problems.Create(StatusCodes.Status404NotFound, ServerTexts.GameNotFoundTitle, ServerTexts.GameNotFound(slug));
             }
-            if (game.SteamAppId is not > 0 || !igdb.IsConfigured)
+            if ((game.SteamAppId is not > 0 && game.IgdbId is not > 0) || !igdb.IsConfigured)
             {
                 return Results.NoContent();
             }
 
             try
             {
-                var facts = await igdb.GetBySteamAppIdAsync(game.SteamAppId.Value, ct);
+                var facts = game.SteamAppId is > 0
+                    ? await igdb.GetBySteamAppIdAsync(game.SteamAppId.Value, ct)
+                    : await igdb.GetByIgdbIdAsync(game.IgdbId!.Value, ct);
                 return facts is null ? Results.NoContent() : Results.Ok(facts);
             }
             catch (TwitchApiException ex)

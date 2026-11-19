@@ -35,6 +35,7 @@ const game = {
     reset: {
       label: 'Reset progress',
       description: 'Removes all ticks of this game',
+      descriptionManual: 'Removes all ticks in the guide of this game. Your ticked trophies stay.',
     },
   },
 
@@ -46,6 +47,8 @@ const game = {
     group: 'Area of the game',
     guide: 'Guide',
     live: 'Live trophies',
+    trophies: 'Trophies',
+    achievements: 'Achievements',
     stats: 'Statistics',
   },
 
@@ -98,6 +101,8 @@ const game = {
   trophyBar: {
     region: 'Trophy overview and areas',
     summary: '{{achieved}} / {{total}} trophies ({{percent}})',
+    summaryAchievements: '{{achieved}} / {{total}} achievements ({{percent}})',
+    notResearched: 'No trophy list yet',
     progress: 'Trophy progress',
   },
   progressBar: {
@@ -136,7 +141,95 @@ const game = {
     failed: {
       title: 'The guide could not be translated into {{language}}',
     },
+    runningTrophies: {
+      title: 'Translating the trophy list into {{language}} …',
+      message: 'The AI translates names and descriptions. Until then you see the original.',
+    },
+    failedTrophies: {
+      title: 'The trophy list could not be translated into {{language}}',
+    },
     retry: 'Try again',
+  },
+
+  manualHead: {
+    trophies: '{{platform}}: trophies',
+    achievements: '{{platform}}: achievements',
+    guideOnly: '{{platform}}: guide only, no trophies',
+    byHand: 'ticked by hand',
+    platinum: 'Platinum reached',
+  },
+  manualTrophies: {
+    loadFailed: 'Couldn’t load the trophy list',
+    running: {
+      trophies: 'Researching the trophy list …',
+      achievements: 'Researching the achievement list …',
+    },
+    empty: {
+      title: {
+        trophies: 'No trophy list for {{title}} yet',
+        achievements: 'No achievement list for {{title}} yet',
+      },
+      text: {
+        trophies:
+          'The AI researches the trophy list of the {{platform}} version: names, descriptions, grades and missable and hidden trophies. Afterwards you tick finished trophies yourself. The list comes from web sources and may contain mistakes; you see the sources afterwards.',
+        achievements:
+          'The AI researches the achievement list for {{platform}}: names, descriptions, points and missable and hidden achievements. Afterwards you tick finished achievements yourself. The list comes from web sources and may contain mistakes; you see the sources afterwards.',
+      },
+    },
+    research: {
+      trophies: 'Research trophy list',
+      achievements: 'Research achievement list',
+    },
+    redo: {
+      trophies: 'Research trophy list again',
+      achievements: 'Research achievement list again',
+    },
+    backgroundHint: 'The research runs in the background. You can leave the page meanwhile.',
+    steps: {
+      now: 'Now',
+      listTitle: {
+        trophies: 'Research the trophy list',
+        achievements: 'Research the achievement list',
+      },
+      listText: 'This step: collect the list for {{platform}}.',
+      guideTitle: 'Create the guide',
+      guideText: 'A separate step, independent of the list. You start it in the Guide area.',
+      toGuide: 'To the guide',
+    },
+    source: {
+      by: 'Researched by the AI',
+      on: 'on {{date}}.',
+      sources: 'Sources:',
+      none: 'No sources given.',
+      mayErr: {
+        trophies: 'The details may contain mistakes. Check grades, missable and hidden trophies against the guide.',
+        achievements: 'The details may contain mistakes. Check points, missable and hidden achievements against the guide.',
+      },
+      language: 'The list is written in {{language}} and is being translated into your language. Until then you see the original.',
+    },
+    done: {
+      title: {
+        trophies: 'Trophy list saved',
+        achievements: 'Achievement list saved',
+      },
+      count: {
+        trophies_one: '{{count, number}} trophy.',
+        trophies_other: '{{count, number}} trophies.',
+        achievements_one: '{{count, number}} achievement.',
+        achievements_other: '{{count, number}} achievements.',
+      },
+      kept_one: '{{count, number}} tick was kept.',
+      kept_other: '{{count, number}} ticks were kept.',
+      retained_one: '{{count, number}} entry that was already ticked is missing in the new list and stays.',
+      retained_other: '{{count, number}} entries that were already ticked are missing in the new list and stay.',
+      factsTitle: 'Game facts saved',
+      facts: 'Release date, developer, publisher and description are filled in.',
+    },
+  },
+  manualFacts: {
+    title: 'Some details of this game are missing.',
+    text: 'Release date, developer, publisher and description – the AI can research them.',
+    research: 'Research game facts',
   },
 
   lore: {
@@ -229,7 +322,7 @@ const game = {
     pointOfNoReturn: 'This part ends at a point of no return',
   },
   achievementRef: {
-    unknown: 'Steam achievement {{name}}',
+    unknown: 'Achievement {{name}}',
     done: 'unlocked',
   },
   pointOfNoReturn: { doFirst: 'Do this first' },
@@ -288,6 +381,8 @@ const game = {
     check: 'Couldn’t save the tick',
     reset: 'Couldn’t reset the progress',
     complete: 'Couldn’t complete the guide',
+    trophies: 'Couldn’t research the trophy list',
+    facts: 'Couldn’t research the game facts',
   },
   resetConfirm: {
     title: 'Reset ticks?',

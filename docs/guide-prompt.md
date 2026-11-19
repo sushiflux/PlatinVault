@@ -184,3 +184,49 @@ Ein Tab darf "topicId" tragen (z. B. "walkthrough", "quests"); unbekannte Werte 
 badgeVariant: s, a, b oder ok. Cover und Banner leer lassen – PlatinVault holt sie über die Steam-AppID.
 Prüfe am Ende, dass die Datei gültiges JSON ist.
 ```
+
+---
+
+## Spiele anderer Plattformen (selbst hinzugefügt)
+
+Für Spiele, die du von Hand hinzugefügt hast (PlayStation, Xbox, Nintendo Switch, Epic, GOG, Ubisoft Connect, EA app, Battle.net), nimm am
+besten den Weg in der App: Jeder Prompt dort trägt automatisch die Regeln der Plattform deines Spiels statt der Steam-Regel, und statt der
+Steam-AppID nennt er die Version (z. B. „die PlayStation 5-Version“) und – wenn das Spiel über IGDB hinzugefügt wurde – die IGDB-ID.
+
+Willst du den Prompt oben trotzdem für ein solches Spiel benutzen, ersetze die Zeile „Plattform (verbindlich)“ durch die passende:
+
+- **PlayStation 5 / PlayStation 4:** Ich spiele die PS5-Version (bzw. PS4-Version). Trophäen sind Bronze, Silber, Gold und die Platin-Trophäe;
+  PS5- und PS4-Version haben GETRENNTE Trophäenlisten – nur die Liste meiner Version, nie Trophäen der anderen. „100 %“ heißt die Platin-Trophäe
+  plus die DLC-Trophäen, die ich will. Steuerung mit den Tasten des PlayStation-Controllers (Kreuz, Kreis, Quadrat, Dreieck, L1/R1 …). Zeitangaben
+  sind „Stunden bis zur Platin-Trophäe“.
+- **Xbox:** Erfolge sind Xbox-Erfolge mit Gamerscore; Steuerung A, B, X, Y, LB/RB, LT/RT; Zeitangaben bis zu allen Xbox-Erfolgen.
+- **Nintendo Switch:** Die Switch hat KEINE Trophäen und KEINE Erfolge – nie welche erfinden. „100 %“ heißt die Vervollständigung im Spiel
+  (Sammelobjekte, Prozentanzeige, Medaillen). Steuerung mit Joy-Con / Pro Controller (A, B, X, Y, L/R, ZL/ZR, + und −).
+- **PC-Stores (Epic, GOG, Ubisoft Connect, EA app, Battle.net):** wie Steam am PC, aber mit den Erfolgen dieses Stores – sie können von der
+  Steam-Liste abweichen.
+
+Das letzte Kapitel „Alle Steam-Erfolge“ fällt bei diesen Spielen weg: Ihre Trophäen- oder Erfolgsliste hat in PlatinVault einen eigenen Bereich.
+
+### Die Trophäen- oder Erfolgsliste recherchieren
+
+Die Liste ist ein eigener Schritt im Trophäenbereich der Spielseite, mit einem API-Key oder mit deinem KI-Abo. Der Prompt
+fragt die VOLLSTÄNDIGE offizielle Liste genau deiner Version ab (bei PlayStation getrennt nach PS5/PS4, mit Stufe jeder Trophäe; bei Xbox mit
+Gamerscore), dazu – wenn das Spiel keine Fakten aus IGDB hat – Erscheinungsdatum, Entwickler, Publisher, Genres und eine kurze Beschreibung.
+Die Antwort ist EIN JSON-Objekt (im Chat am besten als Datei `platinvault-<slug>-trophies.json`):
+
+```json
+{ "game": "<SPIEL>", "platform": "ps5", "documented": true,
+  "trophies": [ { "id": "a-new-beginning", "name": "Ein neuer Anfang", "originalName": "A New Beginning", "grade": "gold",
+                  "description": "Schließe den Prolog ab.", "tip": "", "hidden": false, "missable": false, "group": null, "category": "Story" } ],
+  "facts": { "releaseDate": "2023-10-12", "developers": ["…"], "publishers": ["…"], "genres": ["…"], "summary": "…", "hoursComplete": 60 },
+  "sources": [ { "title": "…", "url": "https://…" } ] }
+```
+
+- `grade` (`platinum`, `gold`, `silver`, `bronze`) nur bei PlayStation, dort für jede Trophäe Pflicht und höchstens EINE Platin-Trophäe;
+  `points` (Gamerscore bzw. XP) bei den anderen Plattformen; `rarityPercent` (0–100) nur mit Quelle; `group` = Name des DLC, Hauptspiel `null`.
+- Findet die Recherche keine verlässliche, vollständige Liste, lautet die Antwort `{ "documented": false, "reason": "…" }` – dann speichert
+  PlatinVault nichts (lieber keine Liste als eine falsche).
+- PlatinVault prüft die Antwort vor dem Speichern (Pflichtfelder, Werte, Längen, Plattform) und zeigt jeden Fehler einzeln. Eine neue Recherche
+  behält deine Häkchen: gleiche `id` oder eindeutig gleicher Name; abgehakte Einträge, die in der neuen Liste fehlen, bleiben erhalten.
+- Ist die App auf die andere Sprache gestellt, übersetzt die KI die Texte der Liste (Name, Bedingung, Tipp, DLC-Name, Kategorie) im Hintergrund
+  mit; IDs, Stufen, Punkte und Häkchen bleiben, wie sie sind. Gibt es einen offiziellen englischen Namen, nimmt die englische Ansicht ihn.

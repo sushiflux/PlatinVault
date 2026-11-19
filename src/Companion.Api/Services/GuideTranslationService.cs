@@ -125,6 +125,15 @@ public sealed class GuideTranslationService(IServiceScopeFactory scopeFactory, I
         var gameRow = await db.GameTranslations.AsNoTracking().FirstOrDefaultAsync(t => t.GameId == gameId && t.Language == language, ct);
         var gamePending = gameRow is null || gameRow.SourceHash != GuideTranslations.HashGame(game);
 
+        // The trophy list of a game added by hand is translated by the same job (D2): only its texts, never keys, grades, points or flags
+        var trophies = GamePlatforms.IsManual(game)
+            ? await db.GameTrophies.AsNoTracking().Where(t => t.GameId == gameId).OrderBy(t => t.SortOrder).ThenBy(t => t.TrophyKey).ToListAsync(ct)
+            : [];
+        var trophyRow = trophies.Count > 0
+            ? await db.GameTrophyTranslations.AsNoTracking().FirstOrDefaultAsync(t => t.GameId == gameId && t.Language == language, ct)
+            : null;
+        var trophiesPending = trophies.Count > 0 && TrophyTranslations.IsPending(game, trophies, language, trophyRow);
+
         // Texts the app itself wrote (the starter chapter, the default card texts) are translated without the AI
         // (structures are compared, not strings: stored JSON may differ in spacing and key order from freshly built text)
         var starterSource = JsonNode.Parse(ApiEndpoints.CreateStarterTab(new GameEntity { Id = game.Id, Title = game.Title, ContentLanguage = source }).SectionsJson);
@@ -152,7 +161,7 @@ public sealed class GuideTranslationService(IServiceScopeFactory scopeFactory, I
             gamePending = false;
         }
 
-        if (aiTabs.Count == 0 && !gamePending)
+        if (aiTabs.Count == 0 && !gamePending && !trophiesPending)
         {
             return;
         }
@@ -177,6 +186,10 @@ public sealed class GuideTranslationService(IServiceScopeFactory scopeFactory, I
         if (gamePending)
         {
             jobs.Add(TranslateGameAsync());
+        }
+        if (trophiesPending)
+        {
+            jobs.Add(TranslateTrophiesAsync());
         }
         var errors = (await Task.WhenAll(jobs)).Where(e => e is not null).Select(e => e!).ToList();
         ai.LogSwitches(run, "Guide übersetzen");
@@ -216,6 +229,27 @@ public sealed class GuideTranslationService(IServiceScopeFactory scopeFactory, I
             {
                 logger.LogWarning("Kapitel '{Chapter}' konnte nicht übersetzt werden: {Message}", tab.Title, ex.Message);
                 // Every provider refused this chapter: the rest would fail the same way, so stop the other chapters instead of asking again
+                if (ex is AiProviderException)
+                {
+                    abort.Cancel();
+                }
+                return ex is OperationCanceledException ? new LocalizedException(ServerTexts.Ai.NoUsableAnswer(run.Primary)) : ex;
+            }
+        }
+
+        async Task<Exception?> TranslateTrophiesAsync()
+        {
+            try
+            {
+                var texts = TrophyTranslations.TextsToTranslate(trophies, language);
+                var map = await ai.TranslateTextsAsync(game.Title, ServerTexts.Trophies.TranslationLabel(source), texts, source, language, run, settings, gate, abort.Token);
+                var items = TrophyTranslations.Apply(trophies, map, language);
+                await SaveTrophiesAsync(game.Id, language, TrophyTranslations.WriteItems(items), TrophyTranslations.Hash(trophies), ct);
+                return null;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+            {
+                logger.LogWarning("Trophäenliste von {Game} konnte nicht übersetzt werden: {Message}", game.Title, ex.Message);
                 if (ex is AiProviderException)
                 {
                     abort.Cancel();
@@ -299,6 +333,20 @@ public sealed class GuideTranslationService(IServiceScopeFactory scopeFactory, I
         {
             // The chapter was deleted while it was being translated: nothing to keep
             logger.LogDebug(ex, "Übersetzung von Kapitel {Tab} nicht gespeichert (Kapitel gelöscht?).", tab.Id);
+        }
+    }
+
+    private async Task SaveTrophiesAsync(Guid gameId, string language, string itemsJson, string sourceHash, CancellationToken ct)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<CompanionDbContext>();
+        try
+        {
+            await TrophyTranslations.SaveAsync(db, gameId, language, itemsJson, sourceHash, ct);
+        }
+        catch (DbUpdateException ex)
+        {
+            logger.LogDebug(ex, "Übersetzung der Trophäenliste von {Game} nicht gespeichert (Spiel gelöscht?).", gameId);
         }
     }
 

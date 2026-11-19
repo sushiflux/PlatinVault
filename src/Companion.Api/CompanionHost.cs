@@ -165,12 +165,14 @@ public static class CompanionHost
         builder.Services.AddSingleton<TwitchAuthService>();
         builder.Services.AddSingleton<IgdbService>();
         builder.Services.AddSingleton<TwitchStreamsService>();
+        builder.Services.AddSingleton<ManualFactsRefresh>();
         builder.Services.AddSingleton<TwitchLiveCountService>();
         builder.Services.AddHostedService<SteamMonitorWorker>();
         builder.Services.AddHostedService<HistoryRecorderWorker>();
         builder.Services.AddHostedService<AchievementPercentageWorker>();
 
         builder.Services.AddScoped<SettingsStore>();
+        builder.Services.AddScoped<CoverStore>();
         builder.Services.AddScoped<BridgeTokenStore>();
         builder.Services.AddMemoryCache();
         builder.Services.AddScoped<SteamClient>();

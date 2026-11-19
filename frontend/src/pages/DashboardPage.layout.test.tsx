@@ -181,7 +181,7 @@ describe('DashboardPage look', () => {
     await waitFor(() => expect(container.querySelectorAll('.pv-dl-row').length).toBe(2))
     expect(screen.getByRole('heading', { level: 1, name: 'Alle Spiele' })).toBeTruthy()
     const figures = container.querySelector<HTMLElement>('.pv-dfigs')!
-    expect(within(figures).getByText('Spiele in der Bibliothek')).toBeTruthy()
+    expect(within(figures).getByText('Spiele')).toBeTruthy()
     expect(within(figures).getByText(/13 \/ 22/)).toBeTruthy()
     const echo = [...container.querySelectorAll<HTMLElement>('.pv-dl-row')].find((row) => row.textContent?.includes('Echo'))!
     const star = within(echo).getByRole('button', { name: /„Echo“ aufs Dashboard/ })

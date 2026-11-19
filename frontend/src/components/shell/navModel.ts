@@ -1,4 +1,5 @@
 import type { GameDetailDto, GuideTabDto } from '../../api/types'
+import { hasTrophies, isManualGame, platformOf } from '../../utils/platforms'
 
 // Pure model of the game navigation (the side tree of a game page) and of the game page's tabs. Shared by the tree (components/shell/ShellNav.tsx) and the
 // game page (pages/GameGuidePage.tsx), so both always agree on which tab is active and in which order the chapters stand.
@@ -8,10 +9,12 @@ export const LIVE_TROPHIES_TAB_SLUG = '__live_steam_trophies__'
 export const STATS_TAB_SLUG = '__steam_stats__'
 // Slug of the optional Story & Lore tab created by POST /api/games/{slug}/ai-lore
 export const LORE_TAB_SLUG = 'story-lore'
+// "The guide" of a game that has no chapter yet (the area bar's Guide segment of a game added by hand): the page shows its "no guide yet" card
+export const GUIDE_TAB_SLUG = '__guide__'
 
 // The active tab lives in the URL (?tab=...), so a link or a reload lands on the same chapter / area. The areas have short names
 // there; a chapter uses its own slug.
-const TAB_PARAM_TO_SLUG: Record<string, string> = { live: LIVE_TROPHIES_TAB_SLUG, stats: STATS_TAB_SLUG, story: LORE_TAB_SLUG }
+const TAB_PARAM_TO_SLUG: Record<string, string> = { live: LIVE_TROPHIES_TAB_SLUG, stats: STATS_TAB_SLUG, story: LORE_TAB_SLUG, guide: GUIDE_TAB_SLUG }
 
 export function tabParamToSlug(param: string | null | undefined): string {
   if (!param) return ''
@@ -20,7 +23,7 @@ export function tabParamToSlug(param: string | null | undefined): string {
 }
 
 export function slugToTabParam(slug: string): string {
-  return slug === LIVE_TROPHIES_TAB_SLUG ? 'live' : slug === STATS_TAB_SLUG ? 'stats' : slug === LORE_TAB_SLUG ? 'story' : slug
+  return slug === LIVE_TROPHIES_TAB_SLUG ? 'live' : slug === STATS_TAB_SLUG ? 'stats' : slug === LORE_TAB_SLUG ? 'story' : slug === GUIDE_TAB_SLUG ? 'guide' : slug
 }
 
 /** Link to one tab of a game page. */
@@ -28,7 +31,8 @@ export function gameTabHref(gameSlug: string, tabSlug: string): string {
   return `/games/${encodeURIComponent(gameSlug)}?tab=${encodeURIComponent(slugToTabParam(tabSlug))}`
 }
 
-type GameTabsSource = Pick<GameDetailDto, 'tabs' | 'steamAppId'>
+// platform: a game added by hand (any platform but Steam) has a trophy tab when its platform has trophies; the statistics need a Steam link
+type GameTabsSource = Pick<GameDetailDto, 'tabs' | 'steamAppId'> & { platform?: string | null }
 
 /** The guide chapters of the navigation: without the lore tab (own entry) and without the hidden Steam achievement list. */
 export function guideChapters(game: Pick<GameDetailDto, 'tabs'> | null | undefined): GuideTabDto[] {
@@ -37,16 +41,19 @@ export function guideChapters(game: Pick<GameDetailDto, 'tabs'> | null | undefin
 
 /**
  * The tab a game page shows for the requested slug: the requested one when it exists, else the first chapter, else the live trophies
- * (games with a Steam link), else the statistics, else nothing. Story & Lore always exists (its gate offers the research).
+ * (games with a Steam link or a platform with trophies), else nothing. Story & Lore always exists (its gate offers the research).
  */
 export function resolveGameTab(game: GameTabsSource | null | undefined, requestedSlug: string): string {
   if (!game) return requestedSlug
   const hasSteam = Boolean(game.steamAppId)
+  const hasTrophyTab = hasSteam || (isManualGame(game) && hasTrophies(platformOf(game)))
   if (requestedSlug === LORE_TAB_SLUG) return requestedSlug
-  if ((requestedSlug === LIVE_TROPHIES_TAB_SLUG || requestedSlug === STATS_TAB_SLUG) && hasSteam) return requestedSlug
+  if ((requestedSlug === LIVE_TROPHIES_TAB_SLUG && hasTrophyTab) || (requestedSlug === STATS_TAB_SLUG && hasSteam)) return requestedSlug
   const chapters = guideChapters(game)
   if (chapters.some((tab) => tab.slug === requestedSlug)) return requestedSlug
-  return chapters[0]?.slug ?? (hasSteam ? LIVE_TROPHIES_TAB_SLUG : '')
+  // The guide itself: its first chapter, none = the "no guide yet" card
+  if (requestedSlug === GUIDE_TAB_SLUG) return chapters[0]?.slug ?? ''
+  return chapters[0]?.slug ?? (hasTrophyTab ? LIVE_TROPHIES_TAB_SLUG : '')
 }
 
 // The groups of the chapter navigation, in the fixed order they are shown in (a key the server sends that is not listed is
