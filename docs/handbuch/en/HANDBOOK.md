@@ -259,15 +259,16 @@ The **colour scheme** (light or dark) stays a separate choice: you switch it wit
 
 ### The navigation on the game page
 
-Only on the page of a game is there a navigation on the left - it belongs to that one game and holds only the guide. The overview, **All games**, the settings and **About PlatinVault** have no navigation; you move on from there with the header. You can reach the overview at any time with a click on the logo in the header. From top to bottom:
+Only on the page of a game is there a navigation on the left - it belongs to that one game. The overview, **All games**, the settings and **About PlatinVault** have no navigation; you move on from there with the header. You can reach the overview at any time with a click on the logo in the header. From top to bottom:
 
 - **Game head:** the cover and the title of the game.
-- **Chapters:** the chapters of the guide under their group headings (if a guide has only one group there are no headings). Next to a chapter a number shows how much of it you have ticked; a warning symbol means the research of that chapter failed (6.2).
+- **Trophies and statistics:** the trophy entry (**Live trophies**, **Trophies** or **Achievements**, depending on the game) and, for Steam games, **Statistics** (6.1), followed by a thin line.
+- **Chapters:** the chapters of the guide under their group headings (if a guide has only one group there are no headings; without chapters the entry **Guide** stands here). Next to a chapter a number shows how much of it you have ticked; a warning symbol means the research of that chapter failed (6.2).
 - **Story & Lore** (6.5).
 
 The page you are on is highlighted.
 
-**Narrow navigation.** The button at the top of the navigation (sidebar symbol) collapses it to a narrow rail with symbols only, so the content has more room. The rail has one symbol per chapter group. A click on it (or Enter or the space bar) opens a small list of that group's chapters beside it; the arrow keys choose a chapter, Esc closes the list. A hint on hover names every symbol. A second click on the button unfolds the navigation again. PlatinVault remembers your choice in this browser or program.
+**Narrow navigation.** The button at the top of the navigation (sidebar symbol) collapses it to a narrow rail with symbols only, so the content has more room. The rail first shows the trophy and statistics entries as plain symbols with a hint, then one symbol per chapter group, then Story & Lore. A click on a group symbol (or Enter or the space bar) opens a small list of that group's chapters beside it; the arrow keys choose a chapter, Esc closes the list. A hint on hover names every symbol. A second click on the button unfolds the navigation again. PlatinVault remembers your choice in this browser or program.
 
 **On a phone.** Below about 768 pixels of width the navigation is hidden. A **menu button** at the left of the header opens it as a drawer that slides in over the page from the left. It closes as soon as you choose an entry, with the button **Close navigation**, with Esc, or with a tap next to the drawer.
 
@@ -406,16 +407,16 @@ The trophy cabinet shows every game you brought to **100 %**, like a display cas
 
 At the very top of the game head is the **Back** button. It takes you to the page you came from – or to the overview if you opened the game directly. Below it are the cover, the title, the **Play** button and a calm row with the game's tools (icons with a hint on hover: complete guide, add chapter, export, Twitch, print/PDF, reset progress). Below it a line shows your trophy progress with the tiers. The content of the chosen page follows.
 
-At the bottom of the game head you switch between the areas of the game with the **area bar**. It only appears for games linked to Steam (for games you added by hand see 6.6):
+You switch between the areas of the game in the **navigation on the left** (it exists only on the game page, 5.1). From top to bottom it has these entries:
 
-- **Guide** – the guide's chapters (6.2). A click takes you back to the chapter you read last in this game.
-- **Live trophies** – the game's Steam achievements (6.3).
-- **Statistics** (6.4).
-
-The **navigation on the left** (it exists only on the game page, 5.1) holds only the guide. It has these entries:
-
-- the guide's **chapters** (6.2), sorted under small headings such as **Getting started**, **Story & world**, **Combat & tactics** or **Progression & unlocks** (a guide with only one group has no headings). A number next to each chapter shows how much you have ticked off,
+- the **trophy entry**: **Live trophies** for Steam games (6.3), **Trophies** for PlayStation, **Achievements** for Xbox, Epic Games, GOG, Ubisoft Connect, EA app and Battle.net (6.6). The Nintendo Switch has none; it only has the guide,
+- **Statistics** (Steam games only, 6.4),
+- a thin line,
+- the guide's **chapters** (6.2), sorted under small headings such as **Getting started**, **Story & world**, **Combat & tactics** or **Progression & unlocks** (a guide with only one group has no headings). A number next to each chapter shows how much you have ticked off. If the game has no chapter yet, a single entry **Guide** stands here; it opens the card "There is no guide for this game yet",
+- a thin line,
 - **Story & Lore** (6.5).
+
+If you open a game without a page chosen, you see its first chapter, otherwise its trophies.
 
 The chosen page is highlighted and stored in the address, so a reload or a bookmark brings you back to exactly that page. 5.1 explains the navigation itself, its narrow form and the phone drawer. Version, licences and "Made with ♥" are not on the game page; you find them on the page **About PlatinVault** (info symbol in the header).
 
@@ -442,17 +443,29 @@ from your collection and your Steam library. Games you added by hand have no Pla
   Gemini) and paste the answer back here – PlatinVault never accesses your subscription and sends nothing to an AI. This is allowed because you
   are the one sitting in the chat. You find it in the guide builder (**With your AI subscription (no API key)**), in the notice of a failed AI
   action on the note of a chapter that could not be researched, in the choice window of **Complete the guide** (**My AI plan**) and in the arrow menu of **Add chapter**; without a stored key, **Complete the guide** opens it directly.
-  - *Step 1, chapter list:* **Copy prompt**, paste it into the chat (ideally with web search switched on) and paste the answer into the field
-    below – also with text before it or inside a json code block, or load it as a file. You see the suggested chapters as in the builder and
-    tick what you want. If you do not want a blueprint prompt, choose the topics yourself.
-  - *Step 2, approach:* at the top, **Approach** lets you choose between **All at once** and **One by one**. With many chapters, **All at once**
-    is the more convenient way (see below).
-  - *Step 2, one by one, chapter by chapter:* every chapter has a prompt of its own (**Copy prompt** or **Export as file**) and a field for the answer. The
+  - *The simple way: one prompt for the whole guide.* The window starts with **One prompt for the whole guide**. The AI picks the chapters itself, researches the game and writes the whole guide in one go. If the game already has chapters, it only writes the missing ones. Proceed like this:
+    1. **Copy prompt** and paste it into the chat of your subscription, ideally with web search switched on.
+    2. The chat creates **one** file (named `platinvault-<game>-chapters.json`) with a plan and all chapters. Drop the file into the field below (or **Choose file**). If your chat cannot create files, paste its answer instead: one code block.
+    3. PlatinVault checks the plan and lists the planned chapters, with a warning where something stands out. For example: a topic is already in the guide and is not created again, or there are more chapters than the chosen scope allows (all of them are kept anyway; you can remove extra ones later with **Remove chapter**).
+    4. **Next: N chapters** leads to the check per chapter (see **All at once** below). The pasted text is already in place there.
+    5. **Save N chapters** creates all recognised chapters.
+
+    A long guide sometimes arrives in several answers. Then the chat stops after a complete chapter and writes **STILL OPEN: K05–K13**. Write “continue” to it and add every further answer in the same field. The plan is always in the first answer.
+
+    This way also applies to **Complete the guide** with the subscription: the prompt tells the AI which chapters the guide already has, and it only writes the missing ones. Chapters that could not be researched are written again; the new chapter replaces the note.
+  - *Choose chapters myself:* **Choose chapters myself** takes you to the older way in two steps. **Back to the single prompt** returns to the simple way.
+    - *Step 1, chapter list:* **Copy prompt**, paste it into the chat (ideally with web search switched on) and paste the answer into the field
+      below – also with text before it or inside a json code block, or load it as a file. You see the suggested chapters as in the builder and
+      tick what you want. If you do not want a planning prompt, choose the topics yourself from the standard list.
+    - *Step 2, approach:* at the top, **Approach** lets you choose between **All at once** and **One by one**. With many chapters, **All at once**
+      is the more convenient way (see below).
+  - For one or several failed chapters and for **Research chapter again** there is no plan: you go straight to the prompt for those chapters.
+  - *One by one, chapter by chapter:* every chapter has a prompt of its own (**Copy prompt** or **Export as file**) and a field for the answer. The
     answer is checked **while you paste it**: does it belong to the right game (the Steam AppID is in every prompt and in the answer)? Is the
     JSON complete (not cut off)? Do sections, table rows and language fit? Errors are shown completely below it, together with a preview
     (title, sections, table rows). **Save chapter** creates the chapter exactly like an AI result; a tick shows what is saved already. For a
     chapter that could not be researched, the answer replaces the note.
-  - *All at once:* PlatinVault makes **one** prompt for all chosen chapters (above it you see how many chapters there are and how big the prompt
+  - *All at once:* with the simple way this is the check after pasting. With **Choose chapters myself**, PlatinVault makes **one** prompt for all chosen chapters (above it you see how many chapters there are and how big the prompt
     is). Proceed like this:
     1. Copy the prompt and paste it into the chat of your subscription, ideally with web search switched on.
     2. The chat creates **one** file with all chapters (named `platinvault-<game>-chapters.json`) and offers it for download. Drop the file
@@ -554,7 +567,7 @@ All achievements of the game – in the texts Steam provides.
 - **What is shown:** the status on the left (**All, Still needed, Unlocked, Secret**, each with its count), the tier on the
   right (**All, Gold, Silver, Bronze**).
 - **How it is shown:** the search field (name, text or – while notes are switched on – note), the **sort order**, the **view** slider and, at the right end, an
-  eye button for the **secret achievements** (revealed or covered). On narrow windows, such as a phone, the groups move neatly
+  switch **Reveal secret achievements** (descriptions visible or hidden) and the switch **Show all tips** (see below). On narrow windows, such as a phone, the groups move neatly
   below each other; nothing in the box changes size or jumps, not even when the list becomes empty.
 
 **Four views** (the "View" slider): **List** (one row per achievement), **Tiles** (icon only, the details are in the hint and,
@@ -564,6 +577,7 @@ in the corner of its icon; locked achievements have a grey icon.
 
 - **Hidden trophies** are revealed and show what to do.
 - **"How to get it":** tips from the guide right at the trophy.
+- **Show all tips:** the switch sits right after **Reveal secret achievements**. When it is on, the **Compact** view opens the tip of every trophy at once; the bulb on a card still opens or closes just that one card. In the **List** the tip then appears as its own line under the description. PlatinVault remembers your choice in this browser. The switch is greyed out, and its tooltip gives the reason, when the game has no tips yet (they come from the guide or from the researched trophy list), in the **Tiles** view (there the tip is in the detail window of a trophy) and in the **Large** view (it always shows every tip).
 - **Counter trophies** (for example "use 400 times …") show a bar like "244 / 10,000" when the game has a counter on Steam.
 - **"x % of players"** is the rarity: that many Steam players have this trophy – not your progress.
 - Your own **notes** per trophy: a small note button on the card (Compact, Large) and in the detail window opens the input
@@ -708,7 +722,7 @@ This section applies to games you created with **Add game** (5.3). Their page lo
 
 **Why do you tick by hand?** On Steam, PlatinVault reads your unlocked achievements itself. For PlayStation and the other platforms that is not possible. Sony offers no public interface for trophies. In our reading, unofficial ways conflict with the terms of the PlayStation Network (section 10.7); PlatinVault therefore never calls the PlayStation Network. This is not legal advice – use the way you are comfortable with. The list comes from the AI research instead, and you tick finished trophies yourself.
 
-**The layout of the page.** The area bar in the game head shows **Guide** and next to it **Trophies** (PlayStation) or **Achievements** (Xbox, Epic Games, GOG, Ubisoft Connect, EA app and Battle.net). These games have no **Statistics** and no **Play** button. Under the title stands the platform, for example "PS5: trophies", and whether you have reached platinum. The Nintendo Switch only has the guide, because it has no trophies or achievements.
+**The layout of the page.** The navigation on the left shows **Trophies** (PlayStation) or **Achievements** (Xbox, Epic Games, GOG, Ubisoft Connect, EA app and Battle.net) at the top, below it the guide's chapters (or, while there are none, the entry **Guide**) and **Story & Lore**. These games have no **Statistics** and no **Play** button. Under the title stands the platform, for example "PS5: trophies", and whether you have reached platinum. The Nintendo Switch only has the guide, because it has no trophies or achievements.
 
 ### Researching the list
 

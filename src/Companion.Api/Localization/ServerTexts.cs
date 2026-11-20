@@ -1000,6 +1000,7 @@ public static partial class ServerTexts
                 "redo" => ("„Kapitel neu recherchieren“", "“Redo chapter”"),
                 "lore" => ("die Recherche für „Story & Lore“", "the research for “Story & Lore”"),
                 "trophies" => ("die Recherche der Trophäenliste", "the research of the trophy list"),
+                "review" => ("„Kapitel prüfen lassen“", "“Have chapter checked”"),
                 _ => ("eine andere KI-Aktion", "another AI action")
             };
             return M(

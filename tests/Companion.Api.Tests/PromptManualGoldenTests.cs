@@ -48,6 +48,17 @@ public sealed class PromptManualGoldenTests
             text.Append($"\n=====[epic trophies and facts abo {language}]=====\n");
             text.Append(AiGuideGeneratorService.ComposeManualTrophyPrompt(epicContext, epic, new TrophyResearchInclude(true, true), []));
         }
+
+        // Appended again: the one-step prompt of the subscription flow for a PS5 game with a researched trophy list and a Switch game without trophies
+        foreach (var language in new[] { Lang.German, Lang.English })
+        {
+            var ps5 = ManualPromptFixtures.Ps5(language);
+            text.Append($"\n=====[ps5 oneshot {language}]=====\n");
+            text.Append(AiGuideGeneratorService.ComposeManualOneShotPrompt(ManualPromptFixtures.Context(ps5, ManualPromptFixtures.Ps5Trophies(ps5.Id), language), ps5, language));
+            var nintendo = ManualPromptFixtures.Nintendo(language);
+            text.Append($"\n=====[nintendo oneshot {language}]=====\n");
+            text.Append(AiGuideGeneratorService.ComposeManualOneShotPrompt(ManualPromptFixtures.Context(nintendo, [], language), nintendo, language));
+        }
         return text.ToString().Replace("\r\n", "\n");
     }
 

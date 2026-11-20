@@ -72,8 +72,6 @@ public sealed partial class AiGuideGeneratorService
 
         var title = game.Title.Replace("\"", "'");
         var appId = game.SteamAppId is > 0 ? game.SteamAppId.Value.ToString() : "null";
-        // "Steam AppID 123 – the Steam version on PC" (unchanged for Steam games) or the platform version of a game added by hand
-        var identity = ManualIdentity(game, language);
         var first = chapters[0].Key;
         var last = chapters[^1].Key;
         var doneRange = chapters.Count == 1 ? first : $"{first}–{last}";
@@ -120,15 +118,7 @@ public sealed partial class AiGuideGeneratorService
         text.AppendLine();
         text.AppendLine(rules);
         text.AppendLine();
-        text.AppendLine(T("JSON-Struktur EINES Kapitels:", "JSON structure of ONE chapter:"));
-        text.AppendLine("{");
-        text.AppendLine($"  \"game\": \"{title}\",");
-        text.AppendLine($"  \"steamAppId\": {appId},");
-        text.AppendLine(T("  \"chapter\": \"<Schlüssel aus der Liste, z. B. K07>\",", "  \"chapter\": \"<key from the list, e.g. K07>\","));
-        text.AppendLine(T("  \"title\": \"<Kapitel-Titel aus der Liste>\",", "  \"title\": \"<chapter title from the list>\","));
-        text.AppendLine("  \"icon\": \"mdi:...\",");
-        text.AppendLine(sectionsJson);
-        text.AppendLine("}");
+        text.AppendLine(ManualChapterJsonStructure(language, title, appId, sectionsJson, fromPlan: false));
         text.AppendLine();
 
         if (anyDroppable)
@@ -141,43 +131,25 @@ public sealed partial class AiGuideGeneratorService
 
         if (walkthroughs.Count > 0)
         {
-            var keys = string.Join(", ", walkthroughs.Select(c => c.Key));
-            text.AppendLine(T(
-                $"Sonderfall Komplettlösung ({keys}): Sie steht wie jedes andere Kapitel im selben Array, an ihrer Stelle der Liste. Sie ist lang; baue sie wie die anderen Kapitel Schritt für Schritt auf. Der Pflicht-Aufbau oben gilt dafür NICHT; es gilt stattdessen:",
-                $"Special case walkthrough ({keys}): it goes into the same array like every other chapter, at its place in the list. It is long; build it step by step like the other chapters. The mandatory structure above does NOT apply to it; this applies instead:"));
-            text.AppendLine(WalkthroughSingleInstructions(language, context.Platform));
-            text.AppendLine(AchievementReference(context));
-            text.AppendLine(T(
-                "Sein JSON-Objekt hat dieselben Felder wie die anderen („game“, „steamAppId“, „chapter“, „title“, „icon“, „sections“).",
-                "Its JSON object has the same fields as the others (\"game\", \"steamAppId\", \"chapter\", \"title\", \"icon\", \"sections\")."));
+            text.AppendLine(ManualWalkthroughSpecialCase(context, language, string.Join(", ", walkthroughs.Select(c => c.Key)), T("im selben Array, an ihrer Stelle der Liste", "into the same array like every other chapter, at its place in the list")));
             text.AppendLine();
         }
 
         var skeleton = $"{{ \"game\": \"{title}\", \"steamAppId\": {appId}, \"chapter\": \"{first}\", \"title\": \"{chapters[0].Title.Replace("\"", "'")}\", \"icon\": \"mdi:...\", \"sections\": [...] }}";
-        text.AppendLine(T(
-            "Ausgabe in diesem Chat (das gilt zusätzlich und hat bei der Ausgabe Vorrang vor dem Satz „ohne Markdown-Codeblock“ oben):",
-            "Output in this chat (this applies in addition and wins over the sentence \"without a Markdown code block\" above):"));
-        text.AppendLine(T(
-            $"- Gemeint ist genau dieses Spiel: „{game.Title}“, {identity}. Prüfe vor dem Schreiben, dass du dieses Spiel meinst – nicht ein gleichnamiges Spiel, einen Vorgänger, Nachfolger, ein Remake oder eine Demo.",
-            $"- The game is exactly this one: \"{game.Title}\", {identity}. Before writing, make sure you mean this game – not a game with the same name, a predecessor, a successor, a remake or a demo."));
+        text.AppendLine(ManualOutputHeading(language));
+        text.AppendLine(ManualGameIdentityLine(game, language));
         text.AppendLine(T(
             $"- Die Ausgabe ist EIN JSON-Array mit ALLEN {chapters.Count} Kapiteln in der Reihenfolge der Liste: [ <Objekt {first}>, … <Objekt {last}> ]. Pro Kapitel genau ein Objekt, im Array sonst nichts – kein Text, keine Kommentare, keine Platzhalter. Beginne jedes Objekt in einer neuen Zeile. Die Felder stehen in genau dieser Reihenfolge: „game“, „steamAppId“, „chapter“ (der Schlüssel aus der Liste, exakt, z. B. „{first}“), „title“, „icon“, „sections“, so (verkürzt, schreibe die echten Inhalte): {skeleton}",
             $"- The output is ONE JSON array with ALL {chapters.Count} chapters in the order of the list: [ <object {first}>, … <object {last}> ]. Exactly one object per chapter, nothing else in the array – no text, no comments, no placeholders. Start every object on a new line. The fields are in exactly this order: \"game\", \"steamAppId\", \"chapter\" (the key from the list, exactly, e.g. \"{first}\"), \"title\", \"icon\", \"sections\", like this (shortened, write the real content): {skeleton}"));
-        text.AppendLine(T(
-            $"- Kann dein Chat Code ausführen oder Dateien erzeugen: Liefere das Array als EINE Datei zum Herunterladen mit dem Namen „{answerFile}“. Baue sie Kapitel für Kapitel auf – hänge jedes fertige Kapitel an die Datei an, damit kein einzelner Schritt alles auf einmal tragen muss – und prüfe am Ende, dass die ganze Datei gültiges JSON ist (z. B. indem du sie einliest). Schreibe den Inhalt dann nicht zusätzlich in den Chat; schreibe nur die Abschlusszeile.",
-            $"- If your chat can run code or create files: deliver the array as ONE downloadable file named \"{answerFile}\". Build it chapter by chapter – append each finished chapter to the file, so that no single step has to hold everything at once – and at the end check that the whole file is valid JSON (e.g. by reading it back in). Do not write the content into the chat as well; write only the final line."));
+        text.AppendLine(ManualAnswerFileLine(language, answerFile));
         text.AppendLine(T(
             $"- NUR wenn dein Chat keine Datei erzeugen kann: Schreibe dasselbe Array in EINEN ```json-Codeblock in EINER Antwort, im Block nichts außer dem Array. Passt nicht alles hinein, höre nach einem vollständigen Kapitel auf (schneide nie mitten in einem Kapitel ab), schließe das Array mit ] und schreibe als allerletzte Zeile „NOCH OFFEN: {openExample}“ (mit den echten Schlüsseln der fehlenden Kapitel). Schreibe ich dann „weiter“, antworte mit einem NEUEN Array nur der offenen Kapitel, nach denselben Regeln.",
             $"- ONLY if your chat cannot create a file: write the same array into ONE ```json code block in ONE answer, nothing but the array inside the block. If everything does not fit, stop after a complete chapter (never cut off in the middle of a chapter), close the array with ] and write as the very last line \"STILL OPEN: {openExample}\" (with the real keys of the missing chapters). When I then write \"continue\", answer with a NEW array of only the open chapters, following the same rules."));
         text.AppendLine(T(
             $"- Wenn alle Kapitel fertig sind, schreibe als allerletzte Zeile: „ALLE KAPITEL FERTIG: {doneRange}“.",
             $"- When all chapters are done, write as the very last line: \"ALL CHAPTERS DONE: {doneRange}\"."));
-        text.AppendLine(T(
-            "- Schreibe echte Inhalte, keine Platzhalter wie \"...\" – die Strukturbeschreibung oben ist nur das Muster. Was du nicht belegen kannst: „Noch nicht dokumentiert (Stand <heutiges Datum>)“ – erfinde nichts.",
-            "- Write real content, no placeholders like \"...\" – the structure description above is only the pattern. What you cannot back up: \"Not documented yet (as of <today's date>)\" – invent nothing."));
-        text.AppendLine(T(
-            "- Nutze die Websuche deines Chats, falls es eine gibt – für jedes Kapitel zuerst nach einem Wiki speziell zu diesem Spiel (Schritt 1 der Recherche-Regeln; gibt es keins, überspring ihn ohne Erwähnung); ohne Websuche kennzeichne die Quellenlage als dünn.",
-            "- Use the web search of your chat if it has one - for every chapter first for a wiki dedicated to this game (step 1 of the research rules; skip it silently when there is none); without web search mark the source situation as thin."));
+        text.AppendLine(ManualRealContentLine(language));
+        text.AppendLine(ManualWebSearchLine(language));
         text.AppendLine();
 
         text.AppendLine(T($"Kapitel ({chapters.Count}), in dieser Reihenfolge:", $"Chapters ({chapters.Count}), in this order:"));
@@ -204,6 +176,78 @@ public sealed partial class AiGuideGeneratorService
     }
 
     private static string OneLine(string value) => Regex.Replace(value, @"\s+", " ").Trim();
+
+    // ---- Text blocks the batch prompt and the one-step prompt (AiGuideGeneratorService.ManualOneShot.cs) have in common --------------
+
+    /// <summary>"JSON structure of ONE chapter": the fields of a chapter object with the key and title taken from the list (or from the plan).</summary>
+    internal static string ManualChapterJsonStructure(string language, string title, string appId, string sectionsJson, bool fromPlan)
+    {
+        var english = language == Lang.English;
+        string T(string de, string en) => english ? en : de;
+        var lines = new List<string>
+        {
+            T("JSON-Struktur EINES Kapitels:", "JSON structure of ONE chapter:"),
+            "{",
+            $"  \"game\": \"{title}\",",
+            $"  \"steamAppId\": {appId},",
+            fromPlan
+                ? T("  \"chapter\": \"<Schlüssel aus dem Plan, z. B. K07>\",", "  \"chapter\": \"<key from the plan, e.g. K07>\",")
+                : T("  \"chapter\": \"<Schlüssel aus der Liste, z. B. K07>\",", "  \"chapter\": \"<key from the list, e.g. K07>\","),
+            fromPlan
+                ? T("  \"title\": \"<Kapitel-Titel aus dem Plan>\",", "  \"title\": \"<chapter title from the plan>\",")
+                : T("  \"title\": \"<Kapitel-Titel aus der Liste>\",", "  \"title\": \"<chapter title from the list>\","),
+            "  \"icon\": \"mdi:...\",",
+            sectionsJson,
+            "}"
+        };
+        return string.Join("\n", lines);
+    }
+
+    /// <summary>The special case of the walkthrough chapter: it is long, built step by step, and follows its own structure. <paramref name="label"/> names it (its key or its topic), <paramref name="place"/> where it goes.</summary>
+    internal static string ManualWalkthroughSpecialCase(GameContext context, string language, string label, string place)
+    {
+        var english = language == Lang.English;
+        string T(string de, string en) => english ? en : de;
+        return string.Join("\n",
+            T(
+                $"Sonderfall Komplettlösung ({label}): Sie steht wie jedes andere Kapitel {place}. Sie ist lang; baue sie wie die anderen Kapitel Schritt für Schritt auf. Der Pflicht-Aufbau oben gilt dafür NICHT; es gilt stattdessen:",
+                $"Special case walkthrough ({label}): it goes {place}. It is long; build it step by step like the other chapters. The mandatory structure above does NOT apply to it; this applies instead:"),
+            WalkthroughSingleInstructions(language, context.Platform),
+            AchievementReference(context),
+            T(
+                "Sein JSON-Objekt hat dieselben Felder wie die anderen („game“, „steamAppId“, „chapter“, „title“, „icon“, „sections“).",
+                "Its JSON object has the same fields as the others (\"game\", \"steamAppId\", \"chapter\", \"title\", \"icon\", \"sections\")."));
+    }
+
+    /// <summary>The heading of the output contract: it applies on top of the API prompt's rules and wins over their "no Markdown code block".</summary>
+    internal static string ManualOutputHeading(string language) => language == Lang.English
+        ? "Output in this chat (this applies in addition and wins over the sentence \"without a Markdown code block\" above):"
+        : "Ausgabe in diesem Chat (das gilt zusätzlich und hat bei der Ausgabe Vorrang vor dem Satz „ohne Markdown-Codeblock“ oben):";
+
+    /// <summary>"The game is exactly this one": the identity line of the output contract (title and platform/AppID; the chat must not mix it up with a namesake).</summary>
+    internal static string ManualGameIdentityLine(GameEntity game, string language)
+    {
+        // "Steam AppID 123 – the Steam version on PC" (unchanged for Steam games) or the platform version of a game added by hand
+        var identity = ManualIdentity(game, language);
+        return language == Lang.English
+            ? $"- The game is exactly this one: \"{game.Title}\", {identity}. Before writing, make sure you mean this game – not a game with the same name, a predecessor, a successor, a remake or a demo."
+            : $"- Gemeint ist genau dieses Spiel: „{game.Title}“, {identity}. Prüfe vor dem Schreiben, dass du dieses Spiel meinst – nicht ein gleichnamiges Spiel, einen Vorgänger, Nachfolger, ein Remake oder eine Demo.";
+    }
+
+    /// <summary>The line that asks a chat that can create files for the array as ONE file, built chapter by chapter.</summary>
+    internal static string ManualAnswerFileLine(string language, string answerFile) => language == Lang.English
+        ? $"- If your chat can run code or create files: deliver the array as ONE downloadable file named \"{answerFile}\". Build it chapter by chapter – append each finished chapter to the file, so that no single step has to hold everything at once – and at the end check that the whole file is valid JSON (e.g. by reading it back in). Do not write the content into the chat as well; write only the final line."
+        : $"- Kann dein Chat Code ausführen oder Dateien erzeugen: Liefere das Array als EINE Datei zum Herunterladen mit dem Namen „{answerFile}“. Baue sie Kapitel für Kapitel auf – hänge jedes fertige Kapitel an die Datei an, damit kein einzelner Schritt alles auf einmal tragen muss – und prüfe am Ende, dass die ganze Datei gültiges JSON ist (z. B. indem du sie einliest). Schreibe den Inhalt dann nicht zusätzlich in den Chat; schreibe nur die Abschlusszeile.";
+
+    /// <summary>"Write real content, no placeholders; invent nothing."</summary>
+    internal static string ManualRealContentLine(string language) => language == Lang.English
+        ? "- Write real content, no placeholders like \"...\" – the structure description above is only the pattern. What you cannot back up: \"Not documented yet (as of <today's date>)\" – invent nothing."
+        : "- Schreibe echte Inhalte, keine Platzhalter wie \"...\" – die Strukturbeschreibung oben ist nur das Muster. Was du nicht belegen kannst: „Noch nicht dokumentiert (Stand <heutiges Datum>)“ – erfinde nichts.";
+
+    /// <summary>Use the web search of the chat, for every chapter first a wiki dedicated to the game.</summary>
+    internal static string ManualWebSearchLine(string language) => language == Lang.English
+        ? "- Use the web search of your chat if it has one - for every chapter first for a wiki dedicated to this game (step 1 of the research rules; skip it silently when there is none); without web search mark the source situation as thin."
+        : "- Nutze die Websuche deines Chats, falls es eine gibt – für jedes Kapitel zuerst nach einem Wiki speziell zu diesem Spiel (Schritt 1 der Recherche-Regeln; gibt es keins, überspring ihn ohne Erwähnung); ohne Websuche kennzeichne die Quellenlage als dünn.";
 
     // ---- Checking everything that was pasted -------------------------------------------------------------------------------------
 

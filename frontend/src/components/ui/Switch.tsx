@@ -10,6 +10,9 @@ interface SwitchProps {
   // Layout of the row (the first child is the track, the second the label); the colours and the track are not themeable here
   className?: string
   disabled?: boolean
+  // Not usable right now, but still reachable: aria-disabled instead of the disabled attribute, so the switch keeps keyboard focus (and
+  // with it the tooltip that says why), looks like a disabled one, and click, Space and Enter do nothing. Opt-in; `disabled` stays native.
+  blocked?: boolean
   // "dark" pins the dark-surface colours for a surface that stays dark in the light theme (the trophy cabinet)
   surface?: 'theme' | 'dark'
 }
@@ -18,15 +21,16 @@ interface SwitchProps {
 // the state does not depend on colour alone. A real button with role="switch" and aria-checked: Space and Enter toggle it, it has a
 // visible focus ring, the knob slide stops with reduced motion. Fixed size, so toggling never moves anything around it.
 // Use it for every setting that is simply on or off; lists of choices and checklists stay checkboxes.
-export function Switch({ checked, onChange, children, className = '', disabled = false, surface = 'theme' }: SwitchProps) {
+export function Switch({ checked, onChange, children, className = '', disabled = false, blocked = false, surface = 'theme' }: SwitchProps) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
       disabled={disabled}
+      aria-disabled={blocked || undefined}
       data-surface={surface === 'dark' ? 'dark' : undefined}
-      onClick={() => onChange(!checked)}
+      onClick={blocked ? undefined : () => onChange(!checked)}
       className={`pv-switch ${className}`}
     >
       <span className="pv-switch-track" aria-hidden="true">

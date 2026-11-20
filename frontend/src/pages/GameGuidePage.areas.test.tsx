@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { applyLanguage } from '../i18n'
@@ -9,8 +9,8 @@ import { AiChoiceProvider } from '../components/ai/AiChoice'
 import { statusFixture } from '../components/ai/ai.fixtures'
 import { GameGuidePage } from './GameGuidePage'
 
-// The head of the game page: the back button on top and the area bar (Guide | Live trophies | Statistics) at the bottom. The areas are
-// no entries of the side navigation any more; the URL (?tab=) stays the source of truth for the shown area.
+// The head of the game page: the back button on top, no area bar any more. The areas (live trophies, statistics) and the guide are entries of
+// the game navigation (components/shell, tested in AppShell.test.tsx); the page itself shows what ?tab= names, and the URL stays the source of truth.
 
 const client = vi.hoisted(() => ({
   fetchGameDetail: vi.fn(),
@@ -22,8 +22,8 @@ const client = vi.hoisted(() => ({
 }))
 vi.mock('../api/client', async (importOriginal) => ({ ...(await importOriginal<typeof import('../api/client')>()), ...client }))
 
-vi.mock('../components/GameStatsPanel', () => ({ GameStatsPanel: () => null }))
-vi.mock('../components/LiveTrackerPanel', () => ({ LiveTrackerPanel: () => null }))
+vi.mock('../components/GameStatsPanel', () => ({ GameStatsPanel: () => <p>statistics-panel</p> }))
+vi.mock('../components/LiveTrackerPanel', () => ({ LiveTrackerPanel: () => <p>live-panel</p> }))
 vi.mock('../components/TwitchButton', () => ({ TwitchButton: () => null }))
 vi.mock('../components/launch/PlayButton', () => ({ PlayButton: () => null }))
 vi.mock('../components/GameTrophyBar', () => ({ GameTrophyBar: () => null }))
@@ -35,11 +35,11 @@ vi.mock('../utils/useGuideTranslation', () => ({ useGuideTranslation: () => ({ t
 const tab = (id: string, slug: string, title: string): GuideTabDto =>
   ({ id, slug, title, icon: 'mdi:book', sortOrder: 1, totalCheckableItems: 0, checkedItemsCount: 0, isAchievementList: false, groupKey: 'extras', sections: [] }) as GuideTabDto
 
-const game = (steamAppId: number | null): GameDetailDto =>
+const game = (steamAppId: number | null, tabs: GuideTabDto[] = [tab('t1', 'roadmap', 'Roadmap'), tab('t2', 'tips', 'Tipps'), tab('t3', 'story-lore', 'Story & Lore')]): GameDetailDto =>
   ({
     id: 'g1', slug: 'suncraft', title: 'Suncraft', subtitle: '', steamAppId, coverUrl: '', heroBannerUrl: '', accentColor: 'emerald', estimatedHours: '', missablesInfo: '',
     difficultyInfo: '', genreTags: '', contentLanguage: 'de', totalCheckableItems: 0, checkedItemsCount: 0, progressPercent: 0,
-    tabs: [tab('t1', 'roadmap', 'Roadmap'), tab('t2', 'tips', 'Tipps'), tab('t3', 'story-lore', 'Story & Lore')],
+    tabs,
     checkedItemKeys: [], language: 'de',
     translation: { language: 'de', sourceLanguage: 'de', state: 'original', totalTabs: 0, translatedTabs: 0, running: false, error: null, providerMessage: null },
   }) as unknown as GameDetailDto
@@ -83,86 +83,55 @@ beforeEach(async () => {
 })
 afterEach(cleanup)
 
-const areaBar = () => screen.findByRole('group', { name: 'Bereich des Spiels' })
 const location = () => screen.getByTestId('location').textContent
 
-describe('the area bar in the game head', () => {
-  it('offers Guide, Live-Trophäen and Statistiken as one connected bar for a game with a Steam link', async () => {
+describe('the game head without an area bar', () => {
+  it('has no area bar and no coach mark target of its own, for a game with a Steam link', async () => {
     renderPage(game(10), ['/games/suncraft?tab=tips'])
-    const bar = await areaBar()
-    expect(bar.classList.contains('pv-segmented')).toBe(true)
-    expect(within(bar).getAllByRole('button')).toHaveLength(3)
-    expect(within(bar).getByRole('button', { name: 'Guide' }).getAttribute('aria-pressed')).toBe('true')
-    expect(within(bar).getByRole('button', { name: 'Live-Trophäen' }).getAttribute('aria-pressed')).toBe('false')
-    expect(within(bar).getByRole('button', { name: 'Statistiken' }).getAttribute('aria-pressed')).toBe('false')
-    // The coach mark of the live trophies points at its segment
-    expect(within(bar).getByRole('button', { name: 'Live-Trophäen' }).getAttribute('data-hint')).toBe('game-live')
+    await screen.findByRole('heading', { name: 'Suncraft' })
+    expect(screen.queryByRole('group', { name: 'Bereich des Spiels' })).toBeNull()
+    expect(document.querySelector('.pv-game-areas, .pv-game-area-icon')).toBeNull()
+    // The coach mark of the trophies lives on the entry of the game navigation now, which is not part of this page
+    expect(document.querySelector('[data-hint="game-live"]')).toBeNull()
+    // The head still has its pieces: the way back, the title and the action row
+    expect(screen.getByRole('button', { name: 'Zurück' })).toBeTruthy()
+    expect(document.querySelector('.pv-game-head .pv-game-actions')).toBeTruthy()
   })
 
-  it('holds the room of the selected weight in every segment, so the bar never changes its width', async () => {
-    renderPage(game(10), ['/games/suncraft?tab=tips'])
-    const bar = await areaBar()
-    for (const button of within(bar).getAllByRole('button')) {
-      // An invisible copy in weight 600 under the label, hidden from screen readers, in both languages
-      const copy = button.querySelector('.font-semibold.invisible')
-      expect(copy?.getAttribute('aria-hidden')).toBe('true')
-      expect(copy?.textContent?.length ?? 0).toBeGreaterThan(3)
-    }
-    // The icons carry the class the phone layout hides
-    expect(bar.querySelectorAll('.pv-game-area-icon')).toHaveLength(3)
-  })
-
-  it('is not there at all without a Steam link (and the page shows the guide)', async () => {
+  it('has no area bar for a game without a Steam link either (and the page shows the guide)', async () => {
     renderPage(game(null), ['/games/suncraft'])
     await screen.findByRole('heading', { name: 'Suncraft' })
     expect(screen.queryByRole('group', { name: 'Bereich des Spiels' })).toBeNull()
-    expect(document.querySelector('[data-hint="game-live"]')).toBeNull()
+    expect(screen.getByText('Roadmap', { selector: 'h2, h1, h3' })).toBeTruthy()
   })
+})
 
-  it('switches to the live trophies and the statistics through the URL, and marks the shown area', async () => {
-    renderPage(game(10), ['/games/suncraft?tab=tips'])
-    const bar = await areaBar()
-    fireEvent.click(within(bar).getByRole('button', { name: 'Live-Trophäen' }))
-    await waitFor(() => expect(location()).toBe('/games/suncraft?tab=live'))
-    expect(within(bar).getByRole('button', { name: 'Live-Trophäen' }).getAttribute('aria-pressed')).toBe('true')
-    expect(within(bar).getByRole('button', { name: 'Guide' }).getAttribute('aria-pressed')).toBe('false')
-    fireEvent.click(within(bar).getByRole('button', { name: 'Statistiken' }))
-    await waitFor(() => expect(location()).toBe('/games/suncraft?tab=stats'))
-    expect(within(bar).getByRole('button', { name: 'Statistiken' }).getAttribute('aria-pressed')).toBe('true')
-  })
-
-  it('shows the bar on a reload straight onto the statistics (the URL is the source of truth)', async () => {
-    renderPage(game(10), ['/games/suncraft?tab=stats'])
-    const bar = await areaBar()
-    expect(within(bar).getByRole('button', { name: 'Statistiken' }).getAttribute('aria-pressed')).toBe('true')
-  })
-
-  it('Guide returns to the last guide tab that was open', async () => {
-    renderPage(game(10), ['/games/suncraft?tab=tips'])
-    const bar = await areaBar()
-    fireEvent.click(within(bar).getByRole('button', { name: 'Live-Trophäen' }))
-    await waitFor(() => expect(location()).toBe('/games/suncraft?tab=live'))
-    fireEvent.click(within(bar).getByRole('button', { name: 'Guide' }))
-    // "Tipps", not the first chapter "Roadmap"
-    await waitFor(() => expect(location()).toBe('/games/suncraft?tab=tips'))
-    expect(within(bar).getByRole('button', { name: 'Guide' }).getAttribute('aria-pressed')).toBe('true')
-  })
-
-  it('Guide also returns to Story & Lore, which counts as part of the guide', async () => {
-    renderPage(game(10), ['/games/suncraft?tab=story'])
-    const bar = await areaBar()
-    expect(within(bar).getByRole('button', { name: 'Guide' }).getAttribute('aria-pressed')).toBe('true')
-    fireEvent.click(within(bar).getByRole('button', { name: 'Statistiken' }))
-    await waitFor(() => expect(location()).toBe('/games/suncraft?tab=stats'))
-    fireEvent.click(within(bar).getByRole('button', { name: 'Guide' }))
-    await waitFor(() => expect(location()).toBe('/games/suncraft?tab=story'))
-  })
-
-  it('Guide falls back to the first chapter when opened straight on the live trophies', async () => {
+describe('the shown area follows the URL', () => {
+  it('shows the live trophies for ?tab=live and the statistics for ?tab=stats of a game with a Steam link', async () => {
     renderPage(game(10), ['/games/suncraft?tab=live'])
-    const bar = await areaBar()
-    fireEvent.click(within(bar).getByRole('button', { name: 'Guide' }))
-    await waitFor(() => expect(location()).toBe('/games/suncraft?tab=roadmap'))
+    expect(await screen.findByText('live-panel')).toBeTruthy()
+    cleanup()
+    renderPage(game(10), ['/games/suncraft?tab=stats'])
+    expect(await screen.findByText('statistics-panel')).toBeTruthy()
+  })
+
+  it('shows neither area without a Steam link, the guide instead', async () => {
+    renderPage(game(null), ['/games/suncraft?tab=live'])
+    await screen.findByRole('heading', { name: 'Suncraft' })
+    expect(screen.queryByText('live-panel')).toBeNull()
+    expect(screen.queryByText('statistics-panel')).toBeNull()
+    expect(location()).toBe('/games/suncraft?tab=live')
+  })
+
+  it('shows the "no guide yet" card for ?tab=guide of a Steam game without any chapter, like for a game added by hand', async () => {
+    renderPage(game(10, []), ['/games/suncraft?tab=guide'])
+    expect(await screen.findByText('Für dieses Spiel gibt es noch keinen Guide.')).toBeTruthy()
+    expect(screen.queryByText('live-panel')).toBeNull()
+  })
+
+  it('opens the live trophies first for a Steam game without any chapter when the URL names no tab', async () => {
+    renderPage(game(10, []), ['/games/suncraft'])
+    expect(await screen.findByText('live-panel')).toBeTruthy()
   })
 })
 
@@ -180,15 +149,6 @@ describe('the back button in the game head', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Zurück' }))
     await screen.findByText('overview-page')
     expect(location()).toBe('/')
-  })
-
-  it('changing the area adds no history entry: one step back still leaves the game', async () => {
-    renderPage(game(10), ['/', '/games/suncraft?tab=tips'])
-    const bar = await areaBar()
-    fireEvent.click(within(bar).getByRole('button', { name: 'Live-Trophäen' }))
-    await waitFor(() => expect(location()).toBe('/games/suncraft?tab=live'))
-    fireEvent.click(screen.getByRole('button', { name: 'Zurück' }))
-    await screen.findByText('overview-page')
   })
 
   it('works for a game without a Steam link too', async () => {

@@ -1,0 +1,51 @@
+{
+  "game": "FINAL FANTASY VI",
+  "steamAppId": 1173820,
+  "findings": [
+    { "kind": "corrected", "target": { "itemId": "esper-golem" }, "column": "Fundort", "a": "Auktionshaus Jidoor, 20.000 Gil", "b": "Auktionshaus Jidoor, 10.000 Gil", "result": "Auktionshaus Jidoor, 20.000 Gil",
+      "source": "https://www.rpgsite.net/feature/14083-final-fantasy-vi-espers-guide-esper-locations-skills-unlocks", "reason": "Golem kostet 20.000 Gil; 10.000 Gil ist der Preis von Zona Seeker." },
+    { "kind": "corrected", "target": { "section": "Strategien", "card": "Auktionshaus Jidoor" }, "a": "Werden nur zufällig versteigert, mehrmals betreten", "b": "Beim ersten Besuch nach der Oper immer im Angebot", "result": "Werden nur zufällig versteigert, mehrmals betreten",
+      "source": "https://gameranx.com/features/id/462931/article/final-fantasy-vi-pixel-remaster-where-to-find-every-magicite", "reason": "Beide Magicite erscheinen erst bei späteren Besuchen und nur mit etwas Glück." },
+    { "kind": "corrected", "target": { "itemId": "esper-odin" }, "column": "Verpassbar", "a": "Nein", "b": "Ja – geht beim Aufwerten zu Raiden verloren", "result": "Ja – geht beim Aufwerten zu Raiden verloren",
+      "source": "https://www.rpgsite.net/feature/14083-final-fantasy-vi-espers-guide-esper-locations-skills-unlocks", "reason": "An der Statue der Königin wird Odin zu Raiden aufgewertet und ist danach nicht mehr vorhanden." },
+    { "kind": "added", "target": { "itemId": "esper-fenrir" }, "b": "Fenrir – Belohnung nach dem Sieg über Humbaba",
+      "source": "https://gameranx.com/features/id/462931/article/final-fantasy-vi-pixel-remaster-where-to-find-every-magicite", "reason": "Fenrir gibt es automatisch nach dem Kampf gegen Humbaba in der Welt des Ruins." },
+    { "kind": "added", "target": { "itemId": "esper-seraph" }, "a": "Seraph – Dieb in Tzen, 3.000 Gil",
+      "source": "https://gameranx.com/features/id/462931/article/final-fantasy-vi-pixel-remaster-where-to-find-every-magicite", "reason": "Der Dieb neben dem Relikt-Laden in Tzen verkauft Seraph für 3.000 Gil." },
+    { "kind": "removed", "target": { "itemId": "esper-kaktor" }, "b": "Kaktor – Drachenhöhle (Bonus-Dungeon)",
+      "source": "https://gameranx.com/features/id/462931/article/final-fantasy-vi-pixel-remaster-where-to-find-every-magicite", "reason": "Kaktor und die Drachenhöhle gibt es nur in der GBA-Fassung, nicht in der Steam-Version." },
+    { "kind": "unclear", "target": { "itemId": "esper-phoenix" }, "column": "Ab wann", "a": "Welt des Ruins, nach Lockes Rückkehr in die Gruppe", "b": "Welt des Ruins, sobald die Falcon verfügbar ist",
+      "reason": "Die Quellen nennen nur die Welt des Ruins und Lockes Quest, aber keinen genauen Zeitpunkt, ab dem die Phönix-Höhle betreten werden kann." }
+  ],
+  "chapter": {
+    "title": "Esper & Magicite",
+    "icon": "mdi:diamond-stone",
+    "sections": [
+      { "type": "alert", "variant": "gold", "title": "Das Wichtigste vorab", "htmlContent": "Rüste jedem Charakter früh ein Esper aus: Zauber lernt man nur, solange das Magicite angelegt ist. Die Stufenboni beim Aufstieg sind dauerhaft – plane sie für die Welt des Ruins." },
+      { "type": "alert", "variant": "danger", "title": "Verpassbar", "htmlContent": "Odin: Wertest du ihn an der Statue der Königin zu Raiden auf, ist Odin weg. Ragnarök: Im Waffenladen von Narshe wählst du zwischen dem Magicite und dem Schwert – nur eines von beiden." },
+      { "type": "cards_grid", "columns": 2, "cards": [
+        { "title": "Früh lernen", "badgeText": "Tipp", "badgeVariant": "a", "introText": "Die ersten Esper decken die wichtigsten Heil- und Elementarzauber ab.",
+          "bullets": [ { "icon": "mdi:check", "title": "Sirene", "body": "Lehrt Schlaf und Stumm – früh nützlich gegen Magier." } ] },
+        { "title": "Auktionshaus Jidoor", "badgeText": "Gil", "badgeVariant": "b", "introText": "Golem und Zona Seeker werden nur zufällig versteigert.",
+          "bullets": [ { "icon": "mdi:refresh", "title": "Mehrmals betreten", "body": "Verlasse das Auktionshaus und komm wieder, bis eines der beiden angeboten wird." },
+                       { "icon": "mdi:cash", "title": "Gil sparen", "body": "Halte 20.000 Gil für Golem und 10.000 Gil für Zona Seeker bereit." } ] }
+      ] },
+      { "type": "checklist_table", "table": {
+        "tableId": "magicite", "caption": "Alle Magicite", "checkable": true,
+        "searchPlaceholder": "Suchen...", "categoryFilterLabel": "Alle Welten", "categories": ["Welt des Gleichgewichts", "Welt des Ruins"],
+        "columns": [
+          { "key": "name", "label": "Esper", "isRowHeader": true },
+          { "key": "ort", "label": "Fundort" },
+          { "key": "abWann", "label": "Ab wann" },
+          { "key": "verpassbar", "label": "Verpassbar" }
+        ],
+        "rows": [
+          { "itemId": "esper-ramuh", "filterCategory": "Welt des Gleichgewichts", "cells": { "name": "Ramuh", "ort": "Zozo, höchstes Gebäude", "abWann": "Nach der Suche nach Terra in Zozo", "verpassbar": "Nein" } },
+          { "itemId": "esper-sirene", "filterCategory": "Welt des Gleichgewichts", "cells": { "name": "Sirene", "ort": "Zozo, zusammen mit Ramuh", "abWann": "Nach der Suche nach Terra in Zozo", "verpassbar": "Nein" } },
+          { "itemId": "esper-shiva", "filterCategory": "Welt des Gleichgewichts", "cells": { "name": "Shiva", "ort": "Magitek-Forschungsanlage (Vector)", "abWann": "Nach dem Bosskampf gegen Ifrit und Shiva", "verpassbar": "Nein" } },
+          { "itemId": "esper-ifrit", "filterCategory": "Welt des Gleichgewichts", "cells": { "name": "Ifrit", "ort": "Magitek-Forschungsanlage (Vector)", "abWann": "Nach dem Bosskampf gegen Ifrit und Shiva", "verpassbar": "Nein" } },
+          { "itemId": "esper-golem", "filterCategory": "Welt des Gleichgewichts", "cells": { "name": "Golem", "ort": "Auktionshaus Jidoor, 20.000 Gil", "abWann": "Mit dem ersten Luftschiff", "verpassbar": "Nein" } },
+          { "itemId": "esper-zona-seeker", "filterCategory": "Welt des Gleichgewichts", "cells": { "name": "Zona Seeker", "ort": "Auktionshaus Jidoor, 10.000 Gil", "abWann": "Mit dem ersten Luftschiff", "verpassbar": "Nein" } },
+          { "itemId": "esper-seraph", "filterCategory": "Welt des Gleichgewichts", "cells": { "name": "Seraph", "ort": "Tzen, Dieb neben dem Relikt-Laden, 3.000 Gil", "abWann": "Vor dem Angriff auf Tzen", "verpassbar": "Nein" } },
+          { "itemId": "esper-alexander", "filterCategory": "Welt des Ruins", "ref": "quest-doma-cyan", "cells": { "name": "Alexander", "ort": "Schloss Doma, hinter dem Thron", "abWann": "Nach Cyans Albtraum-Quest", "verpassbar": "Nein" } },
+          { "itemId": "esper-odin", "filterCategory": "Welt de

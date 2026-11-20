@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { applyLanguage } from '../../i18n'
 import { HintTour } from './HintTour'
@@ -41,6 +41,28 @@ function renderGameHints() {
   document.body.appendChild(target)
   render(<HintTour screen="game" open onClose={() => {}} onShowIntro={() => {}} />)
 }
+
+describe('HintTour, trophy hint', () => {
+  it('skips the trophy hint when its entry is not on the page (a phone with the closed drawer, a game without trophies)', async () => {
+    stubMedia(false)
+    renderGameHints()
+    await screen.findByText(/Jedes Spiel hat links seine eigene Navigation/)
+    expect(screen.getByText('Hinweis 1 von 1')).toBeTruthy()
+    expect(screen.queryByText('Trophäen und Statistiken')).toBeNull()
+  })
+
+  it('shows it, pointing at the trophy entry of the navigation, when the entry exists', async () => {
+    stubMedia(false)
+    const live = document.createElement('a')
+    live.setAttribute('data-hint', 'game-live')
+    document.body.appendChild(live)
+    renderGameHints()
+    await screen.findByText(/Jedes Spiel hat links seine eigene Navigation/)
+    expect(screen.getByText('Hinweis 1 von 2')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Weiter' }))
+    expect(await screen.findByText('Trophäen und Statistiken')).toBeTruthy()
+  })
+})
 
 describe('HintTour, chapter hint', () => {
   it('names the navigation on a wide screen', async () => {

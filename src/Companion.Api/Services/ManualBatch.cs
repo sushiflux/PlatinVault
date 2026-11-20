@@ -132,7 +132,21 @@ internal enum BatchFailure
 /// <summary>One chapter-like JSON object found in the pasted text (Order = position among the kept objects, from 1). Node is null when it could not be read.</summary>
 internal sealed record BatchObject(int Order, JsonObject? Node, BatchFailure Failure, List<ManualIssueDto> Errors, string? KeyHint, string? TitleHint);
 
-internal sealed record BatchRead(List<BatchObject> Objects, bool TooMany);
+/// <summary>
+/// The plan element(s) of a one-step answer (see AiGuideGeneratorService.ManualOneShot.cs): { "game", "steamAppId", "plan": [ ... ] } is not a chapter, so the
+/// chapter reading skips it silently and hands it over here. Found = readable plan objects, Patterns = plans that are only the prompt's pattern, Errors = a
+/// plan that is cut off or not valid JSON.
+/// </summary>
+internal sealed class BatchPlans
+{
+    public List<JsonObject> Found { get; } = [];
+
+    public int Patterns { get; set; }
+
+    public List<ManualIssueDto> Errors { get; } = [];
+}
+
+internal sealed record BatchRead(List<BatchObject> Objects, bool TooMany, BatchPlans Plans);
 
 /// <summary>
 /// Finds ALL chapter objects in a text the user collected from a chat: code blocks, bare objects, a JSON array, a { "chapters": [...] } wrapper, text in
@@ -171,6 +185,7 @@ internal static partial class ManualBatchReader
         text = text.Replace("\r\n", "\n");
         var markers = Marker().Matches(text).Select(m => m.Groups["b"].Index).ToArray();
         var objects = new List<BatchObject>();
+        var plans = new BatchPlans();
         var order = 0;
         var scanned = 0;
         long work = 0;
@@ -185,14 +200,14 @@ internal static partial class ManualBatchReader
             }
             if (++scanned > MaxScanned || objects.Count > MaxObjects)
             {
-                return new BatchRead(objects, TooMany: true);
+                return new BatchRead(objects, TooMany: true, plans);
             }
 
             var end = BalancedEnd(text, start, out _);
             work += (end >= 0 ? end + 1 : text.Length) - start;
             if (work > MaxScanWork)
             {
-                return new BatchRead(objects, TooMany: true);
+                return new BatchRead(objects, TooMany: true, plans);
             }
             var next = NextMarker(markers, start);
 
@@ -201,29 +216,29 @@ internal static partial class ManualBatchReader
                 var span = text.Substring(start, end - start + 1);
                 if (TryParse(span, out var node))
                 {
-                    Accept(node, objects, ref order);
+                    Accept(node, objects, plans, ref order);
                     i = end + 1;
                     continue;
                 }
                 // Balanced but not valid JSON. When another chapter object starts INSIDE it, the string quoting was thrown off by a cut-off object
                 // before (an unterminated string flips the quote parity): split at that start so the later object is not swallowed
-                if (next >= 0 && next < end)
+                if (next >= 0 && next < end && !HasTopLevelPlan(span))
                 {
-                    Fail(text[start..next], objects, ref order);
+                    Fail(text[start..next], objects, plans, ref order);
                     i = next;
                     continue;
                 }
-                Fail(span, objects, ref order);
+                Fail(span, objects, plans, ref order);
                 i = end + 1;
                 continue;
             }
 
             // Nothing closes it: the rest of the text, or up to the next chapter object that begins after it
             var limit = next >= 0 ? next : text.Length;
-            Fail(text[start..limit], objects, ref order);
+            Fail(text[start..limit], objects, plans, ref order);
             i = limit;
         }
-        return new BatchRead(objects, TooMany: false);
+        return new BatchRead(objects, TooMany: false, plans);
     }
 
     private static bool TryParse(string span, out JsonObject node)
@@ -240,22 +255,35 @@ internal static partial class ManualBatchReader
         }
     }
 
-    private static void Accept(JsonObject node, List<BatchObject> objects, ref int order)
+    private static void Accept(JsonObject node, List<BatchObject> objects, BatchPlans plans, ref int order)
     {
         // { "chapters": [ {...}, {...} ] } as a wrapper around the chapter objects (a whole-guide file has "format" and is reported as such)
         if (node["sections"] is null && node["format"] is null && node["chapters"] is JsonArray wrapped)
         {
             foreach (var child in wrapped.OfType<JsonObject>())
             {
-                AcceptOne(child, objects, ref order);
+                AcceptOne(child, objects, plans, ref order);
             }
             return;
         }
-        AcceptOne(node, objects, ref order);
+        AcceptOne(node, objects, plans, ref order);
     }
 
-    private static void AcceptOne(JsonObject obj, List<BatchObject> objects, ref int order)
+    private static void AcceptOne(JsonObject obj, List<BatchObject> objects, BatchPlans plans, ref int order)
     {
+        // The plan element of a one-step answer is no chapter: it is kept apart (a copy of the prompt's own example counts as a pattern), never reported here
+        if (IsPlan(obj))
+        {
+            if (IsPlanPattern(obj))
+            {
+                plans.Patterns++;
+            }
+            else
+            {
+                plans.Found.Add(obj);
+            }
+            return;
+        }
         if (IsFragment(obj) || IsPattern(obj))
         {
             return;
@@ -274,9 +302,29 @@ internal static partial class ManualBatchReader
         return string.IsNullOrWhiteSpace(text) ? null : text.Trim();
     }
 
-    /// <summary>A piece of the prompt's building-block list ({ "type": "alert", ... }) or an object with none of the fields of a chapter, blueprint or guide.</summary>
+    /// <summary>
+    /// A piece of the prompt's building-block list ({ "type": "alert", ... }), an entry of a plan ({ "chapter": "K01", "topicId": ... } - it has a topic id and no
+    /// content) or an object with none of the fields of a chapter, blueprint or guide.
+    /// </summary>
     private static bool IsFragment(JsonObject obj) =>
-        (obj.ContainsKey("type") && !obj.ContainsKey("sections")) || !ChapterKeys.Any(obj.ContainsKey);
+        (obj.ContainsKey("type") && !obj.ContainsKey("sections")) || IsPlanEntry(obj) || !ChapterKeys.Any(obj.ContainsKey);
+
+    // The fields of a plan entry that identify it; like for a chapter, a placeholder "icon" alone never makes a pattern (a chat may copy the skeleton's "mdi:...")
+    private static readonly string[] PlanIdentifyingFields = ["chapter", "topicId", "title", "focus"];
+
+    /// <summary>The plan of the prompt's example: a placeholder ("...", "&lt;id ...&gt;") in the game, or in the key, topic, title or assignment of an entry.</summary>
+    private static bool IsPlanPattern(JsonObject plan) =>
+        (plan["game"] is JsonValue game && game.TryGetValue<string>(out var name) && IsPlaceholder(name))
+        || (plan["plan"] as JsonArray ?? []).OfType<JsonObject>().Any(entry => PlanIdentifyingFields.Any(field => entry[field] is JsonValue value && value.TryGetValue<string>(out var s) && IsPlaceholder(s)));
+
+    /// <summary>A cut-off piece of a plan entry ({ "chapter": "K04", "topicId": "weapons", "ti): it has a topic id and never any content.</summary>
+    private static bool IsPlanEntrySpan(string span) => span.Contains("\"topicId\"", StringComparison.Ordinal) && !span.Contains("\"sections\"", StringComparison.Ordinal);
+
+    private static bool IsPlanEntry(JsonObject obj) => obj.ContainsKey("topicId") && !obj.ContainsKey("sections") && !obj.ContainsKey("notApplicable");
+
+    /// <summary>The plan element of a one-step answer: an object with a list "plan" that is neither a chapter (no "chapter", "sections", "notApplicable") nor a whole guide.</summary>
+    internal static bool IsPlan(JsonObject obj) =>
+        obj["plan"] is JsonArray && !obj.ContainsKey("chapter") && !obj.ContainsKey("sections") && !obj.ContainsKey("notApplicable") && !obj.ContainsKey("format");
 
     // The fields that identify a chapter; only a placeholder in one of these makes an object the prompt's pattern ("icon" and "game" alone never do:
     // a chat may copy the skeleton's "mdi:..." icon into a real chapter)
@@ -344,11 +392,36 @@ internal static partial class ManualBatchReader
     }
 
     /// <summary>An object that could not be read: the prompt's pattern (silently ignored) or a real chapter that is cut off or broken (reported).</summary>
-    private static void Fail(string span, List<BatchObject> objects, ref int order)
+    private static void Fail(string span, List<BatchObject> objects, BatchPlans plans, ref int order)
     {
         var balanced = BalancedEnd(span, 0, out var openDepth) >= 0;
+        var isPlan = HasTopLevelPlan(span);
         if (IsPatternSpan(span))
         {
+            if (isPlan)
+            {
+                plans.Patterns++;
+            }
+            return;
+        }
+        if (isPlan)
+        {
+            // A plan that is cut off or broken is reported for the plan, never as a chapter (its entries would look like chapters "K01" ...)
+            if (!balanced)
+            {
+                plans.Errors.Add(ManualAnswers.Issue("planCutOff", ServerTexts.ManualOneShot.PlanCutOff(Math.Max(1, openDepth))));
+            }
+            else
+            {
+                var details = new List<ManualIssueDto>();
+                ManualAnswers.TryRead(span, details, out _);
+                plans.Errors.Add(ManualAnswers.Issue("planInvalid", ServerTexts.ManualOneShot.PlanInvalid(details.Count > 0 ? details[0].Message : string.Empty)));
+            }
+            return;
+        }
+        if (IsPlanEntrySpan(span))
+        {
+            // The end of a cut-off plan: the plan's own error says so, the last entry is no chapter
             return;
         }
 
@@ -373,6 +446,61 @@ internal static partial class ManualBatchReader
         var key = ChapterKey().Match(span);
         var title = TitleValue().Match(span);
         objects.Add(new BatchObject(order, null, failure, errors, key.Success ? key.Groups["v"].Value.Trim() : null, title.Success ? Unescape(title.Groups["v"].Value) : null));
+    }
+
+    /// <summary>Does the object (also a cut-off one) have the list "plan" at its top level? Strings and nesting are respected, so a "plan" inside a chapter's text or deeper does not count.</summary>
+    internal static bool HasTopLevelPlan(string span)
+    {
+        var depth = 0;
+        var inString = false;
+        var stringStart = 0;
+        string? key = null;
+        var afterColon = false;
+        for (var i = 0; i < span.Length; i++)
+        {
+            var c = span[i];
+            if (inString)
+            {
+                if (c == '\\')
+                {
+                    i++;
+                }
+                else if (c == '"')
+                {
+                    inString = false;
+                    if (depth == 1 && !afterColon)
+                    {
+                        key = span[(stringStart + 1)..i];
+                    }
+                    afterColon = false;
+                }
+                continue;
+            }
+            if (char.IsWhiteSpace(c))
+            {
+                continue;
+            }
+            switch (c)
+            {
+                case '"':
+                    inString = true;
+                    stringStart = i;
+                    continue;
+                case ':':
+                    afterColon = depth == 1;
+                    continue;
+                case '[' when depth == 1 && afterColon && key == "plan":
+                    return true;
+                case '{' or '[':
+                    depth++;
+                    break;
+                case '}' or ']':
+                    depth--;
+                    break;
+            }
+            afterColon = false;
+        }
+        return false;
     }
 
     private static string Unescape(string value)

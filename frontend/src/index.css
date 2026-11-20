@@ -1468,7 +1468,8 @@ ol.pv-md-list {
   outline-offset: 2px;
 }
 
-.pv-switch:disabled {
+.pv-switch:disabled,
+.pv-switch[aria-disabled='true'] {
   cursor: not-allowed;
   opacity: 0.55;
 }

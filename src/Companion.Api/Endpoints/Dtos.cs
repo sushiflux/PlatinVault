@@ -1,3 +1,5 @@
+using Companion.Api.Services;
+
 namespace Companion.Api.Endpoints;
 
 /// <summary>Summary card for a game displayed on the main Dashboard grid.</summary>
@@ -149,8 +151,16 @@ public sealed record GuideTabDto(
     // Group in the chapter navigation (one of the keys of GET /api/guide/groups): the stored value, else decided from the original title
     string GroupKey,
     // The standard topic of the chapter ("walkthrough", "quests", ...) when known, else null (older chapters, extra chapters, chapters added by hand)
-    string? TopicId = null
+    string? TopicId = null,
+    // The AI review of this chapter (summary for the "geprüft" line), null = never reviewed. Details: GET /api/games/{slug}/chapters/{tabId}/review
+    GuideTabReviewDto? Review = null
 );
+
+/// <summary>
+/// The "geprüft" line of a chapter: when it was reviewed, by whom (ResearcherProvider = who wrote answer B, "manual" = pasted from a chat; ReviewerProvider =
+/// who decided), the counts, and Stale = the chapter was changed after the review (the review stays readable, other versions can no longer be taken).
+/// </summary>
+public sealed record GuideTabReviewDto(DateTimeOffset ReviewedAt, string ResearcherProvider, string ReviewerProvider, ReviewCounts Counts, bool Stale);
 
 /// <summary>
 /// Dynamic content block inside a tab.
@@ -206,8 +216,20 @@ public sealed record GuideSectionDto(
     List<string>? Missables = null,
     bool? EndsAtPointOfNoReturn = null,
     // ---- "sources": the pages a chapter was researched from (last section of a chapter) ----
-    List<GuideSourceDto>? Sources = null
+    List<GuideSourceDto>? Sources = null,
+    // ---- review marker (AI review of a chapter): the section (a puzzle, boss, whole table ...) is open between two answers; null = nothing to mark ----
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] GuideUnclearDto? Unclear = null
 );
+
+/// <summary>
+/// "Unklar" marker of the AI review (owner decision O4): the two answers could not be settled with a source. A and B = what the two versions say (short, may
+/// be null), Reason = why it stays open. Set on a checklist row, a card, or a section (puzzle, boss ...); the code writes it, never the reviewer's answer.
+/// A chapter without a review contains no "unclear" at all, so its translation hash stays exactly as before.
+/// </summary>
+public sealed record GuideUnclearDto(
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? A = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? B = null,
+    string Reason = "");
 
 /// <summary>The typed hints of a walkthrough: an "alert" section with one of these kinds gets its own label and symbol in the UI.</summary>
 public static class GuideAlertKinds
@@ -222,8 +244,10 @@ public static class GuideAlertKinds
     public const string PointOfNoReturn = "point_of_no_return";
     // The side quests that become available here, as a compact list (Quests); their solution belongs only in the side quest chapter
     public const string SideQuests = "side_quests";
+    // The calm box at the top of a reviewed chapter that lists every open ("unklar") point; written by the review code (ChapterReview), Items = one line per point
+    public const string ReviewUnclear = "review_unclear";
 
-    public static readonly IReadOnlyList<string> All = [MustHave, Missable, Optional, Tip, Achievement, PointOfNoReturn, SideQuests];
+    public static readonly IReadOnlyList<string> All = [MustHave, Missable, Optional, Tip, Achievement, PointOfNoReturn, SideQuests, ReviewUnclear];
 
     /// <summary>The colour variant a kind uses when the section names none.</summary>
     public static string DefaultVariant(string kind) => kind switch
@@ -295,7 +319,9 @@ public sealed record GuideCardDto(
     string? BadgeVariant = null,
     string? Icon = null,
     string? IntroText = null,
-    List<GuideCardBulletDto>? Bullets = null
+    List<GuideCardBulletDto>? Bullets = null,
+    // Review marker, see GuideUnclearDto
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] GuideUnclearDto? Unclear = null
 );
 
 public sealed record GuideCardBulletDto(
@@ -334,7 +360,9 @@ public sealed record GuideTableRowDto(
     string? FilterSecondary,
     Dictionary<string, string> Cells,
     // Never written as "ref": null (see GuideSideQuestDto.Ref)
-    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? Ref = null
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? Ref = null,
+    // Review marker, see GuideUnclearDto (never written as null either)
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] GuideUnclearDto? Unclear = null
 );
 
 public sealed record ToggleProgressRequest(string ItemKey, bool Checked);

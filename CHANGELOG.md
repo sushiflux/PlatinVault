@@ -7,6 +7,57 @@
 <a name="english"></a>
 ## English
 
+## v2026.11.28.7.15242
+
+### ✨ New
+
+- **Games from other platforms:** with "+ Add game" you now also add games for PlayStation 5 and 4, Xbox, Epic Games,
+  GOG, Nintendo Switch, Ubisoft Connect, EA app and Battle.net – via IGDB search with cover and facts, or by hand with your
+  own cover.
+- **Trophy list by AI and ticking by hand:** for games added by hand, PlatinVault researches the trophy list with sources
+  (using one of your AIs or "My AI plan"). You tick achievements yourself and get the same pop-up with sound as on Steam;
+  on PlayStation, platinum unlocks automatically once every other base-game trophy is ticked (Switch games get a guide only).
+- **AI chapter review:** with "Review chapter", a second AI or an answer from your own AI plan checks and merges an existing
+  guide chapter. Differences found are listed and can be switched back individually to the previous or second version.
+- **One prompt for the whole guide (My AI plan):** instead of creating a plan first and individual chapters afterwards, one
+  single prompt now generates the entire guide in one go (with the option to choose chapters yourself). Story & Lore is now
+  available through your own AI plan too.
+- **"In View" – pinned achievements:** pin up to 10 achievements per game; they stay visible on every tab of the game page,
+  count live and are shared between the browser and the Windows program.
+- **"Show all tips" switch:** in the Compact and List trophy views, open or close all available guide tips at once with a
+  single click.
+- **Expanded trophy pop-up:** choose under Settings → Live & Sound how long pop-ups stay on screen (2 to 10 seconds). A thin
+  countdown bar shows the remaining time, and the pop-up includes the unlock date and time.
+- **"What's new" after an update:** on the first start after an update, PlatinVault shows what is new in the running version
+  in your language (offline too) and can be reopened any time from "About PlatinVault".
+- **Compact bar while scrolling & new ratings:** when scrolling down in the overview or in "All games", a slim bar with
+  search, view, sorting and tile size fades in at the top. Games can now be sorted by IGDB critics, IGDB players and an
+  overall rating.
+
+### 🔄 Changed
+
+- **New "Minimal" design and "Minimal | Classic" choice:** PlatinVault starts in the new, calm design with a new typeface, a
+  slim top bar, dedicated Settings and About pages, and left navigation only on the game page. Under Settings → System you
+  can switch back to the classic design at any time.
+- **New tiles and platinum badge:** game tiles show the platform at the top left of the cover, all available ratings side by
+  side below it, and the Twitch icon centered with live viewer count. Games at 100 % carry a platinum plaque and a golden
+  medal.
+- **One update channel choice:** under Settings → Updates, choose between None, Beta or Nightly (Nightly no longer includes
+  betas). Chapter achievements now always count as bronze regardless of worldwide rarity, and worldwide Steam shares stay
+  cached if Steam cannot be reached.
+
+### 🔒 Security
+
+- **Protection from third-party websites:** the live channel only talks to PlatinVault itself, and under Docker/Unraid/NAS
+  PlatinVault rejects foreign hostnames (if you use a reverse proxy with your own domain, add it to
+  `PLATINVAULT_ALLOWED_HOSTS`).
+
+### 🔧 Fix
+
+- **Several bugs fixed:** Windows updates no longer fail on locked program files, Twitch viewer counts appear reliably for
+  all visible games without a wrong 0, statistics show the real IGDB players rating again, and the sort menu opens upwards at
+  the bottom edge of the screen.
+
 ## v2026.11.17 (24.19071)
 
 ### ✨ New
@@ -133,6 +184,59 @@ free and open source.
 
 <a name="deutsch"></a>
 ## Deutsch
+
+## v2026.11.28.7.15242
+
+### ✨ Neu
+
+- **Spiele von anderen Plattformen:** Über „+ Spiel hinzufügen“ legst du jetzt auch Spiele für PlayStation 5 und 4, Xbox,
+  Epic Games, GOG, Nintendo Switch, Ubisoft Connect, EA app und Battle.net an – über die IGDB-Suche samt Cover und Fakten
+  oder von Hand mit eigenem Cover.
+- **Trophäenliste per KI und Abhaken von Hand:** Für manuell angelegte Spiele recherchiert PlatinVault die Trophäenliste mit
+  Quellenangabe (über eine KI oder „Mein KI-Abo“). Du hakst Erfolge selbst ab und bekommst dasselbe Popup samt Ton wie bei
+  Steam; auf PlayStation erscheint Platin von selbst, sobald alle übrigen Trophäen des Basisspiels abgehakt sind
+  (Switch-Spiele bekommen nur einen Guide).
+- **Prüf-KI für Kapitel:** Mit „Kapitel prüfen“ lässt du ein vorhandenes Guide-Kapitel durch eine zweite KI oder eine
+  Antwort aus deinem eigenen KI-Abo gegenprüfen und zusammenführen. Gefundene Abweichungen werden angezeigt und lassen sich
+  bei Bedarf einzeln auf die vorherige oder zweite Fassung umstellen.
+- **Ein Prompt für den ganzen Guide (Mein KI-Abo):** Statt erst einen Bauplan und dann einzelne Kapitel zu erstellen, genügt
+  ein einziger Prompt für den gesamten Guide in einem Rutsch (wahlweise weiterhin mit eigener Kapitelauswahl). Auch Story &
+  Lore gibt es jetzt über das eigene KI-Abo.
+- **„Im Blick“ – angeheftete Erfolge:** Hefte bis zu 10 Erfolge je Spiel an; sie bleiben auf jedem Reiter der Spielseite
+  sichtbar, zählen live mit und stehen im Browser wie im Windows-Programm gleichermaßen bereit.
+- **Schalter „Alle Tipps zeigen“:** In den Trophäen-Ansichten „Kompakt“ und „Liste“ öffnest oder schließt du alle
+  vorhandenen Guide-Tipps mit einem Klick auf einmal.
+- **Trophäen-Popup erweitert:** Wähle unter Einstellungen → Live & Sound, wie lange Popups sichtbar bleiben (2 bis 10
+  Sekunden). Ein dünner Ablaufbalken zeigt die Restzeit, und das Popup nennt Datum und Uhrzeit der Freischaltung.
+- **„Das ist neu“ nach einem Update:** Beim ersten Start nach einer Aktualisierung zeigt PlatinVault die Neuerungen der
+  laufenden Version in deiner Sprache (auch offline) und lässt sich jederzeit über „Über PlatinVault“ erneut öffnen.
+- **Kompakte Steuerleiste beim Scrollen & neue Bewertungen:** Beim Herunterscrollen in der Übersicht oder in „Alle Spiele“
+  blendet sich oben eine schlanke Leiste mit Suche, Ansicht, Sortierung und Kachelgröße ein. Spiele lassen sich neu nach
+  IGDB-Kritikern, IGDB-Spielern und einer Gesamtbewertung sortieren.
+
+### 🔄 Geändert
+
+- **Neues Design „Leicht“ und Design-Wahl „Leicht | Klassisch“:** PlatinVault startet im neuen, ruhigen Design mit neuer
+  Schriftart, schlanker Top-Leiste, eigener Einstellungs- und Info-Seite sowie einer Navigation links nur auf der Spielseite.
+  Unter Einstellungen → System kannst du jederzeit auf das klassische Design zurückwechseln.
+- **Neue Kacheln und Platin-Auszeichnung:** Die Spiele-Kacheln zeigen die Plattform oben links auf dem Cover, darunter alle
+  vorhandenen Bewertungen nebeneinander und das Twitch-Symbol mittig mit Live-Zuschauerzahl. Spiele bei 100 % tragen eine
+  Platin-Plakette samt goldener Medaille.
+- **Update-Kanal in einer Auswahl:** Unter Einstellungen → Updates wählst du zwischen Keiner, Beta oder Nightly (Nightly
+  enthält keine Betas mehr). Kapitel-Erfolge zählen nun unabhängig von ihrer weltweiten Seltenheit immer als Bronze, und
+  weltweite Steam-Anteile bleiben bei einem Steam-Ausfall zwischengespeichert.
+
+### 🔒 Sicherheit
+
+- **Schutz vor fremden Webseiten:** Der Live-Kanal spricht nur noch mit PlatinVault selbst, und unter Docker/Unraid/NAS
+  lehnt PlatinVault fremde Hostnamen ab (falls du einen Reverse-Proxy mit eigener Domain nutzt, trage ihn in
+  `PLATINVAULT_ALLOWED_HOSTS` ein).
+
+### 🔧 Behoben
+
+- **Mehrere Fehler behoben:** Windows-Updates scheitern nicht mehr an gesperrten Programmdateien, Twitch-Zahlen erscheinen
+  zuverlässig für alle sichtbaren Spiele ohne falsche 0, die Statistik zeigt bei „IGDB-Spieler“ wieder den echten Spielerwert,
+  und das Sortiermenü öffnet am unteren Bildschirmrand nach oben.
 
 ## v2026.11.17 (24.19071)
 

@@ -10,9 +10,11 @@ import { ConfirmProvider } from '../../ui/ConfirmDialog'
 const client = vi.hoisted(() => ({
   checkManualBlueprint: vi.fn(),
   checkManualChapter: vi.fn(),
+  checkManualOneShotPlan: vi.fn(),
   fetchGuideTopics: vi.fn(),
   manualBlueprintPrompt: vi.fn(),
   manualChapterPrompt: vi.fn(),
+  manualOneShotPrompt: vi.fn(),
   saveManualChapter: vi.fn(),
 }))
 vi.mock('../../../api/client', () => client)
@@ -188,9 +190,11 @@ describe('ManualGuideDialog', () => {
 
     wrap(<ManualGuideDialog slug="suncraft" gameTitle="Suncraft" language="de" onClose={onClose} onSaved={onSaved} />)
 
-    // step 1: one calm line says this is the player's own subscription; the answer to the blueprint prompt is pasted
+    // the whole guide starts with the one prompt; the player chooses the chapters himself instead
     expect(screen.getByTestId('manual-intro').textContent).toContain('erlaubt')
     expect(screen.getByTestId('manual-intro').textContent).toContain('schickt nichts an eine KI')
+    fireEvent.click(screen.getByTestId('manual-choose-myself'))
+    // step 1: the answer to the blueprint prompt is pasted
     fireEvent.change(screen.getAllByRole('textbox')[0]!, { target: { value: '```json\n{"topics": []}\n```' } })
     await settle()
     expect(client.checkManualBlueprint).toHaveBeenCalledWith('suncraft', expect.stringContaining('"topics"'))
@@ -225,6 +229,7 @@ describe('ManualGuideDialog', () => {
     ])
     wrap(<ManualGuideDialog slug="suncraft" gameTitle="Suncraft" language="de" onClose={vi.fn()} onSaved={vi.fn()} />)
 
+    fireEvent.click(screen.getByTestId('manual-choose-myself'))
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Ich wähle die Themen selbst/ })) })
 
     expect(client.fetchGuideTopics).toHaveBeenCalledWith('de')

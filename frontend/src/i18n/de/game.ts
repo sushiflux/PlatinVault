@@ -39,13 +39,13 @@ const game = {
     },
   },
 
-  // The way back at the top of the game head and the area bar under it (components/GameBackButton.tsx, GameAreaSwitch.tsx)
+  // The way back at the top of the game head (components/GameBackButton.tsx)
   back: {
     label: 'Zurück',
     tooltip: 'Zur vorherigen Seite',
   },
+  // The entries above the chapters in the game navigation (components/shell/ShellNav.tsx); guide = the single entry of a game without a chapter
   areas: {
-    group: 'Bereich des Spiels',
     guide: 'Guide',
     live: 'Live-Trophäen',
     // The trophy area of a game added by hand: PlayStation calls them trophies, every other platform achievements

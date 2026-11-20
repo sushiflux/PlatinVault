@@ -1,6 +1,6 @@
 /* The frame of the game page inside the app shell (variant "Kristall"): the game head (back button, cover, name, status line, play, the
-   calm action row, the area bar Guide | Live trophies | Statistics), the trophy part under it (progress line + four tier figures, shown
-   on every tab) and the content row with the "Im Blick" column (components/pins). The chapters are entries of the shell's tree
+   calm action row), the trophy part under it (progress line + four tier figures, shown on every tab) and the content row with the
+   "Im Blick" column (components/pins). The areas (trophy list, statistics) and the chapters are entries of the shell's tree
    navigation (components/shell).
    Imported by GameTrophyBar.tsx, GameHeadStatus.tsx and PinsSurface.tsx. */
 
@@ -8,14 +8,13 @@
 .pv-game-head {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  /* The way back on top, the head itself, the area bar (Guide | Live trophies | Statistics) at the bottom */
+  /* The way back on top, then the head itself: cover, titles + Play, the calm action row under them */
   grid-template-areas:
     'back back back'
     'cover titles play'
-    'cover actions actions'
-    'areas areas areas';
+    'cover actions actions';
   align-items: center;
-  /* No row gap: a row that is not there (no area bar without a Steam link) must not leave a gap behind; the spaces are margins below */
+  /* No row gap: a row that is not there must not leave a gap behind; the spaces are margins */
   gap: 0 1.25rem;
 }
 
@@ -25,18 +24,6 @@
   justify-self: start;
   margin-inline-start: -0.75rem;
   margin-block-end: 0.25rem;
-}
-
-.pv-game-area-icon {
-  flex: none;
-}
-
-/* The area bar: its own full-width row under the head, left-aligned; the bar is as wide as its content (both languages) */
-.pv-game-areas {
-  grid-area: areas;
-  justify-self: start;
-  max-inline-size: 100%;
-  margin-block-start: 0.75rem;
 }
 
 /* The wide Steam header image (2:1) like the design; a game without one shows the app logo on a calm panel */
@@ -122,8 +109,7 @@
       'back back'
       'cover titles'
       'play play'
-      'actions actions'
-      'areas areas';
+      'actions actions';
   }
 
   .pv-game-cover {
@@ -134,28 +120,6 @@
   .pv-game-play {
     justify-self: start;
     margin-block-start: 0.25rem;
-  }
-
-  /* The area bar on a phone: no icons, the three parts share the full width equally in one row with their full labels. Only when a label
-     would not fit even then (the fit hook adds --stack) it becomes the connected vertical list. */
-  .pv-game-areas {
-    justify-self: stretch;
-  }
-
-  .pv-game-area-icon {
-    display: none;
-  }
-
-  .pv-game-areas .pv-segmented:not(.pv-segmented--stack) {
-    display: flex;
-    inline-size: 100%;
-  }
-
-  .pv-game-areas .pv-segmented:not(.pv-segmented--stack) > button {
-    flex: 1 1 0;
-    min-inline-size: max-content;
-    padding-inline: 0.5rem;
-    font-size: 0.875rem;
   }
 }
 

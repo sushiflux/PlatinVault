@@ -29,6 +29,7 @@ export const TROPHY_DENSITIES: { value: TrophyDensity; id: 'list' | 'tiles' | 'c
 
 const DENSITY_KEY = 'pv_trophy_density'
 const DEFAULT_DENSITY: TrophyDensity = 2
+const ALL_TIPS_KEY = 'pv_trophy_tips_all_v1'
 
 export function loadTrophyDensity(): TrophyDensity {
   try {
@@ -45,6 +46,23 @@ export function saveTrophyDensity(value: TrophyDensity) {
     localStorage.setItem(DENSITY_KEY, String(value))
   } catch {
     // Storage unavailable (private mode): the size just is not remembered
+  }
+}
+
+// The "show all tips" switch of the list, remembered per browser (default off)
+export function loadAllTips(): boolean {
+  try {
+    return localStorage.getItem(ALL_TIPS_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function saveAllTips(value: boolean) {
+  try {
+    localStorage.setItem(ALL_TIPS_KEY, value ? '1' : '0')
+  } catch {
+    // Storage unavailable (private mode): the switch just is not remembered
   }
 }
 
@@ -101,6 +119,11 @@ export interface TrophyItemProps {
   ach: LiveAchievementItemDto
   // How-to from the guide's achievement table
   tip?: string
+  // Whether the tip is shown (Kompakt and Liste; Groß always shows it, Kacheln keep it in the detail window). The list decides:
+  // the "show all tips" switch, overridden per trophy by the bulb of a card. Missing = closed.
+  tipOpen?: boolean
+  // The bulb of a card: opens or closes the tip of this trophy only
+  onToggleTip?: () => void
   // Hidden achievement that is still under the spoiler cover
   covered: boolean
   showOriginal: boolean
@@ -602,9 +625,8 @@ export type CompactProps = Omit<TrophyItemProps, 'onOpen' | 'onToggleOriginal'>
 
 // Kompakt: the icon is a calm panel flush with the left, top and bottom edge of the card, as tall as the card (the unlock marker is the
 // green tag in that panel). No bottom row at all: the unlock date closes the meta line. The card is as high as its content.
-export function CompactCard({ ach, tip, covered, showOriginal, onReveal, notesEnabled, onNote, pin, check }: CompactProps) {
+export function CompactCard({ ach, tip, tipOpen = false, onToggleTip, covered, showOriginal, onReveal, notesEnabled, onNote, pin, check }: CompactProps) {
   const [expanded, setExpanded] = useState(false)
-  const [tipOpen, setTipOpen] = useState(false)
 
   return (
     <div className="pv-tr flex min-w-0 overflow-hidden" data-unlocked={ach.achieved ? '' : undefined}>
@@ -620,7 +642,7 @@ export function CompactCard({ ach, tip, covered, showOriginal, onReveal, notesEn
           covered={covered}
           expanded={expanded}
           tipOpen={tipOpen}
-          onToggleTip={() => setTipOpen((v) => !v)}
+          onToggleTip={() => onToggleTip?.()}
           notesEnabled={notesEnabled}
           onNote={onNote}
           pin={pin}
@@ -704,7 +726,7 @@ export function tierColorVar(tier: RarityTier): string {
 // Liste: one hairline row per achievement - icon, name with its text, tier and share, unlock state, pin
 // ---------------------------------------------------------------------------------------------------------------
 
-export function TrophyRow({ ach, tip, covered, notesEnabled, onOpen, pin, check }: TrophyItemProps) {
+export function TrophyRow({ ach, tip, tipOpen = false, covered, notesEnabled, onOpen, pin, check }: TrophyItemProps) {
   const { t, tierName, number, percentText, unlockStamp, detailText } = useTrophyText()
   const share = percentText(ach)
   const stamp = ach.achieved ? unlockStamp(ach) : null
@@ -723,6 +745,13 @@ export function TrophyRow({ ach, tip, covered, notesEnabled, onOpen, pin, check 
           <span className="pv-arow-text">
             <span className="pv-arow-name">{ach.displayName}</span>
             <span className={`pv-arow-desc ${covered ? 'italic' : ''}`}>{covered ? t('trophy.hiddenAchievement') : ach.description || t('trophy.noDescription')}</span>
+            {/* The tip is its own line under the description (a covered secret trophy never shows it); the row just grows taller */}
+            {tip && tipOpen && !covered && (
+              <span className="pv-arow-tip">
+                <IconBulb size={15} aria-hidden="true" />
+                <span className="min-w-0">{tip}</span>
+              </span>
+            )}
           </span>
           <span className="pv-arow-meta">
             <span className="pv-arow-l1">

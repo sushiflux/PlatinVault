@@ -227,9 +227,11 @@ public sealed partial class AiGuideGeneratorService
     };
 
     /// <summary>What the blueprint is told about the achievement chapter: the app builds or shows the list itself, or there is none.</summary>
-    internal static string ListNote(GameContext context)
+    internal static string ListNote(GameContext context, string? extrasPhrase = null)
     {
         var english = context.Language == Lang.English;
+        // Where an extra chapter goes in the answer: "under extraChapters" in the blueprint, the topic id "extra" in the plan of the one-step prompt
+        var extras = extrasPhrase ?? (english ? "under extraChapters" : "unter extraChapters");
         if (context.Platform is not { } p)
         {
             return context.Achievements.Count > 0
@@ -237,8 +239,8 @@ public sealed partial class AiGuideGeneratorService
                     ? "The app builds a chapter for the Steam achievements itself from the official Steam list – do not plan anything for it."
                     : "Ein eigenes Kapitel für die Steam-Erfolge baut die App selbst aus der offiziellen Steam-Liste – plane dafür nichts ein."
                 : english
-                    ? "The app has no official achievement list: plan a chapter \"All achievements / trophies\" under extraChapters."
-                    : "Die App hat keine offizielle Erfolgsliste: plane unter extraChapters ein Kapitel „Alle Erfolge / Trophäen“ ein.";
+                    ? $"The app has no official achievement list: plan a chapter \"All achievements / trophies\" {extras}."
+                    : $"Die App hat keine offizielle Erfolgsliste: plane {extras} ein Kapitel „Alle Erfolge / Trophäen“ ein.";
         }
         if (p.IsNintendo)
         {

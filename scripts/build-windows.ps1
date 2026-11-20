@@ -14,7 +14,7 @@
   Stages (-Stage, default "all" = everything in one go, unsigned - the local workflow). The release workflow signs in between
   (.github/workflows/release.yml, job "windows"; SignPath artifact configurations in .signpath\artifact-configurations\):
     app       UI, bridge and the program folder artifacts\windows-cache\stage\PlatinVault. With -PrepareSigning our own binaries (the list
-              in .signpath\artifact-configurations\windows-app.xml, nothing third-party) are also copied to
+              in .signpath\artifact-configurations\windows-app.xml.template, nothing third-party) are also copied to
               artifacts\windows-cache\to-sign\app - the artifact that is uploaded for signing.
     setup     needs the program folder of "app": copies the signed binaries from -SignedAppDir over it (when given), packs it, appends it
               to the installer, copies the bridge from the program folder and writes the .sha256.
@@ -67,7 +67,7 @@ $stageDir = Join-Path $cache 'stage'
 $app = Join-Path $stageDir 'PlatinVault'
 $toSign = Join-Path $cache 'to-sign\app'
 $dotnetArtifacts = Join-Path $cache 'dotnet'
-$appSigningConfig = Join-Path $root '.signpath\artifact-configurations\windows-app.xml'
+$appSigningConfig = Join-Path $root '.signpath\artifact-configurations\windows-app.xml.template'
 
 # ---- version (version.txt line 1 = vYear.Month.Commit, line 2 = five-segment build id) ------------------------------------------------
 $versionLines = @(Get-Content -LiteralPath (Join-Path $root 'version.txt') | ForEach-Object { $_.Trim() } | Where-Object { $_ })
@@ -125,16 +125,16 @@ function Get-AppSigningList {
     if (-not (Test-Path -LiteralPath $appSigningConfig)) { throw "Signatur-Konfiguration fehlt: $appSigningConfig" }
     [xml]$doc = Get-Content -LiteralPath $appSigningConfig -Raw -Encoding UTF8
     $zipNode = @($doc.DocumentElement.ChildNodes | Where-Object { $_.LocalName -eq 'zip-file' })
-    if ($zipNode.Count -ne 1) { throw 'windows-app.xml: genau ein <zip-file> erwartet.' }
+    if ($zipNode.Count -ne 1) { throw 'windows-app.xml.template: genau ein <zip-file> erwartet.' }
     $list = New-Object System.Collections.Generic.List[string]
     Add-SigningEntries $zipNode[0] '' $list
-    if ($list.Count -eq 0) { throw 'windows-app.xml nennt keine Datei.' }
+    if ($list.Count -eq 0) { throw 'windows-app.xml.template nennt keine Datei.' }
     return , $list
 }
 function Add-SigningEntries($Node, [string]$Prefix, $List) {
     foreach ($child in @($Node.ChildNodes | Where-Object { $_.NodeType -eq 'Element' })) {
         $path = "$($child.GetAttribute('path'))"
-        if ($path -match '[\*\?\[]') { throw "windows-app.xml: '$path' - Platzhalter sind hier nicht erlaubt (jede Datei einzeln nennen)." }
+        if ($path -match '[\*\?\[]') { throw "windows-app.xml.template: '$path' - Platzhalter sind hier nicht erlaubt (jede Datei einzeln nennen)." }
         $full = if ($Prefix) { "$Prefix\$($path -replace '/', '\')" } else { $path -replace '/', '\' }
         if ($child.LocalName -eq 'directory') { Add-SigningEntries $child $full $List }
         elseif ($child.LocalName -eq 'pe-file') { $List.Add($full) }

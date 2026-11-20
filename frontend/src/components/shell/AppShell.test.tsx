@@ -11,8 +11,8 @@ import { AppShell } from './AppShell'
 import { RAIL_KEY } from './useShellNav'
 
 // The app shell: the header (cabinet, settings, Steam user, info) on every page, the side navigation ONLY on a game page - the tree of that
-// game with its chapters, the rail with group flyouts remembered per browser, the drawer on a phone - and the routes of the shell (about,
-// 404, the Steam sign-in round trip landing on the settings, the old /cabinet address).
+// game (trophy list and statistics, then the chapters, then Story & Lore), the rail with group flyouts remembered per browser, the drawer on
+// a phone - and the routes of the shell (about, 404, the Steam sign-in round trip landing on the settings, the old /cabinet address).
 
 const GAMES = [
   { id: '1', slug: 'alpha', title: 'Alpha Quest', isFavorite: true, coverUrl: null, steamAppId: 10 },
@@ -49,10 +49,33 @@ const ALPHA = {
   ],
 }
 
+// Games of other kinds for the areas of the tree: added by hand on PlayStation / Xbox / Switch, and games without any chapter
+const manualGame = (slug: string, title: string, platform: string, tabs: ReturnType<typeof tab>[]) => ({
+  id: `m-${slug}`,
+  slug,
+  title,
+  steamAppId: null,
+  platform,
+  coverUrl: '',
+  checkedItemKeys: [],
+  tabs,
+})
+const walkthrough = (id: string) => tab(id, 'walkthrough', '1. Komplettlösung', { groupKey: 'start' })
+const PS5 = manualGame('ps5game', 'Stellar Blade', 'playstation', [walkthrough('p1')])
+const XBOX = manualGame('xboxgame', 'Halo', 'xbox', [walkthrough('x1')])
+const SWITCH = manualGame('switchgame', 'Zelda', 'nintendo', [walkthrough('n1')])
+const PS5_EMPTY = manualGame('ps5empty', 'Astro Bot', 'playstation', [])
+const STEAM_EMPTY = { ...ALPHA, id: '9', slug: 'empty', title: 'Leeres Spiel', tabs: [] }
+
 function stubServer() {
   const answers: Record<string, unknown> = {
     '/api/games': GAMES,
     '/api/games/alpha': ALPHA,
+    '/api/games/ps5game': PS5,
+    '/api/games/xboxgame': XBOX,
+    '/api/games/switchgame': SWITCH,
+    '/api/games/ps5empty': PS5_EMPTY,
+    '/api/games/empty': STEAM_EMPTY,
     '/api/steam/profile': { steamId: '1', personaName: 'Player', avatarUrl: null, profileUrl: 'https://steamcommunity.com/id/x', libraryGameCount: 12 },
     '/api/steam/library/summary': { libraryGameCount: 12, trophiesUnlocked: 0, trophiesTotal: 0, perfectGames: 0, scanning: false, scanDone: 0, scanTotal: 0 },
     '/api/branding': { productName: 'PlatinVault', company: 'SushiFlux', version: 'v2026.11.20.1.2 (α)', sourceUrl: 'https://github.com/sushiflux/PlatinVault' },
@@ -279,14 +302,34 @@ describe('AppShell header', () => {
 })
 
 describe('AppShell game navigation', () => {
-  it('is the tree of the open game: chapters under their groups, Story & Lore - no overview, live trophies or statistics entry', async () => {
+  it('is the tree of the open game: trophies and statistics, a line, the chapters under their groups, a line, Story & Lore - no overview entry', async () => {
     stubMedia(false)
     renderShell('/games/alpha?tab=bosses')
     const tree = nav()
     const list = await within(tree).findByRole('list', { name: 'Kapitel von Alpha Quest' })
-    // The way back and the areas live in the game head now, not in the tree
-    for (const name of [/Übersicht/, /Live-Trophäen/, /Statistiken/]) expect(within(tree).queryByRole('link', { name })).toBeNull()
-    expect(tree.querySelector('[data-hint="game-live"]')).toBeNull()
+    // The areas stand at the top, then the chapters, then Story & Lore (the way back is the game head's back button)
+    expect([...list.querySelectorAll('a.pv-ni')].map((link) => link.getAttribute('href'))).toEqual([
+      '/games/alpha?tab=live',
+      '/games/alpha?tab=stats',
+      '/games/alpha?tab=walkthrough',
+      '/games/alpha?tab=bosses',
+      '/games/alpha?tab=quests',
+      '/games/alpha?tab=story',
+    ])
+    expect(within(tree).queryByRole('link', { name: /Übersicht/ })).toBeNull()
+    // The coach mark of the trophies points at its entry; the entry has a name and an icon
+    const live = within(list).getByRole('link', { name: 'Live-Trophäen' })
+    expect(live.getAttribute('data-hint')).toBe('game-live')
+    expect(live.querySelector('svg')).toBeTruthy()
+    expect(within(list).getByRole('link', { name: 'Statistiken' }).getAttribute('data-hint')).toBeNull()
+    // One 1 px line after the areas and one before Story & Lore, hidden from screen readers
+    const lines = [...list.querySelectorAll('.pv-nsep')]
+    expect(lines).toHaveLength(2)
+    expect(lines.every((line) => line.getAttribute('aria-hidden') === 'true')).toBe(true)
+    const order = [...list.children].map((li) => (li.classList.contains('pv-nsep') ? '|' : li.classList.contains('pv-gametree-group') ? 'group' : 'entry'))
+    expect(order).toEqual(['entry', 'entry', '|', 'group', 'group', '|', 'entry'])
+    // The open chapter carries the page marker, the areas do not
+    expect(live.getAttribute('aria-current')).toBeNull()
     expect(within(list).getByRole('link', { name: /^Bosse/ }).getAttribute('aria-current')).toBe('page')
     expect(within(list).getByRole('link', { name: /^Komplettlösung/ }).getAttribute('aria-current')).toBeNull()
     expect(within(list).getByRole('link', { name: /^Komplettlösung/ }).textContent).toContain('2 von 5 erledigt')
@@ -302,6 +345,103 @@ describe('AppShell game navigation', () => {
     expect(within(tree).queryByText('Meine Spiele')).toBeNull()
     for (const name of [/Trophäenschrank/, /Einstellungen/, /Info/, /Player/]) expect(within(tree).queryByRole('link', { name })).toBeNull()
     expect(within(tree).queryByRole('searchbox')).toBeNull()
+  })
+
+  it('marks exactly one entry as the open one: the trophy area, the statistics or Story & Lore, as the URL says', async () => {
+    stubMedia(false)
+    for (const [tab, name] of [['live', 'Live-Trophäen'], ['stats', 'Statistiken'], ['story', 'Story & Lore']] as const) {
+      renderShell(`/games/alpha?tab=${tab}`)
+      const list = await within(nav()).findByRole('list', { name: 'Kapitel von Alpha Quest' })
+      expect(within(list).getByRole('link', { name }).getAttribute('aria-current')).toBe('page')
+      expect(list.querySelectorAll('[aria-current="page"]')).toHaveLength(1)
+      cleanup()
+    }
+  })
+
+  it('moves between the areas without adding history entries (replace), so the way back still leaves the game', async () => {
+    stubMedia(false)
+    renderShell(['/', '/games/alpha?tab=bosses'])
+    fireEvent.click(await within(nav()).findByRole('link', { name: 'Live-Trophäen' }))
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/games/alpha?tab=live'))
+    fireEvent.click(within(nav()).getByRole('link', { name: 'Statistiken' }))
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/games/alpha?tab=stats'))
+    fireEvent.click(screen.getByRole('button', { name: 'probe-back' }))
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/'))
+  })
+
+  it('names the trophy area of a PlayStation game Trophäen, and has no statistics for a game added by hand', async () => {
+    stubMedia(false)
+    renderShell('/games/ps5game?tab=live')
+    const list = await within(nav()).findByRole('list', { name: 'Kapitel von Stellar Blade' })
+    const trophies = within(list).getByRole('link', { name: 'Trophäen' })
+    expect(trophies.getAttribute('href')).toBe('/games/ps5game?tab=live')
+    expect(trophies.getAttribute('aria-current')).toBe('page')
+    expect(trophies.getAttribute('data-hint')).toBe('game-live')
+    expect(within(list).queryByRole('link', { name: 'Statistiken' })).toBeNull()
+    expect(within(list).queryByRole('link', { name: 'Live-Trophäen' })).toBeNull()
+    expect(list.querySelectorAll('.pv-nsep')).toHaveLength(2)
+  })
+
+  it('calls the trophy area of every other platform Erfolge', async () => {
+    stubMedia(false)
+    renderShell('/games/xboxgame')
+    const list = await within(nav()).findByRole('list', { name: 'Kapitel von Halo' })
+    expect(within(list).getByRole('link', { name: 'Erfolge' }).getAttribute('href')).toBe('/games/xboxgame?tab=live')
+    expect(within(list).queryByRole('link', { name: 'Trophäen' })).toBeNull()
+    expect(within(list).queryByRole('link', { name: 'Statistiken' })).toBeNull()
+  })
+
+  it('has no trophy entry, no statistics and no line above the chapters for a Switch game (a platform without trophies)', async () => {
+    stubMedia(false)
+    renderShell('/games/switchgame')
+    const list = await within(nav()).findByRole('list', { name: 'Kapitel von Zelda' })
+    expect([...list.querySelectorAll('a.pv-ni')].map((link) => link.getAttribute('href'))).toEqual(['/games/switchgame?tab=walkthrough', '/games/switchgame?tab=story'])
+    expect(list.querySelector('[data-hint="game-live"]')).toBeNull()
+    // Only the line before Story & Lore: nothing stands above the chapters
+    expect(list.querySelectorAll('.pv-nsep')).toHaveLength(1)
+    expect(list.firstElementChild?.classList.contains('pv-nsep')).toBe(false)
+  })
+
+  it('offers one Guide entry in place of the chapters of a game without any chapter, open on the "no guide yet" card', async () => {
+    stubMedia(false)
+    renderShell('/games/ps5empty?tab=guide')
+    const list = await within(nav()).findByRole('list', { name: 'Kapitel von Astro Bot' })
+    const guide = within(list).getByRole('link', { name: 'Guide' })
+    expect(guide.getAttribute('href')).toBe('/games/ps5empty?tab=guide')
+    expect(guide.getAttribute('aria-current')).toBe('page')
+    expect(within(list).getByRole('link', { name: 'Trophäen' }).getAttribute('aria-current')).toBeNull()
+    expect(list.querySelectorAll('.pv-glabel')).toHaveLength(0)
+    expect([...list.querySelectorAll('a.pv-ni')].map((link) => link.getAttribute('href'))).toEqual([
+      '/games/ps5empty?tab=live',
+      '/games/ps5empty?tab=guide',
+      '/games/ps5empty?tab=story',
+    ])
+  })
+
+  it('opens a game without chapters on its trophy list with the Guide entry inactive; a Steam game without chapters has the same entry', async () => {
+    stubMedia(false)
+    renderShell('/games/ps5empty')
+    const list = await within(nav()).findByRole('list', { name: 'Kapitel von Astro Bot' })
+    expect(within(list).getByRole('link', { name: 'Trophäen' }).getAttribute('aria-current')).toBe('page')
+    expect(within(list).getByRole('link', { name: 'Guide' }).getAttribute('aria-current')).toBeNull()
+    cleanup()
+    renderShell('/games/empty')
+    const steam = await within(nav()).findByRole('list', { name: 'Kapitel von Leeres Spiel' })
+    expect(within(steam).getByRole('link', { name: 'Live-Trophäen' }).getAttribute('aria-current')).toBe('page')
+    expect(within(steam).getByRole('link', { name: 'Guide' }).getAttribute('href')).toBe('/games/empty?tab=guide')
+    expect(within(steam).getByRole('link', { name: 'Statistiken' })).toBeTruthy()
+  })
+
+  it('keeps the room of the tree while the game loads: placeholder rows for the areas, a line, placeholder rows for the chapters', async () => {
+    stubMedia(false)
+    renderShell('/games/alpha')
+    // Before the answer arrives: skeleton rows, no list yet
+    const skeleton = document.querySelectorAll('.pv-snav-skel')
+    expect(skeleton).toHaveLength(2)
+    expect(skeleton[0]!.children).toHaveLength(2)
+    expect(document.querySelector('.pv-snav-list > .pv-nsep')).toBeTruthy()
+    await within(nav()).findByRole('list', { name: 'Kapitel von Alpha Quest' })
+    expect(document.querySelectorAll('.pv-snav-skel')).toHaveLength(0)
   })
 
   it('opens the first chapter when the URL names no tab', async () => {
@@ -325,9 +465,18 @@ describe('AppShell game navigation', () => {
     const tree = nav()
     expect(tree.getAttribute('data-rail')).toBe('true')
     expect(within(tree).getByRole('button', { name: 'Navigation ausklappen' })).toBeTruthy()
-    // Story & Lore stays reachable as an icon named for screen readers (and by tooltip); the rail has no overview / area entries either
+    // Story & Lore stays reachable as an icon named for screen readers (and by tooltip); the rail has no overview entry
     expect((await within(tree).findByRole('link', { name: 'Story & Lore' })).getAttribute('href')).toBe('/games/alpha?tab=story')
-    for (const name of ['Übersicht', 'Live-Trophäen', 'Statistiken']) expect(within(tree).queryByRole('link', { name })).toBeNull()
+    expect(within(tree).queryByRole('link', { name: 'Übersicht' })).toBeNull()
+    // The areas are plain icons with their name for screen readers, first in the rail, before the group icons
+    const live = within(tree).getByRole('link', { name: 'Live-Trophäen' })
+    expect(live.getAttribute('href')).toBe('/games/alpha?tab=live')
+    expect(live.querySelector('svg')).toBeTruthy()
+    expect(live.getAttribute('data-hint')).toBe('game-live')
+    expect(live.querySelector('.pv-ni-label')?.textContent).toBe('Live-Trophäen')
+    expect(within(tree).getByRole('link', { name: 'Statistiken' }).getAttribute('href')).toBe('/games/alpha?tab=stats')
+    const rail = [...tree.querySelectorAll('.pv-gametree > li')].map((li) => (li.classList.contains('pv-nsep') ? '|' : (li.querySelector('a, button')?.getAttribute('aria-label') ?? '')))
+    expect(rail).toEqual(['Live-Trophäen', 'Statistiken', '|', 'Einstieg', 'Kampf & Taktik', '|', 'Story & Lore'])
     // One icon per chapter group; the one that holds the open chapter carries the accent line
     const combat = within(tree).getByRole('button', { name: 'Kampf & Taktik' })
     expect(combat.getAttribute('data-active')).toBe('true')
@@ -418,12 +567,24 @@ describe('AppShell on a phone', () => {
     expect(nav().getAttribute('data-rail')).toBeNull()
   })
 
-  it('has no overview, live trophies or statistics entry in the drawer either', async () => {
+  it('has the same tree in the drawer: trophies and statistics on top, no overview entry', async () => {
     stubMedia(true)
     renderShell('/games/alpha')
     fireEvent.click(screen.getByRole('button', { name: 'Navigation öffnen' }))
     await within(nav()).findByRole('link', { name: /^Bosse/ })
-    for (const name of [/Übersicht/, /Live-Trophäen/, /Statistiken/]) expect(within(nav()).queryByRole('link', { name })).toBeNull()
+    expect(within(nav()).queryByRole('link', { name: /Übersicht/ })).toBeNull()
+    expect([...nav().querySelectorAll('.pv-gametree a.pv-ni')].map((link) => link.getAttribute('href'))).toEqual([
+      '/games/alpha?tab=live',
+      '/games/alpha?tab=stats',
+      '/games/alpha?tab=walkthrough',
+      '/games/alpha?tab=bosses',
+      '/games/alpha?tab=quests',
+      '/games/alpha?tab=story',
+    ])
+    // Following an area closes the drawer like following a chapter does
+    fireEvent.click(within(nav()).getByRole('link', { name: 'Statistiken' }))
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/games/alpha?tab=stats'))
+    expect(nav().parentElement!.getAttribute('data-open')).toBe('false')
   })
 
   it('does not add history entries when moving between chapters, so the back button leaves the game', async () => {

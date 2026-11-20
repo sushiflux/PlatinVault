@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { IconCheck, IconCircle, IconClipboardText, IconListNumbers, IconLoader2, IconStack2, IconX } from '@tabler/icons-react'
-import { checkManualBlueprint, checkManualChapter, fetchGuideTopics, manualBlueprintPrompt, manualChapterPrompt, saveManualChapter } from '../../../api/client'
-import type { GameDetailDto, GuidePlanDto, GuidePlanTopicDto, ManualBlueprintCheckDto, ManualChapterCheckDto, ManualChapterSeed } from '../../../api/types'
+import { IconArrowLeft, IconCheck, IconCircle, IconClipboardText, IconListNumbers, IconLoader2, IconStack2, IconX } from '@tabler/icons-react'
+import { checkManualBlueprint, checkManualChapter, checkManualOneShotPlan, fetchGuideTopics, manualBlueprintPrompt, manualChapterPrompt, manualOneShotPrompt, saveManualChapter } from '../../../api/client'
+import type { GameDetailDto, GuidePlanDto, GuidePlanTopicDto, ManualBlueprintCheckDto, ManualChapterCheckDto, ManualChapterSeed, ManualOneShotPlanDto } from '../../../api/types'
 import { describeError } from '../../../utils/apiErrorText'
 import { ErrorDetails } from '../../ui/ErrorDetails'
 import { keyOf, TopicGroup, usePlanSelection } from '../PlanTopics'
 import { AnswerBox } from './AnswerBox'
 import { BatchChapters } from './BatchChapters'
 import { PromptBox } from './PromptBox'
-import { assignBatchKeys, BATCH_DEFAULT_MIN, clearStoredBatch, readStoredBatch, readStoredText, rowsSignature, writeStoredBatch } from './batch'
+import { assignBatchKeys, BATCH_DEFAULT_MIN, clearStoredBatch, isOneShotRows, readStoredBatch, readStoredText, rowsFromPlan, rowsSignature, writeStoredBatch, writeStoredText } from './batch'
 import type { BatchRow, BatchScope, ManualMode } from './batch'
 
 interface ManualGuideDialogProps {
@@ -33,15 +33,17 @@ const FOCUSABLE = 'button:not(:disabled):not([tabindex="-1"]), a[href], textarea
 
 const defaultMode = (count: number): ManualMode => (count >= BATCH_DEFAULT_MIN ? 'batch' : 'single')
 
+type Step = 'oneshot' | 'plan' | 'chapters'
+
 interface Start {
-  step: 'plan' | 'chapters'
+  step: Step
   rows: ChapterRowState[]
   keys: Record<string, string>
   saved: Set<string>
   mode: ManualMode
 }
 
-/** The state the dialog opens with: a given list of chapters, what the player left behind in this browser tab, or the empty first step. */
+/** The state the dialog opens with: a given list of chapters, what the player left behind in this browser tab, or the empty first step (the one prompt). */
 function startState(slug: string, scope: BatchScope, seeds: ManualChapterSeed[] | undefined): Start {
   const stored = readStoredBatch(slug, scope)
   if (seeds && seeds.length > 0) {
@@ -63,13 +65,14 @@ function startState(slug: string, scope: BatchScope, seeds: ManualChapterSeed[] 
     }
   }
   clearStoredBatch(slug, scope)
-  return { step: 'plan', rows: [], keys: {}, saved: new Set(), mode: 'single' }
+  return { step: 'oneshot', rows: [], keys: {}, saved: new Set(), mode: 'single' }
 }
 
 /**
- * The guide without an API key: the prompt goes into the chat of the player's own AI subscription, its answer is pasted back here. Step 1 is the
- * chapter list (a blueprint prompt, or the player ticks the standard topics himself), step 2 one prompt and one pasted answer per chapter; every
- * answer is checked while it is pasted and saved like an AI result. Nothing in here ever talks to an AI provider.
+ * The guide without an API key: the prompt goes into the chat of the player's own AI subscription, its answer is pasted back here. For a whole
+ * guide step 1 is ONE prompt (the chat picks the chapters and writes them all; the plan in its answer fills the batch view), or, behind "Choose
+ * chapters myself", the chapter list (a blueprint prompt, or the player ticks the standard topics himself); step 2 is the batch view or one prompt
+ * and one pasted answer per chapter. Every answer is checked while it is pasted and saved like an AI result. Nothing in here ever talks to an AI provider.
  */
 export function ManualGuideDialog({ slug, gameTitle, language, chapter, chapters, onClose, onSaved }: ManualGuideDialogProps) {
   const { t } = useTranslation(['ai', 'common', 'game'])
@@ -80,7 +83,7 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, chapters
   // A new chapter (no tabId) has its own scope so it never collides with the stored state of the failed-chapter list
   const scope: BatchScope = !fixed ? 'plan' : chapter?.tabId ? `chapter:${chapter.tabId}` : chapter ? 'new' : 'failed'
   const [start] = useState(() => startState(slug, scope, given))
-  const [step, setStep] = useState<'plan' | 'chapters'>(start.step)
+  const [step, setStep] = useState<Step>(start.step)
   const [plan, setPlan] = useState<GuidePlanDto | null>(null)
   const { groups, selectable, chosen, selected, setSelected, toggle, tickRecommended } = usePlanSelection(plan)
   const [rows, setRows] = useState<ChapterRowState[]>(start.rows)
@@ -93,6 +96,10 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, chapters
   const [loadingTopics, setLoadingTopics] = useState(false)
   // The plan the player ticked in is kept when the answer is edited later: the newest valid answer replaces it
   const planFromAnswer = useRef(false)
+  // The one-step answer as it was read last: the plan the server found in it, and the text it was found in (that text is handed to the batch view)
+  const [oneShot, setOneShot] = useState<{ plan: ManualOneShotPlanDto; text: string } | null>(null)
+  // The rows come from a one-step plan: "back" leads to the one prompt, not to the topic list
+  const fromOneShot = isOneShotRows(rows)
 
   const onBlueprint = (result: ManualBlueprintCheckDto | null) => {
     if (result?.plan) {
@@ -127,6 +134,29 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, chapters
     }
   }
 
+  // The plan of the one-step answer is read: its chapters become the rows of the batch view, and the pasted text is already in its answer field
+  const oneShotToChapters = () => {
+    if (!oneShot || oneShot.plan.chapters.length === 0) return
+    const built = rowsFromPlan(oneShot.plan.chapters)
+    // The batch view starts from its stored text (the one place it is kept), so the pasted answer is put there before it is shown
+    writeStoredText(slug, scope, oneShot.text)
+    setKeyMap(built.keys)
+    setRows(built.rows)
+    setSaved(new Set())
+    setMode('batch')
+    setStep('chapters')
+  }
+
+  // From the one prompt to the topic list: what the one-step answer left in the browser tab does not belong to the topics ticked now
+  const chooseChaptersMyself = () => {
+    if (fromOneShot) {
+      writeStoredText(slug, scope, '')
+      setKeyMap({})
+      setSaved(new Set())
+    }
+    setStep('plan')
+  }
+
   const toChapters = () => {
     if (!plan) return
     const defs = chosen.map((topic) => ({
@@ -134,10 +164,15 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, chapters
       seed: { title: topic.title, icon: topic.icon, focus: topic.focus, topicId: topic.id, sourceSituation: plan.sourceSituation || undefined },
     }))
     // A chapter keeps its id ("K01") when the player comes back and changes the selection, so pasted answers stay valid
-    const keys = assignBatchKeys(defs.map((def) => def.key), keyMap)
+    const keys = assignBatchKeys(defs.map((def) => def.key), fromOneShot ? {} : keyMap)
+    if (fromOneShot) {
+      // The rows of a one-step plan are replaced by ticked topics: their pasted text and saved marks do not fit the new rows
+      writeStoredText(slug, scope, '')
+      setSaved(new Set())
+    }
     setKeyMap(keys)
     setRows(defs.map((def) => ({ ...def, batchKey: keys[def.key] ?? '' })))
-    setMode(defaultMode(defs.filter((def) => !saved.has(def.key)).length))
+    setMode(defaultMode(defs.filter((def) => fromOneShot || !saved.has(def.key)).length))
     setStep('chapters')
   }
 
@@ -200,7 +235,7 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, chapters
               <span className="truncate">{single ? t('ai:manual.chapterTitle') : t('ai:manual.title')} · {gameTitle}</span>
             </h2>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              {single ? t('ai:manual.step.single') : fixed ? t('ai:manual.step.list') : step === 'plan' ? t('ai:manual.step.plan') : t('ai:manual.step.chapters')}
+              {single ? t('ai:manual.step.single') : fixed ? t('ai:manual.step.list') : step === 'oneshot' ? t('ai:manual.step.oneshot') : step === 'plan' ? t('ai:manual.step.plan') : fromOneShot ? t('ai:manual.step.oneshotChapters') : t('ai:manual.step.chapters')}
             </p>
           </div>
           <button type="button" onClick={onClose} className="pv-btn pv-icon-btn" aria-label={t('common:close')}>
@@ -213,8 +248,60 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, chapters
             {t('ai:manual.intro')}
           </p>
 
+          {step === 'oneshot' && (
+            <>
+              <div className="space-y-1.5 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                <p data-testid="oneshot-lead">{t('ai:manual.oneshot.lead')}</p>
+                <p>{t('ai:manual.oneshot.longHint')}</p>
+              </div>
+
+              <section className="space-y-2">
+                <h3 className="text-sm font-extrabold" style={{ color: 'var(--text-primary)' }}>
+                  {t('ai:manual.plan.promptHeading')}
+                </h3>
+                <PromptBox load={() => manualOneShotPrompt(slug)} />
+              </section>
+
+              <section className="space-y-2">
+                <h3 className="text-sm font-extrabold" style={{ color: 'var(--text-primary)' }}>
+                  {t('ai:manual.plan.answerHeading')}
+                </h3>
+                <AnswerBox<ManualOneShotPlanDto>
+                  // Coming back from the batch view: the text pasted there is checked again
+                  initialText={fromOneShot ? readStoredText(slug, scope) : ''}
+                  check={(text) => checkManualOneShotPlan(slug, text)}
+                  onResult={(result, text) => setOneShot(result ? { plan: result, text } : null)}
+                  renderOk={(result) =>
+                    result.chapters.length === 0 ? (
+                      <span>{t('ai:manual.oneshot.noChapters')}</span>
+                    ) : (
+                      <div className="space-y-1">
+                        <p>{t('ai:manual.oneshot.planned', { count: result.chapters.length })}</p>
+                        <ol className="space-y-0.5" data-testid="oneshot-chapters">
+                          {result.chapters.map((chapter, index) => (
+                            <li key={chapter.key ?? index} className="flex gap-2">
+                              <span className="shrink-0 font-mono text-[0.8125rem] font-extrabold" style={{ color: 'var(--text-muted)' }}>
+                                {chapter.key}
+                              </span>
+                              <span className="min-w-0 break-words">{chapter.title}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )
+                  }
+                />
+              </section>
+            </>
+          )}
+
           {step === 'plan' && (
             <>
+              <button type="button" className="pv-btn-text -ms-3" onClick={() => setStep('oneshot')} data-testid="manual-back-oneshot">
+                <IconArrowLeft size={14} className="shrink-0" aria-hidden="true" />
+                <span>{t('ai:manual.plan.backToOne')}</span>
+              </button>
+
               <section className="space-y-2">
                 <h3 className="text-sm font-extrabold" style={{ color: 'var(--text-primary)' }}>
                   {t('ai:manual.plan.promptHeading')}
@@ -277,8 +364,9 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, chapters
                   saved={saved}
                   footerEl={footerEl}
                   fixed={fixed}
+                  backLabel={fromOneShot ? t('ai:manual.chapters.backOneShot') : undefined}
                   onSaved={markAllSaved}
-                  onBack={() => setStep('plan')}
+                  onBack={() => setStep(fromOneShot ? 'oneshot' : 'plan')}
                   onClose={onClose}
                 />
               ) : (
@@ -303,6 +391,20 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, chapters
           {batch ? (
             // The batch view draws its own controls into this slot (it owns the state they depend on)
             <div ref={setFooterEl} className="w-full" data-testid="manual-footer-slot" />
+          ) : step === 'oneshot' ? (
+            <>
+              <div className="min-w-0">
+                <button type="button" className="pv-btn-text -ms-3" onClick={chooseChaptersMyself} aria-describedby="manual-choose-hint" data-testid="manual-choose-myself">
+                  <span>{t('ai:manual.oneshot.choose')}</span>
+                </button>
+                <p id="manual-choose-hint" className="mt-1 ps-3 text-[0.8125rem]" style={{ color: 'var(--text-muted)' }}>
+                  {t('ai:manual.oneshot.chooseHint')}
+                </p>
+              </div>
+              <button type="button" className="pv-btn pv-btn-primary" disabled={!oneShot || oneShot.plan.chapters.length === 0} onClick={oneShotToChapters}>
+                <span>{t('ai:manual.plan.next', { count: oneShot?.plan.chapters.length ?? 0 })}</span>
+              </button>
+            </>
           ) : step === 'plan' ? (
             <>
               <div className="min-w-0">
@@ -338,8 +440,8 @@ export function ManualGuideDialog({ slug, gameTitle, language, chapter, chapters
             <>
               <div className="flex min-w-0 items-center gap-3">
                 {!fixed && (
-                  <button type="button" className="pv-btn" onClick={() => setStep('plan')}>
-                    <span>{t('ai:manual.chapters.back')}</span>
+                  <button type="button" className="pv-btn" onClick={() => setStep(fromOneShot ? 'oneshot' : 'plan')}>
+                    <span>{fromOneShot ? t('ai:manual.chapters.backOneShot') : t('ai:manual.chapters.back')}</span>
                   </button>
                 )}
                 {rows.length > 1 && (

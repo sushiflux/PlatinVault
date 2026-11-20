@@ -44,7 +44,6 @@ const game = {
     tooltip: 'To the previous page',
   },
   areas: {
-    group: 'Area of the game',
     guide: 'Guide',
     live: 'Live trophies',
     trophies: 'Trophies',

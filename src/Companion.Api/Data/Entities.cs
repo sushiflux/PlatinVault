@@ -222,6 +222,50 @@ public sealed class GuideTabEntity
     public GameEntity? Game { get; set; }
 }
 
+/// <summary>
+/// The review of one guide chapter by a second AI ("Prüf-KI", brief <c>ki-pruefung.md</c>): the chapter as it was (A), the second research (B), the findings of
+/// the reviewer and the hash of the merged chapter as it was saved. One row per chapter, a new review replaces it. The row disappears with its chapter or
+/// game (foreign key cascade) and is part of every SQLite backup. <see cref="ResultHash"/> no longer matching the chapter = the chapter was changed
+/// afterwards, the review is "stale" (still readable, but its other versions cannot be taken any more).
+/// </summary>
+public sealed class ChapterReviewEntity
+{
+    public Guid Id { get; set; }
+    public Guid GameId { get; set; }
+    public Guid TabId { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    /// <summary>The language the findings are written in (the guide language).</summary>
+    public string Language { get; set; } = string.Empty;
+
+    /// <summary>Who wrote answer B: "gemini" | "claude" | "openai" | "manual" (an answer pasted from the player's own chat).</summary>
+    public string ResearcherProvider { get; set; } = string.Empty;
+
+    /// <summary>Who decided: "gemini" | "claude" | "manual".</summary>
+    public string ReviewerProvider { get; set; } = string.Empty;
+
+    /// <summary>The sections of answer A (the chapter as it was stored when the review started), without review markers.</summary>
+    public string OriginalSectionsJson { get; set; } = "[]";
+
+    /// <summary>The sections of answer B (normalized).</summary>
+    public string SecondSectionsJson { get; set; } = "[]";
+
+    /// <summary>The findings (see <c>ChapterReview</c>): kind, target, a/b/result, source, reason, and whether a version was taken afterwards.</summary>
+    public string FindingsJson { get; set; } = "[]";
+
+    /// <summary>The summary counts (agreed, added, corrected, removed, unclear).</summary>
+    public string CountsJson { get; set; } = "{}";
+
+    /// <summary>SHA-256 (lower-case hex) of the merged sections as saved (<c>ChapterReview.HashSections</c>).</summary>
+    public string ResultHash { get; set; } = string.Empty;
+
+    [JsonIgnore]
+    public GameEntity? Game { get; set; }
+
+    [JsonIgnore]
+    public GuideTabEntity? Tab { get; set; }
+}
+
 /// <summary>Stores checked items per game in the database so progress syncs across PC, Ultrawide, and Tablet/Phone.</summary>
 public sealed class ProgressCheckEntity
 {

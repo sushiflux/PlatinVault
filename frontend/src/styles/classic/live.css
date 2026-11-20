@@ -184,6 +184,12 @@
   font-weight: 700;
 }
 
+/* The tip line of an open row: primary text colour and a heavier weight, as the rest of the classic list */
+:root[data-design='classic'] .pv-arow-tip {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
 :root[data-design='classic'] .pv-arow-state[data-done] {
   font-weight: 700;
 }

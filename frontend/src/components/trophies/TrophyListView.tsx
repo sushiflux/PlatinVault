@@ -15,7 +15,9 @@ import { Tooltip } from '../ui/Tooltip'
 import {
   CompactCard,
   LargeCard,
+  loadAllTips,
   loadTrophyDensity,
+  saveAllTips,
   saveTrophyDensity,
   TROPHY_GRID,
   TrophyDetailDialog,
@@ -88,6 +90,9 @@ export function TrophyListView({ data, loading, tips = {}, notesScope, check, ti
   const [editingNoteAch, setEditingNoteAch] = useState<LiveAchievementItemDto | null>(null)
   const [revealedSingleIds, setRevealedSingleIds] = useState<Record<string, boolean>>({})
   const [showOriginalIds, setShowOriginalIds] = useState<Record<string, boolean>>({})
+  // Tips: the global "show all tips" switch (remembered per browser) and the single trophies whose bulb was pressed since (they win over the switch)
+  const [showAllTips, setShowAllTips] = useState(loadAllTips)
+  const [tipOverrides, setTipOverrides] = useState<Record<string, boolean>>({})
 
   // A sort that is not offered (any more) is the default order
   const activeSort: TrophySort = sorts.includes(sortBy) ? sortBy : 'default'
@@ -130,10 +135,25 @@ export function TrophyListView({ data, loading, tips = {}, notesScope, check, ti
     return list
   }, [data, activeTab, selectedRarity, searchQuery, activeSort, notesEnabled])
 
+  const isTipOpen = (apiName: string) => tipOverrides[apiName] ?? showAllTips
+  const changeAllTips = (next: boolean) => {
+    setShowAllTips(next)
+    saveAllTips(next)
+    // The switch is the new baseline for every trophy: earlier bulb choices no longer apply
+    setTipOverrides({})
+  }
+  // The switch is disabled (never hidden) where it cannot do anything; the tooltip names the reason
+  const hasAnyTip = !data || data.achievements.some((a) => !!tips[a.apiName])
+  const tipsDisabledReason: 'none' | 'tiles' | 'large' | null = !hasAnyTip ? 'none' : density === 1 ? 'tiles' : density === 3 ? 'large' : null
+  // Large cards always show every tip: the switch reads "on" there; without any tip it reads "off"
+  const tipsSwitchChecked = !hasAnyTip ? false : density === 3 ? true : showAllTips
+
   // Everything one list item needs: the spoiler cover, the translation toggle and the way to the note editor and the details
   const itemProps = (ach: LiveAchievementItemDto): TrophyItemProps => ({
     ach,
     tip: tips[ach.apiName],
+    tipOpen: isTipOpen(ach.apiName),
+    onToggleTip: () => setTipOverrides((prev) => ({ ...prev, [ach.apiName]: !(prev[ach.apiName] ?? showAllTips) })),
     covered: ach.isHidden && !revealHidden && !revealedSingleIds[ach.apiName] && !ach.achieved,
     showOriginal: !!showOriginalIds[ach.apiName],
     onReveal: () => setRevealedSingleIds((prev) => ({ ...prev, [ach.apiName]: true })),
@@ -221,6 +241,16 @@ export function TrophyListView({ data, loading, tips = {}, notesScope, check, ti
           <Tooltip label={t('tracker.reveal.label')} description={revealHidden ? t('tracker.reveal.on') : t('tracker.reveal.off')} side="bottom" className="inline-flex shrink-0">
             <Switch checked={revealHidden} onChange={setRevealHidden} className="pv-lf-switch">
               {t('tracker.reveal.label')}
+            </Switch>
+          </Tooltip>
+          <Tooltip
+            label={t('tracker.tips.label')}
+            description={tipsDisabledReason ? t(`tracker.tips.${tipsDisabledReason}`) : tipsSwitchChecked ? t('tracker.tips.on') : t('tracker.tips.off')}
+            side="bottom"
+            className="inline-flex shrink-0"
+          >
+            <Switch checked={tipsSwitchChecked} onChange={changeAllTips} blocked={tipsDisabledReason !== null} className="pv-lf-switch">
+              {t('tracker.tips.label')}
             </Switch>
           </Tooltip>
         </div>

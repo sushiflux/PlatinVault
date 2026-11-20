@@ -243,6 +243,9 @@ public static partial class ManualGuideEndpoints
 
         // Batch mode: one prompt for many chapters, one field for all collected answers
         MapManualBatch(api);
+
+        // The whole guide from ONE prompt: the prompt and the plan of the pasted answer (saving goes through the batch endpoints)
+        MapManualOneShot(api);
     }
 
     private static async Task<GameEntity?> LoadAsync(CompanionDbContext db, string slug, CancellationToken ct)

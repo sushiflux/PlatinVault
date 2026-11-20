@@ -146,9 +146,20 @@ const ai = {
     intro: 'This uses your own AI subscription by hand – allowed, because you are the one sitting in the chat. PlatinVault never accesses it and sends nothing to an AI.',
     close: 'Close',
     entry: { builder: 'With your AI subscription (no API key)', chapter: 'With your AI subscription', all: 'All with my AI subscription' },
-    step: { plan: 'Step 1 of 2 · Chapter list', chapters: 'Step 2 of 2 · Research the chapters', single: 'One chapter', list: 'Several chapters' },
+    step: { oneshot: 'One prompt for the whole guide', oneshotChapters: 'Check the answer and save the chapters', plan: 'Step 1 of 2 · Chapter list', chapters: 'Step 2 of 2 · Research the chapters', single: 'One chapter', list: 'Several chapters' },
     mode: { label: 'Approach', batch: 'All at once', single: 'One by one' },
+    // The default for a whole guide: ONE prompt, the chat picks the chapters itself and writes all of them
+    oneshot: {
+      lead: 'The AI picks the chapters itself, researches the game and writes the whole guide in one go. If the game already has chapters, it only writes the missing ones.',
+      longHint: 'A long guide sometimes arrives in several answers: then tell the chat “continue”. You add the further answers in the next step.',
+      planned_one: 'The chat planned {{count}} chapter:',
+      planned_other: 'The chat planned {{count}} chapters:',
+      noChapters: 'The plan contains no chapter that is still missing – there is nothing to save.',
+      choose: 'Choose chapters myself',
+      chooseHint: 'Instead you pick the topics yourself: with a blueprint prompt or from the standard topic list.',
+    },
     plan: {
+      backToOne: 'Back to the single prompt',
       promptHeading: '1. Copy the prompt and paste it into the chat of your subscription',
       answerHeading: '2. Paste the answer of the chat here',
       skip: 'I choose the topics myself – no blueprint prompt',
@@ -161,6 +172,7 @@ const ai = {
       intro: 'Every chapter has a prompt of its own: copy it, paste it into the chat, paste the answer here and save. The order does not matter; chapters that are already saved stay saved.',
       progress: 'Saved: {{done}} of {{total}}',
       back: 'Back to the chapter list',
+      backOneShot: 'Back to the prompt',
       finished: 'Done',
     },
     row: {

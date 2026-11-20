@@ -18,6 +18,7 @@ public sealed class CompanionDbContext(DbContextOptions<CompanionDbContext> opti
     public DbSet<GameTrophyEntity> GameTrophies => Set<GameTrophyEntity>();
     public DbSet<GameCoverEntity> GameCovers => Set<GameCoverEntity>();
     public DbSet<GameTrophyTranslationEntity> GameTrophyTranslations => Set<GameTrophyTranslationEntity>();
+    public DbSet<ChapterReviewEntity> ChapterReviews => Set<ChapterReviewEntity>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -90,6 +91,26 @@ public sealed class CompanionDbContext(DbContextOptions<CompanionDbContext> opti
             entity.HasOne(x => x.Game)
                 .WithOne()
                 .HasForeignKey<GameCoverEntity>(x => x.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ChapterReviewEntity>(entity =>
+        {
+            entity.ToTable("guide_chapter_reviews");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Language).HasMaxLength(8).IsRequired();
+            entity.Property(x => x.ResearcherProvider).HasMaxLength(16).IsRequired();
+            entity.Property(x => x.ReviewerProvider).HasMaxLength(16).IsRequired();
+            entity.Property(x => x.ResultHash).HasMaxLength(64).IsRequired();
+            entity.HasIndex(x => x.GameId);
+            // One review per chapter (a new one replaces it): the one-to-one relationship makes the index on TabId unique
+            entity.HasOne(x => x.Tab)
+                .WithOne()
+                .HasForeignKey<ChapterReviewEntity>(x => x.TabId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.Game)
+                .WithMany()
+                .HasForeignKey(x => x.GameId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

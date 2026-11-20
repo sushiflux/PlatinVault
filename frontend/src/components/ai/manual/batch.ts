@@ -50,6 +50,39 @@ export function toBatchItem(row: BatchRow): ManualBatchChapterItem {
   }
 }
 
+/** Rows made from a one-step plan carry this prefix in `row.key` ("oneshot:K01"), so they never collide with the keys of ticked topics. */
+const ONESHOT_PREFIX = 'oneshot:'
+
+export const isOneShotRows = (rows: { key: string }[]) => rows.length > 0 && rows.every((row) => row.key.startsWith(ONESHOT_PREFIX))
+
+/**
+ * The rows (and the key map) of the batch view for the chapters the server read from the plan of a one-step answer. `batchKey` is the plan's
+ * own "K01" id, which the pasted chapter objects carry, so the batch check matches them with no further step.
+ */
+export function rowsFromPlan(chapters: ManualBatchChapterItem[]): { rows: BatchRow[]; keys: Record<string, string> } {
+  const rows: BatchRow[] = []
+  const keys: Record<string, string> = {}
+  chapters.forEach((chapter, index) => {
+    const batchKey = chapter.key?.trim() || formatBatchKey(index + 1)
+    const key = `${ONESHOT_PREFIX}${batchKey}`
+    keys[key] = batchKey
+    rows.push({
+      key,
+      batchKey,
+      seed: {
+        title: chapter.title,
+        icon: chapter.icon ?? '',
+        focus: chapter.focus,
+        topicId: chapter.topicId ?? null,
+        sourceSituation: chapter.sourceSituation,
+        tabId: chapter.tabId,
+        replace: chapter.replace,
+      },
+    })
+  })
+  return { rows, keys }
+}
+
 export function statusOf(row: BatchRow, saved: Set<string>, item: ManualBatchItemCheckDto | undefined): RowStatus {
   if (saved.has(row.key)) return 'saved'
   switch (item?.state) {

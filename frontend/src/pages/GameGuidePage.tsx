@@ -57,7 +57,6 @@ import { useAiProgress } from '../components/ai/useAiProgress'
 import { useAiStatus } from '../components/ai/useAiStatus'
 import { ErrorDetails } from '../components/ui/ErrorDetails'
 import { useConfirm } from '../components/ui/ConfirmDialog'
-import { GameAreaSwitch } from '../components/GameAreaSwitch'
 import { GameBackButton } from '../components/GameBackButton'
 import { GameHeadStatus } from '../components/GameHeadStatus'
 import { GameTrophyBar } from '../components/GameTrophyBar'
@@ -74,6 +73,7 @@ import {
   LIVE_TROPHIES_TAB_SLUG,
   LORE_TAB_SLUG,
   STATS_TAB_SLUG,
+  gameAreas,
   guideChapters,
   resolveGameTab,
   slugToTabParam,
@@ -289,14 +289,16 @@ export function GameGuidePage() {
   const platform = game ? platformOf(game) : 'steam'
   const isManual = game ? isManualGame(game) : false
   const hasManualTrophies = isManual && hasTrophies(platform)
-  const showLiveTrophiesTab = Boolean(game?.steamAppId) || hasManualTrophies
-  const showStatsTab = Boolean(game?.steamAppId)
+  // Which areas the game has (the entries the game navigation shows above the chapters): the same rule as the tree's
+  const areas = gameAreas(game)
+  const showLiveTrophiesTab = areas.trophies !== null
+  const showStatsTab = areas.stats
   // Story & Lore is offered on every game page; its spoiler gate asks per game whether to show it
   const loreTab = game?.tabs.find((t) => t.slug === LORE_TAB_SLUG)
   // Guide chapters without the lore tab (own nav entry) and without the Steam achievement
   // list: Steam reports those unlocks itself, the list only feeds the tips of the live trophies tab
   const guideTabs = guideChapters(game)
-  // The tab that is shown: the one in the URL when it exists, else the first chapter (else live trophies, statistics)
+  // The tab that is shown: the one in the URL when it exists, else the first chapter (else the trophy area, else the "no guide yet" card)
   const activeTabSlug = resolveGameTab(game, requestedTab)
 
   // Trophy progress for the header and the "Im Blick" cards, straight from Steam (same query as the live trophies tab, so no extra requests).
@@ -896,25 +898,12 @@ export function GameGuidePage() {
           {/* A game added by hand: change the cover, remove the game (P3's actions) */}
           {isManual && <ManualGameActions game={game} />}
         </div>
-        {/* Guide | Live trophies | Statistics: the trophy area needs a Steam link or a platform with trophies, the statistics a Steam link; a game with
-            neither (a Switch game) has no bar at all */}
-        {showLiveTrophiesTab ? (
-          <GameAreaSwitch
-            gameSlug={game.slug}
-            activeTab={activeTabSlug}
-            chapterSlugs={guideTabs.map((tab) => tab.slug)}
-            onSelect={selectTab}
-            liveLabel={hasManualTrophies ? trophyKind(platform) : 'live'}
-            showStats={showStatsTab}
-            emptyGuideSlug={isManual ? GUIDE_TAB_SLUG : undefined}
-          />
-        ) : null}
       </div>
 
       <PinsScope appId={game.steamAppId} gameId={hasManualTrophies ? game.id : null} onError={showPinFailure}>
       <TrophyCheckProvider value={hasManualTrophies ? manualTrophies.checkFor : null}>
       <div className="app-shell">
-        {/* Trophy progress and tiers of this game (the areas and chapters are entries of the game navigation) */}
+        {/* Trophy progress and tiers of this game (the trophy area, the statistics and the chapters are entries of the game navigation) */}
         <GameTrophyBar
           data={trophyData}
           hasTrophies={showLiveTrophiesTab}

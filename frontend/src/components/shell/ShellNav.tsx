@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
   IconBook,
+  IconBook2,
+  IconChartBar,
   IconCoins,
   IconCompass,
   IconListDetails,
@@ -13,6 +15,7 @@ import {
   IconMapSearch,
   IconPuzzle,
   IconSwords,
+  IconTrophy,
   IconUsers,
   IconWorld,
   IconX,
@@ -24,9 +27,13 @@ import { TruncatedText } from '../ui/TruncatedText'
 import { ChapterTrailing } from './ChapterMarks'
 import { RailGroupFlyout } from './RailGroupFlyout'
 import {
+  GUIDE_TAB_SLUG,
+  LIVE_TROPHIES_TAB_SLUG,
   LORE_TAB_SLUG,
+  STATS_TAB_SLUG,
   buildSections,
   chapterItemsOf,
+  gameAreas,
   gameTabHref,
   resolveGameTab,
   tabParamToSlug,
@@ -65,17 +72,20 @@ function NavEntry({
   label,
   current,
   rail,
+  hint,
 }: {
   to: string
   icon: ReactNode
   label: string
   current: boolean
   rail: boolean
+  // data-hint of the live helper's coach mark that points at this entry
+  hint?: string
 }) {
   // replace: moving between the chapters of a game never adds history entries (like the page's own tab changes), so the page's
   // back button leaves the game instead of stepping through the chapters seen before
   const link = (
-    <Link to={to} replace className="pv-ni" aria-current={current ? 'page' : undefined} aria-label={rail ? label : undefined}>
+    <Link to={to} replace className="pv-ni" aria-current={current ? 'page' : undefined} aria-label={rail ? label : undefined} data-hint={hint}>
       <span className="pv-ni-icon" aria-hidden="true">
         {icon}
       </span>
@@ -110,10 +120,17 @@ function SkeletonRows({ count }: { count: number }) {
   )
 }
 
+/** A thin line between the blocks of the tree (decoration only: the list stays a plain list for screen readers). */
+function TreeLine() {
+  return <li className="pv-nsep" role="presentation" aria-hidden="true" />
+}
+
 /**
- * The navigation of one game page (left side): the tree of this game - the guide chapters under their group headings, Story & Lore.
- * (Live trophies and statistics are the area bar in the game head, the way back is its back button.) Collapsed it is an icon rail
- * (the chapters of a group open as a small flyout), on a phone it is a drawer. Pages without a game have no side navigation at all.
+ * The navigation of one game page (left side): the tree of this game, top to bottom - the areas (the trophy list under its name for this
+ * platform, the statistics of a Steam game), a line, the guide chapters under their group headings (a game without any chapter has one
+ * "Guide" entry instead, which leads to the page's "no guide yet" card), a line, Story & Lore. The way back is the back button of the game
+ * head. Collapsed it is an icon rail (the areas as plain icons, the chapters of a group open as a small flyout), on a phone it is a
+ * drawer with the same tree. Pages without a game have no side navigation at all.
  */
 export function ShellNav({ rail: railWanted, onToggleRail, drawer, onCloseDrawer, slug, id }: ShellNavProps) {
   const { t } = useTranslation(['shell', 'game'])
@@ -129,6 +146,10 @@ export function ShellNav({ rail: railWanted, onToggleRail, drawer, onCloseDrawer
   const chapters = useMemo(() => chapterItemsOf(openGame, failedIds), [openGame, failedIds])
   const { sections, headings } = useMemo(() => buildSections(chapters), [chapters])
   const activeTab = resolveGameTab(openGame, tabParamToSlug(searchParams.get('tab')))
+  const areas = gameAreas(openGame)
+  const hasAreas = areas.trophies !== null || areas.stats
+  // No chapter at all: the single Guide entry stands where the chapters would (active when the page shows its "no guide yet" card)
+  const noChapters = chapters.length === 0
 
   const toggleLabel = drawer ? t('nav.menuClose') : rail ? t('nav.expand') : t('nav.collapse')
   const title = openGame?.title ?? ''
@@ -158,11 +179,37 @@ export function ShellNav({ rail: railWanted, onToggleRail, drawer, onCloseDrawer
 
       <div className="pv-snav-list" data-pv-scroll="nav" data-hint="game-nav">
         {!openGame ? (
-          // The rows of the answer keep their room while it is on its way, so the entries below never jump
-          <SkeletonRows count={rail ? 5 : 8} />
+          // The rows of the answer keep their room while it is on its way (areas, line, chapters), so the tree does not jump when it arrives
+          <>
+            <SkeletonRows count={2} />
+            <div className="pv-nsep" aria-hidden="true" />
+            <SkeletonRows count={rail ? 3 : 6} />
+          </>
         ) : (
           <ul aria-label={t('nav.chapters', { game: title })} className="pv-gametree">
-            {rail
+            {areas.trophies && (
+              <li>
+                <NavEntry
+                  to={gameTabHref(slug, LIVE_TROPHIES_TAB_SLUG)}
+                  icon={<IconTrophy size={20} />}
+                  label={t(`game:areas.${areas.trophies}`)}
+                  current={activeTab === LIVE_TROPHIES_TAB_SLUG}
+                  rail={rail}
+                  hint="game-live"
+                />
+              </li>
+            )}
+            {areas.stats && (
+              <li>
+                <NavEntry to={gameTabHref(slug, STATS_TAB_SLUG)} icon={<IconChartBar size={20} />} label={t('game:areas.stats')} current={activeTab === STATS_TAB_SLUG} rail={rail} />
+              </li>
+            )}
+            {hasAreas && <TreeLine />}
+            {noChapters ? (
+              <li>
+                <NavEntry to={gameTabHref(slug, GUIDE_TAB_SLUG)} icon={<IconBook2 size={20} />} label={t('game:areas.guide')} current={activeTab === ''} rail={rail} />
+              </li>
+            ) : rail
               ? sections.map((section) => (
                   <li key={section.key ?? 'all'}>
                     <RailGroupFlyout
@@ -189,6 +236,7 @@ export function ShellNav({ rail: railWanted, onToggleRail, drawer, onCloseDrawer
                     </ul>
                   </li>
                 ))}
+            <TreeLine />
             <li>
               <NavEntry to={gameTabHref(slug, LORE_TAB_SLUG)} icon={<IconBook size={20} />} label={t('nav.lore')} current={activeTab === LORE_TAB_SLUG} rail={rail} />
             </li>

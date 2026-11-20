@@ -89,6 +89,15 @@ public sealed record ManualBatchSkippedDto(string Key, string Reason);
 
 public sealed record ManualBatchSavedDto(GameDetailDto Detail, List<ManualBatchSavedItemDto> Saved, List<ManualBatchSkippedDto> Skipped);
 
+// ---- One-step prompt: the whole guide from ONE prompt (plan + chapters in one answer) ----------------------------------------------------
+
+/// <summary>
+/// The plan read from a pasted one-step answer (nothing is saved). Chapters = the planned chapters in the shape the batch endpoints take (Key = the plan's
+/// "K01" key, Title, Focus, TopicId, SourceSituation, Icon, TabId = the failed chapter this entry replaces), already without the topics the guide has;
+/// the browser hands the list on to batch-check and batch-answer as it is. Empty when there are errors.
+/// </summary>
+public sealed record ManualOneShotPlanDto(bool Ok, List<ManualIssueDto> Errors, List<ManualIssueDto> Warnings, List<ManualBatchChapter> Chapters);
+
 /// <summary>
 /// Reads and checks what a user pasted from a chat: the answer may come with a sentence before or after it or inside a ```json fence; broken or
 /// cut-off JSON, the wrong kind of answer and a different game are told apart with a specific sentence each. Internal results carry the

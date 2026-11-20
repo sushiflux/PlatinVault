@@ -34,12 +34,15 @@ public sealed partial class AiGuideGeneratorService
     /// Researches one existing chapter again and returns the new tab (same game, same sort order; the caller copies it into the existing tab). Throws with a
     /// localized reason when nothing usable came back - the caller then changes nothing.
     /// </summary>
-    public async Task<(GuideTabEntity Tab, AiUsage Usage)> RedoChapterAsync(GameEntity game, GuideTabEntity tab, string? providerOverride, AiJobProgress? progress, CancellationToken ct = default)
+    public async Task<(GuideTabEntity Tab, AiUsage Usage)> RedoChapterAsync(GameEntity game, GuideTabEntity tab, string? providerOverride, AiJobProgress? progress, CancellationToken ct = default) =>
+        await RedoChapterWithRunAsync(game, tab, await router.BeginAsync(research: true, providerOverride, background: false, ct), progress, ct);
+
+    /// <summary>The same research with a run the caller made (the review of a chapter researches its second answer with a fixed provider, see <see cref="AiRouter.BeginFixedAsync"/>).</summary>
+    internal async Task<(GuideTabEntity Tab, AiUsage Usage)> RedoChapterWithRunAsync(GameEntity game, GuideTabEntity tab, AiRun run, AiJobProgress? progress, CancellationToken ct = default)
     {
         var language = GuideLanguage(game);
         using var languageScope = Lang.Use(language);
         var settings = await settingsStore.GetAsync(ct);
-        var run = await router.BeginAsync(research: true, providerOverride, background: false, ct);
         progress?.Step("facts");
         // The chapter may point at the rows of the OTHER chapters ("ref"); its own rows are researched anew
         // ... and keeps the item ids of the rows it has today for the same entries (the ticks hang on them)

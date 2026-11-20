@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Switch } from './Switch'
 
@@ -38,5 +38,41 @@ describe('Switch', () => {
     fireEvent.click(control)
     expect(onChange).not.toHaveBeenCalled()
     expect(control.getAttribute('data-surface')).toBe('dark')
+  })
+
+  it('stays focusable in the blocked mode (aria-disabled), and click, Space and Enter do nothing', () => {
+    const onChange = vi.fn()
+    render(
+      <Switch checked={false} onChange={onChange} blocked>
+        Gesperrt
+      </Switch>
+    )
+    const control = screen.getByRole('switch', { name: 'Gesperrt' }) as HTMLButtonElement
+    expect(control.getAttribute('aria-disabled')).toBe('true')
+    expect(control.disabled).toBe(false)
+    act(() => control.focus())
+    expect(document.activeElement).toBe(control)
+    fireEvent.click(control)
+    fireEvent.keyDown(control, { key: ' ' })
+    fireEvent.keyDown(control, { key: 'Enter' })
+    expect(onChange).not.toHaveBeenCalled()
+    expect(control.getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('has no aria-disabled unless asked to be blocked, and the native disabled stays native', () => {
+    render(
+      <>
+        <Switch checked={false} onChange={() => {}}>
+          Frei
+        </Switch>
+        <Switch checked={false} onChange={() => {}} disabled>
+          Nativ gesperrt
+        </Switch>
+      </>
+    )
+    expect(screen.getByRole('switch', { name: 'Frei' }).getAttribute('aria-disabled')).toBeNull()
+    const native = screen.getByRole('switch', { name: 'Nativ gesperrt' }) as HTMLButtonElement
+    expect(native.disabled).toBe(true)
+    expect(native.getAttribute('aria-disabled')).toBeNull()
   })
 })

@@ -267,15 +267,16 @@ Das **Farbschema** (hell oder dunkel) bleibt eine eigene Wahl: Du schaltest es m
 
 ### Die Navigation auf der Spielseite
 
-Nur auf der Seite eines Spiels steht links eine Navigation – sie gehört zu diesem einen Spiel und enthält nur den Guide. Die Übersicht, **Alle Spiele**, die Einstellungen und **Über PlatinVault** haben keine Navigation; dort kommst du über die Kopfzeile weiter. Zur Übersicht kommst du jederzeit mit einem Klick auf das Logo in der Kopfzeile. Von oben nach unten:
+Nur auf der Seite eines Spiels steht links eine Navigation – sie gehört zu diesem einen Spiel. Die Übersicht, **Alle Spiele**, die Einstellungen und **Über PlatinVault** haben keine Navigation; dort kommst du über die Kopfzeile weiter. Zur Übersicht kommst du jederzeit mit einem Klick auf das Logo in der Kopfzeile. Von oben nach unten:
 
 - **Spielkopf:** das Cover und der Titel des Spiels.
-- **Kapitel:** die Kapitel des Guides unter ihren Gruppenüberschriften (hat ein Guide nur eine Gruppe, gibt es keine Überschriften). Neben einem Kapitel zeigt eine Zahl, wie viel du davon abgehakt hast; ein Warnsymbol heißt, dass die Recherche des Kapitels fehlgeschlagen ist (6.2).
+- **Trophäen und Statistiken:** der Trophäen-Eintrag (**Live-Trophäen**, **Trophäen** oder **Erfolge**, je nach Spiel) und bei Steam-Spielen **Statistiken** (6.1), danach eine dünne Linie.
+- **Kapitel:** die Kapitel des Guides unter ihren Gruppenüberschriften (hat ein Guide nur eine Gruppe, gibt es keine Überschriften; ohne Kapitel steht hier der Eintrag **Guide**). Neben einem Kapitel zeigt eine Zahl, wie viel du davon abgehakt hast; ein Warnsymbol heißt, dass die Recherche des Kapitels fehlgeschlagen ist (6.2).
 - **Story & Lore** (6.5).
 
 Die Seite, auf der du bist, ist hervorgehoben.
 
-**Schmale Navigation.** Mit dem Knopf oben in der Navigation (Seitenleisten-Symbol) klappst du sie zu einer schmalen Leiste mit nur Symbolen ein, damit der Inhalt mehr Platz hat. In der Leiste steht für jede Kapitelgruppe ein Symbol. Ein Klick darauf (oder Enter bzw. Leertaste) öffnet daneben eine kleine Liste mit den Kapiteln dieser Gruppe; mit den Pfeiltasten wählst du ein Kapitel, Esc schließt die Liste. Ein Hinweis beim Darüberfahren nennt jedes Symbol. Ein zweiter Klick auf den Knopf klappt die Navigation wieder auf. PlatinVault merkt sich die Wahl in diesem Browser bzw. Programm.
+**Schmale Navigation.** Mit dem Knopf oben in der Navigation (Seitenleisten-Symbol) klappst du sie zu einer schmalen Leiste mit nur Symbolen ein, damit der Inhalt mehr Platz hat. In der Leiste stehen zuerst die Einträge für Trophäen und Statistiken als einfache Symbole mit Hinweis, dann für jede Kapitelgruppe ein Symbol, dann Story & Lore. Ein Klick auf ein Gruppensymbol (oder Enter bzw. Leertaste) öffnet daneben eine kleine Liste mit den Kapiteln dieser Gruppe; mit den Pfeiltasten wählst du ein Kapitel, Esc schließt die Liste. Ein Hinweis beim Darüberfahren nennt jedes Symbol. Ein zweiter Klick auf den Knopf klappt die Navigation wieder auf. PlatinVault merkt sich die Wahl in diesem Browser bzw. Programm.
 
 **Auf dem Handy.** Unter etwa 768 Pixel Breite ist die Navigation versteckt. In der Kopfzeile links öffnet ein **Menü-Knopf** sie als Schublade, die sich von links über die Seite schiebt. Sie schließt sich, sobald du einen Eintrag wählst, mit dem Knopf **Navigation schließen**, mit Esc oder mit einem Tipp neben die Schublade.
 
@@ -421,16 +422,16 @@ Der Trophäenschrank zeigt alle Spiele, die du auf **100 %** gebracht hast, wie 
 
 Ganz oben im Spielkopf steht der Knopf **Zurück**. Er bringt dich auf die Seite, von der du gekommen bist – oder zur Übersicht, wenn du das Spiel direkt geöffnet hast. Darunter stehen Cover, Titel, der Knopf **Spielen** und eine ruhige Reihe mit den Werkzeugen des Spiels (Symbole mit Hinweis beim Darüberfahren: Guide vervollständigen, Kapitel ergänzen, Exportieren, Twitch, Drucken/PDF, Fortschritt zurücksetzen). Darunter zeigt eine Zeile deinen Trophäen-Fortschritt mit den Stufen. Danach folgt der Inhalt der gewählten Seite.
 
-Unten im Spielkopf wechselst du mit der **Bereichsleiste** zwischen den Bereichen des Spiels. Sie erscheint nur bei Spielen, die mit Steam verbunden sind (bei Spielen, die du von Hand hinzugefügt hast, siehe 6.6):
+Zwischen den Bereichen des Spiels wechselst du in der **Navigation links** (sie gibt es nur auf der Spielseite, 5.1). Sie hat von oben nach unten diese Einträge:
 
-- **Guide** – die Kapitel des Guides (6.2). Ein Klick bringt dich zu dem Kapitel zurück, das du in diesem Spiel zuletzt gelesen hast.
-- **Live-Trophäen** – die Steam-Erfolge des Spiels (6.3).
-- **Statistiken** (6.4).
-
-Die **Navigation links** (sie gibt es nur auf der Spielseite, 5.1) enthält nur den Guide. Sie hat diese Einträge:
-
-- die **Kapitel** des Guides (6.2), geordnet unter kleinen Überschriften wie **Einstieg**, **Story & Welt**, **Kampf & Taktik** oder **Fortschritt & Freischaltungen** (hat ein Guide nur eine Gruppe, gibt es keine Überschriften). Neben jedem Kapitel zeigt eine Zahl, wie viel du abgehakt hast,
+- der **Trophäen-Eintrag**: **Live-Trophäen** bei Steam-Spielen (6.3), **Trophäen** bei PlayStation, **Erfolge** bei Xbox, Epic Games, GOG, Ubisoft Connect, EA app und Battle.net (6.6). Die Nintendo Switch hat keinen, dort gibt es nur den Guide,
+- **Statistiken** (nur bei Steam-Spielen, 6.4),
+- eine dünne Linie,
+- die **Kapitel** des Guides (6.2), geordnet unter kleinen Überschriften wie **Einstieg**, **Story & Welt**, **Kampf & Taktik** oder **Fortschritt & Freischaltungen** (hat ein Guide nur eine Gruppe, gibt es keine Überschriften). Neben jedem Kapitel zeigt eine Zahl, wie viel du abgehakt hast. Hat das Spiel noch kein Kapitel, steht hier ein einziger Eintrag **Guide**; er öffnet die Karte „Für dieses Spiel gibt es noch keinen Guide“,
+- eine dünne Linie,
 - **Story & Lore** (6.5).
+
+Öffnest du ein Spiel, ohne dass eine Seite gewählt ist, siehst du sein erstes Kapitel, sonst seine Trophäen.
 
 Die gewählte Seite ist hervorgehoben und steht in der Adresse – ein Neuladen oder ein Lesezeichen bringt dich also genau dorthin zurück. Die Navigation selbst, ihre schmale Form und die Schublade auf dem Handy erklärt 5.1. Die Angaben zu Version, Lizenzen und „Mit ♥ gemacht“ findest du nicht auf der Spielseite, sondern auf der Seite **Über PlatinVault** (Info-Symbol in der Kopfzeile).
 
@@ -459,17 +460,29 @@ Verbindung). Starten kannst du nur Spiele aus deiner Sammlung und deiner Steam-B
   Gemini), fügst die Antwort hier wieder ein – PlatinVault greift nie auf dein Abo zu und schickt nichts an eine KI. Das ist erlaubt, weil du
   selbst im Chat sitzt. Du erreichst es im Guide-Baukasten (**Mit deinem KI-Abo (ohne API-Key)**), bei einer fehlgeschlagenen KI-Aktion und
   am Hinweis eines nicht recherchierten Kapitels, im Auswahlfenster von **Guide vervollständigen** (**Mein KI-Abo**) und im Pfeil-Menü von **Tab ergänzen**; ohne gespeicherten Key öffnet **Guide vervollständigen** es direkt.
-  - *Schritt 1, Kapitelliste:* **Prompt kopieren**, im Chat einfügen (am besten mit eingeschalteter Websuche) und die Antwort in das Feld
-    darunter einfügen – auch mit Text davor oder in einem json-Codeblock, oder als Datei laden. Du siehst die vorgeschlagenen Kapitel wie im
-    Baukasten und hakst an, was du willst. Wer keinen Bauplan-Prompt möchte, wählt die Themen selbst.
-  - *Schritt 2, Vorgehen:* Oben wählst du unter **Vorgehen** zwischen **Alle auf einmal** und **Einzeln**. Bei vielen Kapiteln ist
-    **Alle auf einmal** der bequemere Weg (siehe unten).
-  - *Schritt 2, Einzeln, Kapitel für Kapitel:* Jedes Kapitel hat einen eigenen Prompt (**Prompt kopieren** oder **Als Datei exportieren**) und ein Feld für
+  - *Der einfache Weg: ein Prompt für den ganzen Guide.* Das Fenster beginnt mit **Ein Prompt für den ganzen Guide**. Die KI sucht die Kapitel selbst aus, recherchiert das Spiel und schreibt den ganzen Guide in einem Rutsch. Hat das Spiel schon Kapitel, schreibt sie nur die fehlenden. So gehst du vor:
+    1. **Prompt kopieren** und im Chat deines Abos einfügen, am besten mit eingeschalteter Websuche.
+    2. Der Chat erstellt **eine** Datei (Name `platinvault-<spiel>-kapitel.json`) mit einem Plan und allen Kapiteln. Ziehe die Datei in das Feld darunter (oder **Datei wählen**). Kann dein Chat keine Datei erzeugen, füge seine Antwort ein: ein Codeblock.
+    3. PlatinVault prüft den Plan und listet die geplanten Kapitel auf, bei Auffälligkeiten mit einer Warnung. Zum Beispiel: Ein Thema ist im Guide schon vorhanden und wird nicht noch einmal angelegt, oder es sind mehr Kapitel, als der gewählte Umfang vorsieht (dann bleiben trotzdem alle erhalten; überzählige entfernst du später mit **Kapitel entfernen**).
+    4. **Weiter: N Kapitel** führt zur Prüfung je Kapitel (siehe **Alle auf einmal** unten). Der eingefügte Text steht dort schon bereit.
+    5. **N Kapitel speichern** legt alle erkannten Kapitel an.
+
+    Ein langer Guide kommt manchmal in mehreren Antworten. Dann hört der Chat nach einem vollständigen Kapitel auf und schreibt **NOCH OFFEN: K05–K13**. Schreibe ihm „weiter“ und füge jede weitere Antwort im selben Feld hinzu. Der Plan steht immer schon in der ersten Antwort.
+
+    Dieser Weg gilt auch für **Guide vervollständigen** mit dem Abo: Der Prompt nennt der KI die Kapitel, die der Guide schon hat, und sie schreibt nur die fehlenden. Kapitel, die nicht recherchiert werden konnten, schreibt sie neu; das neue Kapitel ersetzt den Hinweis.
+  - *Kapitel selbst auswählen:* Mit **Kapitel selbst auswählen** gehst du den älteren Weg in zwei Schritten. **Zurück zum einen Prompt** bringt dich zum einfachen Weg zurück.
+    - *Schritt 1, Kapitelliste:* **Prompt kopieren**, im Chat einfügen (am besten mit eingeschalteter Websuche) und die Antwort in das Feld
+      darunter einfügen – auch mit Text davor oder in einem json-Codeblock, oder als Datei laden. Du siehst die vorgeschlagenen Kapitel wie im
+      Baukasten und hakst an, was du willst. Wer keinen Planungs-Prompt möchte, wählt die Themen selbst aus der Standardliste.
+    - *Schritt 2, Vorgehen:* Oben wählst du unter **Vorgehen** zwischen **Alle auf einmal** und **Einzeln**. Bei vielen Kapiteln ist
+      **Alle auf einmal** der bequemere Weg (siehe unten).
+  - Bei einem oder mehreren fehlgeschlagenen Kapiteln und bei **Kapitel neu recherchieren** gibt es keinen Plan: Dort geht es gleich zum Prompt für diese Kapitel.
+  - *Einzeln, Kapitel für Kapitel:* Jedes Kapitel hat einen eigenen Prompt (**Prompt kopieren** oder **Als Datei exportieren**) und ein Feld für
     die Antwort. Die Antwort wird **beim Einfügen** geprüft: Gehört sie zum richtigen Spiel (Steam-AppID steht in jedem Prompt und in der
     Antwort)? Ist das JSON vollständig (nicht abgeschnitten)? Stimmen Abschnitte, Tabellenzeilen und Sprache? Fehler stehen vollständig
     darunter, dazu eine Vorschau (Titel, Abschnitte, Tabellenzeilen). **Kapitel speichern** legt das Kapitel genau wie ein KI-Ergebnis an; ein
     Haken zeigt, was schon gespeichert ist. Bei einem nicht recherchierten Kapitel ersetzt die Antwort den Hinweis.
-  - *Alle auf einmal:* PlatinVault macht **einen** Prompt für alle gewählten Kapitel (darüber steht, wie viele Kapitel es sind und wie groß der
+  - *Alle auf einmal:* Beim einfachen Weg ist das die Prüfung nach dem Einfügen. Bei **Kapitel selbst auswählen** macht PlatinVault **einen** Prompt für alle gewählten Kapitel (darüber steht, wie viele Kapitel es sind und wie groß der
     Prompt ist). So gehst du vor:
     1. Prompt kopieren und im Chat deines Abos einfügen, am besten mit eingeschalteter Websuche.
     2. Der Chat erstellt **eine** Datei mit allen Kapiteln (Name `platinvault-<spiel>-kapitel.json`) und gibt sie dir zum Herunterladen. Ziehe
@@ -581,7 +594,7 @@ Alle Erfolge des Spiels – in der gewählten Sprache, so wie Steam sie liefert.
 - **Was angezeigt wird:** links der Status (**Alle, Noch benötigt, Erhalten, Geheime**, jeweils mit der Anzahl), rechts die
   Stufe (**Alle, Gold, Silber, Bronze**).
 - **Wie es angezeigt wird:** das Suchfeld (Name, Text oder – bei eingeschalteten Notizen – Notiz), die **Sortierung**, die **Ansicht** als Regler und rechts
-  ein Auge-Knopf für die **geheimen Erfolge** (aufgedeckt oder verdeckt). Auf schmalen Fenstern, etwa am Handy, rutschen die
+  der Schalter **Geheime Erfolge aufdecken** (Beschreibungen sichtbar oder verdeckt) und der Schalter **Alle Tipps zeigen** (siehe unten). Auf schmalen Fenstern, etwa am Handy, rutschen die
   Gruppen sauber untereinander; nichts im Kasten ändert seine Größe oder springt, auch wenn die Liste leer wird.
 
 **Vier Ansichten** (Regler „Ansicht“): **Liste** (eine Zeile pro Erfolg), **Kacheln** (nur Symbol, die Einzelheiten stehen im
@@ -591,6 +604,7 @@ gleich aus: ein **grünes Häkchen** in der Ecke des Symbols; offene Erfolge hab
 
 - **Geheime Trophäen** sind aufgedeckt und zeigen, was zu tun ist.
 - **„So bekommst du ihn“:** Tipps aus dem Guide direkt bei der Trophäe.
+- **Alle Tipps zeigen:** Der Schalter steht direkt nach **Geheime Erfolge aufdecken**. Ist er an, öffnet die Ansicht **Kompakt** den Tipp jeder Trophäe auf einmal; die Glühbirne einer Karte öffnet oder schließt weiter nur diese eine Karte. In der **Liste** steht der Tipp dann als eigene Zeile unter der Beschreibung. PlatinVault merkt sich deine Wahl in diesem Browser. Der Schalter ist abgeblendet, und sein Hinweis nennt den Grund, wenn das Spiel noch keine Tipps hat (sie kommen aus dem Guide oder aus der recherchierten Trophäenliste), in der Ansicht **Kacheln** (dort steht der Tipp im Detailfenster der Trophäe) und in der Ansicht **Groß** (sie zeigt immer jeden Tipp).
 - **Zähler-Trophäen** (zum Beispiel „Nutze 400-mal …“) zeigen einen Balken wie „244 / 10.000“, wenn das Spiel einen Zähler
   bei Steam hinterlegt hat.
 - **„x % der Spieler“** ist die Seltenheit: So viele Steam-Spieler haben diese Trophäe – nicht dein Fortschritt.
@@ -737,7 +751,7 @@ Diese Seite gilt für Spiele, die du mit **Spiel hinzufügen** angelegt hast (5.
 
 **Warum hakst du selbst ab?** PlatinVault liest bei Steam deine freigeschalteten Erfolge selbst. Für PlayStation und die anderen Plattformen gibt es das nicht. Sony bietet keine öffentliche Schnittstelle für Trophäen an. Inoffizielle Wege widersprechen nach unserer Lesart den Nutzungsbedingungen des PlayStation Network (Abschnitt 10.7); PlatinVault ruft deshalb nirgends das PlayStation Network auf. Das ist keine Rechtsberatung – nutze den Weg, mit dem du dich wohlfühlst. Die Liste kommt stattdessen aus der KI-Recherche, und du hakst erledigte Trophäen selbst ab.
 
-**Der Aufbau der Seite.** Die Bereichsleiste im Spielkopf zeigt **Guide** und daneben **Trophäen** (bei PlayStation) bzw. **Erfolge** (bei Xbox, Epic Games, GOG, Ubisoft Connect, EA app und Battle.net). **Statistiken** und der Knopf **Spielen** gibt es bei diesen Spielen nicht. Unter dem Titel steht die Plattform, zum Beispiel „PS5: Trophäen“, und ob du Platin erreicht hast. Bei der Nintendo Switch gibt es nur den Guide, denn dort gibt es keine Trophäen oder Erfolge.
+**Der Aufbau der Seite.** Die Navigation links zeigt oben **Trophäen** (bei PlayStation) bzw. **Erfolge** (bei Xbox, Epic Games, GOG, Ubisoft Connect, EA app und Battle.net), darunter die Kapitel des Guides (oder, solange es keines gibt, den Eintrag **Guide**) und **Story & Lore**. **Statistiken** und der Knopf **Spielen** gibt es bei diesen Spielen nicht. Unter dem Titel steht die Plattform, zum Beispiel „PS5: Trophäen“, und ob du Platin erreicht hast. Bei der Nintendo Switch gibt es nur den Guide, denn dort gibt es keine Trophäen oder Erfolge.
 
 ### Die Liste recherchieren
 

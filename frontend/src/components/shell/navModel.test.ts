@@ -6,6 +6,7 @@ import {
   STATS_TAB_SLUG,
   buildSections,
   chapterItemsOf,
+  gameAreas,
   gameTabHref,
   guideChapters,
   resolveGameTab,
@@ -72,6 +73,36 @@ describe('guideChapters / resolveGameTab', () => {
     // A Switch game has none: only the guide
     expect(resolveGameTab({ steamAppId: null, platform: 'nintendo', tabs: [tab('walkthrough')] }, LIVE_TROPHIES_TAB_SLUG)).toBe('walkthrough')
     expect(resolveGameTab({ steamAppId: null, platform: 'nintendo', tabs: [] }, LIVE_TROPHIES_TAB_SLUG)).toBe('')
+  })
+})
+
+describe('gameAreas', () => {
+  it('gives a Steam game the live trophies and the statistics', () => {
+    expect(gameAreas({ steamAppId: 10 })).toEqual({ trophies: 'live', stats: true })
+    expect(gameAreas({ steamAppId: 10, platform: 'steam' })).toEqual({ trophies: 'live', stats: true })
+  })
+
+  it('names the trophy area of a game added by hand after its platform, without statistics', () => {
+    expect(gameAreas({ steamAppId: null, platform: 'playstation' })).toEqual({ trophies: 'trophies', stats: false })
+    for (const platform of ['xbox', 'epic', 'gog', 'ubisoft', 'ea', 'battlenet']) {
+      expect(gameAreas({ steamAppId: null, platform })).toEqual({ trophies: 'achievements', stats: false })
+    }
+  })
+
+  it('has no area at all for a Switch game, a Steam game without a link and a game that is not loaded yet', () => {
+    expect(gameAreas({ steamAppId: null, platform: 'nintendo' })).toEqual({ trophies: null, stats: false })
+    expect(gameAreas({ steamAppId: null, platform: 'steam' })).toEqual({ trophies: null, stats: false })
+    expect(gameAreas({ steamAppId: null })).toEqual({ trophies: null, stats: false })
+    expect(gameAreas(undefined)).toEqual({ trophies: null, stats: false })
+    expect(gameAreas(null)).toEqual({ trophies: null, stats: false })
+  })
+
+  it('agrees with resolveGameTab on which areas can be opened', () => {
+    for (const game of [{ steamAppId: 10, tabs: [] }, { steamAppId: null, platform: 'xbox', tabs: [] }, { steamAppId: null, platform: 'nintendo', tabs: [] }]) {
+      const areas = gameAreas(game)
+      expect(resolveGameTab(game, LIVE_TROPHIES_TAB_SLUG) === LIVE_TROPHIES_TAB_SLUG).toBe(areas.trophies !== null)
+      expect(resolveGameTab(game, STATS_TAB_SLUG) === STATS_TAB_SLUG).toBe(areas.stats)
+    }
   })
 })
 

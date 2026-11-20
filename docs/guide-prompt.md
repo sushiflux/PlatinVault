@@ -1,9 +1,9 @@
 # 100%-Guide mit Claude Code erstellen (Claude-Abo)
 
 > **Einfacher geht es in der App:** Auf der Spielseite ist unter „Guide vervollständigen“ der Weg **„Mit deinem KI-Abo (ohne API-Key)“**.
-> PlatinVault erzeugt dort die Prompts (mit Steam-AppID, deinen Recherche-Bausteinen und der Guide-Sprache), prüft die Antworten deines Chats
-> beim Einfügen und speichert die Kapitel – ohne Datei und ohne Umweg. Bei vielen Kapiteln gibt es einen **Sammel-Prompt** (ein Prompt für alle
-> Kapitel, ein Feld für alle gesammelten Antworten; die Antworten dürfen auch als eine Datei kommen). Dieses Dokument ist der Weg für **Claude Code** (ein ganzer Guide als
+> PlatinVault erzeugt dort **einen Prompt für den ganzen Guide** (mit Steam-AppID, deinen Recherche-Bausteinen und der Guide-Sprache): Der Chat sucht die Kapitel selbst aus
+> und schreibt alle in einer Antwort (am besten als eine Datei). PlatinVault prüft die Antworten deines Chats beim Einfügen und speichert die Kapitel – ohne Umweg.
+> Wer die Kapitel selbst auswählen will, kann das ebenfalls. Dieses Dokument ist der Weg für **Claude Code** (ein ganzer Guide als
 > Datei, die du über „Guide importieren“ lädst).
 
 PlatinVault darf dein Claude-Abo nicht selbst benutzen (Anthropic erlaubt Drittanbieter-Apps nur API-Keys). Du kannst

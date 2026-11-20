@@ -1,5 +1,5 @@
 /* Design "Klassisch" - area file, see index.css for the rules (scope every rule under :root[data-design='classic'], look only). */
-/* Owner: game - game page head (back button, actions), area bar, trophy bar, guide chapters and blocks, walkthrough, Story & Lore,
+/* Owner: game - game page head (back button, actions), trophy bar, guide chapters and blocks, walkthrough, Story & Lore,
    AI progress, failed chapter and "Mein KI-Abo" dialogs, statistics.
    Sources of the old look: gameframe/guide/walkthrough/stats/ai/lore CSS of the light design for the structure, commit 9fabf8e (index.css,
    guide.css, walkthrough.css, stats.css and the Tailwind classes of the old TSX) for the look. Where the light structure draws a thin line

@@ -50,6 +50,8 @@ interface BatchChaptersProps {
   footerEl: HTMLElement | null
   // A fixed list from the page (no chapter list step to go back to)
   fixed: boolean
+  // The label of the back button (it leads to the chapter list, or to the one prompt when the rows come from its plan)
+  backLabel?: string
   onSaved: (rowKeys: string[], game: GameDetailDto) => void
   onBack: () => void
   onClose: () => void
@@ -71,7 +73,7 @@ function readFile(file: File): Promise<string> {
  * The collected text survives closing the dialog (sessionStorage). Status chips, counters and the footer have a fixed size, so nothing moves
  * while the check results come in.
  */
-export function BatchChapters({ slug, scope, rows, saved, footerEl, fixed, onSaved, onBack, onClose }: BatchChaptersProps) {
+export function BatchChapters({ slug, scope, rows, saved, footerEl, fixed, backLabel, onSaved, onBack, onClose }: BatchChaptersProps) {
   const { t } = useTranslation(['ai', 'common'])
   const fmt = useFormat()
   const confirm = useConfirm()
@@ -331,7 +333,7 @@ export function BatchChapters({ slug, scope, rows, saved, footerEl, fixed, onSav
         <div className="flex min-w-0 items-center gap-3">
           {!fixed && (
             <button type="button" className="pv-btn" onClick={onBack}>
-              <span>{t('manual.chapters.back')}</span>
+              <span>{backLabel ?? t('manual.chapters.back')}</span>
             </button>
           )}
           <span className="text-sm font-semibold tabular-nums" style={{ color: 'var(--text-secondary)' }} data-testid="manual-progress">

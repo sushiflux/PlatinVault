@@ -15,7 +15,7 @@ partial class CompanionDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261119085912_AddManualGames";
+    public override string LastMigrationId => "20261119172027_AddChapterReviews";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -39,6 +39,68 @@ partial class CompanionDbContextModelSnapshot : ModelSnapshot
                 b.HasKey("Key");
 
                 b.ToTable("app_settings");
+            });
+
+        modelBuilder.Entity("Companion.Api.Data.ChapterReviewEntity", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("CountsJson")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("CreatedAt")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("FindingsJson")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<Guid>("GameId")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Language")
+                    .IsRequired()
+                    .HasMaxLength(8)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("OriginalSectionsJson")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("ResearcherProvider")
+                    .IsRequired()
+                    .HasMaxLength(16)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("ResultHash")
+                    .IsRequired()
+                    .HasMaxLength(64)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("ReviewerProvider")
+                    .IsRequired()
+                    .HasMaxLength(16)
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("SecondSectionsJson")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<Guid>("TabId")
+                    .HasColumnType("TEXT");
+
+                b.HasKey("Id");
+
+                b.HasIndex("GameId");
+
+                b.HasIndex("TabId")
+                    .IsUnique();
+
+                b.ToTable("guide_chapter_reviews");
             });
 
         modelBuilder.Entity("Companion.Api.Data.GameCoverEntity", b =>
@@ -582,6 +644,25 @@ partial class CompanionDbContextModelSnapshot : ModelSnapshot
                     .IsUnique();
 
                 b.ToTable("progress_checks");
+            });
+
+        modelBuilder.Entity("Companion.Api.Data.ChapterReviewEntity", b =>
+            {
+                b.HasOne("Companion.Api.Data.GameEntity", "Game")
+                    .WithMany()
+                    .HasForeignKey("GameId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                b.HasOne("Companion.Api.Data.GuideTabEntity", "Tab")
+                    .WithOne()
+                    .HasForeignKey("Companion.Api.Data.ChapterReviewEntity", "TabId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                b.Navigation("Game");
+
+                b.Navigation("Tab");
             });
 
         modelBuilder.Entity("Companion.Api.Data.GameCoverEntity", b =>

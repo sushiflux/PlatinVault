@@ -61,16 +61,21 @@ public sealed partial class AiGuideGeneratorService
     {
         var language = context.Language;
         var english = language == Lang.English;
-        var profiles = Profiles(language);
-        var topics = Topics(language);
 
         // The achievement chapter (Steam: built by the app; a game added by hand: the app shows its researched list itself), see AiGuidePlatform.cs
         var steamListNote = ListNote(context);
 
-        var profileList = string.Join("\n", profiles.Select(p => english
-            ? $"- {p.Id}: {p.Name} (e.g. {p.Examples}) – typical: {string.Join(", ", p.Required)}; often fitting: {string.Join(", ", p.Recommended)}"
-            : $"- {p.Id}: {p.Name} (z. B. {p.Examples}) – typisch: {string.Join(", ", p.Required)}; oft passend: {string.Join(", ", p.Recommended)}"));
-        var topicList = string.Join("\n", topics.Select(t => $"- {t.Id}: {t.Title} – {t.Brief}"));
+        // Steps 1 and 2 and the topic check are shared with the one-step prompt of the subscription flow (AiGuideGeneratorService.ManualOneShot.cs)
+        var analysisSteps = BlueprintAnalysisSteps(context);
+        var topicStep = BlueprintTopicStep(language,
+            header: english
+                ? "Step 3 – Check EVERY topic of the topic list: Does a chapter of its own help the player with THIS game? Give every topic an entry in \"topics\"\nwith \"applicable\" true or false – a topic without an entry gets no chapter."
+                : "Schritt 3 – Prüfe JEDES Thema der Themenliste: Hilft ein eigenes Kapitel dazu dem Spieler bei DIESEM Spiel? Gib jedem Thema einen Eintrag in \"topics\"\nmit \"applicable\" true oder false – ein Thema ohne Eintrag bekommt kein Kapitel.",
+            yes: "\"applicable\": true,",
+            no: english ? "\"applicable\": false and a\n  short \"reason\"." : "\"applicable\": false und in\n  \"reason\" kurz warum.",
+            quests: english ? "is applicable" : "zutreffend",
+            extras: "\"extraChapters\"");
+        var topicList = TopicListText(language);
 
         var existingNote = existingChapters.Count > 0
             ? english
@@ -80,9 +85,7 @@ public sealed partial class AiGuideGeneratorService
                   "sie werden dann nicht noch einmal angelegt:\n" + string.Join("\n", existingChapters.Select(c => "- " + c))
             : english ? "The guide is new." : "Der Guide ist neu.";
 
-        var tagProfileNote = TagProfileNote(context);
-
-        var wish = string.IsNullOrWhiteSpace(customFocus)
+        var wish =string.IsNullOrWhiteSpace(customFocus)
             ? english ? "none in particular – a complete 100% guide" : "kein besonderer – vollständiger 100%-Guide"
             : customFocus;
         var wishesBlock = ResearchBlocks.BuildWishesBlock(context.Blocks, context.ResearchBase, ResearchBlocks.Scope.Blueprint, language);
@@ -101,26 +104,9 @@ public sealed partial class AiGuideGeneratorService
                 {{factsHeader}}
                 {{context.FactsBlock}}
 
-                Step 1 – Analysis (research on the internet): What kind of game is this (genre, structure: linear/open world/missions,
-                playtime, multiplayer)? What belongs to "100%" here? What is missable? How good are the sources
-                (established, thin, or newly released)?
+                {{analysisSteps}}
 
-                Step 2 – Kind of game: Assign the game to 1 to 3 profiles from this list ("profiles", ids only). The "typical" topics of the
-                chosen profiles are only a hint what to check first – they become chapters only if the game really has them.
-                {{tagProfileNote}}
-                {{profileList}}
-
-                Step 3 – Check EVERY topic of the topic list: Does a chapter of its own help the player with THIS game? Give every topic an entry in "topics"
-                with "applicable" true or false – a topic without an entry gets no chapter.
-                - Yes: "applicable": true, a game-specific title (e.g. "Best weapons & loadouts" for Call of Duty, "Cyberware & builds"
-                  for Cyberpunk, "Production chains & layouts" for a factory game) and a precise research assignment ("focus", 2–4 sentences:
-                  what exactly is collected, sensible table columns, what to look out for; name puzzles/riddles of the topic in the "focus" – they
-                  are researched with location and complete solution).
-                - No (the game does not have it, or only marginally – e.g. enemies or bosses in a building or factory game without combat): "applicable": false and a
-                  short "reason". Never plan a chapter that would only explain that something is missing, and never take a topic only because it is typical for the genre.
-                - Titles are in English only, without a translation in brackets.
-                Side quests: if the game has side quests, the topic "quests" is applicable – their complete solutions belong there (the walkthrough only names them).
-                Then at most 3 "extraChapters" for particularities of the game that are not part of any topic.
+                {{topicStep}}
                 {{budgetNote}}
                 {{steamListNote}}
                 {{existingNote}}
@@ -162,26 +148,9 @@ public sealed partial class AiGuideGeneratorService
             {{factsHeader}}
             {{context.FactsBlock}}
 
-            Schritt 1 – Analyse (recherchiere im Internet): Was für ein Spiel ist das (Genre, Struktur: linear/Open World/Missionen,
-            Spielzeit, Mehrspieler)? Was gehört hier zu „100%“? Was ist verpassbar? Wie gut ist die Quellenlage
-            (etabliert, dünn, oder neu erschienen)?
+            {{analysisSteps}}
 
-            Schritt 2 – Spielart: Ordne das Spiel 1 bis 3 Profilen aus dieser Liste zu ("profiles", nur die ids). Die „typischen“ Themen der
-            gewählten Profile sind nur ein Hinweis, was du zuerst prüfst – sie werden nur dann Kapitel, wenn das Spiel sie wirklich hat.
-            {{tagProfileNote}}
-            {{profileList}}
-
-            Schritt 3 – Prüfe JEDES Thema der Themenliste: Hilft ein eigenes Kapitel dazu dem Spieler bei DIESEM Spiel? Gib jedem Thema einen Eintrag in "topics"
-            mit "applicable" true oder false – ein Thema ohne Eintrag bekommt kein Kapitel.
-            - Ja: "applicable": true, ein spielspezifischer Titel (z. B. „Beste Waffen & Loadouts“ bei Call of Duty, „Cyberware & Builds“
-              bei Cyberpunk, „Produktionsketten & Layouts“ bei einem Fabrik-Spiel) und ein präziser Rechercheauftrag ("focus", 2–4 Sätze:
-              was genau gesammelt wird, sinnvolle Tabellenspalten, worauf zu achten ist; nenne Rätsel des Themas im "focus" – sie werden mit Ort
-              und vollständiger Lösung recherchiert).
-            - Nein (gibt es im Spiel nicht oder nur am Rande – z. B. Gegner oder Bosse in einem Aufbau- oder Fabrikspiel ohne Kampf): "applicable": false und in
-              "reason" kurz warum. Plane nie ein Kapitel, das nur erklären würde, dass es etwas nicht gibt, und nimm kein Thema nur, weil es zur Spielart typisch ist.
-            - Titel stehen nur auf Deutsch, ohne Übersetzung in Klammern.
-            Nebenquests: Hat das Spiel Nebenquests, ist das Thema "quests" zutreffend – ihre vollständigen Lösungen gehören dorthin (die Komplettlösung nennt sie nur).
-            Danach höchstens 3 "extraChapters" für Besonderheiten des Spiels, die in keinem Thema stecken.
+            {{topicStep}}
             {{budgetNote}}
             {{steamListNote}}
             {{existingNote}}
@@ -216,6 +185,76 @@ public sealed partial class AiGuideGeneratorService
             }
             """;
     }
+
+    /// <summary>The fixed topic list as the planning prompts show it: one "- id: title – brief" line per topic.</summary>
+    internal static string TopicListText(string language) =>
+        string.Join("\n", Topics(language).Select(t => $"- {t.Id}: {t.Title} – {t.Brief}"));
+
+    /// <summary>
+    /// Steps 1 and 2 of the planning prompts: research what kind of game it is, then assign 1-3 genre profiles (with the tag hint and the profile list).
+    /// The blueprint prompt and the one-step prompt of the subscription flow use exactly this text.
+    /// </summary>
+    internal static string BlueprintAnalysisSteps(GameContext context)
+    {
+        var english = context.Language == Lang.English;
+        var tagProfileNote = TagProfileNote(context);
+        var profileList = string.Join("\n", Profiles(context.Language).Select(p => english
+            ? $"- {p.Id}: {p.Name} (e.g. {p.Examples}) – typical: {string.Join(", ", p.Required)}; often fitting: {string.Join(", ", p.Recommended)}"
+            : $"- {p.Id}: {p.Name} (z. B. {p.Examples}) – typisch: {string.Join(", ", p.Required)}; oft passend: {string.Join(", ", p.Recommended)}"));
+
+        return english
+            ? $$"""
+                Step 1 – Analysis (research on the internet): What kind of game is this (genre, structure: linear/open world/missions,
+                playtime, multiplayer)? What belongs to "100%" here? What is missable? How good are the sources
+                (established, thin, or newly released)?
+
+                Step 2 – Kind of game: Assign the game to 1 to 3 profiles from this list ("profiles", ids only). The "typical" topics of the
+                chosen profiles are only a hint what to check first – they become chapters only if the game really has them.
+                {{tagProfileNote}}
+                {{profileList}}
+                """
+            : $$"""
+                Schritt 1 – Analyse (recherchiere im Internet): Was für ein Spiel ist das (Genre, Struktur: linear/Open World/Missionen,
+                Spielzeit, Mehrspieler)? Was gehört hier zu „100%“? Was ist verpassbar? Wie gut ist die Quellenlage
+                (etabliert, dünn, oder neu erschienen)?
+
+                Schritt 2 – Spielart: Ordne das Spiel 1 bis 3 Profilen aus dieser Liste zu ("profiles", nur die ids). Die „typischen“ Themen der
+                gewählten Profile sind nur ein Hinweis, was du zuerst prüfst – sie werden nur dann Kapitel, wenn das Spiel sie wirklich hat.
+                {{tagProfileNote}}
+                {{profileList}}
+                """;
+    }
+
+    /// <summary>
+    /// The topic check of the planning prompts (when does a topic get a chapter, how are titles and research assignments written, side quests, the
+    /// game-specific extras). Only the words that name the answer format differ between the blueprint ("applicable": true ...) and the plan of the
+    /// one-step prompt: <paramref name="header"/> (the first lines), <paramref name="yes"/> and <paramref name="no"/> (what the answer does for a topic that
+    /// is taken or left out), <paramref name="quests"/> (what "quests" becomes) and <paramref name="extras"/> (where the extra chapters go).
+    /// </summary>
+    internal static string BlueprintTopicStep(string language, string header, string yes, string no, string quests, string extras) =>
+        language == Lang.English
+            ? $$"""
+                {{header}}
+                - Yes: {{yes}} a game-specific title (e.g. "Best weapons & loadouts" for Call of Duty, "Cyberware & builds"
+                  for Cyberpunk, "Production chains & layouts" for a factory game) and a precise research assignment ("focus", 2–4 sentences:
+                  what exactly is collected, sensible table columns, what to look out for; name puzzles/riddles of the topic in the "focus" – they
+                  are researched with location and complete solution).
+                - No (the game does not have it, or only marginally – e.g. enemies or bosses in a building or factory game without combat): {{no}} Never plan a chapter that would only explain that something is missing, and never take a topic only because it is typical for the genre.
+                - Titles are in English only, without a translation in brackets.
+                Side quests: if the game has side quests, the topic "quests" {{quests}} – their complete solutions belong there (the walkthrough only names them).
+                Then at most 3 {{extras}} for particularities of the game that are not part of any topic.
+                """
+            : $$"""
+                {{header}}
+                - Ja: {{yes}} ein spielspezifischer Titel (z. B. „Beste Waffen & Loadouts“ bei Call of Duty, „Cyberware & Builds“
+                  bei Cyberpunk, „Produktionsketten & Layouts“ bei einem Fabrik-Spiel) und ein präziser Rechercheauftrag ("focus", 2–4 Sätze:
+                  was genau gesammelt wird, sinnvolle Tabellenspalten, worauf zu achten ist; nenne Rätsel des Themas im "focus" – sie werden mit Ort
+                  und vollständiger Lösung recherchiert).
+                - Nein (gibt es im Spiel nicht oder nur am Rande – z. B. Gegner oder Bosse in einem Aufbau- oder Fabrikspiel ohne Kampf): {{no}} Plane nie ein Kapitel, das nur erklären würde, dass es etwas nicht gibt, und nimm kein Thema nur, weil es zur Spielart typisch ist.
+                - Titel stehen nur auf Deutsch, ohne Übersetzung in Klammern.
+                Nebenquests: Hat das Spiel Nebenquests, ist das Thema "quests" {{quests}} – ihre vollständigen Lösungen gehören dorthin (die Komplettlösung nennt sie nur).
+                Danach höchstens 3 {{extras}} für Besonderheiten des Spiels, die in keinem Thema stecken.
+                """;
 
     internal static string BuildChapterPrompt(GameContext context, string chapterTitle, string focus, string sourceSituation, string? topicId = null)
     {

@@ -47,6 +47,23 @@ public sealed class AiRouter(SettingsStore settings, SecretStore secrets, AiProv
     }
 
     /// <summary>
+    /// A run that uses exactly ONE provider and never switches (the automatic fallback is off whatever the stored selection says): for actions whose point is
+    /// WHO answers, like the review of a chapter (the second research must be another AI than the reviewer). A failure ends the request with that provider's
+    /// own error. The run is the caller's own: it neither sets nor replaces <see cref="LastUsage"/>, so two such runs in one job do not disturb each other.
+    /// </summary>
+    public Task<AiRun> BeginFixedAsync(string provider, bool research, CancellationToken ct)
+    {
+        _ = ct;
+        var chosen = AiProvider.Normalize(provider) ?? throw new LocalizedException(ServerTexts.Ai.UnknownProvider);
+        var keyed = ProvidersWithKey();
+        if (!keyed.Contains(chosen))
+        {
+            throw new LocalizedException(ServerTexts.Ai.NoKey(chosen));
+        }
+        return Task.FromResult(new AiRun(AiSelectionMode.Default, chosen, [chosen], autoFallback: false, keyed, research, health, Fingerprint));
+    }
+
+    /// <summary>
     /// The decision itself, free of storage so it can be tested: which provider(s) a new action uses and whether it may switch.
     /// Default mode: the one-off choice, else the Standard-KI, else the first provider with a key. Mixed mode: chapters spread over
     /// every provider with a key (research: only those with web search, unless nothing else is there; providers that are paused right now

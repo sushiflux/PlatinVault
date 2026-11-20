@@ -10,7 +10,7 @@ import { statusFixture } from '../components/ai/ai.fixtures'
 import { manualList, ps5Items } from '../components/trophies/trophies.fixtures'
 import { GameGuidePage } from './GameGuidePage'
 
-// The page of a game added by hand: the area bar (Guide | Trophäen/Erfolge, no statistics), the trophy list ticked by hand, the research of the list, the
+// The page of a game added by hand: the trophy area (Trophäen/Erfolge, no statistics), the trophy list ticked by hand, the research of the list, the
 // head status instead of Play, the pins of the game id. A Steam game and a Switch game for contrast.
 
 const client = vi.hoisted(() => ({
@@ -101,66 +101,62 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-const areaBar = () => screen.findByRole('group', { name: 'Bereich des Spiels' })
 const location = () => screen.getByTestId('location').textContent
 
-describe('the area bar of a game added by hand', () => {
-  it('offers Guide and Trophäen for a PlayStation game, and no statistics', async () => {
+// The areas of a game added by hand are entries of the game navigation (AppShell.test.tsx tests their names per platform); the page shows what the URL names
+describe('the areas of a game added by hand', () => {
+  it('has no area bar in the head, and opens the trophy list of a PlayStation game through the URL', async () => {
     renderPage(game())
-    const bar = await areaBar()
-    expect(within(bar).getAllByRole('button')).toHaveLength(2)
-    expect(within(bar).getByRole('button', { name: 'Guide' })).toBeTruthy()
-    expect(within(bar).getByRole('button', { name: 'Trophäen' }).getAttribute('aria-pressed')).toBe('true')
-    expect(within(bar).queryByRole('button', { name: 'Statistiken' })).toBeNull()
-    expect(within(bar).getByRole('button', { name: 'Trophäen' }).getAttribute('data-hint')).toBe('game-live')
+    expect(await screen.findByText('Letzter Boss')).toBeTruthy()
+    expect(screen.queryByRole('group', { name: 'Bereich des Spiels' })).toBeNull()
+    expect(document.querySelector('[data-hint="game-live"]')).toBeNull()
+    expect(screen.queryByText('statistics-panel')).toBeNull()
   })
 
-  it('calls the area Erfolge on every other platform', async () => {
-    renderPage(game({ platform: 'xbox', variant: null }))
-    const bar = await areaBar()
-    expect(within(bar).getByRole('button', { name: 'Erfolge' })).toBeTruthy()
-    expect(within(bar).queryByRole('button', { name: 'Trophäen' })).toBeNull()
+  it('shows the list of an Xbox game under ?tab=live as well, and never the statistics (?tab=stats falls back to the guide)', async () => {
+    client.fetchGameTrophies.mockResolvedValue(manualList([{ ...ps5Items()[3]!, achieved: true, unlockTime: '2026-11-19T11:00:00Z' }, ps5Items()[2]!], {}, 'xbox', null))
+    renderPage(game({ platform: 'xbox', variant: null }), '/games/stellar-blade?tab=live')
+    expect((await screen.findAllByText(/Erstes Blut/)).length).toBeGreaterThan(0)
+    cleanup()
+    renderPage(game({ platform: 'xbox', variant: null }), '/games/stellar-blade?tab=stats')
+    await screen.findByRole('heading', { name: 'Stellar Blade' })
+    expect(screen.queryByText('statistics-panel')).toBeNull()
+    expect(screen.queryByText(/Erstes Blut/)).toBeNull()
   })
 
-  it('has no bar at all for a Switch game (guide only) and shows the guide', async () => {
+  it('has no trophy list for a Switch game (guide only) and shows the guide', async () => {
     renderPage(game({ platform: 'nintendo', variant: null }), '/games/stellar-blade')
     await screen.findByRole('heading', { name: 'Stellar Blade' })
-    expect(screen.queryByRole('group', { name: 'Bereich des Spiels' })).toBeNull()
     expect(client.fetchGameTrophies).not.toHaveBeenCalled()
     expect(screen.queryByText('statistics-panel')).toBeNull()
   })
 
-  it('keeps Guide | Live-Trophäen | Statistiken for a Steam game, and the Steam live panel', async () => {
+  it('keeps the Steam live panel for a Steam game', async () => {
     renderPage(game({ platform: 'steam', variant: null, steamAppId: 10 }))
-    const bar = await areaBar()
-    expect(within(bar).getAllByRole('button')).toHaveLength(3)
     expect(await screen.findByText('steam-live-panel')).toBeTruthy()
     expect(client.fetchGameTrophies).not.toHaveBeenCalled()
   })
 
-  it('opens the trophy tab through the URL, also on a reload, and Guide leads back', async () => {
+  it('opens the trophy tab through the URL, also on a reload', async () => {
     renderPage(game(), '/games/stellar-blade?tab=roadmap')
-    const bar = await areaBar()
-    expect(within(bar).getByRole('button', { name: 'Guide' }).getAttribute('aria-pressed')).toBe('true')
-    fireEvent.click(within(bar).getByRole('button', { name: 'Trophäen' }))
-    await waitFor(() => expect(location()).toBe('/games/stellar-blade?tab=live'))
+    await screen.findByRole('heading', { name: 'Stellar Blade' })
+    expect(screen.queryByText('Letzter Boss')).toBeNull()
+    cleanup()
+    renderPage(game(), '/games/stellar-blade?tab=live')
     expect(await screen.findByText('Letzter Boss')).toBeTruthy()
-    fireEvent.click(within(bar).getByRole('button', { name: 'Guide' }))
-    await waitFor(() => expect(location()).toBe('/games/stellar-blade?tab=roadmap'))
   })
 })
 
 describe('the guide of a game added by hand that has no chapter yet', () => {
-  it('leads Guide to the "no guide yet" card instead of Story & Lore, and the list is the first thing a new game shows', async () => {
+  it('opens on the trophy list first, and ?tab=guide (the Guide entry of the navigation) shows the "no guide yet" card', async () => {
     renderPage(game({ tabs: [] }), '/games/stellar-blade')
-    const bar = await areaBar()
-    // Opens on the trophy tab (a game added by hand starts with its list)
-    await waitFor(() => expect(within(bar).getByRole('button', { name: 'Trophäen' }).getAttribute('aria-pressed')).toBe('true'))
-
-    fireEvent.click(within(bar).getByRole('button', { name: 'Guide' }))
-    await waitFor(() => expect(location()).toBe('/games/stellar-blade?tab=guide'))
+    // A game added by hand starts with its list
+    expect(await screen.findByText('Letzter Boss')).toBeTruthy()
+    expect(screen.queryByText('Für dieses Spiel gibt es noch keinen Guide.')).toBeNull()
+    cleanup()
+    renderPage(game({ tabs: [] }), '/games/stellar-blade?tab=guide')
     expect(await screen.findByText('Für dieses Spiel gibt es noch keinen Guide.')).toBeTruthy()
-    expect(within(bar).getByRole('button', { name: 'Guide' }).getAttribute('aria-pressed')).toBe('true')
+    expect(location()).toBe('/games/stellar-blade?tab=guide')
   })
 })
 

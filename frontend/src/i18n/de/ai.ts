@@ -153,9 +153,20 @@ const ai = {
     intro: 'Das nutzt dein eigenes KI-Abo von Hand – erlaubt, weil du selbst im Chat sitzt. PlatinVault greift nie darauf zu und schickt nichts an eine KI.',
     close: 'Schließen',
     entry: { builder: 'Mit deinem KI-Abo (ohne API-Key)', chapter: 'Mit deinem KI-Abo', all: 'Alle mit meinem KI-Abo' },
-    step: { plan: 'Schritt 1 von 2 · Kapitelliste', chapters: 'Schritt 2 von 2 · Kapitel recherchieren', single: 'Ein Kapitel', list: 'Mehrere Kapitel' },
+    step: { oneshot: 'Ein Prompt für den ganzen Guide', oneshotChapters: 'Antwort prüfen und Kapitel speichern', plan: 'Schritt 1 von 2 · Kapitelliste', chapters: 'Schritt 2 von 2 · Kapitel recherchieren', single: 'Ein Kapitel', list: 'Mehrere Kapitel' },
     mode: { label: 'Vorgehen', batch: 'Alle auf einmal', single: 'Einzeln' },
+    // The default for a whole guide: ONE prompt, the chat picks the chapters itself and writes all of them
+    oneshot: {
+      lead: 'Die KI sucht die Kapitel selbst aus, recherchiert das Spiel und schreibt den ganzen Guide in einem Rutsch. Hat das Spiel schon Kapitel, schreibt sie nur die fehlenden.',
+      longHint: 'Ein langer Guide kommt manchmal in mehreren Antworten: Schreibe dem Chat dann „weiter“. Die weiteren Antworten fügst du im nächsten Schritt dazu.',
+      planned_one: 'Der Chat hat {{count}} Kapitel geplant:',
+      planned_other: 'Der Chat hat {{count}} Kapitel geplant:',
+      noChapters: 'Der Plan enthält kein Kapitel, das noch fehlt – es gibt nichts zu speichern.',
+      choose: 'Kapitel selbst auswählen',
+      chooseHint: 'Stattdessen wählst du die Themen selbst: mit einem Bauplan-Prompt oder aus der Standard-Themenliste.',
+    },
     plan: {
+      backToOne: 'Zurück zum einen Prompt',
       promptHeading: '1. Prompt kopieren und im Chat deines Abos einfügen',
       answerHeading: '2. Antwort des Chats hier einfügen',
       skip: 'Ich wähle die Themen selbst – ohne Bauplan-Prompt',
@@ -168,6 +179,7 @@ const ai = {
       intro: 'Für jedes Kapitel gibt es einen eigenen Prompt: kopieren, im Chat einfügen, die Antwort hier einfügen und speichern. Die Reihenfolge ist egal; Kapitel, die schon gespeichert sind, bleiben es.',
       progress: 'Gespeichert: {{done}} von {{total}}',
       back: 'Zurück zur Kapitelliste',
+      backOneShot: 'Zurück zum Prompt',
       finished: 'Fertig',
     },
     row: {

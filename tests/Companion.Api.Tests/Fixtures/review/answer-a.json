@@ -1,0 +1,39 @@
+{
+  "title": "Esper & Magicite",
+  "icon": "mdi:diamond-stone",
+  "sections": [
+    { "type": "alert", "variant": "gold", "title": "Das Wichtigste vorab", "htmlContent": "Rüste jedem Charakter früh ein Esper aus: Zauber lernt man nur, solange das Magicite angelegt ist. Die Stufenboni beim Aufstieg sind dauerhaft – plane sie für die Welt des Ruins." },
+    { "type": "alert", "variant": "danger", "title": "Verpassbar", "htmlContent": "Ragnarök: Im Waffenladen von Narshe wählst du zwischen dem Magicite und dem Schwert – nur eines von beiden." },
+    { "type": "cards_grid", "columns": 2, "cards": [
+      { "title": "Früh lernen", "badgeText": "Tipp", "badgeVariant": "a", "introText": "Die ersten Esper decken die wichtigsten Heil- und Elementarzauber ab.",
+        "bullets": [ { "icon": "mdi:check", "title": "Sirene", "body": "Lehrt Schlaf und Stumm – früh nützlich gegen Magier." } ] },
+      { "title": "Auktionshaus Jidoor", "badgeText": "Gil", "badgeVariant": "b", "introText": "Golem und Zona Seeker werden nur zufällig versteigert.",
+        "bullets": [ { "icon": "mdi:refresh", "title": "Mehrmals betreten", "body": "Verlasse das Auktionshaus und komm wieder, bis eines der beiden angeboten wird." } ] }
+    ] },
+    { "type": "checklist_table", "table": {
+      "tableId": "magicite", "caption": "Alle Magicite", "checkable": true,
+      "searchPlaceholder": "Suchen...", "categoryFilterLabel": "Alle Welten", "categories": ["Welt des Gleichgewichts", "Welt des Ruins"],
+      "columns": [
+        { "key": "name", "label": "Esper", "isRowHeader": true },
+        { "key": "ort", "label": "Fundort" },
+        { "key": "abWann", "label": "Ab wann" },
+        { "key": "verpassbar", "label": "Verpassbar" }
+      ],
+      "rows": [
+        { "itemId": "esper-ramuh", "filterCategory": "Welt des Gleichgewichts", "cells": { "name": "Ramuh", "ort": "Zozo, höchstes Gebäude", "abWann": "Nach der Suche nach Terra in Zozo", "verpassbar": "Nein" } },
+        { "itemId": "esper-sirene", "filterCategory": "Welt des Gleichgewichts", "cells": { "name": "Sirene", "ort": "Zozo, zusammen mit Ramuh", "abWann": "Nach der Suche nach Terra in Zozo", "verpassbar": "Nein" } },
+        { "itemId": "esper-shiva", "filterCategory": "Welt des Gleichgewichts", "cells": { "name": "Shiva", "ort": "Magitek-Forschungsanlage (Vector)", "abWann": "Nach dem Bosskampf gegen Ifrit und Shiva", "verpassbar": "Nein" } },
+        { "itemId": "esper-ifrit", "filterCategory": "Welt des Gleichgewichts", "cells": { "name": "Ifrit", "ort": "Magitek-Forschungsanlage (Vector)", "abWann": "Nach dem Bosskampf gegen Ifrit und Shiva", "verpassbar": "Nein" } },
+        { "itemId": "esper-golem", "filterCategory": "Welt des Gleichgewichts", "cells": { "name": "Golem", "ort": "Auktionshaus Jidoor, 20.000 Gil", "abWann": "Mit dem ersten Luftschiff", "verpassbar": "Nein" } },
+        { "itemId": "esper-zona-seeker", "filterCategory": "Welt des Gleichgewichts", "cells": { "name": "Zona Seeker", "ort": "Auktionshaus Jidoor, 10.000 Gil", "abWann": "Mit dem ersten Luftschiff", "verpassbar": "Nein" } },
+        { "itemId": "esper-seraph", "filterCategory": "Welt des Gleichgewichts", "cells": { "name": "Seraph", "ort": "Tzen, Dieb neben dem Relikt-Laden, 3.000 Gil", "abWann": "Vor dem Angriff auf Tzen", "verpassbar": "Nein" } },
+        { "itemId": "esper-alexander", "filterCategory": "Welt des Ruins", "ref": "quest-doma-cyan", "cells": { "name": "Alexander", "ort": "Schloss Doma, hinter dem Thron", "abWann": "Nach Cyans Albtraum-Quest", "verpassbar": "Nein" } },
+        { "itemId": "esper-odin", "filterCategory": "Welt des Ruins", "cells": { "name": "Odin", "ort": "Alte Burg, Statue im Thronsaal", "abWann": "Welt des Ruins, Alte Burg", "verpassbar": "Nein" } },
+        { "itemId": "esper-phoenix", "filterCategory": "Welt des Ruins", "cells": { "name": "Phönix", "ort": "Phönix-Höhle nördlich von Tzen", "abWann": "Welt des Ruins, nach Lockes Rückkehr in die Gruppe", "verpassbar": "Nein" } }
+      ] } },
+    { "type": "boss", "bossId": "ifrit-shiva", "title": "Ifrit & Shiva", "location": "Magitek-Forschungsanlage (Vector)",
+      "hp": [ { "value": "Nicht dokumentiert" } ], "weaknesses": ["Feuer gegen Shiva", "Eis gegen Ifrit"],
+      "tactics": ["Greife zuerst Ifrit mit Eis-Zaubern an.", "Heile, sobald Shiva Eisga wirkt."], "missable": false },
+    { "type": "sources", "sources": [ { "title": "Final Weapon – Final Fantasy VI Esper Location Guide", "url": "https://finalweapon.net/2023/04/29/final-fantasy-vi-esper-location-guide/", "origin": "cited" } ] }
+  ]
+}

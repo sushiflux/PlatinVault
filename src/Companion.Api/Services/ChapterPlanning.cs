@@ -42,6 +42,66 @@ public static class ChapterBudget
     /// <summary>The paragraph of the blueprint prompt that sets the size of the guide and the rules for choosing topics.</summary>
     public static string PromptNote(string? scope, string language, int existingChapters)
     {
+        var english = language == Lang.English;
+        var size = SizeLines(scope, language, existingChapters, english ? "including the extraChapters" : "inklusive der extraChapters");
+        var walkthrough = WalkthroughNote(language,
+            "(\"applicable\": true)",
+            english ? "set \"applicable\": false (reason: no reliable source)" : "setze \"applicable\": false (Grund: keine belastbare Quelle)");
+        return english
+            ? $"""
+              {size}
+              - A topic only becomes a chapter ("applicable": true) if your research CONFIRMS that the game really has it and that it helps the
+                player toward 100 %. Do not add anything "just in case" – not even because it is typical for the kind of game.
+              - Merge small related topics: give the smaller topic "applicable": false and "mergeInto": "<id of the bigger topic>", and let the
+                "focus" of the bigger topic cover the content as well.
+              - Give every topic you take a "priority": 1 = essential for 100 %, 2 = useful, 3 = nice to have if there is room.
+              {walkthrough}
+              """
+            : $"""
+              {size}
+              - Ein Thema wird NUR dann ein Kapitel ("applicable": true), wenn deine Recherche BESTÄTIGT, dass das Spiel es wirklich hat und
+                es dem Spieler zu 100 % hilft. Nimm nichts „vorsorglich“ auf – auch nicht, weil es zur Spielart typischerweise gehört.
+              - Fasse kleine, verwandte Themen zusammen: Setze beim kleineren Thema "applicable": false und "mergeInto": "<id des größeren Themas>",
+                und lass den "focus" des größeren Themas den Inhalt mit abdecken.
+              - Gib jedem übernommenen Thema eine "priority": 1 = unverzichtbar für 100 %, 2 = nützlich, 3 = nett, wenn Platz ist.
+              {walkthrough}
+              """;
+    }
+
+    /// <summary>
+    /// The size note of the one-step prompt of the subscription flow: the same ceiling, no-minimum and walkthrough rules as <see cref="PromptNote"/>, worded
+    /// for a plan (the chapters of the plan; extra chapters carry the topic id "extra") instead of the blueprint's "applicable" / "mergeInto" / "priority".
+    /// </summary>
+    public static string PlanNote(string? scope, string language, int existingChapters)
+    {
+        var english = language == Lang.English;
+        var size = SizeLines(scope, language, existingChapters, english ? "including the chapters with \"topicId\": \"extra\"" : "inklusive der Kapitel mit \"topicId\": \"extra\"");
+        var walkthrough = WalkthroughNote(language, english ? "of the plan" : "des Plans", english ? "leave it out of the plan" : "lass es im Plan weg");
+        return english
+            ? $"""
+              {size}
+              - A topic only becomes a chapter of the plan if your research CONFIRMS that the game really has it and that it helps the
+                player toward 100 %. Do not add anything "just in case" – not even because it is typical for the kind of game.
+              - Merge small related topics: leave the smaller topic out of the plan and let the "focus" of the bigger topic cover the content as well.
+              - If the ceiling forces you to choose: what is essential for 100 % comes first, then what is useful, then what is nice to have.
+              {walkthrough}
+              """
+            : $"""
+              {size}
+              - Ein Thema wird NUR dann ein Kapitel des Plans, wenn deine Recherche BESTÄTIGT, dass das Spiel es wirklich hat und
+                es dem Spieler zu 100 % hilft. Nimm nichts „vorsorglich“ auf – auch nicht, weil es zur Spielart typischerweise gehört.
+              - Fasse kleine, verwandte Themen zusammen: Lass das kleinere Thema im Plan weg und den "focus" des größeren Themas den Inhalt mit abdecken.
+              - Zwingt dich die Obergrenze zur Auswahl: Was für 100 % unverzichtbar ist, kommt zuerst, dann das Nützliche, dann das, was nett ist, wenn Platz ist.
+              {walkthrough}
+              """;
+    }
+
+    /// <summary>
+    /// The first lines of the size note: the scope and its ceiling (<paramref name="includes"/> names what counts towards it besides the topics), how many
+    /// chapters the guide already has, and "ceiling, not a target, no minimum". Shared by the blueprint prompt and the one-step prompt of the subscription flow.
+    /// </summary>
+    internal static string SizeLines(string? scope, string language, int existingChapters, string includes)
+    {
         var (min, max) = For(scope);
         var name = ScopeName(scope, language);
         var english = language == Lang.English;
@@ -54,30 +114,30 @@ public static class ChapterBudget
         };
         return english
             ? $"""
-              Size of the guide: scope "{name}" – at most {max} chapters in total (including the extraChapters); a big game usually ends up between {min} and {max}. {existing}
+              Size of the guide: scope "{name}" – at most {max} chapters in total ({includes}); a big game usually ends up between {min} and {max}. {existing}
               This is a ceiling, not a target, and there is NO minimum: a small or simple game gets few chapters – if it only has 4 real topics, 4 chapters are right. Never pad.
-              - A topic only becomes a chapter ("applicable": true) if your research CONFIRMS that the game really has it and that it helps the
-                player toward 100 %. Do not add anything "just in case" – not even because it is typical for the kind of game.
-              - Merge small related topics: give the smaller topic "applicable": false and "mergeInto": "<id of the bigger topic>", and let the
-                "focus" of the bigger topic cover the content as well.
-              - Give every topic you take a "priority": 1 = essential for 100 %, 2 = useful, 3 = nice to have if there is room.
-              The topic "walkthrough" is special: it only becomes a chapter ("applicable": true) if your research found at least one reliable, COMPLETE
-              walkthrough source (a full walkthrough on a large site, an official guide, a big wiki walkthrough) – name the sources in its "focus". Without such a
-              source set "applicable": false (reason: no reliable source) – never plan a walkthrough "just in case". It does NOT count against the chapter total above and always comes first in the guide.
               """
             : $"""
-              Umfang des Guides: „{name}“ – höchstens {max} Kapitel insgesamt (inklusive der extraChapters); ein großes Spiel landet meist zwischen {min} und {max}. {existing}
+              Umfang des Guides: „{name}“ – höchstens {max} Kapitel insgesamt ({includes}); ein großes Spiel landet meist zwischen {min} und {max}. {existing}
               Das ist eine Obergrenze, kein Ziel, und es gibt KEINE Mindestzahl: Ein kleines oder einfaches Spiel bekommt wenige Kapitel – hat es nur 4 echte Themen, sind 4 Kapitel richtig. Nie auffüllen.
-              - Ein Thema wird NUR dann ein Kapitel ("applicable": true), wenn deine Recherche BESTÄTIGT, dass das Spiel es wirklich hat und
-                es dem Spieler zu 100 % hilft. Nimm nichts „vorsorglich“ auf – auch nicht, weil es zur Spielart typischerweise gehört.
-              - Fasse kleine, verwandte Themen zusammen: Setze beim kleineren Thema "applicable": false und "mergeInto": "<id des größeren Themas>",
-                und lass den "focus" des größeren Themas den Inhalt mit abdecken.
-              - Gib jedem übernommenen Thema eine "priority": 1 = unverzichtbar für 100 %, 2 = nützlich, 3 = nett, wenn Platz ist.
-              Das Thema "walkthrough" ist besonders: Es wird nur dann ein Kapitel ("applicable": true), wenn deine Recherche mindestens eine belastbare, VOLLSTÄNDIGE
-              Komplettlösungs-Quelle gefunden hat (eine vollständige Lösung auf einer großen Seite, einen offiziellen Guide, eine große Wiki-Komplettlösung) – nenne die Quellen in seinem
-              "focus". Ohne solche Quelle setze "applicable": false (Grund: keine belastbare Quelle) – plane nie „vorsorglich“ eine Komplettlösung. Es zählt NICHT zur Kapitelzahl oben und steht im Guide immer an erster Stelle.
               """;
     }
+
+    /// <summary>
+    /// The special rule of the topic "walkthrough": only with a reliable, COMPLETE source, sources named in its "focus", not counted against the size, always first.
+    /// <paramref name="becomes"/> says how the answer marks a taken topic and <paramref name="without"/> what it does without such a source.
+    /// </summary>
+    internal static string WalkthroughNote(string language, string becomes, string without) => language == Lang.English
+        ? $"""
+          The topic "walkthrough" is special: it only becomes a chapter {becomes} if your research found at least one reliable, COMPLETE
+          walkthrough source (a full walkthrough on a large site, an official guide, a big wiki walkthrough) – name the sources in its "focus". Without such a
+          source {without} – never plan a walkthrough "just in case". It does NOT count against the chapter total above and always comes first in the guide.
+          """
+        : $"""
+          Das Thema "walkthrough" ist besonders: Es wird nur dann ein Kapitel {becomes}, wenn deine Recherche mindestens eine belastbare, VOLLSTÄNDIGE
+          Komplettlösungs-Quelle gefunden hat (eine vollständige Lösung auf einer großen Seite, einen offiziellen Guide, eine große Wiki-Komplettlösung) – nenne die Quellen in seinem
+          "focus". Ohne solche Quelle {without} – plane nie „vorsorglich“ eine Komplettlösung. Es zählt NICHT zur Kapitelzahl oben und steht im Guide immer an erster Stelle.
+          """;
 
     /// <summary>
     /// Which of the candidate topics fit into <paramref name="slots"/> chapters: the most important first (priority 1 before 2 before 3, a topic

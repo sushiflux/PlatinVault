@@ -29,6 +29,7 @@ import type {
   ManualChapterCheckDto,
   ManualChapterSeed,
   ManualIssueDto,
+  ManualOneShotPlanDto,
   ManualPromptDto,
   ManualSavedDto,
   GameSummaryDto,
@@ -521,6 +522,11 @@ async function postManual<T>(slug: string, tail: string, body: unknown): Promise
 export const manualBlueprintPrompt = (slug: string) => postManual<ManualPromptDto>(slug, 'blueprint-prompt', {})
 
 export const checkManualBlueprint = (slug: string, text: string) => postManual<ManualBlueprintCheckDto>(slug, 'blueprint-answer', { text })
+
+// The whole guide in ONE prompt: the chat researches the game, picks the chapters and writes them all; the plan in its answer is read separately
+export const manualOneShotPrompt = (slug: string) => postManual<ManualPromptDto>(slug, 'oneshot-prompt', {})
+
+export const checkManualOneShotPlan = (slug: string, text: string) => postManual<ManualOneShotPlanDto>(slug, 'oneshot-plan', { text })
 
 export const manualChapterPrompt = (slug: string, seed: ManualChapterSeed) =>
   postManual<ManualPromptDto>(slug, 'chapter-prompt', { title: seed.title, icon: seed.icon, focus: seed.focus, topicId: seed.topicId, sourceSituation: seed.sourceSituation, tabId: seed.tabId, replace: seed.replace })

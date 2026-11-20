@@ -33,7 +33,7 @@ name: Release
 #
 # Code signing of the Windows files (SignPath Foundation, free for open source): two stages, because the installer carries the program as
 # a ZIP appended to the setup exe - stage 1 signs our own binaries of the program folder and the bridge
-# (.signpath/artifact-configurations/windows-app.xml), they are packed into the installer, stage 2 signs the installer (windows-setup.xml).
+# (.signpath/artifact-configurations/windows-app.xml.template), they are packed into the installer, stage 2 signs the installer (windows-setup.xml.template).
 # Every signing request waits for a manual approval in SignPath (up to 60 minutes per stage). Signing runs only when the repository
 # variables SIGNPATH_ORGANIZATION_ID, SIGNPATH_PROJECT_SLUG, SIGNPATH_SIGNING_POLICY_SLUG and the secret SIGNPATH_API_TOKEN exist, and only
 # for nightlies, betas and releases. Without them the result is the unsigned installer

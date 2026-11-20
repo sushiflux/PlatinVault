@@ -310,16 +310,16 @@ const onboarding = {
     },
     gameNav: {
       title: 'Kapitel',
-      text: 'Jedes Spiel hat links seine eigene Navigation: die Kapitel des Guides und Story & Lore. Schmal eingeklappt öffnet das Symbol einer Gruppe eine kleine Liste ihrer Kapitel. Deine Häkchen merkt sich PlatinVault.',
+      text: 'Jedes Spiel hat links seine eigene Navigation: Trophäen, Statistiken, die Kapitel des Guides und Story & Lore. Schmal eingeklappt öffnet das Symbol einer Gruppe eine kleine Liste ihrer Kapitel. Deine Häkchen merkt sich PlatinVault.',
     },
     // The same hint on a phone (under 768 px), where the game navigation is a drawer opened by the menu button in the header
     gameNavPhone: {
       title: 'Kapitel',
-      text: 'Dieser Knopf öffnet die Navigation dieses Spiels – darin die Kapitel des Guides und Story & Lore. Deine Häkchen merkt sich PlatinVault.',
+      text: 'Dieser Knopf öffnet die Navigation dieses Spiels – darin Trophäen, Statistiken, die Kapitel des Guides und Story & Lore. Deine Häkchen merkt sich PlatinVault.',
     },
     gameLive: {
-      title: 'Guide, Live-Trophäen, Statistiken',
-      text: 'Oben im Spielkopf wechselst du zwischen dem Guide, den Live-Trophäen und den Statistiken. Die Live-Trophäen zeigen alle Steam-Trophäen dieses Spiels mit Seltenheit; neue Erfolge hakt PlatinVault automatisch im Guide ab.',
+      title: 'Trophäen und Statistiken',
+      text: 'Ganz oben in der Navigation stehen die Trophäen dieses Spiels – bei Steam-Spielen live mit Seltenheit, bei von Hand hinzugefügten Spielen zum Abhaken – und für Steam-Spiele die Statistiken. Neue Steam-Erfolge hakt PlatinVault automatisch im Guide ab.',
     },
     gameTwitch: {
       title: 'Live auf Twitch',

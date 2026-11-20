@@ -64,6 +64,7 @@ internal static partial class GuideSectionNormalizer
             }
 
             NormalizeSpoilerFlag(node);
+            NormalizeUnclear(node);
 
             if (type == "story")
             {
@@ -129,6 +130,7 @@ internal static partial class GuideSectionNormalizer
                     }
                     // "ref" = the itemId of a defining row in another chapter; anything but a plain id string (or the row pointing at itself) is dropped
                     SetOrRemove(row, "ref", CleanRef(row["ref"], row["itemId"]?.ToString()));
+                    NormalizeUnclear(row);
                     if (row["cells"] is JsonObject cells)
                     {
                         foreach (var key in cells.Select(p => p.Key).ToList())
@@ -156,6 +158,15 @@ internal static partial class GuideSectionNormalizer
                 continue;
             }
 
+            // Review markers ("unclear") of the section and of its cards: only the known shape survives (a bad one must not cost the whole table or card list)
+            if (node["cards"] is JsonArray markedCards)
+            {
+                foreach (var card in markedCards.OfType<JsonObject>())
+                {
+                    NormalizeUnclear(card);
+                }
+            }
+
             // Final guard per section: the frontend deserializes into GuideSectionDto. Fields of another section type are dropped, values of the
             // wrong shape converted or dropped; a section that still cannot be read is skipped - one bad field never costs the whole chapter.
             if (GuideSectionReader.ReadSection(node, stripForeign: true) is null)
@@ -165,6 +176,39 @@ internal static partial class GuideSectionNormalizer
             result.Add(node);
         }
         return result;
+    }
+
+    /// <summary>
+    /// The review marker of a section, card or row (<see cref="GuideUnclearDto"/>): an object { a?, b?, reason } of clean, length-limited strings. Anything
+    /// else - a string, a list, an object without any text - is dropped, so a malformed marker never makes a whole table or card list unreadable.
+    /// </summary>
+    internal static void NormalizeUnclear(JsonObject node)
+    {
+        if (!node.ContainsKey("unclear"))
+        {
+            return;
+        }
+        if (node["unclear"] is not JsonObject marker)
+        {
+            node.Remove("unclear");
+            return;
+        }
+        var clean = new JsonObject();
+        foreach (var (key, max) in new[] { ("a", ChapterReview.MaxVersionText), ("b", ChapterReview.MaxVersionText), ("reason", ChapterReview.MaxReason) })
+        {
+            if (Clean(marker[key]) is { } text)
+            {
+                clean[key] = text.Length > max ? text[..(max - 1)].TrimEnd() + "…" : text;
+            }
+        }
+        if (clean.Count == 0)
+        {
+            node.Remove("unclear");
+            return;
+        }
+        // The reason is always present (the UI shows it in the tooltip and in the list)
+        clean["reason"] ??= string.Empty;
+        node["unclear"] = clean;
     }
 
     /// <summary>"spoiler" is a plain bool on any section type; text like "true" is accepted, anything else is dropped.</summary>

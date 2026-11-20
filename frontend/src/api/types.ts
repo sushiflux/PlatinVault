@@ -906,9 +906,9 @@ export interface GuideTopicDto {
 
 // ---- The guide via the player's own AI subscription (prompts to copy, answers to paste; nothing is sent to an AI) ----
 
-// kind = "blueprint" (the chapter list) or "chapter"
+// kind = "blueprint" (the chapter list), "chapter", or "oneshot" (the whole guide in one prompt: the chat plans the chapters and writes them all)
 export interface ManualPromptDto {
-  kind: 'blueprint' | 'chapter'
+  kind: 'blueprint' | 'chapter' | 'oneshot'
   prompt: string
   fileName: string
   language: string
@@ -966,6 +966,15 @@ export interface ManualBatchChapterItem {
   tabId?: string
   // The chapter is a normal one that is researched again: the answer replaces it (the server keeps ticks whose entries survive)
   replace?: boolean
+}
+
+// The plan the chat put at the start of a one-step answer, read by the server (nothing is saved). Each chapter has the shape the batch endpoints
+// take (key = "K01", ...), so the rows of the batch view are built straight from it.
+export interface ManualOneShotPlanDto {
+  ok: boolean
+  errors: ManualIssueDto[]
+  warnings: ManualIssueDto[]
+  chapters: ManualBatchChapterItem[]
 }
 
 export interface ManualBatchPromptDto {

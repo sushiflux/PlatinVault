@@ -130,7 +130,7 @@ describe('the wand "Guide vervollständigen"', () => {
     await waitFor(() => expect(client.completeGuide).toHaveBeenCalledWith('suncraft', undefined, 'gemini', expect.anything()))
   })
 
-  it('the subscription opens its dialog with the blueprint step, nothing goes to an AI', async () => {
+  it('the subscription opens its dialog with the one prompt for the whole guide, nothing goes to an AI', async () => {
     renderPage(WITH_GUIDE(), statusFixture({ mode: 'default' }))
     fireEvent.click(await wand())
     await screen.findByRole('dialog', { name: 'Welche KI möchtest du benutzen?' })
@@ -138,7 +138,7 @@ describe('the wand "Guide vervollständigen"', () => {
     fireEvent.click(screen.getByRole('button', { name: /Mit meinem KI-Abo weiter/ }))
 
     expect(await screen.findByRole('dialog', { name: /Guide mit deinem KI-Abo/ })).toBeTruthy()
-    expect(screen.getByText('Schritt 1 von 2 · Kapitelliste')).toBeTruthy()
+    expect(screen.getByText('Ein Prompt für den ganzen Guide')).toBeTruthy()
     expect(client.planGuide).not.toHaveBeenCalled()
     expect(client.completeGuide).not.toHaveBeenCalled()
   })

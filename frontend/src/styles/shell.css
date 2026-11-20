@@ -370,9 +370,15 @@ a.pv-user:hover .pv-user-name {
   color: var(--text-muted);
 }
 
+/* The 1 px line between the blocks of the game tree (areas | chapters | Story & Lore) */
 .pv-nsep {
   margin: 0.25rem 1rem 0.5rem;
   border-block-start: 1px solid var(--border-subtle);
+}
+
+/* The first group heading right under a line needs less air above it (the line already separates) */
+.pv-nsep + .pv-gametree-group > .pv-glabel {
+  padding-block-start: 0.375rem;
 }
 
 /* Placeholder rows while the game loads: the same 48 px as a real entry, a faint bar where the label will be */

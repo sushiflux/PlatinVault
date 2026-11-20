@@ -59,11 +59,13 @@ internal static class GuideTextExtractor
             AddString(slots, section, "title");
             AddString(slots, section, "htmlContent");
             AddStringArray(slots, section, "paragraphs");
+            AddUnclear(slots, section);
 
             if (Child(section, "cards") is JsonArray cards)
             {
                 foreach (var card in cards.OfType<JsonObject>())
                 {
+                    AddUnclear(slots, card);
                     AddString(slots, card, "title");
                     AddString(slots, card, "badgeText");
                     AddString(slots, card, "introText");
@@ -157,6 +159,7 @@ internal static class GuideTextExtractor
                         // The category of a row must stay equal to an entry of "categories": identical texts get ONE translation
                         AddString(slots, row, "filterCategory");
                         AddString(slots, row, "filterSecondary");
+                        AddUnclear(slots, row);
                         if (Child(row, "cells") is JsonObject cells)
                         {
                             foreach (var key in cells.Select(p => p.Key).ToList())
@@ -283,6 +286,17 @@ internal static class GuideTextExtractor
 
     private static string? KeyOf(JsonObject obj, string name) =>
         obj.Select(p => p.Key).FirstOrDefault(k => k.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>The texts of an AI-review marker ("unclear": what the two versions say and why it stays open) are read by people and are translated with the chapter.</summary>
+    private static void AddUnclear(List<TextSlot> slots, JsonObject holder)
+    {
+        if (Child(holder, "unclear") is JsonObject marker)
+        {
+            AddString(slots, marker, "a");
+            AddString(slots, marker, "b");
+            AddString(slots, marker, "reason");
+        }
+    }
 
     private static void AddString(List<TextSlot> slots, JsonObject obj, string name)
     {

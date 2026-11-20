@@ -76,6 +76,15 @@ const live = {
       on: 'An: die Beschreibungen sind sichtbar (Spoiler).',
       off: 'Aus: die Beschreibungen bleiben verdeckt.',
     },
+    // The switch that opens the tip of every trophy at once (Kompakt and Liste)
+    tips: {
+      label: 'Alle Tipps zeigen',
+      on: 'An: der Tipp steht bei jeder Trophäe, die einen hat. Die Glühbirne einer Karte blendet einen einzelnen Tipp wieder aus.',
+      off: 'Aus: die Tipps bleiben zu. Die Glühbirne einer Karte zeigt einen einzelnen Tipp.',
+      none: 'Für dieses Spiel gibt es noch keine Tipps. Sie kommen aus dem Guide oder aus der recherchierten Trophäenliste.',
+      tiles: 'In der Kachelansicht steht der Tipp im Detailfenster einer Trophäe (Klick auf die Kachel).',
+      large: 'In der Ansicht „Groß“ stehen alle Tipps ohnehin immer da.',
+    },
     loading: 'Lade Live-Erfolge...',
     empty: 'Keine passenden Erfolge für diesen Filter gefunden.',
   },

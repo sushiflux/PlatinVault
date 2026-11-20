@@ -380,6 +380,8 @@ public static class ApiEndpoints
         api.MapManualGames();
         api.MapTrophies();
         api.MapManualTrophies();
+        // The AI review of guide chapters (second answer, reviewer, findings)
+        api.MapChapterReviewEndpoints();
 
         // Live Steam Achievement & Trophy Tracker endpoints
         api.MapGet("/live/status", async (SteamLiveTrackerService liveTracker, CancellationToken ct) =>
@@ -1469,10 +1471,19 @@ public static class ApiEndpoints
     {
         var target = Lang.NormalizeOr(language, Lang.Current);
         var view = await GuideTranslations.EvaluateAsync(db, game, target, translations.GetJob(game.Id, target), ct);
-        return MapToDetailDto(game, view);
+        // The "geprueft" line of the chapters that were reviewed: summary columns only (the stored answers and findings are large)
+        var reviews = await db.ChapterReviews.AsNoTracking()
+            .Where(r => r.GameId == game.Id)
+            .Select(r => new { r.TabId, r.CreatedAt, r.ResearcherProvider, r.ReviewerProvider, r.CountsJson, r.ResultHash })
+            .ToListAsync(ct);
+        var reviewByTab = reviews.ToDictionary(
+            r => r.TabId,
+            r => new GuideTabReviewDto(r.CreatedAt, r.ResearcherProvider, r.ReviewerProvider, ChapterReview.DeserializeCounts(r.CountsJson),
+                ChapterReview.IsStale(r.ResultHash, game.Tabs.FirstOrDefault(t => t.Id == r.TabId)?.SectionsJson)));
+        return MapToDetailDto(game, view, reviewByTab);
     }
 
-    private static GameDetailDto MapToDetailDto(GameEntity game, TranslationView view)
+    private static GameDetailDto MapToDetailDto(GameEntity game, TranslationView view, IReadOnlyDictionary<Guid, GuideTabReviewDto> reviews)
     {
         var translatedGame = view.UseTranslation ? view.Game : null;
         var checkedSet = game.ProgressChecks.Select(p => p.ItemKey).ToHashSet(StringComparer.Ordinal);
@@ -1532,7 +1543,8 @@ public static class ApiEndpoints
                 // The ORIGINAL title decides, so a chapter stays in its group whatever language the shown texts are in
                 GroupKey: GuideGroups.Resolve(tab.GroupKey, tab.Title, AiGuideGeneratorService.GuideLanguage(game)),
                 // The walkthrough is known by its fixed address also when it was saved before the column existed
-                TopicId: tab.TopicId ?? (WalkthroughTab.Is(tab) ? WalkthroughTab.TopicId : null)
+                TopicId: tab.TopicId ?? (WalkthroughTab.Is(tab) ? WalkthroughTab.TopicId : null),
+                Review: reviews.GetValueOrDefault(tab.Id)
             ));
         }
 

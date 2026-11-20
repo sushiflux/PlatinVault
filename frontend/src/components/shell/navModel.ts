@@ -1,15 +1,17 @@
-import type { GameDetailDto, GuideTabDto } from '../../api/types'
-import { hasTrophies, isManualGame, platformOf } from '../../utils/platforms'
+import type { GameDetailDto, GuideTabDto, TrophyKind } from '../../api/types'
+import { hasTrophies, isManualGame, platformOf, trophyKind } from '../../utils/platforms'
 
 // Pure model of the game navigation (the side tree of a game page) and of the game page's tabs. Shared by the tree (components/shell/ShellNav.tsx) and the
 // game page (pages/GameGuidePage.tsx), so both always agree on which tab is active and in which order the chapters stand.
+// The tree of a game, top to bottom: the areas (the trophy list, the statistics of a Steam game), a line, the guide chapters under their group
+// headings (a game without any chapter has one "Guide" entry instead), a line, Story & Lore.
 
-/** Internal slugs of the three areas next to the guide chapters (the guide chapters use their own slug). */
+/** Internal slugs of the areas next to the guide chapters (the guide chapters use their own slug). */
 export const LIVE_TROPHIES_TAB_SLUG = '__live_steam_trophies__'
 export const STATS_TAB_SLUG = '__steam_stats__'
 // Slug of the optional Story & Lore tab created by POST /api/games/{slug}/ai-lore
 export const LORE_TAB_SLUG = 'story-lore'
-// "The guide" of a game that has no chapter yet (the area bar's Guide segment of a game added by hand): the page shows its "no guide yet" card
+// "The guide" of a game that has no chapter yet (the tree's single Guide entry): the page shows its "no guide yet" card
 export const GUIDE_TAB_SLUG = '__guide__'
 
 // The active tab lives in the URL (?tab=...), so a link or a reload lands on the same chapter / area. The areas have short names
@@ -32,7 +34,26 @@ export function gameTabHref(gameSlug: string, tabSlug: string): string {
 }
 
 // platform: a game added by hand (any platform but Steam) has a trophy tab when its platform has trophies; the statistics need a Steam link
-type GameTabsSource = Pick<GameDetailDto, 'tabs' | 'steamAppId'> & { platform?: string | null }
+type GameAreasSource = Pick<GameDetailDto, 'steamAppId'> & { platform?: string | null }
+type GameTabsSource = GameAreasSource & Pick<GameDetailDto, 'tabs'>
+
+/** The name of the trophy area: a Steam game's live trophies, the trophies (PlayStation) / achievements (every other platform) of a game added by hand. */
+export type TrophyAreaLabel = 'live' | TrophyKind
+
+export interface GameAreas {
+  // The trophy area and how it is called (the key of game:areas.<label>); null = the game has none (a Steam game without a link, a Switch game)
+  trophies: TrophyAreaLabel | null
+  // The statistics need a Steam link
+  stats: boolean
+}
+
+/** Which areas a game has next to its guide. The one place that decides it: the tree, the page and the tab resolution all read it. */
+export function gameAreas(game: GameAreasSource | null | undefined): GameAreas {
+  if (!game) return { trophies: null, stats: false }
+  if (game.steamAppId) return { trophies: 'live', stats: true }
+  const platform = platformOf(game)
+  return { trophies: isManualGame(game) && hasTrophies(platform) ? trophyKind(platform) : null, stats: false }
+}
 
 /** The guide chapters of the navigation: without the lore tab (own entry) and without the hidden Steam achievement list. */
 export function guideChapters(game: Pick<GameDetailDto, 'tabs'> | null | undefined): GuideTabDto[] {
@@ -45,10 +66,10 @@ export function guideChapters(game: Pick<GameDetailDto, 'tabs'> | null | undefin
  */
 export function resolveGameTab(game: GameTabsSource | null | undefined, requestedSlug: string): string {
   if (!game) return requestedSlug
-  const hasSteam = Boolean(game.steamAppId)
-  const hasTrophyTab = hasSteam || (isManualGame(game) && hasTrophies(platformOf(game)))
+  const areas = gameAreas(game)
+  const hasTrophyTab = areas.trophies !== null
   if (requestedSlug === LORE_TAB_SLUG) return requestedSlug
-  if ((requestedSlug === LIVE_TROPHIES_TAB_SLUG && hasTrophyTab) || (requestedSlug === STATS_TAB_SLUG && hasSteam)) return requestedSlug
+  if ((requestedSlug === LIVE_TROPHIES_TAB_SLUG && hasTrophyTab) || (requestedSlug === STATS_TAB_SLUG && areas.stats)) return requestedSlug
   const chapters = guideChapters(game)
   if (chapters.some((tab) => tab.slug === requestedSlug)) return requestedSlug
   // The guide itself: its first chapter, none = the "no guide yet" card

@@ -64,6 +64,49 @@ public sealed class PromptGoldenTests
                 [new BatchChapter(0, "K01", "Komplettlösung", "Das ganze Spiel", "walkthrough", "etabliert", null, null),
                  new BatchChapter(1, "K02", "Dorfausbau", "Alle Ausbaustufen", "weapons", "etabliert", null, null)]));
         }
+
+        // Appended after everything above, so the older markers stay byte-identical: the blueprint prompt (real AI path and manual flow) that the
+        // one-step prompt shares building blocks with
+        foreach (var language in new[] { Lang.German, Lang.English })
+        {
+            foreach (var (name, blocks) in selections)
+            {
+                var context = Context(language, blocks);
+                text.Append($"\n=====[blueprint {language} {name}]=====\n");
+                text.Append(AiGuideGeneratorService.BuildBlueprintPrompt(context, null, ["Komplettlösung", "Beste Waffen"], 1));
+            }
+            text.Append($"\n=====[manual blueprint {language}]=====\n");
+            text.Append(AiGuideGeneratorService.ComposeManualBlueprintPrompt(Context(language, ResearchBlocks.Selection.Empty),
+                new() { Title = "Suncraft", SteamAppId = 4078110, Slug = "suncraft", ContentLanguage = language, Tabs = [] }, language));
+        }
+
+        // Appended again: the one-step prompt of the subscription flow (whole guide from ONE prompt) - a new guide, and a guide with a real and a failed chapter
+        foreach (var language in new[] { Lang.German, Lang.English })
+        {
+            foreach (var (name, blocks) in selections)
+            {
+                text.Append($"\n=====[oneshot {language} {name}]=====\n");
+                text.Append(AiGuideGeneratorService.ComposeManualOneShotPrompt(Context(language, blocks),
+                    new() { Title = "Suncraft", SteamAppId = 4078110, Slug = "suncraft", ContentLanguage = language, Tabs = [] }, language));
+            }
+            var game = new Companion.Api.Data.GameEntity
+            {
+                Title = "Suncraft", SteamAppId = 4078110, Slug = "suncraft", ContentLanguage = language,
+                Tabs =
+                [
+                    new() { Id = Guid.NewGuid(), Slug = "tab-1-waffen", Title = "Beste Waffen", SortOrder = 1, TopicId = "weapons", SectionsJson = "[]" },
+                    new()
+                    {
+                        Id = Guid.NewGuid(), Slug = "tab-2-gebiete", Title = "Gebiete & Karte", SortOrder = 2, TopicId = "regions",
+                        SectionsJson = System.Text.Json.JsonSerializer.Serialize(new[] { FailedChapters.CreateSection(language, "Alle Gebiete", "regions", "Die Recherche ist fehlgeschlagen.", null, null) },
+                            new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase })
+                    },
+                    new() { Id = Guid.NewGuid(), Slug = LoreTab.Slug, Title = "Story & Lore", SortOrder = 900, SectionsJson = "[]" }
+                ]
+            };
+            text.Append($"\n=====[oneshot completion {language}]=====\n");
+            text.Append(AiGuideGeneratorService.ComposeManualOneShotPrompt(Context(language, ResearchBlocks.Selection.Empty), game, language));
+        }
         return text.ToString().Replace("\r\n", "\n");
     }
 

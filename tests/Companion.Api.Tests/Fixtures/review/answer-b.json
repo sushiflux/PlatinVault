@@ -1,0 +1,40 @@
+{
+  "title": "Esper & Magicite",
+  "icon": "mdi:diamond-stone",
+  "sections": [
+    { "type": "alert", "variant": "gold", "title": "Das Wichtigste vorab", "htmlContent": "Zauber lernt ein Charakter nur mit angelegtem Magicite. Achte auf die Stufenboni beim Aufstieg – sie gelten für immer." },
+    { "type": "alert", "variant": "danger", "title": "Verpassbar", "htmlContent": "Odin: Wertest du ihn an der Statue der Königin zu Raiden auf, ist Odin weg. Ragnarök: Magicite oder Schwert, nicht beides." },
+    { "type": "cards_grid", "columns": 2, "cards": [
+      { "title": "Früh lernen", "badgeText": "Tipp", "badgeVariant": "a", "introText": "Mit den Espern aus Zozo bekommst du früh Heilung und Statuszauber.",
+        "bullets": [ { "icon": "mdi:check", "title": "Sirene", "body": "Schlaf und Stumm helfen gegen gegnerische Magier." } ] },
+      { "title": "Auktionshaus Jidoor", "badgeText": "Gil", "badgeVariant": "b", "introText": "Golem und Zona Seeker stehen beim ersten Besuch nach der Oper immer zum Verkauf.",
+        "bullets": [ { "icon": "mdi:cash", "title": "Gil sparen", "body": "Halte vor dem Besuch genug Gil bereit." } ] }
+    ] },
+    { "type": "checklist_table", "table": {
+      "tableId": "magicite", "caption": "Magicite-Liste", "checkable": true,
+      "searchPlaceholder": "Suchen...", "categoryFilterLabel": "Alle Welten", "categories": ["Welt des Gleichgewichts", "Welt des Ruins"],
+      "columns": [
+        { "key": "esper", "label": "Esper", "isRowHeader": true },
+        { "key": "fundort", "label": "Fundort" },
+        { "key": "ab", "label": "Ab wann" },
+        { "key": "verpassbar", "label": "Verpassbar" }
+      ],
+      "rows": [
+        { "itemId": "esper-ramuh", "filterCategory": "Welt des Gleichgewichts", "cells": { "esper": "Ramuh", "fundort": "Zozo, oberstes Stockwerk des höchsten Turms", "ab": "Wenn du Terra in Zozo suchst", "verpassbar": "Nein" } },
+        { "itemId": "esper-sirene", "filterCategory": "Welt des Gleichgewichts", "cells": { "esper": "Sirene", "fundort": "Zozo, von Ramuh", "ab": "Wenn du Terra in Zozo suchst", "verpassbar": "Nein" } },
+        { "itemId": "esper-shiva", "filterCategory": "Welt des Gleichgewichts", "cells": { "esper": "Shiva", "fundort": "Magitek-Forschungsanlage", "ab": "Nach dem Kampf gegen Ifrit und Shiva", "verpassbar": "Nein" } },
+        { "itemId": "esper-ifrit", "filterCategory": "Welt des Gleichgewichts", "cells": { "esper": "Ifrit", "fundort": "Magitek-Forschungsanlage", "ab": "Nach dem Kampf gegen Ifrit und Shiva", "verpassbar": "Nein" } },
+        { "itemId": "esper-golem", "filterCategory": "Welt des Gleichgewichts", "cells": { "esper": "Golem", "fundort": "Auktionshaus Jidoor, 10.000 Gil", "ab": "Mit dem ersten Luftschiff", "verpassbar": "Nein" } },
+        { "itemId": "esper-zona-seeker", "filterCategory": "Welt des Gleichgewichts", "cells": { "esper": "Zona Seeker", "fundort": "Auktionshaus Jidoor, 10.000 Gil", "ab": "Mit dem ersten Luftschiff", "verpassbar": "Nein" } },
+        { "itemId": "esper-alexander", "filterCategory": "Welt des Ruins", "ref": "quest-doma-cyan", "cells": { "esper": "Alexander", "fundort": "Schloss Doma, Thronsaal", "ab": "Nach Cyans Quest", "verpassbar": "Nein" } },
+        { "itemId": "esper-odin", "filterCategory": "Welt des Ruins", "cells": { "esper": "Odin", "fundort": "Alte Burg, Thronsaal", "ab": "Welt des Ruins", "verpassbar": "Ja – geht beim Aufwerten zu Raiden verloren" } },
+        { "itemId": "esper-phoenix", "filterCategory": "Welt des Ruins", "cells": { "esper": "Phönix", "fundort": "Phönix-Höhle", "ab": "Welt des Ruins, sobald die Falcon verfügbar ist", "verpassbar": "Nein" } },
+        { "itemId": "esper-fenrir", "filterCategory": "Welt des Ruins", "cells": { "esper": "Fenrir", "fundort": "Belohnung nach dem Sieg über Humbaba", "ab": "Welt des Ruins, Mobliz", "verpassbar": "Nein" } },
+        { "itemId": "esper-kaktor", "filterCategory": "Welt des Ruins", "cells": { "esper": "Kaktor", "fundort": "Drachenhöhle (Bonus-Dungeon)", "ab": "Nach dem Sieg über Kefka", "verpassbar": "Nein" } }
+      ] } },
+    { "type": "boss", "bossId": "ifrit-shiva", "title": "Ifrit & Shiva", "location": "Magitek-Forschungsanlage",
+      "hp": [ { "value": "Nicht dokumentiert" } ], "weaknesses": ["Feuer (Shiva)", "Eis (Ifrit)"],
+      "tactics": ["Erst Ifrit mit Eis besiegen, dann Shiva mit Feuer.", "Halte die Gruppe über der Hälfte der HP."], "missable": false },
+    { "type": "sources", "sources": [ { "title": "Final Fantasy VI Walkthrough – Magicite", "url": "https://www.arrpeegeez.com/2014/08/final-fantasy-vi-walkthrough-magicite.html", "origin": "ai" } ] }
+  ]
+}
